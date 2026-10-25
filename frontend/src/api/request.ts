@@ -16,11 +16,16 @@ export async function apiRequest<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  // FormData (tải tệp) phải để trình duyệt tự đặt Content-Type kèm boundary.
+  const isFormData =
+    typeof FormData !== 'undefined' && init?.body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(`/api${path}`, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      headers: isFormData
+        ? { ...init?.headers }
+        : { 'Content-Type': 'application/json', ...init?.headers },
       cache: 'no-store',
     });
   } catch {

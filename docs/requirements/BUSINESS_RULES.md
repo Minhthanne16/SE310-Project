@@ -29,4 +29,6 @@
 
 - Các thay đổi quan trọng như đăng ký, xét đề xuất, duyệt đề cương, phân công, thay đổi điểm, xác nhận và công bố phải có lịch sử.
 - Tài khoản đã có dữ liệu cần vô hiệu hóa thay vì xóa vật lý; Giáo vụ không được xóa chính mình.
+- "Đã có dữ liệu" nghĩa là có bất kỳ bản ghi nào trong hệ thống tham chiếu tới tài khoản (đơn đăng ký, đề xuất, đề tài, phân công, hội đồng, phiếu điểm, thông báo…). Chỉ tài khoản chưa có bản ghi liên quan nào mới được xóa hẳn; backend kiểm tra khi xóa.
+- Mã người dùng và vai trò không đổi sau khi tạo tài khoản; Giáo vụ chỉ sửa các thông tin còn lại.
 - Quyền truy cập thực thi ở backend, không chỉ bằng cách ẩn/hiện giao diện.
