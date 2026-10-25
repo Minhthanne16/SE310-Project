@@ -21,3 +21,18 @@ describe('getNewPasswordRules', () => {
     expect(rules.map((r) => r.passed)).toEqual([true, true, false, false]);
   });
 });
+
+describe('getNewPasswordRules for a regular change', () => {
+  it('labels and checks the difference from the current password', () => {
+    const rules = getNewPasswordRules(
+      'matkhau123',
+      'matkhau123',
+      'matkhau123',
+      'Khác mật khẩu hiện tại',
+    );
+    expect(rules[2]).toEqual({
+      label: 'Khác mật khẩu hiện tại',
+      passed: false,
+    });
+  });
+});
