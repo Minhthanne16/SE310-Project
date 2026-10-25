@@ -40,6 +40,6 @@ Cả hai endpoint chỉ dành cho vai trò `AcademicAffairs`. Request gửi dạ
 
 ## Hệ quả
 
-- Màn Quản lý người dùng ở frontend chưa được dựng. Khi dựng, phải dùng hợp đồng trên. Nếu xuất "báo cáo lỗi" thành CSV, phải chặn CSV formula injection (giá trị bắt đầu bằng `=`, `+`, `-`, `@`).
+- Màn Quản lý người dùng ở frontend (`/giao-vu/nguoi-dung`) đã dựng và dùng đúng hợp đồng trên cho hai bước nhập CSV. Các thao tác danh sách, thêm, sửa, đổi trạng thái, xóa và đặt lại mật khẩu hiện chạy trên kho dữ liệu demo trong bộ nhớ của frontend, chờ backend bổ sung endpoint đề xuất: `GET /api/users`, `POST /api/users`, `PUT /api/users/{id}`, `PATCH /api/users/{id}/status`, `DELETE /api/users/{id}`, `POST /api/users/{id}/reset-password`. Báo cáo lỗi xuất ra CSV phải chặn CSV formula injection (giá trị bắt đầu bằng `=`, `+`, `-`, `@`).
 - Upload dùng cookie xác thực; `SameSite=Lax` chặn form POST chéo site gửi kèm cookie.
 - Nếu máy chủ ít nhân và tệp lớn, request nhập có thể chạm timeout của proxy. Khi đó cần chia tệp hoặc chuyển sang xử lý nền.

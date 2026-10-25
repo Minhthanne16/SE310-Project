@@ -120,3 +120,14 @@ it('deletes users without data and disables users that have data', async () => {
   expect(after.find((u) => u.id === noData.id)).toBeUndefined();
   expect(after.find((u) => u.id === withData.id)?.isActive).toBe(false);
 });
+
+it('treats user codes as case-sensitive but emails as case-insensitive', async () => {
+  const service = createUserService();
+  const created = await service.create(input({ userCode: 'cb101' }));
+  expect(created.userCode).toBe('cb101');
+  await expect(
+    service.create(
+      input({ userCode: 'NEW2', email: 'HUONG.NT@truong.edu.vn' }),
+    ),
+  ).rejects.toMatchObject({ field: 'email' });
+});

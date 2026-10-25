@@ -42,3 +42,13 @@ it('writes only error rows with escaped values', () => {
   expect(lines[1]).toContain('"\'=HYPERLINK(""http://x"")"');
   expect(lines[1]).toContain('Email không hợp lệ.; Thiếu lớp.');
 });
+
+it('handles null and undefined cells', () => {
+  expect(escapeCsvCell(null)).toBe('');
+  expect(escapeCsvCell(undefined)).toBe('');
+});
+
+it('escapes an errors column that starts with a formula character', () => {
+  const csv = buildErrorReportCsv([row({ errors: ['=1+1'] })]);
+  expect(csv.trim().split('\r\n')[1].endsWith(",'=1+1")).toBe(true);
+});

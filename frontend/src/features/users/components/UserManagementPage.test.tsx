@@ -7,6 +7,7 @@ import {
   within,
 } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { ApiError } from '@/api/request';
 import { SessionProvider } from '@/features/auth/session/SessionProvider';
 import type { AuthService } from '@/features/auth/services/authService';
 import {
@@ -278,4 +279,116 @@ it('previews a CSV with per-row errors, then imports the valid rows', async () =
     await within(dialog).findByText(/Đã nhập 1 dòng hợp lệ, bỏ qua 1 dòng lỗi/),
   ).toBeVisible();
   expect(importCommit).toHaveBeenCalledWith(file);
+});
+
+const pickCsv = async (service: Partial<UserService>) => {
+  await renderPage({ ...createUserService(), ...service });
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập CSV' }));
+  const dialog = screen.getByRole('dialog', { name: 'Nhập người dùng từ CSV' });
+  const file = new File(['user_code'], 'a.csv', { type: 'text/csv' });
+  fireEvent.change(within(dialog).getByLabelText('Tệp CSV'), {
+    target: { files: [file] },
+  });
+  return { dialog, file };
+};
+
+it('focuses the file input when the import dialog opens', async () => {
+  const { dialog } = await pickCsv({});
+  expect(within(dialog).getByLabelText('Tệp CSV')).toHaveFocus();
+});
+
+it('shows a file-level error when the preview is rejected', async () => {
+  const importPreview = vi
+    .fn()
+    .mockRejectedValue(new ApiError('Tệp không phải UTF-8.', 400));
+  const { dialog } = await pickCsv({ importPreview });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Xem trước' }));
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+    'Tệp không phải UTF-8.',
+  );
+  expect(
+    within(dialog).getByRole('button', { name: 'Xem trước' }),
+  ).toBeInTheDocument();
+});
+
+it('re-previews after a 409 on commit and drops stale valid rows', async () => {
+  const stale = importReport;
+  const fresh: UserImportReport = {
+    ...importReport,
+    validRows: 0,
+    errorRows: 2,
+    rows: importReport.rows.map((r) => ({
+      ...r,
+      errors: r.errors.length ? r.errors : ['Mã người dùng đã tồn tại.'],
+    })),
+  };
+  const importPreview = vi
+    .fn()
+    .mockResolvedValueOnce(stale)
+    .mockResolvedValueOnce(fresh);
+  const importCommit = vi
+    .fn()
+    .mockRejectedValue(
+      new ApiError('Mã vừa bị trùng. Hãy xem trước lại.', 409),
+    );
+  const { dialog } = await pickCsv({ importPreview, importCommit });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Xem trước' }));
+  fireEvent.click(
+    await within(dialog).findByRole('button', { name: 'Nhập 1 dòng hợp lệ' }),
+  );
+
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+    'Mã vừa bị trùng',
+  );
+  await waitFor(() => expect(importPreview).toHaveBeenCalledTimes(2));
+  expect(within(dialog).queryByText('Hợp lệ')).not.toBeInTheDocument();
+  // validRows = 0 nên không còn nhập được.
+  expect(
+    within(dialog).getByRole('button', { name: 'Nhập 0 dòng hợp lệ' }),
+  ).toBeDisabled();
+});
+
+it('shows a commit error, a Hủy button and resets the file on going back', async () => {
+  const importPreview = vi.fn().mockResolvedValue(importReport);
+  const importCommit = vi
+    .fn()
+    .mockRejectedValue(new ApiError('Lỗi nhập.', 400));
+  const { dialog } = await pickCsv({ importPreview, importCommit });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Xem trước' }));
+  fireEvent.click(
+    await within(dialog).findByRole('button', { name: 'Nhập 1 dòng hợp lệ' }),
+  );
+  expect(await within(dialog).findByRole('alert')).toHaveTextContent(
+    'Lỗi nhập.',
+  );
+  expect(within(dialog).getByRole('button', { name: 'Hủy' })).toBeEnabled();
+
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Chọn tệp khác' }),
+  );
+  expect(
+    within(dialog).getByRole('button', { name: 'Xem trước' }),
+  ).toBeDisabled();
+});
+
+it('does not announce success when nothing was imported, and shows unknown roles as text', async () => {
+  const report: UserImportReport = {
+    ...importReport,
+    validRows: 1,
+    rows: [{ ...importReport.rows[0], role: 'toString' }],
+  };
+  const importPreview = vi.fn().mockResolvedValue(report);
+  const importCommit = vi
+    .fn()
+    .mockResolvedValue({ ...report, importedRows: 0 });
+  const { dialog } = await pickCsv({ importPreview, importCommit });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Xem trước' }));
+  expect(await within(dialog).findByText('toString')).toBeInTheDocument();
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Nhập 1 dòng hợp lệ' }),
+  );
+  expect(
+    await within(dialog).findByText(/Không có dòng nào được nhập/),
+  ).toBeVisible();
+  expect(within(dialog).getByText('Phan Mai')).toBeInTheDocument();
 });

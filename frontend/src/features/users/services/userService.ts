@@ -162,11 +162,11 @@ export function createUserService(): UserService {
     return { ...next };
   };
 
-  // Không phân biệt hoa thường, giống ràng buộc duy nhất ở backend.
+  // Mã phân biệt hoa thường (chỉ mục duy nhất của backend); email đã được
+  // chuẩn hóa viết thường nên so sánh không phân biệt hoa thường.
   const assertUnique = (input: UserInput, exceptId?: string) => {
     const others = users.filter((u) => u.id !== exceptId);
-    const code = input.userCode.toLowerCase();
-    if (others.some((u) => u.userCode.toLowerCase() === code))
+    if (others.some((u) => u.userCode === input.userCode))
       throw new DuplicateUserError('userCode');
     if (others.some((u) => u.email.toLowerCase() === input.email))
       throw new DuplicateUserError('email');
@@ -277,6 +277,7 @@ export function createUserService(): UserService {
             department: row.department ?? '',
             academicTitle: row.academicTitle ?? '',
           });
+          // Demo: dòng trùng mã/email với người dùng đang có thì bỏ qua, không báo lỗi.
           assertUnique(input);
           addFromInput(input);
         } catch (err: unknown) {

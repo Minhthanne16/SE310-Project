@@ -53,6 +53,8 @@ export function downloadErrorReport(rows: UserImportRow[]): void {
   const link = document.createElement('a');
   link.href = url;
   link.download = 'bao-cao-loi-nhap-nguoi-dung.csv';
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(url);
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

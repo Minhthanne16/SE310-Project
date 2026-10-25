@@ -44,7 +44,14 @@ export function validateUserInput(raw: UserInput): UserFieldErrors {
   if (input.role === 'Lecturer' && !input.department)
     errors.department = 'Nhập bộ môn của giảng viên.';
 
-  for (const field of ['className', 'department', 'academicTitle'] as const) {
+  // Chỉ kiểm tra trường thuộc vai trò hiện tại; trường ẩn không chặn lưu.
+  const roleFields: Array<'className' | 'department' | 'academicTitle'> =
+    input.role === 'Student'
+      ? ['className']
+      : input.role === 'Lecturer'
+        ? ['department', 'academicTitle']
+        : [];
+  for (const field of roleFields) {
     if (!errors[field] && input[field].length > 100)
       errors[field] = 'Tối đa 100 ký tự.';
   }

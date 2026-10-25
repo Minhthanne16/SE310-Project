@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { ApiError } from '@/api/request';
 import { AlertCircle, Download, FileUp } from 'lucide-react';
 import { ROLE_LABEL } from '@/features/auth/roles';
 import { downloadErrorReport } from '@/features/users/csvReport';
@@ -35,8 +36,10 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    fileInputRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !busyRef.current) onClose();
     };
@@ -89,14 +92,30 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
   const commit = () =>
     run(async () => {
       if (!file) return;
-      const result = await userService.importCommit(file);
+      let result: UserImportReport;
+      try {
+        result = await userService.importCommit(file);
+      } catch (err: unknown) {
+        // 409: mã/email vừa bị tạo trùng, không dòng nào được lưu. Xem trước
+        // lại để bỏ các dòng "Hợp lệ" đã cũ, vẫn giữ thông báo của backend.
+        if (err instanceof ApiError && err.status === 409) {
+          try {
+            setReport(await userService.importPreview(file));
+          } catch {
+            // Giữ báo cáo cũ; thông báo 409 vẫn hiển thị bên dưới.
+          }
+        }
+        throw err;
+      }
       setReport(result);
       setStep('done');
-      onImported(result);
+      // Không dòng nào được nhập thì không báo thành công.
+      if (result.importedRows > 0) onImported(result);
     });
 
   const backToChoose = () => {
     setStep('choose');
+    setFile(null);
     setReport(null);
     setError(null);
   };
@@ -134,6 +153,7 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
               <div className="login-field">
                 <label htmlFor="import-file">Tệp CSV</label>
                 <input
+                  ref={fileInputRef}
                   id="import-file"
                   type="file"
                   accept=".csv,text/csv"
@@ -167,9 +187,11 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
           {step !== 'choose' && report && (
             <>
               <p className="app-import-summary" role="status">
-                {step === 'done'
-                  ? `Đã nhập ${report.importedRows} dòng hợp lệ, bỏ qua ${report.errorRows} dòng lỗi.`
-                  : `${report.totalRows} dòng: ${report.validRows} hợp lệ, ${report.errorRows} lỗi (dòng lỗi sẽ bị bỏ qua).`}
+                {step === 'done' && report.importedRows === 0
+                  ? `Không có dòng nào được nhập, bỏ qua ${report.errorRows} dòng lỗi.`
+                  : step === 'done'
+                    ? `Đã nhập ${report.importedRows} dòng hợp lệ, bỏ qua ${report.errorRows} dòng lỗi.`
+                    : `${report.totalRows} dòng: ${report.validRows} hợp lệ, ${report.errorRows} lỗi (dòng lỗi sẽ bị bỏ qua).`}
               </p>
 
               <div className="app-table-scroll app-import-table">
@@ -191,7 +213,11 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
                         <td>{row.userCode}</td>
                         <td>{row.fullName}</td>
                         <td>{row.email}</td>
-                        <td>{ROLE_LABEL[row.role as UserRole] ?? row.role}</td>
+                        <td>
+                          {Object.hasOwn(ROLE_LABEL, row.role)
+                            ? ROLE_LABEL[row.role as UserRole]
+                            : row.role}
+                        </td>
                         <td>
                           {row.errors.length === 0 ? (
                             <span className="app-chip app-chip-active">
@@ -213,14 +239,24 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
 
               <div className="dialog-actions dialog-actions-split">
                 {step === 'preview' ? (
-                  <button
-                    type="button"
-                    className="app-button"
-                    onClick={backToChoose}
-                    disabled={busy}
-                  >
-                    Chọn tệp khác
-                  </button>
+                  <div className="dialog-actions">
+                    <button
+                      type="button"
+                      className="app-button"
+                      onClick={onClose}
+                      disabled={busy}
+                    >
+                      Hủy
+                    </button>
+                    <button
+                      type="button"
+                      className="app-button"
+                      onClick={backToChoose}
+                      disabled={busy}
+                    >
+                      Chọn tệp khác
+                    </button>
+                  </div>
                 ) : (
                   <span />
                 )}
