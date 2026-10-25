@@ -56,7 +56,7 @@ Compose tự chạy migration, seed ba sản phẩm mẫu và ba tài khoản th
 
 Project Neon `se310-project` đã có migration khởi tạo. Đặt chuỗi kết nối pooled vào `ConnectionStrings__DefaultConnection` trong `.env` local (xem `.env.example`), rồi chạy `docker compose -f compose.neon.yaml up --build`. Cấu hình này không tự chạy migration hoặc seed. Xem [hướng dẫn Neon](docs/NEON.md) để lấy lại chuỗi kết nối, kiểm tra branch và chuyển dữ liệu nếu cần.
 
-MinIO trong Compose chỉ dành cho local development. Bản open-source này đã được lưu trữ và có [cảnh báo bảo mật từ dự án MinIO](https://github.com/minio/minio/security/advisories); các cổng trong Compose chỉ bind vào `127.0.0.1`. Khi triển khai thực tế, dùng dịch vụ MinIO được duy trì và quản lý riêng.
+MinIO trong Compose chỉ dành cho local development. Image `minio/minio` đã bị gỡ khỏi Docker Hub nên Compose dùng `pgsty/minio`, bản build cộng đồng của cùng mã nguồn. Bản open-source này đã được lưu trữ và có [cảnh báo bảo mật từ dự án MinIO](https://github.com/minio/minio/security/advisories); các cổng trong Compose chỉ bind vào `127.0.0.1`. Khi triển khai thực tế, dùng dịch vụ MinIO được duy trì và quản lý riêng.
 
 ## Chạy riêng để phát triển
 

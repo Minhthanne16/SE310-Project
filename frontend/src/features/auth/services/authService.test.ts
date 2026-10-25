@@ -119,3 +119,42 @@ it('surfaces the resend cooldown message', async () => {
     'Vui lòng đợi 42 giây',
   );
 });
+
+it('returns no user when the session is missing or expired', async () => {
+  stubFetch({
+    ok: false,
+    status: 401,
+    body: { success: false, message: 'Bạn cần đăng nhập để tiếp tục' },
+  });
+
+  await expect(authService.getCurrentUser()).resolves.toBeNull();
+});
+
+it('returns the current user with its role from the API', async () => {
+  const fetchMock = stubFetch({
+    ok: true,
+    body: { success: true, message: '', data: user(false) },
+  });
+
+  await expect(authService.getCurrentUser()).resolves.toMatchObject({
+    role: 'Student',
+  });
+  expect(fetchMock).toHaveBeenCalledWith('/api/auth/me', expect.anything());
+});
+
+it('reports a network failure with status 0', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')));
+
+  await expect(authService.login('a@b.vn', 'matkhau123')).rejects.toMatchObject(
+    { status: 0, message: expect.stringContaining('Không kết nối được') },
+  );
+});
+
+it('never reuses the first-login endpoint for a regular password change', async () => {
+  const fetchMock = stubFetch({ ok: true, body: { success: true } });
+
+  await expect(
+    authService.changePassword('matkhau123', 'matkhau456'),
+  ).rejects.toThrow('Backend chưa có API đổi mật khẩu thông thường.');
+  expect(fetchMock).not.toHaveBeenCalled();
+});
