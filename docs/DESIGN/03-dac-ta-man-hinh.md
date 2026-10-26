@@ -171,6 +171,7 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 **Quy tắc nghiệp vụ**
 
 - Ba file HoSo, HoSo-GV, HoSo-GiaoVu cùng mã, chỉ khác vai trò mặc định; dựng thành một màn nhận vai trò từ phiên đăng nhập.
+- Ghi chú triển khai frontend (`/ho-so`): theo yêu cầu mới, **họ tên không tự sửa được** (do Giáo vụ quản lý, hiển thị cùng mã, email, vai trò, đơn vị); người dùng chỉ sửa ngày sinh, SĐT, email phụ, ảnh đại diện. Điểm này khác dòng "Sửa họ tên, ..." ở trên. Backend chưa có API hồ sơ nên sửa hồ sơ, ảnh đại diện, hoạt động đăng nhập chạy trên kho demo trong bộ nhớ; đổi mật khẩu là stub (501). Endpoint đề xuất: `GET /api/profile`, `PUT /api/profile`, `PUT /api/profile/avatar`, `POST /api/auth/change-password`. Giới hạn ảnh JPG/PNG/WebP, tối đa 2 MB là tạm thời, chờ OQ-006.
 
 ## Trang 404
 - **Vai trò:** Chung

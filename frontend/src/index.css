@@ -948,6 +948,56 @@ textarea:focus {
   overflow-wrap: anywhere;
 }
 
+.profile-identity {
+  flex-direction: row;
+  align-items: center;
+  gap: 20px;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  border-radius: 999px;
+  object-fit: cover;
+  font-size: 24px;
+}
+
+.profile-identity-text h2 {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.profile-identity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.profile-form {
+  max-width: 480px;
+}
+
+.profile-avatar-remove {
+  align-self: flex-start;
+}
+
+.profile-subtitle {
+  margin-bottom: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.profile-logins {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 15px;
+}
+
 .app-backdrop,
 .dialog-backdrop {
   position: fixed;

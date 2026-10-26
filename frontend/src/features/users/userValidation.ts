@@ -1,10 +1,10 @@
+import { EMAIL_PATTERN } from '@/lib/validation';
 import type { UserInput } from '@/types/user';
 
 export type UserField = Exclude<keyof UserInput, 'role'>;
 export type UserFieldErrors = Partial<Record<UserField, string>>;
 
 const CODE_PATTERN = /^[A-Za-z0-9._-]+$/;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Chuẩn hóa trước khi kiểm tra/gửi: cắt khoảng trắng, email viết thường.
 export function normalizeUserInput(input: UserInput): UserInput {
