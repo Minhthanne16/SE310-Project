@@ -17,7 +17,7 @@ Ký hiệu tầng 3: **trang riêng** (một màn trên canvas) · *tab / khối
 - Mọi trang sau đăng nhập có sidebar cố định theo vai trò (rộng 232px, thu gọn được ở một số màn), thẻ tài khoản ở đáy mở menu **Xem hồ sơ / Đăng xuất**, thanh trên có **chuông thông báo** và avatar. Chi tiết ở file 02.
 - Trang chủ, Hồ sơ cá nhân, Chuông thông báo, Không gian đề tài dùng chung giữa các vai trò, chỉ khác dữ liệu và quyền.
 - Đăng nhập, Quên mật khẩu không có sidebar.
-- **Đã dựng trong repo (frontend):** khung sidebar theo vai trò cho `/sv`, `/gv`, `/giao-vu` và `/ho-so` (`frontend/src/features/navigation/`). Mục menu chưa có trang thật hiển thị biến thể "Đang xây dựng" của Trang404 qua route `app/<vai-trò>/[...slug]`; trang thật đặt tại `app/<vai-trò>/<mục>/page.tsx` được ưu tiên. `/quen-mat-khau` hiện chỉ là trang "Đang xây dựng". Chuông thông báo trên thanh trên chưa dựng.
+- **Đã dựng trong repo (frontend):** khung sidebar theo vai trò cho `/sv`, `/gv`, `/giao-vu` và `/ho-so` (`app/frontend/src/features/navigation/`). Mục menu chưa có trang thật hiển thị biến thể "Đang xây dựng" của Trang404 qua route `app/frontend/app/(protected)/<vai-trò>/[...slug]`; trang thật đặt tại `app/frontend/app/(protected)/<vai-trò>/<mục>/page.tsx` được ưu tiên. `/quen-mat-khau` hiện chỉ là trang "Đang xây dựng". Chuông thông báo trên thanh trên chưa dựng.
 
 ## Tầng 1 · Chung
 

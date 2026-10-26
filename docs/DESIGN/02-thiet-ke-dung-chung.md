@@ -1,6 +1,6 @@
 # 02 · Thiết kế dùng chung
 
-Các giá trị lấy trực tiếp từ mã canvas (đếm tần suất sử dụng). Mã canvas dùng style nội tuyến; khi dựng trong repo nên đưa thành biến CSS ở `frontend/src/index.css` (hiện đang là bộ màu xanh dương/slate của mẫu Products, khác với thiết kế QLKLTN: cần quyết định thay bộ token, xem mục "Điểm cần thống nhất").
+Các giá trị lấy trực tiếp từ mã canvas (đếm tần suất sử dụng). Mã canvas dùng style nội tuyến; khi dựng trong repo nên đưa thành biến CSS ở `app/frontend/src/index.css` (hiện đang là bộ màu xanh dương/slate của mẫu Products, khác với thiết kế QLKLTN: cần quyết định thay bộ token, xem mục "Điểm cần thống nhất").
 
 ## Phông chữ
 
