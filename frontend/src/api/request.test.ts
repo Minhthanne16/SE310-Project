@@ -29,3 +29,47 @@ it('leaves the content type to the browser for FormData bodies', async () => {
   expect(init.body).toBe(body);
   expect(init.headers).not.toHaveProperty('Content-Type');
 });
+
+const stubError = (status: number, body: object) =>
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({ ok: false, status, json: async () => body }),
+  );
+
+it('uses the errors array as the message when the backend sends one', async () => {
+  stubError(400, {
+    success: false,
+    message: 'Validation failed',
+    data: null,
+    errors: ['Mật khẩu hiện tại không đúng.', 'Mật khẩu mới quá ngắn.'],
+  });
+  await expect(apiRequest('/x')).rejects.toMatchObject({
+    status: 400,
+    message: 'Mật khẩu hiện tại không đúng. Mật khẩu mới quá ngắn.',
+  });
+});
+
+it('falls back to the message when errors is empty', async () => {
+  stubError(409, {
+    success: false,
+    message: 'Trùng dữ liệu.',
+    data: null,
+    errors: [],
+  });
+  await expect(apiRequest('/x')).rejects.toMatchObject({
+    message: 'Trùng dữ liệu.',
+  });
+});
+
+it('keeps an ApiError when errors is a ProblemDetails object', async () => {
+  stubError(400, {
+    title: 'One or more validation errors occurred.',
+    status: 400,
+    errors: { '$.x': ['The JSON value could not be converted.'] },
+  });
+  await expect(apiRequest('/x')).rejects.toMatchObject({
+    name: 'ApiError',
+    status: 400,
+    message: 'HTTP 400',
+  });
+});

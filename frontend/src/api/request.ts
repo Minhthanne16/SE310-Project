@@ -44,8 +44,15 @@ export async function apiRequest<T>(
     );
   }
   if (!response.ok || !body.success) {
+    // Lỗi xác thực 400 trả message chung ("Validation failed") và nội dung
+    // thật nằm trong errors[]; ưu tiên errors[] để người dùng đọc được.
+    // errors có thể là object (ValidationProblemDetails của ASP.NET), nên chỉ
+    // nhận mảng chuỗi.
+    const details = Array.isArray(body.errors)
+      ? body.errors.filter((e) => typeof e === 'string' && e).join(' ')
+      : '';
     throw new ApiError(
-      body.message || `HTTP ${response.status}`,
+      details || body.message || `HTTP ${response.status}`,
       response.status,
     );
   }

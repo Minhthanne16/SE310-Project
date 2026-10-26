@@ -41,7 +41,7 @@ Ký hiệu tầng 3: **trang riêng** (một màn trên canvas) · *tab / khối
 ### Hồ sơ cá nhân
 - Route gợi ý: `/ho-so`
 - Artboard: `HoSo · HoSo-GV · HoSo-GiaoVu`
-  - Sửa họ tên, ngày sinh, SĐT, email phụ, ảnh _(tab / khối)_
+  - Sửa ngày sinh, SĐT, email phụ, ảnh _(tab / khối)_
   - Đổi mật khẩu _(popup / trạng thái)_ (đã dựng giao diện; backend chưa có API đổi mật khẩu thông thường, đề xuất `POST /api/auth/change-password { currentPassword, newPassword }`)
   - Hoạt động đăng nhập _(tab / khối)_
 
