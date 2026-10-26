@@ -4,6 +4,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ChevronsUpDown, LogOut, UserRound } from 'lucide-react';
 import { ROLE_LABEL } from '@/features/auth/roles';
+import { initials } from '@/features/navigation/initials';
 import type { CurrentUser } from '@/types/auth';
 
 interface AccountMenuProps {
@@ -11,13 +12,6 @@ interface AccountMenuProps {
   onLogout: () => void;
   loggingOut?: boolean;
 }
-
-const initials = (fullName: string) => {
-  const parts = fullName.trim().split(/\s+/);
-  const last = parts[parts.length - 1] ?? '';
-  const first = parts.length > 1 ? parts[0] : '';
-  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
-};
 
 // Thẻ tài khoản ở đáy sidebar, mở menu nổi Xem hồ sơ / Đăng xuất.
 export const AccountMenu: React.FC<AccountMenuProps> = ({

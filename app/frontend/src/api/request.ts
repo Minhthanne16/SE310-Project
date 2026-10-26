@@ -16,11 +16,16 @@ export async function apiRequest<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
+  // FormData (tải tệp) phải để trình duyệt tự đặt Content-Type kèm boundary.
+  const isFormData =
+    typeof FormData !== 'undefined' && init?.body instanceof FormData;
   let response: Response;
   try {
     response = await fetch(`/api${path}`, {
       ...init,
-      headers: { 'Content-Type': 'application/json', ...init?.headers },
+      headers: isFormData
+        ? { ...init?.headers }
+        : { 'Content-Type': 'application/json', ...init?.headers },
       cache: 'no-store',
     });
   } catch {
@@ -39,8 +44,15 @@ export async function apiRequest<T>(
     );
   }
   if (!response.ok || !body.success) {
+    // Lỗi xác thực 400 trả message chung ("Validation failed") và nội dung
+    // thật nằm trong errors[]; ưu tiên errors[] để người dùng đọc được.
+    // errors có thể là object (ValidationProblemDetails của ASP.NET), nên chỉ
+    // nhận mảng chuỗi.
+    const details = Array.isArray(body.errors)
+      ? body.errors.filter((e) => typeof e === 'string' && e).join(' ')
+      : '';
     throw new ApiError(
-      body.message || `HTTP ${response.status}`,
+      details || body.message || `HTTP ${response.status}`,
       response.status,
     );
   }
