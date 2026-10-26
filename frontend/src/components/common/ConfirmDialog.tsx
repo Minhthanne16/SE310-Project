@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { useDialogFocus } from '@/lib/useDialogFocus';
 
 interface ConfirmDialogProps {
   title: string;
@@ -30,21 +31,26 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
 }) => {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useDialogFocus<HTMLDivElement>({
+    initialFocusRef: cancelRef,
+  });
   const busyRef = useRef(busy);
   busyRef.current = busy;
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
 
   useEffect(() => {
-    cancelRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busyRef.current) onCancel();
+      if (e.key === 'Escape' && !busyRef.current) onCancelRef.current();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onCancel]);
+  }, []);
 
   return (
     <div className="dialog-backdrop">
       <div
+        ref={dialogRef}
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"

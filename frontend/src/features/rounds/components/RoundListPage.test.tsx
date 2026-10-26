@@ -6,6 +6,7 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
+import { act } from 'react';
 import { afterEach, expect, it } from 'vitest';
 import { createRoundService } from '@/features/rounds/services/roundService';
 import { RoundListPage } from './RoundListPage';
@@ -201,4 +202,61 @@ it('offers delete only for drafts and removes the round after confirming', async
     ).not.toBeInTheDocument(),
   );
   expect(await service.list({ status: 'Tất cả' })).toHaveLength(4);
+});
+
+it('pages through more than ten rounds', async () => {
+  const base = (await createRoundService().list({ status: 'Đang diễn ra' }))[0];
+  const many = Array.from({ length: 25 }, (_, i) => ({
+    ...base,
+    id: `x${i}`,
+    name: `Đợt số ${String(i).padStart(2, '0')}`,
+  }));
+  render(<RoundListPage roundService={createRoundService({ rounds: many })} />);
+  await screen.findByText('Đợt số 00');
+  expect(screen.getByText('25 đợt · Trang 1/3')).toBeInTheDocument();
+  expect(screen.getByText('Đợt số 09')).toBeInTheDocument();
+  expect(screen.queryByText('Đợt số 10')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Trước' })).toBeDisabled();
+
+  fireEvent.click(screen.getByRole('button', { name: 'Sau' }));
+  expect(screen.getByText('Đợt số 10')).toBeInTheDocument();
+  expect(screen.getByText('25 đợt · Trang 2/3')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Sau' }));
+  expect(screen.getByText('Đợt số 24')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Sau' })).toBeDisabled();
+});
+
+it('keeps the table visible while the list reloads and ignores a stale response', async () => {
+  const service = createRoundService();
+  const real = service.list.bind(service);
+  let releaseFirst: () => void = () => {};
+  let calls = 0;
+  service.list = (filters) => {
+    calls += 1;
+    // Hai lần gọi đầu (lần tải đầu) trả ngay; lần lọc "Nháp" đầu tiên bị giữ lại.
+    if (calls === 3 && filters?.status === 'Nháp')
+      return new Promise((resolve) => {
+        releaseFirst = () => resolve(real(filters));
+      });
+    return real(filters);
+  };
+  render(<RoundListPage roundService={service} />);
+  await screen.findByText('Văn bằng 1 · HK1 2026–2027');
+
+  setStatus('Nháp');
+  // Bảng cũ vẫn hiện trong lúc chờ, không có "Đang tải" toàn trang.
+  expect(screen.getByText('Văn bằng 1 · HK1 2026–2027')).toBeInTheDocument();
+  expect(
+    screen.queryByText('Đang tải danh sách đợt...'),
+  ).not.toBeInTheDocument();
+  setStatus('Đã kết thúc');
+  expect(
+    await screen.findByText('Văn bằng 1 · HK2 2025–2026'),
+  ).toBeInTheDocument();
+  // Phản hồi "Nháp" đến muộn không được ghi đè kết quả mới.
+  await act(async () => releaseFirst());
+  expect(screen.getByText('Văn bằng 1 · HK2 2025–2026')).toBeInTheDocument();
+  expect(
+    screen.queryByText('Văn bằng 2 · HK2 2026–2027'),
+  ).not.toBeInTheDocument();
 });

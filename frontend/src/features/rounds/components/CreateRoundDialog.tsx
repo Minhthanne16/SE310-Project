@@ -13,6 +13,7 @@ import {
   type RoundService,
 } from '@/features/rounds/services/roundService';
 import { ROUND_PROGRAMS, type Round, type RoundInput } from '@/types/round';
+import { useDialogFocus } from '@/lib/useDialogFocus';
 
 interface CreateRoundDialogProps {
   roundService: RoundService;
@@ -40,6 +41,7 @@ export const CreateRoundDialog: React.FC<CreateRoundDialogProps> = ({
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const dialogRef = useDialogFocus<HTMLDivElement>();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -110,6 +112,7 @@ export const CreateRoundDialog: React.FC<CreateRoundDialogProps> = ({
   return (
     <div className="dialog-backdrop">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="create-round-title"

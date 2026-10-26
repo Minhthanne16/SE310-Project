@@ -9,6 +9,7 @@ import type {
   ParticipantKind,
   Round,
 } from '@/types/round';
+import { useDialogFocus } from '@/lib/useDialogFocus';
 
 interface AddParticipantsDialogProps {
   kind: ParticipantKind;
@@ -55,6 +56,7 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busyRef = useRef(false);
+  const dialogRef = useDialogFocus<HTMLDivElement>();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -148,6 +150,7 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
   return (
     <div className="dialog-backdrop">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="add-participants-title"

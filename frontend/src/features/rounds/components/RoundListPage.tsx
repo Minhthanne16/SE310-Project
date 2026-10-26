@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { Plus, Search } from 'lucide-react';
@@ -49,6 +49,8 @@ export const RoundListPage: React.FC<RoundListPageProps> = ({
   const [rounds, setRounds] = useState<Round[]>([]);
   const [allRounds, setAllRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loaded, setLoaded] = useState(false);
+  const [reload, setReload] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [status, setStatus] = useState<StatusFilter>('Đang diễn ra');
   const [program, setProgram] = useState<RoundProgram | ''>('');
@@ -60,31 +62,35 @@ export const RoundListPage: React.FC<RoundListPageProps> = ({
     roundId: string;
   } | null>(null);
 
-  const load = useCallback(async () => {
+  // Mỗi lần lọc/tải lại tăng requestRef; phản hồi cũ bị bỏ qua.
+  const requestRef = useRef(0);
+
+  useEffect(() => {
+    const request = ++requestRef.current;
     setLoading(true);
     setLoadError(null);
     const filters: RoundFilters = { status, program, search };
-    try {
-      const [filtered, everything] = await Promise.all([
-        roundService.list(filters),
-        roundService.list(),
-      ]);
-      setRounds(filtered);
-      setAllRounds(everything);
-    } catch (err: unknown) {
-      setLoadError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Không tải được danh sách đợt.',
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [roundService, status, program, search]);
+    Promise.all([roundService.list(filters), roundService.list()])
+      .then(([filtered, everything]) => {
+        if (request !== requestRef.current) return;
+        setRounds(filtered);
+        setAllRounds(everything);
+        setLoaded(true);
+      })
+      .catch((err: unknown) => {
+        if (request !== requestRef.current) return;
+        setLoadError(
+          err instanceof Error && err.message
+            ? err.message
+            : 'Không tải được danh sách đợt.',
+        );
+      })
+      .finally(() => {
+        if (request === requestRef.current) setLoading(false);
+      });
+  }, [roundService, status, program, search, reload]);
 
-  useEffect(() => {
-    void load();
-  }, [load]);
+  const reloadList = () => setReload((n) => n + 1);
 
   const pageCount = Math.max(1, Math.ceil(rounds.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
@@ -169,7 +175,7 @@ export const RoundListPage: React.FC<RoundListPageProps> = ({
         </div>
       </div>
 
-      {loading ? (
+      {!loaded && loading ? (
         <p role="status" className="app-muted">
           Đang tải danh sách đợt...
         </p>
@@ -177,11 +183,7 @@ export const RoundListPage: React.FC<RoundListPageProps> = ({
         <section className="status-state" role="alert">
           <h2>Không tải được danh sách</h2>
           <p>{loadError}</p>
-          <button
-            type="button"
-            className="app-button"
-            onClick={() => void load()}
-          >
+          <button type="button" className="app-button" onClick={reloadList}>
             Thử lại
           </button>
         </section>
@@ -196,7 +198,7 @@ export const RoundListPage: React.FC<RoundListPageProps> = ({
         </section>
       ) : (
         <>
-          <div className="app-table-scroll">
+          <div className="app-table-scroll" aria-busy={loading}>
             <table className="app-table app-round-table">
               <thead>
                 <tr>
@@ -312,7 +314,7 @@ export const RoundListPage: React.FC<RoundListPageProps> = ({
             setProgram('');
             setSearch('');
             setPage(1);
-            void load();
+            reloadList();
           }}
         />
       )}
@@ -325,7 +327,7 @@ export const RoundListPage: React.FC<RoundListPageProps> = ({
           onClose={closeDialog}
           onDone={() => {
             setDialog(null);
-            void load();
+            reloadList();
           }}
         />
       )}

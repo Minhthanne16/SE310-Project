@@ -5,6 +5,7 @@ import {
   deriveTasks,
   finishWarning,
   formatDate,
+  isIsoDate,
   milestoneProgress,
   milestoneStatus,
   roundSpan,
@@ -104,4 +105,13 @@ describe('warnings and tasks', () => {
     expect(deriveTasks(round('r-vb2-hk2-nhap'), TODAY).length).toBe(2);
     expect(deriveTasks(round('r-vb1-hk2-2025'), TODAY)).toEqual([]);
   });
+});
+
+it('rejects dates that do not exist', () => {
+  expect(isIsoDate('2026-02-28')).toBe(true);
+  expect(isIsoDate('2028-02-29')).toBe(true);
+  expect(isIsoDate('2026-02-30')).toBe(false);
+  expect(isIsoDate('2026-13-01')).toBe(false);
+  expect(isIsoDate('2026-1-01')).toBe(false);
+  expect(formatDate('2026-04-31')).toBe('Chưa đặt');
 });

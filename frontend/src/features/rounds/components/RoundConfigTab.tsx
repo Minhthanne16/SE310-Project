@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 import { AlertCircle } from 'lucide-react';
 import { validateMilestones } from '@/features/rounds/roundUtils';
@@ -19,6 +19,8 @@ interface RoundConfigTabProps {
   round: Round;
   roundService: RoundService;
   onSaved: (round: Round) => void;
+  // Báo cho trang cha khi có thay đổi chưa lưu (để hỏi trước khi rời tab).
+  onDirtyChange?: (dirty: boolean) => void;
 }
 
 const sameConfig = (a: Milestone[], b: Milestone[]) =>
@@ -30,6 +32,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   round,
   roundService,
   onSaved,
+  onDirtyChange,
 }) => {
   const readOnly = round.status === 'Đã kết thúc';
   const [draft, setDraft] = useState<Milestone[]>(round.milestones);
@@ -39,6 +42,16 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   const errors = useMemo(() => validateMilestones(draft), [draft]);
   const invalid = Object.keys(errors).length > 0;
   const dirty = !sameConfig(draft, round.milestones);
+  // Chỉ báo động (role=alert) khi dòng đã đủ hai ngày mà sai; dòng mới nhập
+  // một ngày chỉ hiện lỗi tại dòng.
+  const hardInvalid = draft.some(
+    (m) => errors[m.key] && m.startDate && m.endDate,
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(dirty);
+    return () => onDirtyChange?.(false);
+  }, [dirty, onDirtyChange]);
 
   const patch = (key: Milestone['key'], change: Partial<Milestone>) => {
     setDraft((list) =>
@@ -77,7 +90,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
       {readOnly && (
         <p className="login-note">Đợt đã kết thúc nên cấu hình chỉ để xem.</p>
       )}
-      {(invalid || saveError) && (
+      {(hardInvalid || saveError) && (
         <div role="alert" className="login-error">
           <AlertCircle size={18} />
           <span>
@@ -164,9 +177,14 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
                   </td>
                   <td>
                     {m.allowLate === null ? (
-                      <span className="app-muted" aria-label="Không áp dụng">
-                        —
-                      </span>
+                      <>
+                        <span className="app-muted" aria-hidden="true">
+                          —
+                        </span>
+                        <span className="app-visually-hidden">
+                          Không áp dụng
+                        </span>
+                      </>
                     ) : (
                       <label className="app-switch">
                         <input

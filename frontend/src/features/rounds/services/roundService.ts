@@ -115,6 +115,7 @@ const cloneRound = (round: Round): Round => ({
   milestones: round.milestones.map((m) => ({ ...m })),
   lecturerIds: [...round.lecturerIds],
   studentIds: [...round.studentIds],
+  lockedStudentIds: [...round.lockedStudentIds],
   topicSummary: {
     ...round.topicSummary,
     byStatus: { ...round.topicSummary.byStatus },
@@ -139,6 +140,8 @@ const emptyTopics = (): Round['topicSummary'] => ({
 
 interface RoundServiceOptions {
   today?: string;
+  // Dữ liệu đợt ban đầu (test); mặc định là bộ mẫu.
+  rounds?: Round[];
 }
 
 // DEMO: backend chưa có API đợt, mốc, người tham gia, đề tài hay thông báo
@@ -150,7 +153,7 @@ export function createRoundService(
 ): RoundService {
   const today = options.today ?? DEMO_TODAY;
   const users = seedParticipants();
-  let rounds = seedRounds();
+  let rounds = options.rounds ?? seedRounds();
   const notifications = seedNotifications();
   let nextId = rounds.length + 1;
 
@@ -173,6 +176,17 @@ export function createRoundService(
         r.status === 'Đang diễn ra' &&
         r.studentIds.includes(studentId),
     );
+
+  // Quy tắc "một đợt đang diễn ra" áp dụng khi đợt đích đang diễn ra; với đợt
+  // Nháp chỉ kiểm tra lúc mở đợt.
+  const conflictingRound = (
+    round: Round,
+    kind: ParticipantKind,
+    studentId: string,
+  ) =>
+    kind === 'student' && round.status === 'Đang diễn ra'
+      ? runningRoundOf(studentId, round.id)
+      : undefined;
 
   const check = (
     round: Round,
@@ -202,10 +216,7 @@ export function createRoundService(
           participant,
         });
       } else {
-        const other =
-          kind === 'student'
-            ? runningRoundOf(participant.id, round.id)
-            : undefined;
+        const other = conflictingRound(round, kind, participant.id);
         results.push(
           other
             ? {
@@ -290,6 +301,7 @@ export function createRoundService(
           : blank,
         lecturerIds: source ? [...source.lecturerIds] : [],
         studentIds: [],
+        lockedStudentIds: [],
         topicSummary: emptyTopics(),
       };
       rounds = [round, ...rounds];
@@ -307,10 +319,15 @@ export function createRoundService(
       const conflicts = round.studentIds.filter((s) =>
         runningRoundOf(s, round.id),
       );
-      if (conflicts.length > 0)
+      if (conflicts.length > 0) {
+        const names = conflicts.map((s) => {
+          const person = users.student.find((u) => u.id === s);
+          return person ? `${person.code} (${person.name})` : s;
+        });
         throw new RoundRuleError(
-          `Không mở được đợt: sinh viên ${conflicts.join(', ')} đang thuộc đợt đang diễn ra khác.`,
+          `Không mở được đợt: sinh viên ${names.join(', ')} đang thuộc đợt đang diễn ra khác.`,
         );
+      }
       return save({ ...round, status: 'Đang diễn ra' });
     },
 
@@ -370,8 +387,7 @@ export function createRoundService(
       return users[kind]
         .filter((u) => !inRound.has(u.id))
         .map((u) => {
-          const other =
-            kind === 'student' ? runningRoundOf(u.id, round.id) : undefined;
+          const other = conflictingRound(round, kind, u.id);
           return other
             ? { ...u, blockedReason: `Đang ở đợt “${other.name}”` }
             : { ...u };
@@ -401,7 +417,7 @@ export function createRoundService(
     },
 
     // Đề xuất: DELETE /api/rounds/{id}/lecturers|students/{userId} → RoundDto;
-    // 409 khi người đó đã có dữ liệu (đề tài, điểm...); không có trạng thái
+    // 409 khi sinh viên đã có dữ liệu trong đợt (đề tài, điểm...); không có trạng thái
     // "Ngừng tham gia".
     async removeParticipant(id, kind, userId) {
       const round = find(id);
@@ -409,9 +425,9 @@ export function createRoundService(
       const participant = users[kind].find((u) => u.id === userId);
       if (!participant || !idsOf(round, kind).includes(userId))
         throw new RoundRuleError(`Không có ${KIND_LABEL[kind]} này trong đợt.`);
-      if (participant.hasData)
+      if (kind === 'student' && round.lockedStudentIds.includes(userId))
         throw new RoundRuleError(
-          `Không gỡ được ${participant.name}: đã có dữ liệu (đề tài, điểm...) trong đợt.`,
+          `Không gỡ được ${participant.name}: đã có dữ liệu (đề tài, điểm...) trong đợt này.`,
         );
       const next = cloneRound(round);
       if (kind === 'student')

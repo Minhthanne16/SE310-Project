@@ -84,8 +84,6 @@ export interface Participant {
   name: string;
   // Lớp (sinh viên) hoặc bộ môn (giảng viên).
   unit: string;
-  // Đã phát sinh dữ liệu (đề tài, điểm...): không gỡ được khỏi đợt.
-  hasData: boolean;
 }
 
 export interface TopicSummary {
@@ -104,6 +102,10 @@ export interface Round {
   milestones: Milestone[];
   lecturerIds: string[];
   studentIds: string[];
+  // Sinh viên đã có dữ liệu TRONG ĐỢT NÀY (đề tài, điểm...): không gỡ được khỏi
+  // đợt (03: Chi tiết đợt). Theo từng đợt, không theo từng người; giảng viên
+  // không bị khóa (tài liệu chỉ nêu quy tắc này cho sinh viên).
+  lockedStudentIds: string[];
   topicSummary: TopicSummary;
 }
 

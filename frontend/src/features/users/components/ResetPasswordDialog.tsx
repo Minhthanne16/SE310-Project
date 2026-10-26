@@ -5,6 +5,7 @@ import { AlertCircle, Check, Circle } from 'lucide-react';
 import { getNewPasswordRules } from '@/features/auth/passwordRules';
 import type { UserService } from '@/features/users/services/userService';
 import type { ManagedUser } from '@/types/user';
+import { useDialogFocus } from '@/lib/useDialogFocus';
 
 interface ResetPasswordDialogProps {
   user: ManagedUser;
@@ -31,9 +32,11 @@ export const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
   const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useDialogFocus<HTMLDivElement>({
+    initialFocusRef: cancelRef,
+  });
 
   useEffect(() => {
-    cancelRef.current?.focus();
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !savingRef.current) onClose();
     };
@@ -78,6 +81,7 @@ export const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
   return (
     <div className="dialog-backdrop">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="reset-password-title"

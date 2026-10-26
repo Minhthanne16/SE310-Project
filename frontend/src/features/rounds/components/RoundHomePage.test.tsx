@@ -6,7 +6,9 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { act } from 'react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { currentUrl, resetNavigation, setUrl } from '@/test/navigationMock';
 import { SessionProvider } from '@/features/auth/session/SessionProvider';
 import type { AuthService } from '@/features/auth/services/authService';
 import {
@@ -16,10 +18,13 @@ import {
 import type { CurrentUser } from '@/types/auth';
 import { RoundHomePage } from './RoundHomePage';
 
-afterEach(() => {
-  cleanup();
-  window.history.replaceState(null, '', '/');
+vi.mock('next/navigation', async () => {
+  const mod = await import('@/test/navigationMock');
+  return mod.navigationModule;
 });
+
+beforeEach(() => resetNavigation('/giao-vu'));
+afterEach(cleanup);
 
 const me: CurrentUser = {
   id: 'real-guid',
@@ -83,7 +88,7 @@ it('lists every round as a card, including drafts, with week and milestone', asy
 
 it('opens the round detail from a card and goes back to all rounds', async () => {
   await openFirstRound();
-  expect(window.location.search).toBe('?dot=r-vb1-hk1');
+  expect(currentUrl()).toBe('/giao-vu?dot=r-vb1-hk1');
   expect(
     screen.getByRole('heading', { name: 'Việc cần xử lý' }),
   ).toBeInTheDocument();
@@ -105,11 +110,11 @@ it('opens the round detail from a card and goes back to all rounds', async () =>
   expect(
     await screen.findByRole('button', { name: 'Thạc sĩ · Đợt 1/2026' }),
   ).toBeInTheDocument();
-  expect(window.location.search).toBe('');
+  expect(currentUrl()).toBe('/giao-vu');
 });
 
 it('starts on the detail view when the URL has ?dot=', async () => {
-  window.history.replaceState(null, '', '/?dot=r-ths-1-2026');
+  setUrl('/giao-vu?dot=r-ths-1-2026');
   render(
     <SessionProvider authService={fakeAuth()}>
       <RoundHomePage roundService={createRoundService()} />
@@ -124,7 +129,7 @@ it('starts on the detail view when the URL has ?dot=', async () => {
 });
 
 it('shows a not-found state for an unknown ?dot=', async () => {
-  window.history.replaceState(null, '', '/?dot=khong-co');
+  setUrl('/giao-vu?dot=khong-co');
   render(
     <SessionProvider authService={fakeAuth()}>
       <RoundHomePage roundService={createRoundService()} />
@@ -215,4 +220,70 @@ it('draws the Gantt with a text list per milestone and links to the config tab',
   expect(
     within(gantt).getByRole('link', { name: 'Cấu hình mốc Đề cương' }),
   ).toHaveAttribute('href', '/giao-vu/dot/r-vb1-hk1?tab=cau-hinh');
+});
+
+it('follows a URL change made by Next navigation without popstate', async () => {
+  await openFirstRound();
+  // Ví dụ bấm "Trang chủ" trên sidebar: Link của Next đổi URL, không popstate.
+  act(() => setUrl('/giao-vu'));
+  expect(
+    await screen.findByRole('button', { name: 'Thạc sĩ · Đợt 1/2026' }),
+  ).toBeInTheDocument();
+  act(() => setUrl('/giao-vu?dot=r-ths-1-2026'));
+  expect(
+    await screen.findByRole('heading', {
+      level: 1,
+      name: 'Thạc sĩ · Đợt 1/2026',
+    }),
+  ).toBeInTheDocument();
+});
+
+it('moves focus to the heading of the new view', async () => {
+  await openFirstRound();
+  expect(
+    screen.getByRole('heading', {
+      level: 1,
+      name: 'Văn bằng 1 · HK1 2026–2027',
+    }),
+  ).toHaveFocus();
+  fireEvent.click(screen.getByRole('button', { name: '← Tất cả đợt' }));
+  await waitFor(() =>
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
+      'Xin chào, Phạm Minh Châu',
+    ),
+  );
+  expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+});
+
+it('tells apart a running round before its first week and after its last milestone', async () => {
+  const base = createRoundService();
+  const [vb1] = await base.list({ status: 'Đang diễn ra' });
+  const shift = (days: number) => {
+    const move = (iso: string) =>
+      new Date(Date.parse(`${iso}T00:00:00Z`) + days * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+    return {
+      ...vb1,
+      milestones: vb1.milestones.map((m) => ({
+        ...m,
+        startDate: move(m.startDate),
+        endDate: move(m.endDate),
+      })),
+    };
+  };
+  const later = { ...shift(400), id: 'later', name: 'Đợt tương lai' };
+  const earlier = { ...shift(-400), id: 'earlier', name: 'Đợt đã qua mốc' };
+  const service = createRoundService({
+    today: '2026-10-26',
+    rounds: [later, earlier],
+  });
+  render(
+    <SessionProvider authService={fakeAuth()}>
+      <RoundHomePage roundService={service} />
+    </SessionProvider>,
+  );
+  await screen.findByRole('button', { name: 'Đợt tương lai' });
+  expect(screen.getByText('Chưa bắt đầu')).toBeInTheDocument();
+  expect(screen.getByText('Đã qua mốc cuối')).toBeInTheDocument();
 });

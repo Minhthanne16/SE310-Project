@@ -130,7 +130,7 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
                   type="button"
                   className="notice-head"
                   aria-expanded={open}
-                  aria-controls={`notice-body-${n.id}`}
+                  aria-controls={open ? `notice-body-${n.id}` : undefined}
                   onClick={() => setOpenId(open ? null : n.id)}
                 >
                   <span className="notice-title">{n.title}</span>
