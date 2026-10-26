@@ -26,43 +26,43 @@ export function buildMilestones(dates: DatePair[]): Milestone[] {
   }));
 }
 
-const lecturer = (
-  code: string,
-  name: string,
-  unit: string,
-  hasData = false,
-): Participant => ({ id: code, code, name, unit, hasData });
+const lecturer = (code: string, name: string, unit: string): Participant => ({
+  id: code,
+  code,
+  name,
+  unit,
+});
 
-const student = (
-  code: string,
-  name: string,
-  unit: string,
-  hasData = false,
-): Participant => ({ id: code, code, name, unit, hasData });
+const student = (code: string, name: string, unit: string): Participant => ({
+  id: code,
+  code,
+  name,
+  unit,
+});
 
 export function seedParticipants(): Record<ParticipantKind, Participant[]> {
   return {
     lecturer: [
-      lecturer('CB101', 'Nguyễn Thị Hương', 'Công nghệ phần mềm', true),
+      lecturer('CB101', 'Nguyễn Thị Hương', 'Công nghệ phần mềm'),
       lecturer('CB102', 'Trần Quốc Bảo', 'Hệ thống thông tin'),
       lecturer('CB103', 'Vũ Đức Anh', 'Mạng máy tính'),
       lecturer('CB104', 'Lê Minh Tuấn', 'Khoa học máy tính'),
-      lecturer('CB105', 'Phan Thị Lan', 'Công nghệ phần mềm', true),
+      lecturer('CB105', 'Phan Thị Lan', 'Công nghệ phần mềm'),
       lecturer('CB106', 'Đặng Văn Hải', 'An toàn thông tin'),
     ],
     student: [
-      student('22520001', 'Nguyễn Văn An', 'KTPM2022', true),
+      student('22520001', 'Nguyễn Văn An', 'KTPM2022'),
       student('22520002', 'Lê Thị Bình', 'KTPM2022'),
       student('22520003', 'Hoàng Gia Huy', 'HTTT2022'),
       student('22520004', 'Đỗ Thu Trang', 'ATTT2022'),
-      student('22520005', 'Phạm Quốc Khánh', 'KTPM2022', true),
+      student('22520005', 'Phạm Quốc Khánh', 'KTPM2022'),
       student('22520006', 'Bùi Thị Mai', 'HTTT2022'),
       student('22520007', 'Ngô Thanh Sơn', 'KHMT2022'),
-      student('22520008', 'Trịnh Hoài Nam', 'KHMT2022', true),
+      student('22520008', 'Trịnh Hoài Nam', 'KHMT2022'),
       student('22520009', 'Võ Ngọc Ánh', 'ATTT2022'),
-      student('22520010', 'Đinh Công Minh', 'KTPM2021', true),
-      student('22520011', 'Lý Thùy Dung', 'HTTT2021', true),
-      student('22520012', 'Dương Quang Vinh', 'KTPM2021', true),
+      student('22520010', 'Đinh Công Minh', 'KTPM2021'),
+      student('22520011', 'Lý Thùy Dung', 'HTTT2021'),
+      student('22520012', 'Dương Quang Vinh', 'KTPM2021'),
     ],
   };
 }
@@ -119,6 +119,7 @@ export function seedRounds(): Round[] {
       ),
       lecturerIds: ['CB101', 'CB102', 'CB103'],
       studentIds: ['22520001', '22520002', '22520003', '22520004'],
+      lockedStudentIds: ['22520001'],
       topicSummary: topics(
         { 'Đang thực hiện': 3, 'Chờ GV duyệt': 1, 'Chưa đăng ký': 2 },
         2,
@@ -145,6 +146,7 @@ export function seedRounds(): Round[] {
       ),
       lecturerIds: ['CB102', 'CB104'],
       studentIds: ['22520005', '22520006', '22520007'],
+      lockedStudentIds: ['22520005'],
       topicSummary: topics({ 'Đã đăng ký': 2, 'Chờ GV duyệt': 1 }, 0),
     },
     {
@@ -168,6 +170,7 @@ export function seedRounds(): Round[] {
       ),
       lecturerIds: ['CB101', 'CB105', 'CB106'],
       studentIds: ['22520008', '22520009'],
+      lockedStudentIds: ['22520008'],
       topicSummary: topics({ 'Đang thực hiện': 2 }, 1),
     },
     {
@@ -183,6 +186,7 @@ export function seedRounds(): Round[] {
       ]),
       lecturerIds: ['CB103', 'CB104'],
       studentIds: [],
+      lockedStudentIds: [],
       topicSummary: topics({}, 0),
     },
     {
@@ -206,6 +210,7 @@ export function seedRounds(): Round[] {
       ),
       lecturerIds: ['CB101', 'CB103'],
       studentIds: ['22520010', '22520011', '22520012'],
+      lockedStudentIds: ['22520010', '22520011', '22520012'],
       topicSummary: topics({ 'Đã hoàn tất': 3 }, 0),
     },
   ];

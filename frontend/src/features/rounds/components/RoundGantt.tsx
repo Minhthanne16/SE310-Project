@@ -98,7 +98,7 @@ export const RoundGantt: React.FC<RoundGanttProps> = ({
                   <div className="gantt-label">
                     <span className="gantt-name">{m.name}</span>
                     <span className="app-visually-hidden">
-                      {`: ${range}, ${status}.`}
+                      {dated ? `: ${range}, ${status}.` : `: ${range}.`}
                     </span>
                     {actionHref && !onAction && (
                       <Link

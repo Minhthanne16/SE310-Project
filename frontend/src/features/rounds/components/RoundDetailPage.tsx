@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { StatusState } from '@/components/common/StatusState';
 import {
   ProgramChip,
@@ -57,6 +58,9 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<LifecycleKind | null>(null);
+  // Cấu hình đang sửa dở: hỏi trước khi rời tab Cấu hình.
+  const [configDirty, setConfigDirty] = useState(false);
+  const [pendingTab, setPendingTab] = useState<RoundTab | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -116,7 +120,13 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
     );
 
   const week = currentWeek(round, roundService.today);
-  const selectTab = (id: RoundTab) => setTabParam(id, 'replace');
+  const selectTab = (id: RoundTab) => {
+    if (id !== tab && tab === 'cau-hinh' && configDirty) {
+      setPendingTab(id);
+      return;
+    }
+    setTabParam(id, 'replace');
+  };
   const { topicSummary } = round;
 
   return (
@@ -220,8 +230,10 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
 
       {tab === 'cau-hinh' && (
         <RoundConfigTab
-          key={round.id}
+          // Đổi trạng thái đợt (mở/kết thúc) thì bỏ bản nháp đang sửa.
+          key={`${round.id}-${round.status}`}
           round={round}
+          onDirtyChange={setConfigDirty}
           roundService={roundService}
           onSaved={setRound}
         />
@@ -242,6 +254,23 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
           round={round}
           roundService={roundService}
           onChanged={setRound}
+        />
+      )}
+
+      {pendingTab && (
+        <ConfirmDialog
+          title="Bỏ thay đổi?"
+          description="Cấu hình mốc có thay đổi chưa lưu. Chuyển tab sẽ bỏ các thay đổi này."
+          cancelLabel="Ở lại"
+          confirmLabel="Bỏ thay đổi"
+          danger
+          onCancel={() => setPendingTab(null)}
+          onConfirm={() => {
+            const next = pendingTab;
+            setPendingTab(null);
+            setConfigDirty(false);
+            setTabParam(next, 'replace');
+          }}
         />
       )}
 

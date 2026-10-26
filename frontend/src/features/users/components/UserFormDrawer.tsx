@@ -15,6 +15,7 @@ import {
 } from '@/features/users/userValidation';
 import type { UserRole } from '@/types/auth';
 import type { ManagedUser, UserInput } from '@/types/user';
+import { useDialogFocus } from '@/lib/useDialogFocus';
 
 interface UserFormDrawerProps {
   // user có giá trị = sửa; không có = thêm mới.
@@ -127,6 +128,7 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
+  const drawerRef = useDialogFocus<HTMLElement>();
   const escapeDisabledRef = useRef(escapeDisabled);
   escapeDisabledRef.current = escapeDisabled;
 
@@ -194,6 +196,7 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
   return (
     <div className="app-drawer-backdrop">
       <aside
+        ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="user-drawer-title"

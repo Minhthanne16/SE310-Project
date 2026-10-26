@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ListChecks } from 'lucide-react';
 import { StatusState } from '@/components/common/StatusState';
@@ -16,6 +16,7 @@ import {
   currentWeek,
   deriveTasks,
   milestoneProgress,
+  roundSpan,
 } from '@/features/rounds/roundUtils';
 import {
   roundService as defaultRoundService,
@@ -36,6 +37,13 @@ const STATUS_RANK: Record<RoundStatus, number> = {
 
 const manageHref = (id: string, tab?: string) =>
   `/giao-vu/dot/${id}${tab ? `?tab=${tab}` : ''}`;
+
+// Đợt đang diễn ra nhưng chưa có tuần hiện tại: trước hoặc sau khoảng các mốc.
+function phaseText(round: Round, today: string): string {
+  const span = roundSpan(round.milestones);
+  if (!span) return 'Chưa đặt ngày cho các mốc';
+  return today < span.start ? 'Chưa bắt đầu' : 'Đã qua mốc cuối';
+}
 
 interface RoundCardProps {
   round: Round;
@@ -66,7 +74,7 @@ const RoundCard: React.FC<RoundCardProps> = ({ round, today, onOpen }) => {
             ? 'Chưa mở đợt'
             : round.status === 'Đã kết thúc'
               ? 'Đã kết thúc'
-              : 'Chưa bắt đầu'}
+              : phaseText(round, today)}
       </p>
       {round.status === 'Đang diễn ra' && (
         <div className="round-card-progress">
@@ -101,6 +109,14 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
+  // Đổi giữa danh sách thẻ và chi tiết: chuyển tiêu điểm tới h1 của màn mới.
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const previousDot = useRef(dotId);
+  useEffect(() => {
+    if (previousDot.current === dotId) return;
+    previousDot.current = dotId;
+    headingRef.current?.focus();
+  }, [dotId, loading]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -187,7 +203,9 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
         </div>
         <div className="app-page-heading">
           <div className="app-heading-row">
-            <h1>{selected.name}</h1>
+            <h1 ref={headingRef} tabIndex={-1}>
+              {selected.name}
+            </h1>
             <Link
               className="app-button"
               href={manageHref(selected.id)}
@@ -248,7 +266,9 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
   return (
     <>
       <div className="app-page-heading">
-        <h1>Xin chào, {name}</h1>
+        <h1 ref={headingRef} tabIndex={-1}>
+          Xin chào, {name}
+        </h1>
         <p>Các đợt khóa luận và việc cần xử lý. Bấm một đợt để xem chi tiết.</p>
       </div>
       {rounds.length === 0 ? (

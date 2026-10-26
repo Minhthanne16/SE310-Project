@@ -514,7 +514,7 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 - CSDL: `period_milestones.allow_late` mặc định TRUE.
 - Kết thúc đợt khi còn đề tài chưa công bố: cảnh báo.
 - SV có dữ liệu chỉ không gỡ được khỏi đợt (không có trạng thái "Ngừng tham gia").
-- Ghi chú triển khai frontend (`/giao-vu/dot/[id]`): chạy trên kho demo, chờ endpoint đề xuất `POST /api/rounds/{id}/finish`, `PUT /api/rounds/{id}/milestones`, `POST|DELETE /api/rounds/{id}/lecturers|students`. "Cho nộp trễ" chỉ là công tắc lưu `allow_late`; thời hạn nộp trễ chưa triển khai (OQ-006). Kiểm tra thứ tự mốc: mỗi mốc bắt đầu ≤ kết thúc và ngày bắt đầu không giảm theo thứ tự 9 mốc. Mở đợt chỉ cảnh báo thiếu ngày hoặc thiếu người; không mở được nếu sinh viên đang ở đợt đang diễn ra khác. Tab Giảng viên/Sinh viên và cấu hình chỉ xem được khi đợt đã kết thúc.
+- Ghi chú triển khai frontend (`/giao-vu/dot/[id]`): chạy trên kho demo, chờ endpoint đề xuất `POST /api/rounds/{id}/finish`, `PUT /api/rounds/{id}/milestones`, `POST|DELETE /api/rounds/{id}/lecturers|students`. "Cho nộp trễ" chỉ là công tắc lưu `allow_late`; thời hạn nộp trễ chưa triển khai (OQ-006). Kiểm tra thứ tự mốc: mỗi mốc bắt đầu ≤ kết thúc và ngày bắt đầu không giảm theo thứ tự 9 mốc. Khóa gỡ "có dữ liệu" tính theo từng đợt và chỉ áp dụng cho sinh viên (đúng như quy tắc trên); giảng viên gỡ được khỏi đợt, và sao chép từ đợt cũ không mang theo khóa. Thêm sinh viên vào đợt Nháp không kiểm tra đợt khác; quy tắc "một đợt đang diễn ra" kiểm khi thêm vào đợt đang diễn ra và khi mở đợt (không mở được nếu sinh viên đang ở đợt đang diễn ra khác). Mở đợt chỉ cảnh báo thiếu ngày hoặc thiếu người. Tab Giảng viên/Sinh viên và cấu hình chỉ xem được khi đợt đã kết thúc.
 
 ## Mẫu phiếu đánh giá
 - **Vai trò:** Giáo vụ

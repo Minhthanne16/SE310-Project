@@ -61,6 +61,9 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
         p.name.toLowerCase().includes(keyword),
     );
   const readOnly = round.status === 'Đã kết thúc';
+  // Chỉ sinh viên có dữ liệu trong đợt này bị khóa (03: Chi tiết đợt).
+  const isLocked = (p: Participant) =>
+    kind === 'student' && round.lockedStudentIds.includes(p.id);
 
   const confirmRemove = async () => {
     if (!removing || busy) return;
@@ -151,7 +154,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                   <td>{p.name}</td>
                   <td>{p.unit}</td>
                   <td>
-                    {p.hasData ? (
+                    {isLocked(p) ? (
                       <span className="app-chip app-chip-info">
                         Đã có dữ liệu
                       </span>
@@ -165,7 +168,10 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                       className="app-button app-button-small app-button-danger"
                       aria-haspopup="dialog"
                       aria-label={`Gỡ ${p.name} khỏi đợt`}
-                      disabled={readOnly}
+                      disabled={readOnly || isLocked(p)}
+                      aria-describedby={
+                        isLocked(p) ? `locked-${p.id}` : undefined
+                      }
                       onClick={() => {
                         setRemoveError(null);
                         setRemoving(p);
@@ -173,6 +179,11 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                     >
                       Gỡ khỏi đợt
                     </button>
+                    {isLocked(p) && (
+                      <p id={`locked-${p.id}`} className="login-hint">
+                        Đã có dữ liệu trong đợt nên không gỡ được.
+                      </p>
+                    )}
                   </td>
                 </tr>
               ))}
@@ -198,11 +209,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
       {removing && (
         <ConfirmDialog
           title={`Gỡ ${removing.name} khỏi đợt?`}
-          description={
-            removing.hasData
-              ? `${removing.name} đã có dữ liệu (đề tài, điểm...) trong hệ thống nên không thể gỡ khỏi đợt.`
-              : `${removing.name} sẽ không còn trong đợt này. Có thể thêm lại sau.`
-          }
+          description={`${removing.name} sẽ không còn trong đợt này. Có thể thêm lại sau.`}
           cancelLabel="Giữ lại"
           confirmLabel="Gỡ khỏi đợt"
           danger

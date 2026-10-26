@@ -10,7 +10,12 @@ const DAY = 86_400_000;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 export function isIsoDate(value: string): boolean {
-  return DATE_PATTERN.test(value) && !Number.isNaN(Date.parse(value));
+  if (!DATE_PATTERN.test(value)) return false;
+  const time = Date.parse(`${value}T00:00:00Z`);
+  // Khứ hồi để loại ngày không có thật (ví dụ 2026-02-30).
+  return (
+    !Number.isNaN(time) && new Date(time).toISOString().slice(0, 10) === value
+  );
 }
 
 const toTime = (iso: string) => Date.parse(`${iso}T00:00:00Z`);

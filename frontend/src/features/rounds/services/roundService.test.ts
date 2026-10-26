@@ -227,7 +227,7 @@ describe('milestones', () => {
 describe('participants', () => {
   it('checks each code and adds only the valid ones', async () => {
     const s = svc();
-    const id = 'r-vb2-hk2-nhap';
+    const id = 'r-vb2-hk1';
     const results = await s.checkParticipants(id, 'student', [
       '22520010',
       '99999999',
@@ -244,7 +244,7 @@ describe('participants', () => {
       '99999999',
     ]);
     expect(outcome.added).toBe(1);
-    expect(outcome.round.studentIds).toEqual(['22520010']);
+    expect(outcome.round.studentIds).toContain('22520010');
     const again = await s.checkParticipants(id, 'student', ['22520010']);
     expect(again[0].status).toBe('alreadyInRound');
   });
@@ -255,7 +255,7 @@ describe('participants', () => {
     expect(
       (await s.checkParticipants(id, 'lecturer', ['cb101']))[0].status,
     ).toBe('valid');
-    const students = await s.listCandidates(id, 'student');
+    const students = await s.listCandidates('r-vb2-hk1', 'student');
     expect(students.find((c) => c.code === '22520001')?.blockedReason).toMatch(
       /Văn bằng 1 · HK1/,
     );
@@ -275,6 +275,19 @@ describe('participants', () => {
     expect(outcome.results[0].status).toBe('inOtherRound');
   });
 
+  it('lets a draft take a student of a running round, and only open() enforces the rule', async () => {
+    const s = svc();
+    const draft = 'r-vb2-hk2-nhap';
+    const students = await s.listCandidates(draft, 'student');
+    expect(students.every((c) => !c.blockedReason)).toBe(true);
+    const outcome = await s.addParticipants(draft, 'student', ['22520001']);
+    expect(outcome.added).toBe(1);
+    const err = await s.open(draft).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RoundRuleError);
+    // Báo mã và họ tên, không báo id nội bộ.
+    expect((err as Error).message).toContain('22520001 (Nguyễn Văn An)');
+  });
+
   it('allows a student of a finished round into a new round', async () => {
     const s = svc();
     const outcome = await s.addParticipants('r-vb2-hk2-nhap', 'student', [
@@ -283,7 +296,7 @@ describe('participants', () => {
     expect(outcome.added).toBe(1);
   });
 
-  it('blocks removing a participant who has data, with a reason', async () => {
+  it('blocks removing a student who has data in this round, with a reason', async () => {
     const s = svc();
     const err = await s
       .removeParticipant('r-vb1-hk1', 'student', '22520001')
@@ -294,9 +307,36 @@ describe('participants', () => {
 
     const round = await s.removeParticipant('r-vb1-hk1', 'student', '22520002');
     expect(round.studentIds).not.toContain('22520002');
-    await expect(
-      s.removeParticipant('r-vb1-hk1', 'lecturer', 'CB101'),
-    ).rejects.toBeInstanceOf(RoundRuleError);
+  });
+
+  it('does not lock lecturers, and data does not follow a person into a copied round', async () => {
+    const s = svc();
+    // CB101 đã có dữ liệu ở đợt cũ nhưng gỡ được khỏi đợt này.
+    const round = await s.removeParticipant('r-vb1-hk1', 'lecturer', 'CB101');
+    expect(round.lecturerIds).not.toContain('CB101');
+
+    const copy = await s.create({
+      name: 'Bản sao để gỡ',
+      program: 'Văn bằng 1',
+      periodLabel: 'HK2 2026–2027',
+      copyFromId: 'r-ths-1-2026',
+    });
+    expect(copy.lecturerIds).toContain('CB101');
+    const afterLecturer = await s.removeParticipant(
+      copy.id,
+      'lecturer',
+      'CB101',
+    );
+    expect(afterLecturer.lecturerIds).not.toContain('CB101');
+
+    // Sinh viên có dữ liệu ở đợt khác vẫn gỡ được khỏi đợt mới này.
+    await s.addParticipants(copy.id, 'student', ['22520010']);
+    const afterStudent = await s.removeParticipant(
+      copy.id,
+      'student',
+      '22520010',
+    );
+    expect(afterStudent.studentIds).toEqual([]);
   });
 });
 

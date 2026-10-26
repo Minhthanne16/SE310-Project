@@ -8,6 +8,7 @@ import { downloadErrorReport } from '@/features/users/csvReport';
 import type { UserService } from '@/features/users/services/userService';
 import type { UserRole } from '@/types/auth';
 import type { UserImportReport } from '@/types/user';
+import { useDialogFocus } from '@/lib/useDialogFocus';
 
 interface UserImportDialogProps {
   userService: UserService;
@@ -37,6 +38,7 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useDialogFocus<HTMLDivElement>();
 
   useEffect(() => {
     fileInputRef.current?.focus();
@@ -125,6 +127,7 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
   return (
     <div className="dialog-backdrop">
       <div
+        ref={dialogRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="import-title"
