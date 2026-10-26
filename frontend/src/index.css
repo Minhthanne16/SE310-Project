@@ -1311,3 +1311,424 @@ textarea:focus {
     animation: none;
   }
 }
+
+/* Đợt khóa luận: thẻ đợt, Gantt, bảng thông báo, cấu hình, thêm người */
+.app-chip-info {
+  background: #e3ecfb;
+  color: #1f4fa0;
+}
+
+.app-chip-error {
+  background: #fbe9e7;
+  color: #a8281c;
+}
+
+.app-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+}
+
+.app-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-link {
+  font-weight: 600;
+  color: #1f5fbf;
+  text-decoration: none;
+}
+
+.app-link:hover {
+  color: #174a94;
+  text-decoration: underline;
+}
+
+.app-back-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f5fbf;
+  text-decoration: none;
+}
+
+.app-segmented {
+  align-self: flex-start;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f2f2f1;
+}
+
+.app-segmented button {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #5c5c5c;
+}
+
+.app-segmented button[aria-pressed='true'] {
+  border-color: #e5e5e5;
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.app-round-table {
+  min-width: 960px;
+}
+
+.dialog-medium {
+  max-width: 560px;
+}
+
+.round-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.round-card {
+  position: relative;
+  gap: 12px;
+}
+
+.round-card:hover,
+.round-card:focus-within {
+  border-color: #a3a3a3;
+}
+
+.round-card h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.round-card-link {
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.round-card-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 14px;
+}
+
+.round-card-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.round-card-tasks {
+  font-size: 13.5px;
+  color: #5c5c5c;
+}
+
+.progress-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #f2f2f1;
+  overflow: hidden;
+}
+
+.progress-bar span {
+  display: block;
+  height: 100%;
+  background: #1f5fbf;
+}
+
+.round-topics {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.task-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.task-list li span {
+  flex: 1;
+}
+
+.notice-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.notice-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 0;
+  border-top: 1px solid #e5e5e5;
+}
+
+.notice-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 44px;
+  text-align: left;
+  width: 100%;
+}
+
+.notice-title {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.notice-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #5c5c5c;
+}
+
+.notice-excerpt,
+.notice-body {
+  font-size: 14px;
+  color: #3d3d3d;
+}
+
+.notice-excerpt {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Gantt tuần của đợt */
+.gantt {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.gantt-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+  color: #5c5c5c;
+}
+
+.gantt-legend li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gantt-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 4px;
+}
+
+.gantt-swatch-week {
+  background: #d4f26a;
+}
+
+.gantt-scroll {
+  overflow-x: auto;
+}
+
+.gantt-list {
+  list-style: none;
+}
+
+.gantt-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  align-items: center;
+  border-top: 1px solid #e5e5e5;
+}
+
+.gantt-head {
+  border-top: none;
+}
+
+.gantt-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 8px 12px 8px 0;
+  font-size: 14px;
+}
+
+.gantt-name {
+  font-weight: 600;
+}
+
+.gantt-action {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #1f5fbf;
+  text-decoration: none;
+}
+
+.gantt-action:hover {
+  text-decoration: underline;
+}
+
+.gantt-track {
+  position: relative;
+  height: 40px;
+}
+
+.gantt-head .gantt-track {
+  height: 28px;
+}
+
+.gantt-week {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 600;
+  color: #737373;
+}
+
+.gantt-week-now {
+  background: #d4f26a;
+  color: #1a1a1a;
+  border-radius: 6px 6px 0 0;
+}
+
+.gantt-now-col {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: rgba(212, 242, 106, 0.35);
+}
+
+.gantt-bar {
+  position: absolute;
+  top: 10px;
+  height: 20px;
+  border-radius: 6px;
+}
+
+.gantt-bar-past {
+  background: #a3a3a3;
+}
+
+.gantt-bar-now {
+  background: #1f5fbf;
+}
+
+.gantt-bar-next {
+  background: #fff;
+  border: 2px solid #1f5fbf;
+}
+
+/* Cấu hình mốc */
+.app-config-table {
+  min-width: 860px;
+}
+
+.app-config-table td input[type='date'] {
+  height: 40px;
+  min-width: 150px;
+}
+
+.app-config-table input[aria-invalid='true'] {
+  border: 1.5px solid #a8281c;
+}
+
+.app-config-table .app-select {
+  height: 40px;
+  min-width: 130px;
+}
+
+.app-config-name {
+  min-width: 220px;
+  background: #fff;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.app-config-hint {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: #737373;
+}
+
+.app-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-switch input {
+  width: 18px;
+  height: 18px;
+}
+
+/* Thêm giảng viên / sinh viên */
+.app-pick-list {
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.app-pick-blocked {
+  color: #a8281c;
+}
+
+.app-check-results {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.app-check-results li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (max-width: 900px) {
+  .gantt-row {
+    grid-template-columns: 160px 1fr;
+  }
+}

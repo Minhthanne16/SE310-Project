@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { FileUp, Plus, Search } from 'lucide-react';
 import { ROLE_LABEL } from '@/features/auth/roles';
 import { useSession } from '@/features/auth/session/SessionProvider';
-import { ConfirmDialog } from '@/features/users/components/ConfirmDialog';
+import { ConfirmDialog } from '@/components/common/ConfirmDialog';
 import { ResetPasswordDialog } from '@/features/users/components/ResetPasswordDialog';
 import { UserFormDrawer } from '@/features/users/components/UserFormDrawer';
 import { UserImportDialog } from '@/features/users/components/UserImportDialog';

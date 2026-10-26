@@ -105,6 +105,7 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 - Đợt Nháp chỉ giáo vụ thấy, GV và SV thấy sau khi giáo vụ mở đợt.
 - Bảng thông báo không có trả lời, không có số người đã xem.
 - Đây là bản thử nghiệm của danh sách thẻ đợt, chưa chốt hẳn.
+- Ghi chú triển khai frontend (`/giao-vu`): Trang chủ Giáo vụ đã dựng (thẻ mọi đợt kể cả Nháp, chi tiết đợt với việc cần xử lý suy ra từ dữ liệu, Bảng thông báo, Gantt; đợt đang xem giữ trong `?dot=id`). Backend chưa có API đợt, đề tài, thông báo nên chạy trên kho demo trong bộ nhớ (`frontend/src/features/rounds/`, mất khi tải lại trang; "hôm nay" cố định ở 2026-10-26). Endpoint đề xuất: `GET /api/rounds`, `GET /api/rounds/{id}`, `GET /api/notifications`. Trang chủ SV và GV chưa dựng.
 
 ## Gantt tiến độ đợt (thành phần)
 - **Vai trò:** Chung
@@ -129,6 +130,7 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 
 - 9 mốc: GV gửi đề tài, Công bố đề tài · SV đăng ký, Đề cương, Báo cáo giữa kỳ, Báo cáo cuối kỳ, Lịch phản biện, Lịch bảo vệ, Thời gian cho điểm, Chốt bản cuối · công bố.
 - Thời gian cho điểm chỉ để nhắc, không khóa phiếu chấm.
+- Ghi chú triển khai frontend: thành phần `RoundGantt` (`frontend/src/features/rounds/components/RoundGantt.tsx`) mới có biến thể Giáo vụ (nút Cấu hình ở mọi mốc); tuần 1 tính từ thứ Hai của tuần chứa mốc sớm nhất.
 
 ## Menu thông báo (chuông)
 - **Vai trò:** Chung
@@ -485,6 +487,7 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 - Chỉ xóa được đợt Nháp.
 - Đợt Nháp ẩn với GV và SV.
 - Tên chương trình thạc sĩ ghi "Thạc sĩ · Đợt 1/2026".
+- Ghi chú triển khai frontend (`/giao-vu/dot`): chạy trên kho demo trong bộ nhớ, chờ endpoint đề xuất `GET/POST /api/rounds`, `POST /api/rounds/{id}/open`, `DELETE /api/rounds/{id}`. "Sao chép từ đợt cũ" sao chép cấu hình mốc (Thông báo cho, Cho nộp trễ) và danh sách giảng viên, không sao chép ngày và sinh viên (quy tắc sao chép chưa được tài liệu quy định, chọn tạm).
 
 ## Chi tiết đợt khóa luận
 - **Vai trò:** Giáo vụ
@@ -511,6 +514,7 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 - CSDL: `period_milestones.allow_late` mặc định TRUE.
 - Kết thúc đợt khi còn đề tài chưa công bố: cảnh báo.
 - SV có dữ liệu chỉ không gỡ được khỏi đợt (không có trạng thái "Ngừng tham gia").
+- Ghi chú triển khai frontend (`/giao-vu/dot/[id]`): chạy trên kho demo, chờ endpoint đề xuất `POST /api/rounds/{id}/finish`, `PUT /api/rounds/{id}/milestones`, `POST|DELETE /api/rounds/{id}/lecturers|students`. "Cho nộp trễ" chỉ là công tắc lưu `allow_late`; thời hạn nộp trễ chưa triển khai (OQ-006). Kiểm tra thứ tự mốc: mỗi mốc bắt đầu ≤ kết thúc và ngày bắt đầu không giảm theo thứ tự 9 mốc. Mở đợt chỉ cảnh báo thiếu ngày hoặc thiếu người; không mở được nếu sinh viên đang ở đợt đang diễn ra khác. Tab Giảng viên/Sinh viên và cấu hình chỉ xem được khi đợt đã kết thúc.
 
 ## Mẫu phiếu đánh giá
 - **Vai trò:** Giáo vụ
