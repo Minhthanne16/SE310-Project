@@ -305,8 +305,8 @@ describe('participants', () => {
     expect((err as Error).message).toMatch(/đã có dữ liệu/);
     expect((await s.get('r-vb1-hk1')).studentIds).toContain('22520001');
 
-    const round = await s.removeParticipant('r-vb1-hk1', 'student', '22520002');
-    expect(round.studentIds).not.toContain('22520002');
+    const round = await s.removeParticipant('r-vb1-hk1', 'student', '22520030');
+    expect(round.studentIds).not.toContain('22520030');
   });
 
   it('does not lock lecturers, and data does not follow a person into a copied round', async () => {

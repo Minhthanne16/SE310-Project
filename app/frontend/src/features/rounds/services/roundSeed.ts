@@ -63,6 +63,25 @@ export function seedParticipants(): Record<ParticipantKind, Participant[]> {
       student('22520010', 'Đinh Công Minh', 'KTPM2021'),
       student('22520011', 'Lý Thùy Dung', 'HTTT2021'),
       student('22520012', 'Dương Quang Vinh', 'KTPM2021'),
+      // 13–30: sinh viên của đợt VB1 HK1 2026–2027 (đủ để mỗi đề tài mẫu có nhóm).
+      student('22520013', 'Nguyễn Hoàng Long', 'KTPM2022'),
+      student('22520014', 'Trần Thị Thu Hà', 'HTTT2022'),
+      student('22520015', 'Lê Minh Quân', 'KHMT2022'),
+      student('22520016', 'Phạm Ngọc Diệp', 'ATTT2022'),
+      student('22520017', 'Vũ Anh Tuấn', 'KTPM2022'),
+      student('22520018', 'Đặng Khánh Linh', 'KTPM2022'),
+      student('22520019', 'Hoàng Đức Thịnh', 'HTTT2022'),
+      student('22520020', 'Bùi Phương Nhi', 'KHMT2022'),
+      student('22520021', 'Ngô Quốc Việt', 'ATTT2022'),
+      student('22520022', 'Đỗ Hải Yến', 'KTPM2022'),
+      student('22520023', 'Lý Gia Bảo', 'HTTT2022'),
+      student('22520024', 'Phan Thanh Tâm', 'KHMT2022'),
+      student('22520025', 'Võ Minh Khôi', 'KTPM2022'),
+      student('22520026', 'Trịnh Thùy Linh', 'ATTT2022'),
+      student('22520027', 'Đinh Quang Huy', 'KTPM2022'),
+      student('22520028', 'Dương Bảo Ngọc', 'HTTT2022'),
+      student('22520029', 'Mai Văn Phúc', 'KHMT2022'),
+      student('22520030', 'Cao Thị Hồng', 'KTPM2022'),
     ],
   };
 }
@@ -75,6 +94,7 @@ function topics(
     'Chưa đăng ký': 0,
     'Chờ GV duyệt': 0,
     'Đã đăng ký': 0,
+    'Bị từ chối': 0,
     'Đang thực hiện': 0,
     'Đã cho điểm': 0,
     'Đã hoàn tất': 0,
@@ -84,6 +104,9 @@ function topics(
   return { total, unpublishedCount, byStatus };
 }
 
+// topicSummary khớp kho đề tài mẫu (features/topics/services/topicSeed.ts),
+// có test giữ đồng bộ; unpublishedCount = tổng số đề tài khi đợt còn ở giai
+// đoạn "Đang gửi đề tài", 0 khi đã công bố danh sách.
 // Bốn đợt mẫu của canvas (vb1, vb2, ths, vb1o) cộng một đợt Nháp.
 export function seedRounds(): Round[] {
   const withAudience = (ms: Milestone[]): Milestone[] =>
@@ -118,11 +141,30 @@ export function seedRounds(): Round[] {
         ]),
       ),
       lecturerIds: ['CB101', 'CB102', 'CB103'],
-      studentIds: ['22520001', '22520002', '22520003', '22520004'],
-      lockedStudentIds: ['22520001'],
+      studentIds: [
+        '22520001',
+        '22520002',
+        '22520003',
+        '22520004',
+        ...Array.from({ length: 18 }, (_, i) => `225200${13 + i}`),
+      ],
+      // Mọi sinh viên có trong nhóm của một đề tài (kể cả đề xuất bị từ chối).
+      lockedStudentIds: [
+        '22520001',
+        '22520002',
+        '22520003',
+        '22520004',
+        ...Array.from({ length: 17 }, (_, i) => `225200${13 + i}`),
+      ],
       topicSummary: topics(
-        { 'Đang thực hiện': 3, 'Chờ GV duyệt': 1, 'Chưa đăng ký': 2 },
-        2,
+        {
+          'Chưa đăng ký': 5,
+          'Chờ GV duyệt': 1,
+          'Đã đăng ký': 3,
+          'Bị từ chối': 1,
+          'Đang thực hiện': 8,
+        },
+        0,
       ),
     },
     {
@@ -146,7 +188,7 @@ export function seedRounds(): Round[] {
       ),
       lecturerIds: ['CB102', 'CB104'],
       studentIds: ['22520005', '22520006', '22520007'],
-      lockedStudentIds: ['22520005'],
+      lockedStudentIds: ['22520005', '22520006', '22520007'],
       topicSummary: topics({ 'Đã đăng ký': 2, 'Chờ GV duyệt': 1 }, 0),
     },
     {
@@ -170,8 +212,11 @@ export function seedRounds(): Round[] {
       ),
       lecturerIds: ['CB101', 'CB105', 'CB106'],
       studentIds: ['22520008', '22520009'],
-      lockedStudentIds: ['22520008'],
-      topicSummary: topics({ 'Đang thực hiện': 2 }, 1),
+      lockedStudentIds: ['22520008', '22520009'],
+      topicSummary: topics(
+        { 'Chưa đăng ký': 4, 'Chờ GV duyệt': 1, 'Bị từ chối': 1 },
+        6,
+      ),
     },
     {
       id: 'r-vb2-hk2-nhap',
@@ -211,7 +256,7 @@ export function seedRounds(): Round[] {
       lecturerIds: ['CB101', 'CB103'],
       studentIds: ['22520010', '22520011', '22520012'],
       lockedStudentIds: ['22520010', '22520011', '22520012'],
-      topicSummary: topics({ 'Đã hoàn tất': 3 }, 0),
+      topicSummary: topics({ 'Đã cho điểm': 1, 'Đã hoàn tất': 2 }, 0),
     },
   ];
 }

@@ -108,6 +108,9 @@ export interface RoundService {
     userId: string,
   ): Promise<Round>;
   listNotifications(query: NotificationQuery): Promise<NotificationPage>;
+  // Hệ quả của việc công bố danh sách đề tài (màn Quản lý đề tài): đợt không
+  // còn đề tài chưa công bố. Ở backend thật số này được suy ra từ dữ liệu đề tài.
+  markTopicsPublished(id: string): Promise<Round>;
 }
 
 const cloneRound = (round: Round): Round => ({
@@ -434,6 +437,16 @@ export function createRoundService(
         next.studentIds = next.studentIds.filter((x) => x !== userId);
       else next.lecturerIds = next.lecturerIds.filter((x) => x !== userId);
       return save(next);
+    },
+
+    // Đề xuất: không có endpoint riêng; trường topicSummary của RoundDto do
+    // máy chủ tính lại sau POST /api/rounds/{id}/topics/publish.
+    async markTopicsPublished(id) {
+      const round = find(id);
+      return save({
+        ...round,
+        topicSummary: { ...round.topicSummary, unpublishedCount: 0 },
+      });
     },
 
     // Đề xuất: GET /api/notifications?roundId=&source=all|giaovu|mine&search=&limit=

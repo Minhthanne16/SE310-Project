@@ -12,6 +12,7 @@ export const TOPIC_STATUSES = [
   'Chưa đăng ký',
   'Chờ GV duyệt',
   'Đã đăng ký',
+  'Bị từ chối',
   'Đang thực hiện',
   'Đã cho điểm',
   'Đã hoàn tất',

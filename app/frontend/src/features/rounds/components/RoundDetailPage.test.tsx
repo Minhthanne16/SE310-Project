@@ -221,17 +221,17 @@ it('adds lecturers picked from a list of people not yet in the round', async () 
 it('removes a participant after confirming, and blocks one who has data in this round', async () => {
   const service = await renderDetail();
   tab('Sinh viên');
-  await screen.findByText('Lê Thị Bình');
+  await screen.findByText('Cao Thị Hồng');
 
   fireEvent.click(
-    screen.getByRole('button', { name: 'Gỡ Lê Thị Bình khỏi đợt' }),
+    screen.getByRole('button', { name: 'Gỡ Cao Thị Hồng khỏi đợt' }),
   );
   const confirm = screen.getByRole('alertdialog');
   fireEvent.click(within(confirm).getByRole('button', { name: 'Gỡ khỏi đợt' }));
   await waitFor(() =>
-    expect(screen.queryByText('Lê Thị Bình')).not.toBeInTheDocument(),
+    expect(screen.queryByText('Cao Thị Hồng')).not.toBeInTheDocument(),
   );
-  expect((await service.get('r-vb1-hk1')).studentIds).not.toContain('22520002');
+  expect((await service.get('r-vb1-hk1')).studentIds).not.toContain('22520030');
 
   const locked = screen.getByRole('button', {
     name: 'Gỡ Nguyễn Văn An khỏi đợt',
@@ -327,17 +327,17 @@ it('follows a tab change made by Next navigation', async () => {
 });
 
 it('warns about unpublished topics before finishing a running round', async () => {
-  const service = await renderDetail();
+  const service = await renderDetail('r-ths-1-2026');
   fireEvent.click(screen.getByRole('button', { name: 'Kết thúc đợt' }));
   const dialog = screen.getByRole('alertdialog', {
     name: 'Kết thúc đợt · còn đề tài chưa công bố',
   });
-  expect(dialog).toHaveTextContent('Còn 2 đề tài chưa công bố');
+  expect(dialog).toHaveTextContent('Còn 6 đề tài chưa công bố');
   fireEvent.click(within(dialog).getByRole('button', { name: 'Kết thúc đợt' }));
   await waitFor(() =>
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
   );
-  expect((await service.get('r-vb1-hk1')).status).toBe('Đã kết thúc');
+  expect((await service.get('r-ths-1-2026')).status).toBe('Đã kết thúc');
   expect(
     screen.getByText('Đã kết thúc', { selector: '.app-chip' }),
   ).toBeInTheDocument();
