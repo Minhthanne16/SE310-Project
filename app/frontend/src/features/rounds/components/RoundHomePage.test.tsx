@@ -95,7 +95,7 @@ it('opens the round detail from a card and goes back to all rounds', async () =>
   expect(
     screen.getByText('Mốc “Báo cáo giữa kỳ” kết thúc sau 4 ngày.'),
   ).toBeInTheDocument();
-  expect(screen.getByText('2 đề tài chưa công bố.')).toBeInTheDocument();
+  expect(screen.queryByText(/đề tài chưa công bố/)).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: /Soạn thông báo/ })).toHaveAttribute(
     'href',
     '/giao-vu/thong-bao/gui',

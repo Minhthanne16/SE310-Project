@@ -578,6 +578,8 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 
 - Công bố xong thì GV không thêm hoặc xóa đề tài.
 
+- Ghi chú triển khai frontend (`/giao-vu/de-tai`): chạy trên kho demo trong bộ nhớ (`app/frontend/src/features/topics/`, mất khi tải lại trang; "hôm nay" cố định ở 2026-10-26), chờ endpoint đề xuất `GET /api/topics?roundId=…`, `GET /api/topics/{id}`, `POST /api/rounds/{id}/topics/publish`, `GET /api/topics/export?roundId=…`. Giai đoạn đề tài (Đang gửi đề tài / Đã công bố danh sách) tách khỏi trạng thái đợt; "Đóng & công bố danh sách" chỉ mở khi hạn "GV gửi đề tài" của đợt đã qua (hôm nay > ngày kết thúc mốc), đợt đang diễn ra và có đề tài, và không đảo ngược được. Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận (không tính Chờ GV duyệt, Bị từ chối). **Mức tối thiểu 2 và tối đa 6 đề tài mỗi GV chỉ là hằng số tạm của bản demo** (`LECTURER_LOAD_MIN/MAX` trong `topicUtils.ts`): tài liệu chưa nêu con số, chỉ dùng để hiện cờ "GV vượt mức" và không chặn thao tác; cần thay bằng giá trị chốt hoặc cấu hình theo đợt. Xuất danh sách là CSV của danh sách đã lọc, có chống công thức (`=`, `+`, `-`, `@`). Cột Khóa luận hiển thị phiên bản nộp mới nhất hoặc tiến độ khi chưa nộp. `topicSummary` và `lockedStudentIds` của đợt (`roundSeed.ts`) được giữ khớp với kho đề tài mẫu bằng test, chưa suy ra trực tiếp; công bố danh sách đặt `unpublishedCount` của đợt về 0. Dữ liệu mẫu: Thạc sĩ đã hết hạn gửi đề tài nhưng chưa công bố (đề tài GV gửi đều Chưa đăng ký, chưa có nhóm); VB1, VB2 và HK2 2025–2026 đã công bố; mọi bài nộp và lịch sử nằm trong cửa sổ mốc của đợt và không muộn hơn 2026-10-26, nên chỉ đợt đã kết thúc mới có Đã cho điểm / Đã hoàn tất. Trạng thái "chưa hết hạn gửi đề tài" chỉ tái hiện được bằng ngày hôm nay khác (test).
+
 ## Chi tiết đề tài (giáo vụ)
 - **Vai trò:** Giáo vụ
 - **Route gợi ý:** `/giao-vu/de-tai/[id]`
@@ -592,6 +594,8 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 
 - Bốn tab: Tổng quan, Báo cáo (các phiên bản), Điểm, Lịch sử.
 - Tab Lịch sử: lọc trạng thái, nhóm, bài nộp, phân công, điểm; có trạng thái trống.
+
+- Ghi chú triển khai frontend (`/giao-vu/de-tai/[id]`): chỉ xem, dùng chung kho demo với màn danh sách; tab giữ trong `?tab=` (tong-quan, bao-cao, diem, lich-su). Tab Điểm chỉ hiện điểm từng phiếu (CTHĐ, TKHĐ, CBHD, CBPB) và điểm tổng `(CTHĐ + TKHĐ + 2×CBHD + 2×CBPB) / 6` làm tròn hai chữ số khi đủ bốn phiếu, nếu không hiện "Chưa đủ điểm". **Không có cảnh báo lệch điểm ở màn này**: theo quyết định, cảnh báo lệch điểm thuộc màn Kết quả. Điểm tổng tính bằng số nguyên theo phần trăm điểm rồi làm tròn nửa lên (7,05 / 8 / 8,5 / 8,5 → 8,18); backend nên dùng decimal với `MidpointRounding.AwayFromZero` để cùng kết quả. Lịch sử mới nhất trước; đề tài chưa phát sinh sự kiện cần truy vết có lịch sử trống.
 
 ## Giảng viên phản biện
 - **Vai trò:** Giáo vụ
