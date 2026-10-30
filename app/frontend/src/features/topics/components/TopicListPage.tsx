@@ -1,33 +1,40 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { Download, Search } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Lock,
+  Search,
+} from 'lucide-react';
+import '@/features/topics/topics.css';
 import { formatDate } from '@/features/rounds/roundUtils';
 import {
   roundService as defaultRoundService,
   type RoundService,
 } from '@/features/rounds/services/roundService';
-import {
-  TopicSourceChip,
-  TopicStatusChip,
-} from '@/features/topics/components/TopicChips';
+import { TopicStatusChip } from '@/features/topics/components/TopicChips';
 import {
   topicService as defaultTopicService,
   type TopicService,
 } from '@/features/topics/services/topicService';
-import { groupLabel, thesisProgress } from '@/features/topics/topicUtils';
+import {
+  avatarInitials,
+  shortName,
+  thesisCell,
+} from '@/features/topics/topicUtils';
 import { downloadCsv } from '@/lib/csv';
+import { useDialogFocus } from '@/lib/useDialogFocus';
 import { useUrlParam } from '@/lib/useUrlParam';
 import type { Round } from '@/types/round';
-import {
-  TOPIC_STATUSES,
-  type TopicFilters,
-  type TopicList,
-  type TopicPerson,
-  type TopicStatus,
+import type {
+  TopicFilters,
+  TopicList,
+  TopicPerson,
+  TopicStatus,
 } from '@/types/topic';
 
 interface TopicListPageProps {
@@ -35,14 +42,111 @@ interface TopicListPageProps {
   roundService?: RoundService;
 }
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 8;
+
+// Thứ tự nút lọc theo artboard GiaoVu-DeTai.
+const STATUS_FILTERS: (TopicStatus | 'Tất cả')[] = [
+  'Tất cả',
+  'Chưa đăng ký',
+  'Chờ GV duyệt',
+  'Đã đăng ký',
+  'Đang thực hiện',
+  'Đã cho điểm',
+  'Đã hoàn tất',
+  'Bị từ chối',
+];
 
 const errorMessage = (err: unknown, fallback: string) =>
   err instanceof Error && err.message ? err.message : fallback;
 
-// Màn Quản lý đề tài của Giáo vụ (docs/DESIGN/03): danh sách đề tài của một
-// đợt, lọc, xuất CSV và "Đóng & công bố danh sách". Đợt đang xem giữ trong URL
-// (?dot=id); mặc định là đợt đang diễn ra đầu tiên.
+interface PublishDialogProps {
+  belowMin: number;
+  busy: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+const PublishDialog: React.FC<PublishDialogProps> = ({
+  belowMin,
+  busy,
+  error,
+  onCancel,
+  onConfirm,
+}) => {
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useDialogFocus<HTMLDivElement>({
+    initialFocusRef: cancelRef,
+  });
+  const busyRef = useRef(busy);
+  busyRef.current = busy;
+  const onCancelRef = useRef(onCancel);
+  onCancelRef.current = onCancel;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !busyRef.current) onCancelRef.current();
+    };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
+
+  return (
+    <div className="tpc-backdrop">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tpc-pub-title"
+        aria-describedby="tpc-pub-desc"
+        className="tpc-dialog"
+      >
+        <h2 id="tpc-pub-title">Đóng và công bố danh sách đề tài?</h2>
+        <p id="tpc-pub-desc">
+          Giảng viên không gửi thêm hay xóa đề tài được nữa; chỉ sửa được mô tả
+          và yêu cầu của đề tài chưa có nhóm, và Lĩnh vực bị khóa. Sinh viên
+          trong đợt nhận thông báo và bắt đầu đăng ký theo mốc &quot;Công bố đề
+          tài · SV đăng ký&quot;. Không hoàn tác được.
+        </p>
+        {belowMin > 0 && (
+          <p className="tpc-dialog-warn">
+            {belowMin} giảng viên chưa đạt số đề tài tối thiểu. Vẫn công bố
+            được; đây chỉ là cảnh báo.
+          </p>
+        )}
+        {error && (
+          <p role="alert" className="tpc-dialog-err">
+            {error}
+          </p>
+        )}
+        <div className="tpc-dialog-actions">
+          <button
+            ref={cancelRef}
+            type="button"
+            className="tpc-btn"
+            onClick={onCancel}
+            disabled={busy}
+          >
+            Để sau
+          </button>
+          <button
+            type="button"
+            className="tpc-btn tpc-btn-primary"
+            onClick={onConfirm}
+            disabled={busy}
+            aria-busy={busy}
+          >
+            {busy ? 'Đang xử lý...' : 'Đóng và công bố'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Màn Quản lý đề tài của Giáo vụ (docs/DESIGN/03, artboard GiaoVu-DeTai):
+// danh sách đề tài của một đợt, lọc, xuất CSV và "Đóng & công bố danh sách".
+// Đợt đang xem giữ trong URL (?dot=id); mặc định là đợt đang diễn ra đầu tiên.
 export const TopicListPage: React.FC<TopicListPageProps> = ({
   topicService = defaultTopicService,
   roundService = defaultRoundService,
@@ -61,7 +165,9 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
   const [publishing, setPublishing] = useState(false);
   const [publishBusy, setPublishBusy] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
-  const [exportNote, setExportNote] = useState<string | null>(null);
+  const [justPublished, setJustPublished] = useState(false);
+  const [exported, setExported] = useState<number | null>(null);
+  const [exportEmpty, setExportEmpty] = useState(false);
   const requestRef = useRef(0);
 
   useEffect(() => {
@@ -118,24 +224,29 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
       });
   }, [topicService, roundId, supervisorId, status, search, reload]);
 
+  const clearNotes = () => {
+    setExported(null);
+    setExportEmpty(false);
+  };
+
   const resetFilters = () => {
     setSupervisorId('');
     setStatus('Tất cả');
     setSearch('');
     setPage(1);
-    setExportNote(null);
+    clearNotes();
   };
 
   const onFilterChange = (fn: () => void) => {
     fn();
     setPage(1);
-    setExportNote(null);
+    clearNotes();
   };
 
-  const closePublish = useCallback(() => {
+  const closePublish = () => {
     setPublishing(false);
     setPublishError(null);
-  }, []);
+  };
 
   const publish = async () => {
     if (!roundId) return;
@@ -144,7 +255,7 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
     try {
       await topicService.publish(roundId);
       setPublishing(false);
-      toast.success('Đã công bố danh sách đề tài.');
+      setJustPublished(true);
       setReload((n) => n + 1);
     } catch (err: unknown) {
       setPublishError(errorMessage(err, 'Không công bố được danh sách.'));
@@ -155,7 +266,7 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
 
   const exportList = async () => {
     if (!roundId) return;
-    setExportNote(null);
+    clearNotes();
     try {
       const result = await topicService.exportCsv({
         roundId,
@@ -164,11 +275,11 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
         search,
       });
       if (result.count === 0) {
-        setExportNote('Danh sách đang trống nên không có gì để xuất.');
+        setExportEmpty(true);
         return;
       }
       downloadCsv('danh-sach-de-tai.csv', result.csv);
-      toast.success(`Đã xuất ${result.count} đề tài.`);
+      setExported(result.count);
     } catch (err: unknown) {
       toast.error(errorMessage(err, 'Không xuất được danh sách.'));
     }
@@ -186,17 +297,17 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
       </p>
     );
 
-  const heading = (
-    <div className="app-page-heading">
-      <h1>Quản lý đề tài</h1>
-      <p>Danh sách đề tài của đợt; công bố danh sách sau hạn gửi đề tài.</p>
-    </div>
-  );
-
   if (rounds.length === 0 || !roundId)
     return (
-      <>
-        {heading}
+      <div className="tpc-page">
+        <div className="tpc-head">
+          <div className="tpc-head-text">
+            <h1>Quản lý đề tài</h1>
+            <p>
+              Danh sách đề tài của đợt; công bố danh sách sau hạn gửi đề tài.
+            </p>
+          </div>
+        </div>
         <section className="status-state app-empty">
           <h2>Chưa có đợt</h2>
           <p>Tạo đợt khóa luận trước khi quản lý đề tài.</p>
@@ -204,7 +315,7 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
             Đến danh sách đợt
           </Link>
         </section>
-      </>
+      </div>
     );
 
   // Dữ liệu của đợt khác (đang chuyển đợt) không được hiện lại.
@@ -218,80 +329,63 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
     currentPage * PAGE_SIZE,
   );
   const published = round?.phase === 'Đã công bố danh sách';
-  const blockedId = 'topic-publish-reason';
+  const waiting =
+    !!round &&
+    !published &&
+    round.roundStatus === 'Đang diễn ra' &&
+    round.submissionDeadline !== '' &&
+    !round.deadlinePassed;
+  const blocked = !!round && !round.canPublish && !published;
+  const deadline = round ? formatDate(round.submissionDeadline) : '';
+  const hasDeadline = !!round && round.submissionDeadline !== '';
+  const belowMin = current
+    ? Object.values(current.loads).filter((l) => l.level === 'below').length
+    : 0;
+  const filtered = supervisorId !== '' || status !== 'Tất cả' || search !== '';
+  const roundEmpty = current?.roundTotal === 0;
+  const blockedId = 'tpc-publish-why';
+
+  const intro = !hasDeadline
+    ? 'Danh sách đề tài của đợt; công bố danh sách sau hạn gửi đề tài.'
+    : published
+      ? `Danh sách đề tài của đợt đã được công bố cho sinh viên. Hạn gửi đề tài của giảng viên đã hết lúc 23:59 ngày ${deadline}.`
+      : round?.deadlinePassed
+        ? `Hạn gửi đề tài của giảng viên đã hết lúc 23:59 ngày ${deadline}. Đóng danh sách để công bố cho sinh viên.`
+        : `Giảng viên đang gửi đề tài đến 23:59 ngày ${deadline}. Hết hạn này mới đóng danh sách để công bố cho sinh viên.`;
+
+  const goPage = (n: number) => setPage(n);
 
   return (
-    <>
-      {heading}
-
-      <div className="app-toolbar">
-        <div
-          className="app-filters"
-          role="search"
-          aria-label="Lọc đợt, giảng viên hướng dẫn, trạng thái, tìm kiếm"
+    <div className="tpc-page">
+      <div className="tpc-round-row">
+        <label htmlFor="tpc-round">Đợt</label>
+        <select
+          id="tpc-round"
+          className="tpc-select"
+          value={roundId}
+          onChange={(e) => {
+            setDotParam(e.target.value, 'replace');
+            setJustPublished(false);
+            resetFilters();
+          }}
         >
-          <select
-            className="app-select"
-            aria-label="Chọn đợt"
-            value={roundId}
-            onChange={(e) => {
-              setDotParam(e.target.value, 'replace');
-              resetFilters();
-            }}
-          >
-            {rounds.map((r) => (
-              <option key={r.id} value={r.id}>
-                {r.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="app-select"
-            aria-label="Lọc theo GVHD"
-            value={supervisorId}
-            onChange={(e) =>
-              onFilterChange(() => setSupervisorId(e.target.value))
-            }
-          >
-            <option value="">Tất cả GVHD</option>
-            {supervisors.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-          <select
-            className="app-select"
-            aria-label="Lọc theo trạng thái"
-            value={status}
-            onChange={(e) =>
-              onFilterChange(() =>
-                setStatus(e.target.value as TopicStatus | 'Tất cả'),
-              )
-            }
-          >
-            <option value="Tất cả">Tất cả trạng thái</option>
-            {TOPIC_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-          <div className="app-search">
-            <Search size={16} aria-hidden="true" />
-            <input
-              type="search"
-              aria-label="Tìm kiếm"
-              placeholder="Tìm theo mã hoặc tên đề tài"
-              value={search}
-              onChange={(e) => onFilterChange(() => setSearch(e.target.value))}
-            />
-          </div>
+          {rounds.map((r) => (
+            <option key={r.id} value={r.id}>
+              {r.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="tpc-head">
+        <div className="tpc-head-text">
+          <h1>Quản lý đề tài</h1>
+          <p>{intro}</p>
         </div>
-        <div className="app-toolbar-actions">
+        <div className="tpc-actions">
           <button
             type="button"
-            className="app-button"
+            className="tpc-btn"
             onClick={() => void exportList()}
           >
             <Download size={16} aria-hidden="true" />
@@ -299,47 +393,107 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
           </button>
           <button
             type="button"
-            className="app-button app-button-primary"
+            className="tpc-btn tpc-btn-primary"
+            data-done={published}
             aria-haspopup="dialog"
             disabled={!round?.canPublish}
-            aria-describedby={round?.canPublish ? undefined : blockedId}
+            title={
+              waiting
+                ? `Chưa hết hạn gửi đề tài của giảng viên (23:59 ngày ${deadline})`
+                : undefined
+            }
+            aria-describedby={blocked ? blockedId : undefined}
             onClick={() => setPublishing(true)}
           >
-            Đóng &amp; công bố danh sách
+            {published ? 'Đã công bố danh sách' : 'Đóng & công bố danh sách'}
           </button>
         </div>
       </div>
 
-      {round && (
-        <div
-          className={`topic-banner${published ? ' topic-banner-published' : ''}`}
-        >
-          <span>
-            <strong>{round.phase}</strong>
-            {published
-              ? '. Giảng viên không thêm hoặc xóa đề tài nữa.'
-              : round.roundStatus === 'Đang diễn ra'
-                ? '. Giảng viên còn thêm, sửa, xóa đề tài.'
-                : `. Đợt ${round.roundStatus.toLowerCase()}.`}
-          </span>
-          <span>
-            Hạn gửi đề tài: {formatDate(round.submissionDeadline)}
-            {round.submissionDeadline
-              ? ` · ${round.deadlinePassed ? 'Đã hết hạn gửi đề tài' : 'Chưa hết hạn gửi đề tài'}`
-              : ''}
-          </span>
+      {blocked && (
+        <div id={blockedId} role="note" className="tpc-note">
+          <Lock size={18} aria-hidden="true" />
+          {waiting ? (
+            <span>
+              <b>Chưa đóng và công bố được.</b> Giảng viên còn được gửi đề tài
+              đến 23:59 ngày {deadline}. Sau thời điểm này nút Đóng &amp; công
+              bố danh sách sẽ mở.
+            </span>
+          ) : (
+            <span>
+              <b>Chưa đóng và công bố được.</b> {round?.publishBlockedReason}
+            </span>
+          )}
         </div>
       )}
-      {round && !round.canPublish && round.publishBlockedReason && (
-        <p id={blockedId} className="app-muted">
-          Chưa công bố được: {round.publishBlockedReason}
-        </p>
+      {exported !== null && (
+        <div role="status" className="tpc-banner tpc-banner-ok">
+          Đã tải tệp CSV danh sách đề tài ({exported} đề tài theo bộ lọc hiện
+          tại).
+        </div>
       )}
-      {exportNote && (
-        <p role="status" className="app-muted">
-          {exportNote}
-        </p>
+      {exportEmpty && (
+        <div role="alert" className="tpc-banner tpc-banner-err">
+          {roundEmpty
+            ? 'Chưa có đề tài nào trong đợt nên không có gì để xuất.'
+            : 'Danh sách đang trống theo bộ lọc hiện tại nên không có gì để xuất. Đổi hoặc xóa bộ lọc rồi thử lại.'}
+        </div>
       )}
+      {published && justPublished && (
+        <div role="status" className="tpc-banner tpc-banner-done">
+          <b>Đã công bố danh sách đề tài.</b> Sinh viên trong đợt đã nhận thông
+          báo và có thể đăng ký.
+        </div>
+      )}
+
+      <div className="tpc-filters" role="search" aria-label="Lọc đề tài">
+        <div className="tpc-search">
+          <Search size={18} aria-hidden="true" />
+          <label htmlFor="tpc-q" className="app-visually-hidden">
+            Tìm đề tài
+          </label>
+          <input
+            id="tpc-q"
+            type="search"
+            placeholder="Tìm theo mã, tên đề tài, sinh viên, giảng viên"
+            value={search}
+            onChange={(e) => onFilterChange(() => setSearch(e.target.value))}
+          />
+        </div>
+        <select
+          className="tpc-select tpc-gv-select"
+          aria-label="Lọc theo giảng viên hướng dẫn"
+          value={supervisorId}
+          onChange={(e) =>
+            onFilterChange(() => setSupervisorId(e.target.value))
+          }
+        >
+          <option value="">Tất cả GV hướng dẫn</option>
+          {supervisors.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="tpc-seg" role="group" aria-label="Lọc theo trạng thái">
+        {STATUS_FILTERS.map((s) => (
+          <button
+            key={s}
+            type="button"
+            aria-pressed={status === s}
+            onClick={() => onFilterChange(() => setStatus(s))}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
+      <p className="tpc-hint">
+        Bấm tên đề tài để xem chi tiết và lịch sử. Xác nhận và công bố kết quả ở
+        trang <Link href="/giao-vu/ket-qua">Kết quả</Link>.
+      </p>
 
       {loadError ? (
         <section className="status-state" role="alert">
@@ -357,117 +511,166 @@ export const TopicListPage: React.FC<TopicListPageProps> = ({
         <p role="status" className="app-muted">
           Đang tải danh sách đề tài...
         </p>
-      ) : current.roundTotal === 0 ? (
-        <section className="status-state app-empty">
-          <h2>Chưa có đề tài</h2>
-          <p>
-            Đợt này chưa có đề tài nào. Giảng viên gửi đề tài trong hạn gửi đề
-            tài.
-          </p>
-        </section>
-      ) : items.length === 0 ? (
-        <section className="status-state app-empty">
-          <h2>Lọc không có kết quả</h2>
-          <p>Không có đề tài nào khớp bộ lọc hiện tại.</p>
-          <button type="button" className="app-button" onClick={resetFilters}>
-            Xóa bộ lọc
-          </button>
-        </section>
       ) : (
-        <>
-          <div className="app-table-scroll" aria-busy={loading}>
-            <table className="app-table app-topic-table">
-              <thead>
-                <tr>
-                  <th scope="col">Mã</th>
-                  <th scope="col">Tên đề tài</th>
-                  <th scope="col">GVHD</th>
-                  <th scope="col">Nhóm</th>
-                  <th scope="col">Nguồn</th>
-                  <th scope="col">Trạng thái</th>
-                  <th scope="col">Khóa luận</th>
-                </tr>
-              </thead>
-              <tbody>
-                {visible.map((topic) => {
-                  const load = current?.loads[topic.supervisor.id];
-                  return (
-                    <tr key={topic.id}>
-                      <td>{topic.code}</td>
-                      <td>
-                        <Link
-                          className="app-link"
-                          href={`/giao-vu/de-tai/${topic.id}`}
-                        >
+        <div className="tpc-tablebox" aria-busy={loading}>
+          <table className="tpc-table">
+            <thead>
+              <tr>
+                <th scope="col">Đề tài</th>
+                <th scope="col">GV hướng dẫn</th>
+                <th scope="col">GV phản biện</th>
+                <th scope="col">Hội đồng</th>
+                <th scope="col">Khóa luận</th>
+                <th scope="col">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((topic) => {
+                const load = current.loads[topic.supervisor.id];
+                const kl = thesisCell(topic);
+                return (
+                  <tr key={topic.id}>
+                    <td>
+                      <div className="tpc-cell-title">
+                        <Link href={`/giao-vu/de-tai/${topic.id}`}>
                           {topic.title}
                         </Link>
-                      </td>
-                      <td>
-                        <div className="topic-supervisor">
-                          <span>{topic.supervisor.name}</span>
-                          {load?.level === 'over' && (
-                            <span className="app-chip app-chip-pending">
-                              GV vượt mức
-                              <span className="app-visually-hidden">
-                                : {load.count}/{load.max} đề tài
-                              </span>
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td>{groupLabel(topic)}</td>
-                      <td>
-                        <TopicSourceChip source={topic.source} />
-                      </td>
-                      <td>
-                        <TopicStatusChip status={topic.status} />
-                      </td>
-                      <td>{thesisProgress(topic)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <nav className="app-pagination" aria-label="Phân trang">
-            <span className="app-muted">
-              {items.length} đề tài · Trang {currentPage}/{pageCount}
-            </span>
-            <div className="app-toolbar-actions">
-              <button
-                type="button"
-                className="app-button app-button-small"
-                disabled={currentPage <= 1}
-                onClick={() => setPage(currentPage - 1)}
-              >
-                Trước
-              </button>
-              <button
-                type="button"
-                className="app-button app-button-small"
-                disabled={currentPage >= pageCount}
-                onClick={() => setPage(currentPage + 1)}
-              >
-                Sau
-              </button>
+                        <span className="tpc-sub">
+                          {topic.code} ·{' '}
+                          {topic.group.length > 0
+                            ? topic.group
+                                .map((m) => shortName(m.name))
+                                .join(', ')
+                            : 'Chưa có nhóm'}
+                          {topic.source === 'SV đề xuất' && ' · SV đề xuất'}
+                        </span>
+                      </div>
+                    </td>
+                    <td>
+                      <span className="tpc-person">
+                        <span className="tpc-avatar" aria-hidden="true">
+                          {avatarInitials(topic.supervisor.name)}
+                        </span>
+                        {topic.supervisor.name}
+                      </span>
+                    </td>
+                    <td
+                      className={topic.reviewer ? undefined : 'tpc-warn-text'}
+                    >
+                      {topic.reviewer?.name ?? 'Chưa phân công'}
+                    </td>
+                    <td className={topic.council ? undefined : 'tpc-warn-text'}>
+                      {topic.council ?? 'Chưa gán'}
+                    </td>
+                    <td>
+                      <span
+                        className={`tpc-kl tpc-kl-${kl.tone}`}
+                        aria-label={`Khóa luận: ${kl.label}, ${kl.sub}`}
+                      >
+                        <span className="tpc-kl-label">
+                          <span className="tpc-kl-dot" aria-hidden="true" />
+                          {kl.label}
+                        </span>
+                        <span className="tpc-kl-sub">{kl.sub}</span>
+                      </span>
+                    </td>
+                    <td>
+                      <TopicStatusChip status={topic.status} />
+                      {load?.level === 'over' && (
+                        <span className="tpc-flag">
+                          GV vượt mức {load.count}/{load.max}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+              {items.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="tpc-empty-cell">
+                    <div className="tpc-empty">
+                      <strong>
+                        {roundEmpty
+                          ? 'Chưa có đề tài nào trong đợt'
+                          : 'Không có đề tài nào khớp bộ lọc'}
+                      </strong>
+                      <span>
+                        {roundEmpty
+                          ? 'Đề tài giảng viên gửi và đề tài sinh viên đề xuất được chấp nhận sẽ hiện ở đây.'
+                          : 'Thử chọn trạng thái hoặc giảng viên hướng dẫn khác, hoặc xóa bộ lọc để xem toàn bộ danh sách.'}
+                      </span>
+                      {!roundEmpty && filtered && (
+                        <button
+                          type="button"
+                          className="tpc-btn tpc-btn-sm"
+                          onClick={resetFilters}
+                        >
+                          Xóa bộ lọc
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+          {items.length > 0 && (
+            <div className="tpc-pager">
+              <span>
+                Hiển thị {(currentPage - 1) * PAGE_SIZE + 1}–
+                {Math.min(currentPage * PAGE_SIZE, items.length)} trên{' '}
+                {items.length} đề tài
+              </span>
+              <nav aria-label="Phân trang">
+                <button
+                  type="button"
+                  aria-label="Trang trước"
+                  disabled={currentPage <= 1}
+                  onClick={() => goPage(currentPage - 1)}
+                >
+                  <ChevronLeft size={16} aria-hidden="true" />
+                </button>
+                {Array.from({ length: pageCount }, (_, i) => i + 1).map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    aria-current={n === currentPage ? 'page' : undefined}
+                    onClick={() => goPage(n)}
+                  >
+                    {n}
+                  </button>
+                ))}
+                <button
+                  type="button"
+                  aria-label="Trang sau"
+                  disabled={currentPage >= pageCount}
+                  onClick={() => goPage(currentPage + 1)}
+                >
+                  <ChevronRight size={16} aria-hidden="true" />
+                </button>
+              </nav>
             </div>
-          </nav>
-        </>
+          )}
+        </div>
       )}
 
+      <p className="tpc-foot">
+        Khóa luận: Chưa nộp, Đã nộp (kèm số phiên bản) hoặc Chốt bản cuối. Cờ
+        cam là cảnh báo giảng viên nhận vượt hoặc chưa đạt số đề tài tối thiểu,
+        tối đa của đợt; chỉ để theo dõi, không chặn đăng ký. Công bố kết quả
+        đồng thời hoàn tất khóa luận (nhóm đã chốt bản cuối, hoặc hết hạn nộp
+        thì lấy bản mới nhất).
+      </p>
+
       {publishing && (
-        <ConfirmDialog
-          title="Đóng & công bố danh sách?"
-          description="Sau khi công bố, giảng viên không thêm hoặc xóa đề tài được nữa; chỉ sửa được mô tả và yêu cầu của đề tài chưa có nhóm, và Lĩnh vực bị khóa. Không hoàn tác được."
-          cancelLabel="Hủy"
-          confirmLabel="Công bố danh sách"
+        <PublishDialog
+          belowMin={belowMin}
           busy={publishBusy}
           error={publishError}
           onCancel={closePublish}
           onConfirm={() => void publish()}
         />
       )}
-    </>
+    </div>
   );
 };

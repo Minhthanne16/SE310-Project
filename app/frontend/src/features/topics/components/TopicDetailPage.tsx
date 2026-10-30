@@ -2,25 +2,29 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import { StatusState } from '@/components/ui/StatusState';
-import { formatDateTime } from '@/features/rounds/roundUtils';
-import {
-  TopicSourceChip,
-  TopicStatusChip,
-} from '@/features/topics/components/TopicChips';
+import '@/features/topics/topics.css';
+import { TopicStatusChip } from '@/features/topics/components/TopicChips';
 import {
   TopicNotFoundError,
   topicService as defaultTopicService,
   type TopicService,
 } from '@/features/topics/services/topicService';
-import { formatScore, totalScore } from '@/features/topics/topicUtils';
+import {
+  avatarInitials,
+  dateOf,
+  formatComponentScore,
+  formatScore,
+  timeOf,
+  totalScore,
+} from '@/features/topics/topicUtils';
 import { useUrlParam } from '@/lib/useUrlParam';
 import {
   HISTORY_CATEGORIES,
-  SCORE_ROLES,
   type HistoryCategory,
+  type SubmissionKind,
   type Topic,
+  type TopicSubmission,
 } from '@/types/topic';
 
 interface TopicDetailPageProps {
@@ -32,7 +36,7 @@ type TopicTab = 'tong-quan' | 'bao-cao' | 'diem' | 'lich-su';
 
 const TABS: { id: TopicTab; label: string }[] = [
   { id: 'tong-quan', label: 'Tổng quan' },
-  { id: 'bao-cao', label: 'Báo cáo' },
+  { id: 'bao-cao', label: 'Báo cáo và phiên bản' },
   { id: 'diem', label: 'Điểm' },
   { id: 'lich-su', label: 'Lịch sử' },
 ];
@@ -42,25 +46,85 @@ const isTab = (value: string | null): value is TopicTab =>
 
 const BACK_HREF = '/giao-vu/de-tai';
 
-const ROLE_LABEL: Record<(typeof SCORE_ROLES)[number], string> = {
-  CTHĐ: 'Chủ tịch HĐ',
-  TKHĐ: 'Thư ký HĐ',
-  CBHD: 'GV hướng dẫn',
-  CBPB: 'GV phản biện',
+const CATEGORY_CLASS: Record<HistoryCategory, string> = {
+  'Trạng thái': 'tpc-cat-status',
+  Nhóm: 'tpc-cat-group',
+  'Bài nộp': '',
+  'Phân công': 'tpc-cat-assign',
+  Điểm: 'tpc-cat-score',
 };
 
-const Field: React.FC<{ label: string; children: React.ReactNode }> = ({
-  label,
-  children,
-}) => (
-  <div>
-    <dt>{label}</dt>
-    <dd>{children}</dd>
-  </div>
-);
+interface Step {
+  name: string;
+  sub: string;
+  done: boolean;
+}
 
-// Màn Chi tiết đề tài của Giáo vụ (docs/DESIGN/03): chỉ xem, bốn tab Tổng quan,
-// Báo cáo, Điểm, Lịch sử.
+const latestOf = (topic: Topic, kinds: SubmissionKind[]) => {
+  const list = topic.submissions.filter((s) => kinds.includes(s.kind));
+  return { count: list.length, last: list[list.length - 1] };
+};
+
+// Tiến độ 6 chặng suy ra từ nhóm, bài nộp, điểm và trạng thái của đề tài.
+function progressSteps(topic: Topic): Step[] {
+  const stage = (name: string, kinds: SubmissionKind[]): Step => {
+    const { count, last } = latestOf(topic, kinds);
+    return last
+      ? {
+          name,
+          done: true,
+          sub: `Nộp ${dateOf(last.submittedAt).slice(0, 5)} · ${count} phiên bản`,
+        }
+      : { name, done: false, sub: 'Chưa nộp' };
+  };
+  const graded =
+    topic.scores.length > 0 &&
+    topic.scores.every((s) => totalScore(s.scores) !== null);
+  return [
+    {
+      name: 'Đăng ký',
+      done: topic.group.length > 0,
+      sub:
+        topic.group.length > 0
+          ? `${topic.group.length} sinh viên`
+          : 'Chưa có nhóm',
+    },
+    stage('Đề cương', ['Đề cương']),
+    stage('Giữa kỳ', ['Giữa kỳ']),
+    stage('Cuối kỳ', ['Cuối kỳ', 'Bản khóa luận']),
+    {
+      name: 'Đánh giá',
+      done: graded,
+      sub: graded ? 'Đủ 4 điểm' : 'Chưa đủ điểm',
+    },
+    {
+      name: 'Kết quả',
+      done: topic.status === 'Đã hoàn tất',
+      sub:
+        topic.status === 'Đã hoàn tất'
+          ? 'Đã hoàn tất'
+          : topic.status === 'Đã cho điểm'
+            ? 'Chờ giáo vụ xác nhận'
+            : 'Chưa có kết quả',
+    },
+  ];
+}
+
+interface DocGroup {
+  title: string;
+  kinds: SubmissionKind[];
+}
+
+const DOC_GROUPS: DocGroup[] = [
+  { title: 'Đề cương', kinds: ['Đề cương'] },
+  { title: 'Báo cáo giữa kỳ', kinds: ['Giữa kỳ'] },
+  { title: 'Báo cáo cuối kỳ', kinds: ['Cuối kỳ'] },
+  { title: 'Bản khóa luận', kinds: ['Bản khóa luận'] },
+];
+
+// Màn Chi tiết đề tài của Giáo vụ (docs/DESIGN/03, artboard
+// GiaoVu-ChiTietDeTai): chỉ xem, bốn tab Tổng quan, Báo cáo và phiên bản, Điểm,
+// Lịch sử. Không có cảnh báo lệch điểm ở màn này (thuộc màn Kết quả).
 export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
   topicId,
   topicService = defaultTopicService,
@@ -141,38 +205,58 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
     category === 'Tất cả'
       ? topic.history
       : topic.history.filter((h) => h.category === category);
+  const countOf = (c: HistoryCategory | 'Tất cả') =>
+    c === 'Tất cả'
+      ? topic.history.length
+      : topic.history.filter((h) => h.category === c).length;
+  const steps = progressSteps(topic);
+  const docGroups = DOC_GROUPS.map((g) => ({
+    ...g,
+    versions: topic.submissions.filter((s) => g.kinds.includes(s.kind)),
+  })).filter((g) => g.versions.length > 0);
+  const newestVersionNo = topic.submissions.reduce(
+    (max, s) => Math.max(max, s.versionNo),
+    0,
+  );
+  const tabId = (id: TopicTab) => `tpc-tab-${id}`;
+  const panelId = (id: TopicTab) => `tpc-panel-${id}`;
 
   return (
-    <>
-      <Link
-        className="app-back-link"
-        href={`${BACK_HREF}?dot=${topic.roundId}`}
-      >
-        <ArrowLeft size={16} aria-hidden="true" />
-        Tất cả đề tài
-      </Link>
+    <div className="tpc-page">
+      <nav className="tpc-crumb" aria-label="Đường dẫn">
+        <Link href={`${BACK_HREF}?dot=${topic.roundId}`}>Đề tài</Link>{' '}
+        <span aria-hidden="true">/</span> {topic.code}
+      </nav>
 
-      <div className="app-page-heading">
-        <p className="app-muted">{topic.code}</p>
-        <h1>{topic.title}</h1>
-        <div className="app-chip-row">
-          <TopicStatusChip status={topic.status} />
-          <TopicSourceChip source={topic.source} />
-          <Link
-            className="app-link"
-            href={`/giao-vu/de-tai?dot=${topic.roundId}`}
-          >
-            {roundName || 'Xem đợt'}
-          </Link>
+      <div className="tpc-detail-head">
+        <div className="tpc-detail-title">
+          <h1>{topic.title}</h1>
+          <div className="tpc-meta">
+            <TopicStatusChip status={topic.status} />
+            <span>
+              {topic.code} ·{' '}
+              <Link href={`${BACK_HREF}?dot=${topic.roundId}`}>
+                {roundName || 'Xem đợt'}
+              </Link>{' '}
+              · {topic.field} · {topic.source}
+            </span>
+          </div>
         </div>
+        <Link className="tpc-btn" href="/giao-vu/ket-qua">
+          Xem ở trang Kết quả
+        </Link>
       </div>
 
-      <div className="app-segmented" role="group" aria-label="Nội dung đề tài">
+      <div className="tpc-tabs" role="tablist" aria-label="Chi tiết đề tài">
         {TABS.map((t) => (
           <button
             key={t.id}
+            id={tabId(t.id)}
             type="button"
-            aria-pressed={tab === t.id}
+            role="tab"
+            className="tpc-tab"
+            aria-selected={tab === t.id}
+            aria-controls={panelId(t.id)}
             onClick={() => setTabParam(t.id, 'replace')}
           >
             {t.label}
@@ -180,184 +264,239 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
         ))}
       </div>
 
-      {tab === 'tong-quan' && (
-        <section className="app-card" aria-labelledby="topic-overview-title">
-          <div className="app-card-header">
-            <h2 id="topic-overview-title">Tổng quan</h2>
-          </div>
-          <dl className="topic-fields">
-            <Field label="Mô tả">{topic.description}</Field>
-            <Field label="Yêu cầu">{topic.requirements}</Field>
-            <Field label="Lĩnh vực">{topic.field}</Field>
-            <Field label="GVHD">{topic.supervisor.name}</Field>
-            <Field label="GVPB">
-              {topic.reviewer?.name ?? 'Chưa phân công'}
-            </Field>
-            <Field label="Hội đồng">{topic.council ?? 'Chưa phân công'}</Field>
-            <Field label="Nhóm">
-              {topic.group.length === 0 ? (
-                'Chưa có nhóm'
-              ) : (
-                <ul>
-                  {topic.group.map((m) => (
-                    <li key={m.id}>
-                      {m.name} ({m.code})
-                      {m.representative && (
-                        <>
-                          {' '}
-                          <span className="app-chip app-chip-info">
-                            Đại diện
-                          </span>
-                        </>
-                      )}
+      <div
+        id={panelId(tab)}
+        role="tabpanel"
+        aria-labelledby={tabId(tab)}
+        className="tpc-page"
+      >
+        {tab === 'tong-quan' && (
+          <div className="tpc-ov">
+            <div className="tpc-col">
+              <section className="tpc-card" aria-labelledby="tpc-progress-t">
+                <h2 id="tpc-progress-t">Tiến độ 6 chặng</h2>
+                <ol className="tpc-steps">
+                  {steps.map((s) => (
+                    <li key={s.name} className={s.done ? 'tpc-step-done' : ''}>
+                      <span className="tpc-step-bar" aria-hidden="true" />
+                      <span className="tpc-step-name">
+                        {s.done ? '✓' : '○'} {s.name}
+                      </span>
+                      <span className="tpc-step-sub">{s.sub}</span>
                     </li>
                   ))}
-                </ul>
-              )}
-            </Field>
-          </dl>
-        </section>
-      )}
-
-      {tab === 'bao-cao' && (
-        <section className="app-card" aria-labelledby="topic-reports-title">
-          <div className="app-card-header">
-            <h2 id="topic-reports-title">Báo cáo</h2>
+                </ol>
+              </section>
+              <section className="tpc-card" aria-labelledby="tpc-desc-t">
+                <h2 id="tpc-desc-t">Mô tả đề tài</h2>
+                <p>{topic.description}</p>
+                <h3>Yêu cầu</h3>
+                <p>{topic.requirements}</p>
+              </section>
+            </div>
+            <div className="tpc-col">
+              <section className="tpc-card" aria-labelledby="tpc-group-t">
+                <h2 id="tpc-group-t">Nhóm sinh viên</h2>
+                {topic.group.length === 0 ? (
+                  <p>Chưa có nhóm</p>
+                ) : (
+                  <ul className="tpc-members">
+                    {topic.group.map((m) => (
+                      <li key={m.id} className="tpc-member">
+                        <span
+                          className="tpc-avatar tpc-avatar-lg"
+                          aria-hidden="true"
+                        >
+                          {avatarInitials(m.name)}
+                        </span>
+                        <span className="tpc-member-text">
+                          <span className="tpc-member-name">{m.name}</span>
+                          <span className="tpc-sub">
+                            {m.code}
+                            {m.representative && ' · Đại diện'}
+                          </span>
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+              <section className="tpc-card" aria-labelledby="tpc-assign-t">
+                <h2 id="tpc-assign-t">Phân công và lịch bảo vệ</h2>
+                <dl className="tpc-dl">
+                  <dt>Hướng dẫn</dt>
+                  <dd>{topic.supervisor.name}</dd>
+                  <dt>Phản biện</dt>
+                  <dd>{topic.reviewer?.name ?? 'Chưa phân công'}</dd>
+                  <dt>Hội đồng</dt>
+                  <dd>{topic.council ?? 'Chưa phân công'}</dd>
+                </dl>
+              </section>
+            </div>
           </div>
-          {topic.submissions.length === 0 ? (
+        )}
+
+        {tab === 'bao-cao' &&
+          (docGroups.length === 0 ? (
             <p className="app-muted">Nhóm chưa nộp bài nào.</p>
           ) : (
-            <div className="app-table-scroll">
-              <table className="app-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Phiên bản</th>
-                    <th scope="col">Loại</th>
-                    <th scope="col">Tệp</th>
-                    <th scope="col">Người nộp</th>
-                    <th scope="col">Thời điểm</th>
-                    <th scope="col">Ghi chú</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...topic.submissions].reverse().map((s) => (
-                    <tr key={s.versionNo}>
-                      <td>v{s.versionNo}</td>
-                      <td>{s.kind}</td>
-                      <td>{s.fileName}</td>
-                      <td>{s.submittedBy}</td>
-                      <td>{formatDateTime(s.submittedAt)}</td>
-                      <td>
-                        {s.late && (
-                          <span className="app-chip app-chip-pending">
-                            Nộp trễ
+            <div className="tpc-docs">
+              {docGroups.map((g) => (
+                <section
+                  key={g.title}
+                  className="tpc-doc"
+                  aria-labelledby={`tpc-doc-${g.kinds[0]}`}
+                >
+                  <div className="tpc-doc-head">
+                    <h2 id={`tpc-doc-${g.kinds[0]}`}>{g.title}</h2>
+                    <span className="tpc-chip">
+                      {g.versions.length} phiên bản
+                    </span>
+                  </div>
+                  <ol className="tpc-vers">
+                    {[...g.versions].reverse().map((s: TopicSubmission) => (
+                      <li key={s.versionNo} className="tpc-ver">
+                        <span className="tpc-ver-no">v{s.versionNo}</span>
+                        <span className="tpc-ver-col">
+                          <span>{s.fileName}</span>
+                          <small>Người nộp: {s.submittedBy}</small>
+                        </span>
+                        <span className="tpc-ver-col">
+                          <span>
+                            {dateOf(s.submittedAt)} {timeOf(s.submittedAt)}
                           </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      )}
-
-      {tab === 'diem' && (
-        <section className="app-card" aria-labelledby="topic-scores-title">
-          <div className="app-card-header">
-            <h2 id="topic-scores-title">Điểm</h2>
-          </div>
-          {topic.scores.length === 0 ? (
-            <p className="app-muted">Chưa có phiếu điểm nào.</p>
-          ) : (
-            <div className="app-table-scroll">
-              <table className="app-table">
-                <thead>
-                  <tr>
-                    <th scope="col">Sinh viên</th>
-                    {SCORE_ROLES.map((r) => (
-                      <th key={r} scope="col" title={ROLE_LABEL[r]}>
-                        {r}
-                      </th>
-                    ))}
-                    <th scope="col">Tổng</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {topic.scores.map((s) => {
-                    const total = totalScore(s.scores);
-                    return (
-                      <tr key={s.studentId}>
-                        <td>
-                          {s.name} ({s.code})
-                        </td>
-                        {SCORE_ROLES.map((r) => (
-                          <td key={r}>{formatScore(s.scores[r])}</td>
-                        ))}
-                        <td>
-                          {total === null ? (
-                            <span className="app-chip app-chip-pending">
-                              Chưa đủ điểm
+                          {s.late ? (
+                            <span className="tpc-tag tpc-tag-late">
+                              Nộp trễ
                             </span>
                           ) : (
-                            <strong>{formatScore(total)}</strong>
+                            s.versionNo === newestVersionNo && (
+                              <span className="tpc-tag">Mới nhất</span>
+                            )
                           )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-          <p className="app-muted">
-            Tổng = (CTHĐ + TKHĐ + 2 × CBHD + 2 × CBPB) / 6, thang 10, làm tròn
-            hai chữ số; chỉ tính khi đủ bốn phiếu.
-          </p>
-        </section>
-      )}
-
-      {tab === 'lich-su' && (
-        <section className="app-card" aria-labelledby="topic-history-title">
-          <div className="app-card-header">
-            <h2 id="topic-history-title">Lịch sử</h2>
-            <select
-              className="app-select"
-              aria-label="Lọc lịch sử"
-              value={category}
-              onChange={(e) =>
-                setCategory(e.target.value as HistoryCategory | 'Tất cả')
-              }
-            >
-              <option value="Tất cả">Tất cả</option>
-              {HISTORY_CATEGORIES.map((c) => (
-                <option key={c} value={c}>
-                  {c}
-                </option>
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </section>
               ))}
-            </select>
-          </div>
-          {topic.history.length === 0 ? (
-            <p className="app-muted">Lịch sử trống</p>
-          ) : history.length === 0 ? (
-            <p className="app-muted">Không có mục nào thuộc “{category}”.</p>
-          ) : (
-            <ol className="topic-timeline" aria-label="Lịch sử đề tài">
+            </div>
+          ))}
+
+        {tab === 'diem' && (
+          <>
+            {topic.scores.length === 0 ? (
+              <p className="app-muted">Chưa có phiếu điểm nào.</p>
+            ) : (
+              <div className="tpc-scores">
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Sinh viên</th>
+                      <th scope="col">Hướng dẫn</th>
+                      <th scope="col">Phản biện</th>
+                      <th scope="col">Chủ tịch</th>
+                      <th scope="col">Thư ký</th>
+                      <th scope="col">Điểm KL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {topic.scores.map((s) => {
+                      const total = totalScore(s.scores);
+                      return (
+                        <tr key={s.studentId}>
+                          <td>
+                            <span className="tpc-scores-name">
+                              <strong>{s.name}</strong>
+                              <small>{s.code}</small>
+                            </span>
+                          </td>
+                          <td>{formatComponentScore(s.scores.CBHD)}</td>
+                          <td>{formatComponentScore(s.scores.CBPB)}</td>
+                          <td>{formatComponentScore(s.scores.CTHĐ)}</td>
+                          <td>{formatComponentScore(s.scores.TKHĐ)}</td>
+                          <td>
+                            {total === null ? (
+                              <span className="tpc-score-total tpc-score-missing">
+                                Chưa đủ điểm
+                              </span>
+                            ) : (
+                              <span className="tpc-score-total">
+                                {formatScore(total)}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <p className="tpc-foot">
+              Điểm khóa luận = (CT + TK + HD × 2 + PB × 2) / 6, thang 10, làm
+              tròn hai chữ số; chỉ tính khi đủ bốn phiếu. Mọi lần sửa điểm được
+              ghi ở tab Lịch sử.
+            </p>
+          </>
+        )}
+
+        {tab === 'lich-su' && (
+          <>
+            <div
+              className="tpc-seg tpc-seg-sm"
+              role="group"
+              aria-label="Lọc lịch sử"
+            >
+              {(['Tất cả', ...HISTORY_CATEGORIES] as const).map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  aria-pressed={category === c}
+                  onClick={() => setCategory(c)}
+                >
+                  {c} ({countOf(c)})
+                </button>
+              ))}
+            </div>
+            <ol className="tpc-history" aria-label="Lịch sử thay đổi">
               {history.map((h) => (
                 <li key={h.id}>
-                  <time dateTime={h.at}>{formatDateTime(h.at)}</time>
-                  <span>
-                    <strong>{h.action}</strong> ·{' '}
-                    <span className="app-chip">{h.category}</span> · {h.actor}
+                  <span className="tpc-when">
+                    <time dateTime={h.at}>
+                      <strong>{dateOf(h.at)}</strong>
+                    </time>
+                    <small>{timeOf(h.at)}</small>
                   </span>
-                  {h.detail && <span className="app-muted">{h.detail}</span>}
+                  <span>
+                    <span className={`tpc-cat ${CATEGORY_CLASS[h.category]}`}>
+                      {h.category}
+                    </span>
+                  </span>
+                  <span className="tpc-history-text">
+                    <span>
+                      {h.action}
+                      {h.detail ? `. ${h.detail}` : ''}
+                    </span>
+                    <span>{h.actor}</span>
+                  </span>
                 </li>
               ))}
+              {history.length === 0 && (
+                <li className="tpc-history-empty">
+                  {topic.history.length === 0
+                    ? 'Đề tài chưa có thay đổi nào.'
+                    : `Không có mục nào thuộc “${category}”.`}
+                </li>
+              )}
             </ol>
-          )}
-        </section>
-      )}
-    </>
+            <p className="tpc-foot">
+              Lịch sử chỉ để xem, ghi lại mọi thay đổi về trạng thái, nhóm đăng
+              ký, bài nộp, phân công và điểm. Mới nhất ở trên.
+            </p>
+          </>
+        )}
+      </div>
+    </div>
   );
 };

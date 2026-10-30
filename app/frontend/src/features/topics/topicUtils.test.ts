@@ -2,11 +2,17 @@ import { expect, it } from 'vitest';
 import {
   LECTURER_LOAD_MAX,
   LECTURER_LOAD_MIN,
+  avatarInitials,
   buildTopicsCsv,
   countsTowardLoad,
+  dateOf,
+  formatComponentScore,
   formatScore,
   lecturerLoads,
   loadLevel,
+  shortName,
+  thesisCell,
+  timeOf,
   thesisProgress,
   totalScore,
 } from '@/features/topics/topicUtils';
@@ -86,4 +92,29 @@ it('builds CSV with header, CRLF and formula-injection protection', () => {
   expect(buildTopicsCsv([])).toBe(
     'Mã,Tên đề tài,Lĩnh vực,GVHD,Nhóm,Nguồn,Trạng thái,Khóa luận\r\n',
   );
+});
+
+it('formats component scores with one decimal, keeping hundredths', () => {
+  expect(formatComponentScore(8)).toBe('8,0');
+  expect(formatComponentScore(8.5)).toBe('8,5');
+  expect(formatComponentScore(7.05)).toBe('7,05');
+  expect(formatComponentScore(null)).toBe('—');
+});
+
+it('builds the thesis cell, abbreviated names and initials', () => {
+  const topics = seedTopics();
+  const none = topics.find((t) => t.submissions.length === 0)!;
+  expect(thesisCell(none)).toEqual({
+    label: 'Chưa nộp',
+    sub: 'Chưa có phiên bản',
+    tone: 'none',
+  });
+  const done = topics.find((t) => t.status === 'Đã hoàn tất')!;
+  expect(thesisCell(done).label).toBe('Chốt bản cuối');
+  expect(thesisCell(done).sub).toBe(`${done.submissions.length} phiên bản`);
+  expect(shortName('Nguyễn Văn An')).toBe('N.V. An');
+  expect(avatarInitials('TS. Trần Minh Khoa')).toBe('TK');
+  expect(avatarInitials('Nguyễn Thị Hương')).toBe('NH');
+  expect(dateOf('2026-10-26T08:05:00')).toBe('26/10/2026');
+  expect(timeOf('2026-10-26T08:05:00')).toBe('08:05');
 });

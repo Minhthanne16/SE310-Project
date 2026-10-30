@@ -2,19 +2,18 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ListChecks } from 'lucide-react';
+import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { StatusState } from '@/components/ui/StatusState';
 import { useSession } from '@/features/auth/session/SessionProvider';
+import { TopbarContent } from '@/features/navigation/components/TopbarSlot';
 import { NoticeBoard } from '@/features/rounds/components/NoticeBoard';
-import {
-  ProgramChip,
-  RoundStatusChip,
-} from '@/features/rounds/components/RoundChips';
 import { RoundGantt } from '@/features/rounds/components/RoundGantt';
 import {
+  addDays,
   currentMilestone,
   currentWeek,
   deriveTasks,
+  formatDate,
   milestoneProgress,
   roundSpan,
 } from '@/features/rounds/roundUtils';
@@ -23,7 +22,7 @@ import {
   type RoundService,
 } from '@/features/rounds/services/roundService';
 import { useUrlParam } from '@/lib/useUrlParam';
-import type { Round, RoundStatus } from '@/types/round';
+import type { Round, RoundStatus, RoundTab } from '@/types/round';
 
 interface RoundHomePageProps {
   roundService?: RoundService;
@@ -45,6 +44,52 @@ function phaseText(round: Round, today: string): string {
   return today < span.start ? 'Chưa bắt đầu' : 'Đã qua mốc cuối';
 }
 
+// Dòng tuần dưới tên đợt: "Tuần 6/20 của đợt · 12/10 – 18/10/2026".
+function weekLine(round: Round, today: string): string {
+  const span = roundSpan(round.milestones);
+  if (!span) return 'Chưa đặt ngày cho các mốc';
+  if (round.status === 'Đã kết thúc') return 'Đợt đã kết thúc';
+  if (round.status === 'Nháp')
+    return `Đợt chưa bắt đầu · tuần 1 bắt đầu ${formatDate(span.start)}`;
+  const week = currentWeek(round, today);
+  if (week === null) return phaseText(round, today);
+  const from = addDays(span.start, (week - 1) * 7);
+  const to = addDays(from, 6);
+  return `Tuần ${week}/${span.weeks} của đợt · ${formatDate(from).slice(0, 5)} – ${formatDate(to)}`;
+}
+
+// Tên đợt không lặp chương trình đã hiện ở nhãn trên thẻ.
+const shortName = (round: Round) =>
+  round.name.startsWith(`${round.program} · `)
+    ? round.name.slice(round.program.length + 3)
+    : round.name;
+
+const STATUS_HINT: Record<RoundStatus, string> = {
+  'Đang diễn ra': 'Đang diễn ra',
+  Nháp: 'Nháp, GV và SV chưa thấy',
+  'Đã kết thúc': 'Đã kết thúc',
+};
+
+const STATUS_CLASS: Record<RoundStatus, string> = {
+  'Đang diễn ra': 'is-running',
+  Nháp: 'is-draft',
+  'Đã kết thúc': 'is-ended',
+};
+
+const TASK_KIND: Record<RoundTab, string> = {
+  'cau-hinh': 'CẤU HÌNH',
+  'giang-vien': 'GIẢNG VIÊN',
+  'sinh-vien': 'SINH VIÊN',
+  'tien-do': 'TIẾN ĐỘ',
+};
+
+const TASK_HINT: Record<RoundTab, string> = {
+  'cau-hinh': 'Mở cấu hình đợt để xử lý.',
+  'giang-vien': 'Mở danh sách giảng viên của đợt để xử lý.',
+  'sinh-vien': 'Mở danh sách sinh viên của đợt để xử lý.',
+  'tien-do': 'Mở tiến độ đợt để xử lý.',
+};
+
 interface RoundCardProps {
   round: Round;
   today: string;
@@ -53,50 +98,65 @@ interface RoundCardProps {
 
 const RoundCard: React.FC<RoundCardProps> = ({ round, today, onOpen }) => {
   const milestone = currentMilestone(round, today);
-  const week = currentWeek(round, today);
   const tasks = deriveTasks(round, today).length;
   const progress = milestone ? milestoneProgress(milestone, today) : 0;
+  const draft = round.status === 'Nháp';
+  const needs = !draft && tasks > 0;
+  const people = `${round.lecturerIds.length} giảng viên · ${round.studentIds.length} sinh viên`;
   return (
-    <article className="app-card round-card">
-      <div className="app-chip-row">
-        <ProgramChip program={round.program} />
-        <RoundStatusChip status={round.status} />
-      </div>
-      <h2>
-        <button type="button" className="round-card-link" onClick={onOpen}>
-          {round.name}
-        </button>
-      </h2>
-      <p className="app-muted">
-        {round.status === 'Đang diễn ra' && week !== null
-          ? `Tuần ${week}`
-          : round.status === 'Nháp'
-            ? 'Chưa mở đợt'
-            : round.status === 'Đã kết thúc'
-              ? 'Đã kết thúc'
-              : phaseText(round, today)}
-      </p>
+    <button
+      type="button"
+      className={`round-card${needs ? ' needs-action' : ''}`}
+      aria-label={`Mở đợt ${round.program} ${shortName(round)}`}
+      onClick={onOpen}
+    >
+      <span className="round-card-top">
+        <span className="round-card-program">{round.program}</span>
+        <span className={`round-card-status ${STATUS_CLASS[round.status]}`}>
+          {round.status}
+        </span>
+      </span>
+      <span className="round-card-title">
+        <span className="round-card-name">{shortName(round)}</span>
+        <span className="round-card-week">{weekLine(round, today)}</span>
+      </span>
       {round.status === 'Đang diễn ra' && (
-        <div className="round-card-progress">
-          <span>{milestone ? milestone.name : 'Chưa có mốc đang diễn ra'}</span>
-          <div
-            className="progress-bar"
-            role="progressbar"
-            aria-label={`Tiến độ mốc hiện tại của ${round.name}`}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-valuenow={progress}
-          >
+        <span className="round-card-progress">
+          <span className="round-card-now">
+            {milestone
+              ? `${milestone.name} · hạn ${formatDate(milestone.endDate).slice(0, 5)}`
+              : 'Chưa có mốc đang diễn ra'}
+          </span>
+          <span className="progress-bar" aria-hidden="true">
             <span style={{ width: `${progress}%` }} />
-          </div>
-        </div>
+          </span>
+        </span>
       )}
-      <p className="round-card-tasks">
-        {tasks > 0 ? `${tasks} việc cần xử lý` : 'Không có việc cần xử lý'}
-      </p>
-    </article>
+      <span className="round-card-foot">
+        <span>{draft ? 'Đang cấu hình mốc và người tham gia' : people}</span>
+        <span className={`round-card-need${needs ? ' is-needed' : ''}`}>
+          <span className="round-card-dot" aria-hidden="true" />
+          {draft
+            ? 'Chưa mở đợt'
+            : tasks > 0
+              ? `${tasks} việc cần xử lý`
+              : 'Không có việc cần xử lý'}
+        </span>
+      </span>
+      <span className="round-card-open">
+        Xem đợt
+        <ArrowRight size={16} strokeWidth={1.8} aria-hidden="true" />
+      </span>
+    </button>
   );
 };
+
+const BackButton: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button type="button" className="home-back" onClick={onClick}>
+    <ArrowLeft size={16} strokeWidth={1.8} aria-hidden="true" />
+    Tất cả đợt
+  </button>
+);
 
 // Trang chủ Giáo vụ (docs/DESIGN/03, "Trang chủ"): danh sách thẻ mọi đợt (kể
 // cả Nháp); bấm một thẻ vào chi tiết đợt với việc cần xử lý, Bảng thông báo,
@@ -176,35 +236,29 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
           description="Đợt không tồn tại hoặc đã bị xóa."
         />
         <div>
-          <button
-            type="button"
-            className="app-button"
-            onClick={() => setDotId(null)}
-          >
-            ← Tất cả đợt
-          </button>
+          <BackButton onClick={() => setDotId(null)} />
         </div>
       </>
     );
 
   if (selected) {
     const tasks = deriveTasks(selected, today);
-    const week = currentWeek(selected, today);
     return (
       <>
-        <div>
-          <button
-            type="button"
-            className="app-button app-button-small"
-            onClick={() => setDotId(null)}
-          >
-            ← Tất cả đợt
-          </button>
-        </div>
+        <TopbarContent>
+          <BackButton onClick={() => setDotId(null)} />
+          <span className="home-period">
+            Đợt <span className="home-period-chip">{selected.name}</span>
+          </span>
+          <span className="home-period-hint">
+            {STATUS_HINT[selected.status]}
+          </span>
+        </TopbarContent>
+
         <div className="app-page-heading">
           <div className="app-heading-row">
             <h1 ref={headingRef} tabIndex={-1}>
-              {selected.name}
+              Chào {name}
             </h1>
             <Link
               className="app-button"
@@ -214,32 +268,26 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
               Quản lý đợt
             </Link>
           </div>
-          <div className="app-chip-row">
-            <ProgramChip program={selected.program} />
-            <RoundStatusChip status={selected.status} />
-            {week !== null && selected.status === 'Đang diễn ra' && (
-              <span className="app-muted">Tuần {week}</span>
-            )}
-          </div>
+          <p>{weekLine(selected, today)}</p>
         </div>
 
-        <section className="app-card" aria-labelledby="round-tasks-title">
-          <div className="app-card-header">
-            <h2 id="round-tasks-title">Việc cần xử lý</h2>
-          </div>
+        <section aria-label="Việc sắp đến hạn">
           {tasks.length === 0 ? (
             <p className="app-muted">Không có việc nào cần xử lý.</p>
           ) : (
-            <ul className="task-list">
-              {tasks.map((t) => (
+            <ul className="todo-grid">
+              {tasks.map((t, index) => (
                 <li key={t.id}>
-                  <ListChecks size={16} aria-hidden="true" />
-                  <span>{t.text}</span>
                   <Link
-                    className="app-link"
+                    className={`todo-card${index === 0 ? ' is-first' : ''}`}
                     href={manageHref(selected.id, t.tab)}
                   >
-                    Xử lý
+                    <span className="todo-card-top">
+                      <span className="todo-card-kind">{TASK_KIND[t.tab]}</span>
+                      <span className="todo-card-when">Cần xử lý</span>
+                    </span>
+                    <span className="todo-card-title">{t.text}</span>
+                    <span className="todo-card-sub">{TASK_HINT[t.tab]}</span>
                   </Link>
                 </li>
               ))}
@@ -263,13 +311,25 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
     );
   }
 
+  const running = rounds.filter((r) => r.status === 'Đang diễn ra').length;
+  const drafts = rounds.filter((r) => r.status === 'Nháp').length;
+  const ended = rounds.length - running - drafts;
+  const counts = [
+    `${running} đang diễn ra`,
+    `${drafts} nháp`,
+    ...(ended > 0 ? [`${ended} đã kết thúc`] : []),
+  ].join(', ');
+
   return (
     <>
       <div className="app-page-heading">
         <h1 ref={headingRef} tabIndex={-1}>
-          Xin chào, {name}
+          Chào {name}
         </h1>
-        <p>Các đợt khóa luận và việc cần xử lý. Bấm một đợt để xem chi tiết.</p>
+        <p className="home-intro">
+          Bạn quản lý {rounds.length} đợt khóa luận ({counts}). Chọn một đợt để
+          xem việc cần làm, bảng thông báo và tiến độ của đợt đó.
+        </p>
       </div>
       {rounds.length === 0 ? (
         <section className="status-state app-empty">
@@ -280,7 +340,7 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
           </Link>
         </section>
       ) : (
-        <div className="round-grid">
+        <section className="round-grid" aria-label="Các đợt khóa luận">
           {rounds.map((r) => (
             <RoundCard
               key={r.id}
@@ -289,8 +349,12 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
               onOpen={() => setDotId(r.id)}
             />
           ))}
-        </div>
+        </section>
       )}
+      <p className="home-note">
+        Đợt Nháp chỉ giáo vụ thấy. Giảng viên và sinh viên thấy đợt sau khi bạn
+        mở đợt.
+      </p>
     </>
   );
 };

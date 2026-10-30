@@ -33,7 +33,7 @@ const renderDetail = async (id: string) => {
 };
 
 const tab = (name: string) =>
-  fireEvent.click(screen.getByRole('button', { name }));
+  fireEvent.click(screen.getByRole('tab', { name }));
 
 it('shows a not-found state with a link back for an unknown id', async () => {
   renderRaw('khong-co');
@@ -51,111 +51,132 @@ it('shows the header and the overview tab by default', async () => {
       name: 'Website bán hàng thủ công mỹ nghệ',
     }),
   ).toBeInTheDocument();
-  expect(screen.getByText('VB1-25-01')).toBeInTheDocument();
+  const crumb = screen.getByRole('navigation', { name: 'Đường dẫn' });
+  expect(crumb).toHaveTextContent('Đề tài / VB1-25-01');
+  expect(within(crumb).getByRole('link', { name: 'Đề tài' })).toHaveAttribute(
+    'href',
+    '/giao-vu/de-tai?dot=r-vb1-hk2-2025',
+  );
   expect(
-    screen.getByText('Đã hoàn tất', { selector: '.app-chip' }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByText('GV công bố', { selector: '.app-chip' }),
+    screen.getByText('Đã hoàn tất', { selector: '.tpc-chip' }),
   ).toBeInTheDocument();
   expect(
     await screen.findByRole('link', { name: 'Văn bằng 1 · HK2 2025–2026' }),
   ).toHaveAttribute('href', '/giao-vu/de-tai?dot=r-vb1-hk2-2025');
-  expect(screen.getByRole('link', { name: 'Tất cả đề tài' })).toHaveAttribute(
-    'href',
-    '/giao-vu/de-tai?dot=r-vb1-hk2-2025',
-  );
-  expect(screen.getByRole('button', { name: 'Tổng quan' })).toHaveAttribute(
-    'aria-pressed',
+  expect(
+    screen.getByRole('link', { name: 'Xem ở trang Kết quả' }),
+  ).toHaveAttribute('href', '/giao-vu/ket-qua');
+  expect(screen.getByRole('tab', { name: 'Tổng quan' })).toHaveAttribute(
+    'aria-selected',
     'true',
   );
-  const fields = screen
-    .getByRole('heading', { name: 'Tổng quan' })
-    .closest('section')!;
-  expect(within(fields).getByText('Phát triển phần mềm')).toBeInTheDocument();
-  expect(within(fields).getByText('Nguyễn Thị Hương')).toBeInTheDocument(); // GVHD
-  expect(within(fields).getByText('Vũ Đức Anh')).toBeInTheDocument(); // GVPB
-  expect(within(fields).getByText('Hội đồng 1')).toBeInTheDocument();
-  const member = within(fields)
-    .getByText(/Đinh Công Minh/)
-    .closest('li')!;
-  expect(within(member).getByText('Đại diện')).toBeInTheDocument();
+  expect(
+    screen.getByRole('tab', { name: 'Báo cáo và phiên bản' }),
+  ).toHaveAttribute('aria-selected', 'false');
+  const panel = screen.getByRole('tabpanel');
+  for (const name of [
+    'Tiến độ 6 chặng',
+    'Mô tả đề tài',
+    'Nhóm sinh viên',
+    'Phân công và lịch bảo vệ',
+  ])
+    expect(within(panel).getByRole('heading', { name })).toBeInTheDocument();
+  expect(within(panel).getByText('Nguyễn Thị Hương')).toBeInTheDocument(); // GVHD
+  expect(within(panel).getByText('Vũ Đức Anh')).toBeInTheDocument(); // GVPB
+  expect(within(panel).getByText('Hội đồng 1')).toBeInTheDocument();
+  const member = within(panel).getByText('Đinh Công Minh').closest('li')!;
+  expect(member).toHaveTextContent('Đại diện');
+});
+
+it('shows the six stages as done for a finished topic', async () => {
+  await renderDetail('t-vb1-25-01');
+  const steps = within(
+    screen
+      .getByRole('heading', { name: 'Tiến độ 6 chặng' })
+      .closest('section')!,
+  ).getAllByRole('listitem');
+  expect(steps).toHaveLength(6);
+  for (const step of steps) expect(step).toHaveTextContent('✓');
 });
 
 it('lists both members of a two-student group with one representative', async () => {
   await renderDetail('t-vb1-04');
-  const fields = screen
-    .getByRole('heading', { name: 'Tổng quan' })
+  const group = screen
+    .getByRole('heading', { name: 'Nhóm sinh viên' })
     .closest('section')!;
-  const items = within(fields).getAllByRole('listitem');
+  const items = within(group).getAllByRole('listitem');
   expect(items).toHaveLength(2);
-  expect(within(fields).getAllByText('Đại diện')).toHaveLength(1);
+  expect(group.textContent?.match(/Đại diện/g)).toHaveLength(1);
   expect(items[0]).toHaveTextContent('Đại diện');
 });
 
 it('shows placeholders for a topic with no group or assignments', async () => {
   await renderDetail('t-vb1-01');
-  expect(screen.getByText('Chưa có nhóm')).toBeInTheDocument();
+  expect(
+    screen.getByText('Chưa có nhóm', { selector: 'p' }),
+  ).toBeInTheDocument();
   expect(screen.getAllByText('Chưa phân công')).toHaveLength(2);
 });
 
 it('switches tabs and honours ?tab=', async () => {
   await renderDetail('t-vb1-06');
-  tab('Báo cáo');
+  tab('Báo cáo và phiên bản');
   expect(currentUrl()).toContain('tab=bao-cao');
-  expect(screen.getByRole('button', { name: 'Báo cáo' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
   expect(
-    await screen.findByRole('heading', { name: 'Báo cáo' }),
-  ).toBeInTheDocument();
+    screen.getByRole('tab', { name: 'Báo cáo và phiên bản' }),
+  ).toHaveAttribute('aria-selected', 'true');
   setUrl('/giao-vu/de-tai/t-vb1-06?tab=lich-su');
   expect(
-    await screen.findByRole('heading', { name: 'Lịch sử' }),
+    await screen.findByRole('group', { name: 'Lọc lịch sử' }),
   ).toBeInTheDocument();
   setUrl('/giao-vu/de-tai/t-vb1-06?tab=khong-hop-le');
   expect(
-    await screen.findByRole('heading', { name: 'Tổng quan' }),
+    await screen.findByRole('heading', { name: 'Tiến độ 6 chặng' }),
   ).toBeInTheDocument();
 });
 
-it('lists submission versions newest first with a late chip', async () => {
+it('lists submission versions per document, newest first, with a late tag', async () => {
   await renderDetail('t-vb1-05');
-  tab('Báo cáo');
-  const rows = (await screen.findAllByRole('row')).slice(1);
-  expect(rows).toHaveLength(2);
-  expect(rows[0]).toHaveTextContent('v2');
-  expect(rows[0]).toHaveTextContent('Nộp trễ');
-  expect(rows[1]).toHaveTextContent('v1');
-  expect(rows[1]).not.toHaveTextContent('Nộp trễ');
+  tab('Báo cáo và phiên bản');
+  const versions = await screen.findAllByRole('listitem');
+  expect(versions).toHaveLength(2);
+  expect(versions[0]).toHaveTextContent('v2');
+  expect(versions[0]).toHaveTextContent('Nộp trễ');
+  expect(versions[1]).toHaveTextContent('v1');
+  expect(versions[1]).not.toHaveTextContent('Nộp trễ');
 });
 
 it('shows an empty state when nothing has been submitted', async () => {
   await renderDetail('t-vb1-03');
-  tab('Báo cáo');
+  tab('Báo cáo và phiên bản');
   expect(await screen.findByText('Nhóm chưa nộp bài nào.')).toBeInTheDocument();
 });
 
 it('shows per-role scores, the weighted total and the formula note', async () => {
   await renderDetail('t-vb1-25-01');
   tab('Điểm');
-  const row = (await screen.findByText(/Đinh Công Minh/)).closest('tr')!;
+  const row = (await screen.findByText('Đinh Công Minh')).closest('tr')!;
   // (8,5 + 8,5 + 2×9 + 2×8,5) / 6 = 8,67
-  for (const text of ['8,50', '9,00', '8,67'])
+  for (const text of ['8,5', '9,0', '8,67'])
     expect(within(row).getAllByText(text).length).toBeGreaterThan(0);
-  expect(screen.getByText(/2 × CBHD/)).toBeInTheDocument();
-  for (const role of ['CTHĐ', 'TKHĐ', 'CBHD', 'CBPB'])
-    expect(
-      screen.getByRole('columnheader', { name: role }),
-    ).toBeInTheDocument();
+  expect(screen.getByText(/HD × 2/)).toBeInTheDocument();
+  for (const name of [
+    'Hướng dẫn',
+    'Phản biện',
+    'Chủ tịch',
+    'Thư ký',
+    'Điểm KL',
+  ])
+    expect(screen.getByRole('columnheader', { name })).toBeInTheDocument();
+  // Không có cảnh báo lệch điểm ở màn này (thuộc màn Kết quả).
+  expect(screen.queryByText(/lệch điểm/i)).not.toBeInTheDocument();
 });
 
 it('shows "Chưa đủ điểm" when a score is missing', async () => {
   await renderDetail('t-vb1-18');
   tab('Điểm');
   expect(await screen.findAllByText('Chưa đủ điểm')).toHaveLength(2);
-  expect(screen.getAllByText('8,00').length).toBeGreaterThan(0);
+  expect(screen.getAllByText('8,0').length).toBeGreaterThan(0);
 });
 
 it('shows an empty scores state when there are no score sheets', async () => {
@@ -169,15 +190,18 @@ it('shows an empty scores state when there are no score sheets', async () => {
 it('shows the history newest first and filters it by category', async () => {
   await renderDetail('t-vb1-25-01');
   tab('Lịch sử');
-  const items = await screen.findAllByRole('listitem');
+  const list = await screen.findByRole('list', { name: 'Lịch sử thay đổi' });
+  const items = within(list).getAllByRole('listitem');
   expect(items[0]).toHaveTextContent('Công bố kết quả');
   expect(items[0]).toHaveTextContent('Phạm Minh Châu');
-  expect(screen.getByLabelText('Lọc lịch sử')).toHaveValue('Tất cả');
+  expect(
+    screen.getByRole('button', { name: /^Tất cả \(\d+\)$/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
 
-  fireEvent.change(screen.getByLabelText('Lọc lịch sử'), {
-    target: { value: 'Điểm' },
-  });
-  const scored = screen.getAllByRole('listitem');
+  fireEvent.click(screen.getByRole('button', { name: /^Điểm \(1\)$/ }));
+  const scored = within(
+    screen.getByRole('list', { name: 'Lịch sử thay đổi' }),
+  ).getAllByRole('listitem');
   expect(scored).toHaveLength(1);
   expect(scored[0]).toHaveTextContent('Nhập điểm cho Đinh Công Minh');
   expect(scored[0]).toHaveTextContent('Điểm');
@@ -186,9 +210,7 @@ it('shows the history newest first and filters it by category', async () => {
 it('shows a filtered-empty message and a separate empty history state', async () => {
   await renderDetail('t-vb1-03');
   tab('Lịch sử');
-  fireEvent.change(await screen.findByLabelText('Lọc lịch sử'), {
-    target: { value: 'Điểm' },
-  });
+  fireEvent.click(await screen.findByRole('button', { name: /^Điểm \(0\)$/ }));
   expect(
     screen.getByText('Không có mục nào thuộc “Điểm”.'),
   ).toBeInTheDocument();
@@ -196,7 +218,9 @@ it('shows a filtered-empty message and a separate empty history state', async ()
 
   resetNavigation('/giao-vu/de-tai/x?tab=lich-su');
   await renderDetail('t-vb1-01');
-  expect(await screen.findByText('Lịch sử trống')).toBeInTheDocument();
+  expect(
+    await screen.findByText('Đề tài chưa có thay đổi nào.'),
+  ).toBeInTheDocument();
 });
 
 it('shows a retry state when loading fails', async () => {

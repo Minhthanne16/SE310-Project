@@ -52,49 +52,54 @@ const renderPage = async (
       <RoundHomePage roundService={service} />
     </SessionProvider>,
   );
-  await screen.findByRole('button', { name: 'Văn bằng 1 · HK1 2026–2027' });
+  await screen.findByRole('button', {
+    name: 'Mở đợt Văn bằng 1 HK1 2026–2027',
+  });
   return service;
 };
 
 const openFirstRound = async () => {
   await renderPage();
   fireEvent.click(
-    screen.getByRole('button', { name: 'Văn bằng 1 · HK1 2026–2027' }),
+    screen.getByRole('button', { name: 'Mở đợt Văn bằng 1 HK1 2026–2027' }),
   );
-  await screen.findByRole('heading', {
-    level: 1,
-    name: 'Văn bằng 1 · HK1 2026–2027',
-  });
+  await screen.findByRole('region', { name: 'Việc sắp đến hạn' });
 };
 
 it('lists every round as a card, including drafts, with week and milestone', async () => {
   await renderPage();
-  expect(screen.getByText('Xin chào, Phạm Minh Châu')).toBeInTheDocument();
+  expect(screen.getByText('Chào Phạm Minh Châu')).toBeInTheDocument();
   expect(
-    screen.getByRole('button', { name: 'Văn bằng 2 · HK2 2026–2027' }),
+    screen.getByText(
+      /Bạn quản lý 5 đợt khóa luận \(3 đang diễn ra, 1 nháp, 1 đã kết thúc\)/,
+    ),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Mở đợt Văn bằng 2 HK2 2026–2027' }),
   ).toBeInTheDocument();
   expect(screen.getByText('Chưa mở đợt')).toBeInTheDocument();
   expect(
-    screen.getByRole('button', { name: 'Văn bằng 1 · HK2 2025–2026' }),
+    screen.getByRole('button', { name: 'Mở đợt Văn bằng 1 HK2 2025–2026' }),
   ).toBeInTheDocument();
-  expect(screen.getByText('Tuần 8')).toBeInTheDocument();
-  expect(screen.getByText('Báo cáo giữa kỳ')).toBeInTheDocument();
+  expect(screen.getByText(/^Tuần 8\/\d+ của đợt · /)).toBeInTheDocument();
+  expect(screen.getByText('Báo cáo giữa kỳ · hạn 30/10')).toBeInTheDocument();
   expect(
-    screen.getByRole('progressbar', {
-      name: /Văn bằng 1 · HK1 2026–2027/,
-    }),
-  ).toHaveAttribute('aria-valuenow', '67');
+    screen
+      .getByRole('button', { name: 'Mở đợt Văn bằng 1 HK1 2026–2027' })
+      .querySelector('.progress-bar span'),
+  ).toHaveStyle({ width: '67%' });
 });
 
 it('opens the round detail from a card and goes back to all rounds', async () => {
   await openFirstRound();
   expect(currentUrl()).toBe('/giao-vu?dot=r-vb1-hk1');
+  const todo = screen.getByRole('region', { name: 'Việc sắp đến hạn' });
   expect(
-    screen.getByRole('heading', { name: 'Việc cần xử lý' }),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByText('Mốc “Báo cáo giữa kỳ” kết thúc sau 4 ngày.'),
-  ).toBeInTheDocument();
+    within(todo).getByRole('link', {
+      name: /Mốc “Báo cáo giữa kỳ” kết thúc sau 4 ngày\./,
+    }),
+  ).toHaveAttribute('href', '/giao-vu/dot/r-vb1-hk1?tab=tien-do');
+  expect(screen.getByText('Đợt')).toBeInTheDocument();
   expect(screen.queryByText(/đề tài chưa công bố/)).not.toBeInTheDocument();
   expect(screen.getByRole('link', { name: /Soạn thông báo/ })).toHaveAttribute(
     'href',
@@ -106,9 +111,9 @@ it('opens the round detail from a card and goes back to all rounds', async () =>
     }),
   ).toHaveAttribute('href', '/giao-vu/dot/r-vb1-hk1');
 
-  fireEvent.click(screen.getByRole('button', { name: '← Tất cả đợt' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Tất cả đợt' }));
   expect(
-    await screen.findByRole('button', { name: 'Thạc sĩ · Đợt 1/2026' }),
+    await screen.findByRole('button', { name: 'Mở đợt Thạc sĩ Đợt 1/2026' }),
   ).toBeInTheDocument();
   expect(currentUrl()).toBe('/giao-vu');
 });
@@ -121,11 +126,9 @@ it('starts on the detail view when the URL has ?dot=', async () => {
     </SessionProvider>,
   );
   expect(
-    await screen.findByRole('heading', {
-      level: 1,
-      name: 'Thạc sĩ · Đợt 1/2026',
-    }),
+    await screen.findByRole('region', { name: 'Việc sắp đến hạn' }),
   ).toBeInTheDocument();
+  expect(screen.getByText('Đang diễn ra')).toBeInTheDocument();
 });
 
 it('shows a not-found state for an unknown ?dot=', async () => {
@@ -136,9 +139,11 @@ it('shows a not-found state for an unknown ?dot=', async () => {
     </SessionProvider>,
   );
   expect(await screen.findByText('Không tìm thấy đợt')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: '← Tất cả đợt' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Tất cả đợt' }));
   expect(
-    await screen.findByRole('button', { name: 'Văn bằng 1 · HK1 2026–2027' }),
+    await screen.findByRole('button', {
+      name: 'Mở đợt Văn bằng 1 HK1 2026–2027',
+    }),
   ).toBeInTheDocument();
 });
 
@@ -146,16 +151,20 @@ it('filters the notice board by source and by title or sender, and opens an item
   await openFirstRound();
   const board = screen.getByRole('region', { name: 'Bảng thông báo' });
   await within(board).findByText('Nhắc hạn nộp báo cáo giữa kỳ');
-  // Mới hiện 5 thông báo; "Xem thêm" lấy nốt.
+  // Mới hiện 5 thông báo; "Xem thêm N thông báo cũ hơn" lấy nốt.
   expect(
     within(board).queryByText('Bắt đầu đợt khóa luận HK1 2026–2027'),
   ).not.toBeInTheDocument();
-  fireEvent.click(within(board).getByRole('button', { name: 'Xem thêm' }));
+  fireEvent.click(
+    within(board).getByRole('button', {
+      name: /^Xem thêm \d+ thông báo cũ hơn$/,
+    }),
+  );
   expect(
     await within(board).findByText('Bắt đầu đợt khóa luận HK1 2026–2027'),
   ).toBeInTheDocument();
   expect(
-    within(board).queryByRole('button', { name: 'Xem thêm' }),
+    within(board).queryByRole('button', { name: /^Xem thêm/ }),
   ).not.toBeInTheDocument();
 
   fireEvent.click(within(board).getByRole('button', { name: 'Từ giáo vụ' }));
@@ -201,7 +210,7 @@ it('filters the notice board by source and by title or sender, and opens an item
     target: { value: 'khong-ai-ca' },
   });
   expect(
-    await within(board).findByText('Không có thông báo'),
+    await within(board).findByText('Không có thông báo phù hợp.'),
   ).toBeInTheDocument();
 });
 
@@ -227,29 +236,21 @@ it('follows a URL change made by Next navigation without popstate', async () => 
   // Ví dụ bấm "Trang chủ" trên sidebar: Link của Next đổi URL, không popstate.
   act(() => setUrl('/giao-vu'));
   expect(
-    await screen.findByRole('button', { name: 'Thạc sĩ · Đợt 1/2026' }),
+    await screen.findByRole('button', { name: 'Mở đợt Thạc sĩ Đợt 1/2026' }),
   ).toBeInTheDocument();
   act(() => setUrl('/giao-vu?dot=r-ths-1-2026'));
   expect(
-    await screen.findByRole('heading', {
-      level: 1,
-      name: 'Thạc sĩ · Đợt 1/2026',
-    }),
+    await screen.findByRole('region', { name: 'Việc sắp đến hạn' }),
   ).toBeInTheDocument();
 });
 
 it('moves focus to the heading of the new view', async () => {
   await openFirstRound();
-  expect(
-    screen.getByRole('heading', {
-      level: 1,
-      name: 'Văn bằng 1 · HK1 2026–2027',
-    }),
-  ).toHaveFocus();
-  fireEvent.click(screen.getByRole('button', { name: '← Tất cả đợt' }));
+  expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
+  fireEvent.click(screen.getByRole('button', { name: 'Tất cả đợt' }));
   await waitFor(() =>
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent(
-      'Xin chào, Phạm Minh Châu',
+      'Chào Phạm Minh Châu',
     ),
   );
   expect(screen.getByRole('heading', { level: 1 })).toHaveFocus();
@@ -272,7 +273,11 @@ it('tells apart a running round before its first week and after its last milesto
       })),
     };
   };
-  const later = { ...shift(400), id: 'later', name: 'Đợt tương lai' };
+  const later = {
+    ...shift(400),
+    id: 'later',
+    name: 'Mở đợt Văn bằng 1 Đợt tương lai',
+  };
   const earlier = { ...shift(-400), id: 'earlier', name: 'Đợt đã qua mốc' };
   const service = createRoundService({
     today: '2026-10-26',
@@ -283,7 +288,9 @@ it('tells apart a running round before its first week and after its last milesto
       <RoundHomePage roundService={service} />
     </SessionProvider>,
   );
-  await screen.findByRole('button', { name: 'Đợt tương lai' });
+  await screen.findByRole('button', {
+    name: 'Mở đợt Văn bằng 1 Đợt tương lai',
+  });
   expect(screen.getByText('Chưa bắt đầu')).toBeInTheDocument();
   expect(screen.getByText('Đã qua mốc cuối')).toBeInTheDocument();
 });

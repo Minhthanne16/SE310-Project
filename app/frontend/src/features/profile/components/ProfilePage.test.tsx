@@ -72,20 +72,21 @@ it('shows the class for a student and no lecturer fields', async () => {
   expect(screen.getByText('KTPM2022')).toBeInTheDocument();
   expect(screen.queryByText('Bộ môn')).not.toBeInTheDocument();
   expect(screen.getByText('12/03/2004')).toBeInTheDocument();
-  expect(screen.getByText(/do Giáo vụ quản lý/)).toBeInTheDocument();
-  expect(screen.getByText(/gần nhất/)).toBeInTheDocument();
+  expect(screen.getByText('Mã sinh viên')).toBeInTheDocument();
+  expect(screen.getByText('Truy cập gần nhất')).toBeInTheDocument();
+  expect(screen.getByText('HOẠT ĐỘNG ĐĂNG NHẬP')).toBeInTheDocument();
 });
 
 it('shows department and academic title for a lecturer', async () => {
   await renderPage('Lecturer');
   expect(screen.getByText('Bộ môn')).toBeInTheDocument();
-  expect(screen.getByText('Học hàm')).toBeInTheDocument();
+  expect(screen.getByText('Học hàm, học vị')).toBeInTheDocument();
   expect(screen.queryByText('Lớp')).not.toBeInTheDocument();
 });
 
 it('shows no unit fields for academic affairs staff', async () => {
   await renderPage('AcademicAffairs');
-  for (const label of ['Lớp', 'Bộ môn', 'Học hàm'])
+  for (const label of ['Lớp', 'Bộ môn', 'Học hàm, học vị'])
     expect(screen.queryByText(label)).not.toBeInTheDocument();
   expect(screen.getByText('Mã người dùng')).toBeInTheDocument();
 });
@@ -97,7 +98,7 @@ it('edits and saves the profile', async () => {
   expect(screen.getByLabelText('Ngày sinh')).toHaveFocus();
 
   type('Số điện thoại', '0912 345.678');
-  type('Email phụ', 'Binh@Gmail.com');
+  type('Email liên hệ phụ', 'Binh@Gmail.com');
   fireEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
 
   await waitFor(() =>
@@ -112,6 +113,9 @@ it('edits and saves the profile', async () => {
   expect(
     screen.queryByRole('button', { name: 'Lưu thay đổi' }),
   ).not.toBeInTheDocument();
+  expect(screen.getByRole('status')).toHaveTextContent(
+    'Đã lưu thông tin cá nhân.',
+  );
 });
 
 it('keeps the full name read-only under the account section', async () => {
@@ -135,12 +139,16 @@ it('reports a bad phone and bad secondary email', async () => {
   await renderPage();
   fireEvent.click(screen.getByRole('button', { name: 'Sửa hồ sơ' }));
   type('Số điện thoại', '12345');
-  type('Email phụ', 'an.nv@truong.edu.vn');
+  type('Email liên hệ phụ', 'an.nv@truong.edu.vn');
   fireEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
 
-  expect(screen.getByRole('alert')).toHaveTextContent('2 mục chưa hợp lệ');
+  expect(screen.getAllByRole('alert')[0]).toHaveTextContent(
+    'Chưa lưu được. Sửa các mục báo đỏ bên dưới rồi bấm Lưu thay đổi.',
+  );
   expect(
-    screen.getByText('Số điện thoại gồm 10 chữ số, bắt đầu bằng 0.'),
+    screen.getByText(
+      'Số điện thoại không đúng định dạng. Nhập 10 chữ số, bắt đầu bằng 0, ví dụ 0912345678.',
+    ),
   ).toBeInTheDocument();
   expect(
     screen.getByText('Email phụ phải khác email tài khoản.'),
@@ -150,9 +158,11 @@ it('reports a bad phone and bad secondary email', async () => {
     'true',
   );
 
-  type('Email phụ', 'khong-hop-le');
+  type('Email liên hệ phụ', 'khong-hop-le');
   fireEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
-  expect(screen.getByText('Email phụ không hợp lệ.')).toBeInTheDocument();
+  expect(
+    screen.getByText('Email phụ không đúng định dạng. Ví dụ: ten@gmail.com.'),
+  ).toBeInTheDocument();
 });
 
 it('rejects an avatar with the wrong format or that is too large', async () => {
@@ -163,18 +173,26 @@ it('rejects an avatar with the wrong format or that is too large', async () => {
   fireEvent.change(input, {
     target: { files: [file('a.gif', 'image/gif')] },
   });
-  expect(screen.getByText('Ảnh phải là JPG, PNG hoặc WebP.')).toBeVisible();
+  expect(
+    screen.getByText(
+      'Ảnh "a.gif" không đúng định dạng. Chỉ nhận JPG, PNG hoặc WebP.',
+    ),
+  ).toBeVisible();
   expect(input).toHaveAttribute('aria-invalid', 'true');
 
   fireEvent.change(input, {
     target: { files: [file('b.png', 'image/png', 3 * 1024 * 1024)] },
   });
-  expect(screen.getByText('Ảnh tối đa 2 MB.')).toBeVisible();
+  expect(
+    screen.getByText(
+      'Ảnh "b.png" nặng 3,0 MB, vượt quá 2 MB. Chọn ảnh nhỏ hơn hoặc giảm kích thước ảnh rồi thử lại.',
+    ),
+  ).toBeVisible();
 
   fireEvent.change(input, {
     target: { files: [file('c.webp', 'image/webp')] },
   });
-  expect(screen.queryByText('Ảnh tối đa 2 MB.')).not.toBeInTheDocument();
+  expect(screen.queryByText(/vượt quá 2 MB/)).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Gỡ ảnh' })).toBeInTheDocument();
 });
 
@@ -202,4 +220,27 @@ it('opens the change-password dialog and shows the server message', async () => 
 
   fireEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+});
+
+it('confirms a password change on the page', async () => {
+  const changePassword = vi.fn().mockResolvedValue(undefined);
+  await renderPage('Student', { changePassword });
+  fireEvent.click(screen.getByRole('button', { name: 'Đổi mật khẩu' }));
+  const dialog = screen.getByRole('dialog', { name: 'Đổi mật khẩu' });
+  fireEvent.change(within(dialog).getByLabelText('Mật khẩu hiện tại'), {
+    target: { value: 'cu-matkhau1' },
+  });
+  fireEvent.change(within(dialog).getByLabelText('Mật khẩu mới'), {
+    target: { value: 'matkhau-moi1' },
+  });
+  fireEvent.change(within(dialog).getByLabelText('Nhập lại mật khẩu mới'), {
+    target: { value: 'matkhau-moi1' },
+  });
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Đổi mật khẩu' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+  expect(screen.getByRole('status')).toHaveTextContent(
+    'Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.',
+  );
 });

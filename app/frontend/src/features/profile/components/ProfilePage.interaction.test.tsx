@@ -48,7 +48,6 @@ const renderPage = async (service: ProfileService = createProfileService()) => {
       <ProfilePage profileService={service} />
     </SessionProvider>,
   );
-  await screen.findByRole('heading', { name: 'Hồ sơ cá nhân' });
   return service;
 };
 
@@ -115,26 +114,33 @@ it('previews a valid avatar, keeps it after a rejected pick, saves and removes i
   edit();
   const input = screen.getByLabelText('Ảnh đại diện');
   fireEvent.change(input, { target: { files: [file('a.png', 'image/png')] } });
-  expect(screen.getByRole('img')).toBeInTheDocument();
+  expect(screen.getAllByRole('img').length).toBeGreaterThan(0);
 
   fireEvent.change(input, { target: { files: [file('b.gif', 'image/gif')] } });
-  expect(screen.getByText('Ảnh phải là JPG, PNG hoặc WebP.')).toBeVisible();
+  expect(screen.getByText(/b\.gif.*không đúng định dạng/)).toBeVisible();
   expect(input).toHaveAttribute(
     'aria-describedby',
     'profile-avatar-hint profile-avatar-error',
   );
-  expect(screen.getByRole('img')).toBeInTheDocument();
+  expect(screen.getAllByRole('img').length).toBeGreaterThan(0);
 
+  // Design: còn lỗi ảnh thì chưa lưu được.
+  save();
+  expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeVisible();
+  expect(screen.getAllByRole('alert')[0]).toHaveTextContent('Chưa lưu được');
+
+  fireEvent.change(input, { target: { files: [file('c.png', 'image/png')] } });
+  expect(screen.getByText(/Đã chọn c\.png/)).toBeVisible();
   save();
   await waitSaved();
-  expect(screen.getByRole('img')).toBeInTheDocument();
+  expect(screen.getAllByRole('img').length).toBeGreaterThan(0);
 
   edit();
   fireEvent.click(screen.getByRole('button', { name: 'Gỡ ảnh' }));
-  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  expect(screen.queryAllByRole('img')).toHaveLength(0);
   save();
   await waitSaved();
-  expect(screen.queryByRole('img')).not.toBeInTheDocument();
+  expect(screen.queryAllByRole('img')).toHaveLength(0);
   expect(screen.getAllByText('NA').length).toBeGreaterThan(0);
 });
 

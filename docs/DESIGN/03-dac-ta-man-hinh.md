@@ -535,6 +535,13 @@ Quy ước chung: trạng thái đề tài là Chờ GV duyệt, Đã đăng ký
 **Quy tắc nghiệp vụ**
 
 - Phiếu chấm luôn mở, điểm chấm riêng từng sinh viên (cột Điểm SV1, SV2).
+- Ghi chú triển khai (`/giao-vu/phieu-danh-gia`, API `api/evaluation-templates`, chỉ Giáo vụ): bố cục theo artboard — khối "Gán mẫu phiếu cho đợt" (đợt chọn ở `?dot=`, ba thẻ HD/PB/Hội đồng, chọn mẫu là gán ngay, chọn "Chưa chọn mẫu" là gỡ), danh sách thẻ mẫu (4 mẫu/trang, mẫu mới nằm cuối) và trình sửa đặt bên phải. Nội dung mẫu là cấu hình, không có mẫu cố định trong mã. Quy tắc đã hiện thực:
+  - Mẫu có tên (duy nhất, không phân biệt hoa thường/khoảng trắng), mô tả ≤ 500 ký tự, thang 10 (cố định trên giao diện; backend vẫn nhận thang khác > 0 ≤ 100), tiêu chí chung (tên, mô tả/hướng dẫn chấm không bắt buộc, điểm) và hạng mục con (tên, điểm). Điểm > 0, tối đa hai chữ số thập phân; không trùng tên tiêu chí trong mẫu, tên hạng mục trong tiêu chí.
+  - Giao diện chỉ bật "Lưu mẫu phiếu" khi mẫu hợp lệ (tổng tiêu chí chung = thang, tổng hạng mục con = điểm tiêu chí) và có thay đổi; có "Hủy thay đổi"/"Hủy tạo mẫu"; đổi sang mẫu khác khi chưa lưu thì hỏi lại. Mẫu mới lưu ở trạng thái Nháp. Backend vẫn cho mẫu Nháp chưa khớp tổng (qua API).
+  - Trạng thái do Giáo vụ đổi (người dùng chốt 2026-10-30): Nháp → Đang dùng ("Chuyển sang đang dùng"), Đang dùng ⇄ Đã đóng; không quay lại Nháp. Chỉ mẫu Đang dùng gán được. Mẫu Đã đóng chỉ xem, có "Tạo bản sao" (mẫu Nháp mới) và "Dùng lại mẫu". Khác design: design coi "Đã đóng" là mẫu đã có điểm (tự động); vì chưa có phiếu điểm nên hiện là trạng thái thủ công.
+  - Xóa mẫu đang gán: hộp xác nhận nêu các (đợt, vai trò) đang dùng; xác nhận thì backend gỡ gán và xóa trong một lần lưu (`DELETE …/{id}?removeAssignments=true`); không có tham số này thì 409.
+  - Chưa làm: nút "Tải phiếu PDF" của design.
+  - Tạm thời: backend chưa có mô-đun Đợt nên mã đợt lưu dạng chuỗi (từ kho demo của màn Đợt), chưa là khóa ngoại. Chưa có phiếu điểm (thuộc không gian đề tài) nên chưa chặn sửa/đổi/xóa mẫu đã có điểm. Khi thang phiếu khác 10, điểm được quy về thang 10 (`ThesisScore.ToScale10`) trước khi vào công thức điểm khóa luận.
 
 ## Quản lý người dùng
 - **Vai trò:** Giáo vụ

@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle, KeyRound, Trash2, UserCheck, X } from 'lucide-react';
+import { Ban, KeyRound, Lock, RotateCcw, Trash2, X } from 'lucide-react';
 import { ROLE_LABEL } from '@/features/auth/roles';
 import {
   DuplicateUserError,
   type UserService,
 } from '@/features/users/services/userService';
 import {
+  findDuplicateErrors,
   normalizeUserInput,
   validateUserInput,
   type UserField,
@@ -20,13 +21,20 @@ import { useDialogFocus } from '@/lib/useDialogFocus';
 interface UserFormDrawerProps {
   // user có giá trị = sửa; không có = thêm mới.
   user?: ManagedUser;
+  // Danh sách đã tải, dùng để báo trùng mã/email kèm tài khoản đang giữ.
+  users?: ManagedUser[];
   userService: UserService;
   // Tài khoản của chính Giáo vụ đang đăng nhập: không được xóa/vô hiệu hóa.
   isSelf?: boolean;
   // Tạm bỏ qua phím Escape khi có hộp thoại xác nhận nằm trên ngăn kéo.
   escapeDisabled?: boolean;
   onClose: () => void;
-  onSaved: (user: ManagedUser, mode: 'create' | 'edit') => void;
+  // keepOpen: "Lưu và thêm tiếp", ngăn kéo ở lại với form trống.
+  onSaved: (
+    user: ManagedUser,
+    mode: 'create' | 'edit',
+    keepOpen?: boolean,
+  ) => void;
   onResetPassword?: () => void;
   onRemove?: () => void;
   onReactivate?: () => void;
@@ -34,11 +42,22 @@ interface UserFormDrawerProps {
 
 const ROLES: UserRole[] = ['Student', 'Lecturer', 'AcademicAffairs'];
 
-const emptyInput = (): UserInput => ({
+const CODE_PLACEHOLDER: Record<UserRole, string> = {
+  Student: 'MSSV, ví dụ 22520123',
+  Lecturer: 'Mã giảng viên',
+  AcademicAffairs: 'Mã giáo vụ',
+};
+
+const CREATE_FAILED =
+  'Chưa tạo được tài khoản. Vui lòng bổ sung hoặc sửa các mục được đánh dấu bên dưới.';
+const UPDATE_FAILED =
+  'Chưa lưu được thay đổi. Vui lòng sửa các mục được đánh dấu bên dưới.';
+
+const emptyInput = (role: UserRole = 'Student'): UserInput => ({
   userCode: '',
   fullName: '',
   email: '',
-  role: 'Student',
+  role,
   dateOfBirth: '',
   className: '',
   department: '',
@@ -61,9 +80,12 @@ interface TextFieldProps {
   label: string;
   value: string;
   error?: string;
+  hint?: string;
+  placeholder?: string;
   type?: string;
   readOnly?: boolean;
   required?: boolean;
+  wide?: boolean;
   autoFocus?: boolean;
   onChange: (field: UserField, value: string) => void;
 }
@@ -73,44 +95,57 @@ const TextField: React.FC<TextFieldProps> = ({
   label,
   value,
   error,
+  hint,
+  placeholder,
   type = 'text',
   readOnly,
   required,
+  wide,
   autoFocus,
   onChange,
 }) => {
   const id = `user-${field}`;
+  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
   return (
-    <div className="login-field">
+    <div className={`usr-field${wide ? ' usr-field-wide' : ''}`}>
       <label htmlFor={id}>
         {label}
-        {required && <span aria-hidden="true"> *</span>}
+        {required && <span className="usr-req"> *</span>}
       </label>
       <input
         id={id}
+        className="usr-input"
         type={type}
         value={value}
+        placeholder={placeholder}
         readOnly={readOnly}
         autoFocus={autoFocus}
-        required={required}
         aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
+        aria-describedby={describedBy}
         onChange={(e) => onChange(field, e.target.value)}
       />
-      {error && (
-        <p id={`${id}-error`} className="login-field-error">
+      {error ? (
+        <p id={`${id}-error`} className="usr-field-error">
           {error}
         </p>
+      ) : (
+        hint && (
+          <p id={`${id}-hint`} className="usr-field-hint">
+            {hint}
+          </p>
+        )
       )}
     </div>
   );
 };
 
-// Ngăn kéo thêm/sửa người dùng. Trường theo vai trò: sinh viên có lớp, giảng
-// viên có bộ môn và học hàm. Khi sửa, mã và vai trò chỉ đọc, kèm các hành động
-// của tài khoản (đặt lại mật khẩu, xóa/vô hiệu hóa, kích hoạt lại).
+// Ngăn kéo thêm/sửa người dùng (rộng tối đa 560px). Trường theo vai trò: sinh
+// viên có lớp, giảng viên có bộ môn và học hàm. Khi sửa, mã và vai trò chỉ đọc,
+// kèm các hành động của tài khoản (đặt lại mật khẩu, xóa/vô hiệu hóa, kích
+// hoạt lại) ở chân ngăn kéo.
 export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
   user,
+  users = [],
   userService,
   isSelf = false,
   escapeDisabled = false,
@@ -151,16 +186,26 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
     setFormError(null);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const pickRole = (next: UserRole) => {
+    if (editing || next === values.role) return;
+    setValues((v) => ({ ...v, role: next }));
+    setErrors({});
+    setFormError(null);
+  };
+
+  const submit = async (keepOpen: boolean) => {
     if (savingRef.current) return;
-    const found = validateUserInput(values);
+    const found: UserFieldErrors = {
+      ...findDuplicateErrors(
+        values,
+        users.filter((u) => u.id !== user?.id),
+        { checkCode: !editing },
+      ),
+      ...validateUserInput(values),
+    };
     setErrors(found);
-    const count = Object.keys(found).length;
-    if (count > 0) {
-      setFormError(
-        `Còn ${count} trường chưa hợp lệ. Điền đủ thông tin bắt buộc.`,
-      );
+    if (Object.keys(found).length > 0) {
+      setFormError(editing ? UPDATE_FAILED : CREATE_FAILED);
       return;
     }
 
@@ -172,10 +217,16 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
       const saved = user
         ? await userService.update(user.id, input)
         : await userService.create(input);
-      onSaved(saved, editing ? 'edit' : 'create');
+      onSaved(saved, editing ? 'edit' : 'create', keepOpen);
+      if (keepOpen) {
+        setValues(emptyInput(values.role));
+        setErrors({});
+        document.getElementById('user-userCode')?.focus();
+      }
     } catch (err: unknown) {
       if (err instanceof DuplicateUserError) {
         setErrors({ [err.field]: err.message });
+        setFormError(editing ? UPDATE_FAILED : CREATE_FAILED);
       } else {
         setFormError(
           err instanceof Error && err.message
@@ -190,97 +241,99 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
   };
 
   const role = values.role;
-  const selfNote =
-    'Bạn không thể xóa hoặc vô hiệu hóa chính tài khoản của mình.';
+  const disabledAccount = !!user && !user.isActive;
+  const canRemove = !!user && (user.isActive || !user.hasData);
 
   return (
-    <div className="app-drawer-backdrop">
+    <div className="usr-overlay">
       <aside
         ref={drawerRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="user-drawer-title"
-        className="app-drawer"
+        className="usr-drawer"
       >
-        <header className="app-drawer-header">
-          <h2 id="user-drawer-title">
-            {editing ? 'Sửa người dùng' : 'Thêm người dùng'}
-          </h2>
+        <div className="usr-dialog-head">
+          <div className="usr-dialog-title">
+            <h2 id="user-drawer-title">
+              {user ? 'Sửa người dùng' : 'Thêm người dùng'}
+            </h2>
+            <p>
+              {user
+                ? `${user.fullName} · ${ROLE_LABEL[user.role]}`
+                : 'Tạo từng tài khoản. Để tạo nhiều tài khoản cùng lúc, dùng Nhập CSV.'}
+            </p>
+          </div>
           <button
             type="button"
-            className="app-icon-button"
+            className="usr-close"
             aria-label="Đóng"
             onClick={onClose}
             disabled={saving}
           >
-            <X size={18} aria-hidden="true" />
+            <X size={16} aria-hidden="true" />
           </button>
-        </header>
+        </div>
 
-        <div className="app-drawer-body">
-          <form
-            id="user-form"
-            className="login-form"
-            onSubmit={handleSubmit}
-            noValidate
-          >
-            {formError && (
-              <div role="alert" className="login-error">
-                <AlertCircle size={18} />
-                <span>{formError}</span>
-              </div>
-            )}
-
-            <div className="login-field">
-              <label htmlFor="user-role">Vai trò</label>
-              <select
-                id="user-role"
-                className="app-select"
-                value={role}
-                disabled={editing}
-                onChange={(e) => {
-                  setValues((v) => ({
-                    ...v,
-                    role: e.target.value as UserRole,
-                  }));
-                  setErrors({});
-                  setFormError(null);
-                }}
-              >
-                {ROLES.map((r) => (
-                  <option key={r} value={r}>
-                    {ROLE_LABEL[r]}
-                  </option>
-                ))}
-              </select>
+        <form
+          className="usr-drawer-form"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submit(false);
+          }}
+        >
+          {disabledAccount && (
+            <div role="note" className="usr-note">
+              <Ban size={18} aria-hidden="true" />
+              <span>
+                Tài khoản đã bị vô hiệu hóa nên người dùng không đăng nhập được.
+                Dữ liệu liên quan vẫn được giữ.
+              </span>
             </div>
+          )}
 
+          {formError && (
+            <div role="alert" className="usr-alert">
+              {formError}
+            </div>
+          )}
+
+          <fieldset className="usr-roles">
+            <legend>
+              Vai trò <span className="usr-req">*</span>
+            </legend>
+            <div className="usr-roles-row">
+              {ROLES.map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  className="usr-role-btn"
+                  aria-pressed={r === role}
+                  disabled={editing && r !== role}
+                  onClick={() => pickRole(r)}
+                >
+                  {ROLE_LABEL[r]}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+
+          <div className="usr-grid">
             <TextField
               field="userCode"
               label="Mã người dùng"
               value={values.userCode}
               error={errors.userCode}
+              hint={
+                editing
+                  ? 'Không đổi được sau khi tạo'
+                  : 'Cũng là mật khẩu ban đầu'
+              }
+              placeholder={CODE_PLACEHOLDER[role]}
               readOnly={editing}
               required
               autoFocus={!editing}
-              onChange={setField}
-            />
-            <TextField
-              field="fullName"
-              label="Họ tên"
-              value={values.fullName}
-              error={errors.fullName}
-              required
-              autoFocus={editing}
-              onChange={setField}
-            />
-            <TextField
-              field="email"
-              label="Email"
-              type="email"
-              value={values.email}
-              error={errors.email}
-              required
               onChange={setField}
             />
             <TextField
@@ -291,14 +344,38 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
               error={errors.dateOfBirth}
               onChange={setField}
             />
-
+            <TextField
+              field="fullName"
+              label="Họ và tên"
+              value={values.fullName}
+              error={errors.fullName}
+              placeholder="Họ và tên đầy đủ"
+              required
+              wide
+              autoFocus={editing}
+              onChange={setField}
+            />
+            <TextField
+              field="email"
+              label="Email"
+              type="email"
+              value={values.email}
+              error={errors.email}
+              hint="Email trường cấp, dùng để đăng nhập; không trùng"
+              placeholder="ten@truong.edu.vn"
+              required
+              wide
+              onChange={setField}
+            />
             {role === 'Student' && (
               <TextField
                 field="className"
-                label="Lớp"
+                label="Lớp sinh hoạt"
                 value={values.className}
                 error={errors.className}
+                placeholder="Ví dụ KTPM2022.1"
                 required
+                wide
                 onChange={setField}
               />
             )}
@@ -309,101 +386,111 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
                   label="Bộ môn"
                   value={values.department}
                   error={errors.department}
+                  placeholder="Ví dụ Công nghệ phần mềm"
                   required
                   onChange={setField}
                 />
                 <TextField
                   field="academicTitle"
-                  label="Học hàm"
+                  label="Học hàm, học vị"
                   value={values.academicTitle}
                   error={errors.academicTitle}
+                  placeholder="GS., PGS., TS., ThS."
                   onChange={setField}
                 />
               </>
             )}
+          </div>
 
-            {!editing && (
-              <p className="login-hint">
-                Mật khẩu ban đầu là mã người dùng; người dùng phải đổi mật khẩu
-                khi đăng nhập lần đầu.
-              </p>
-            )}
-          </form>
+          <div className="usr-note usr-note-soft">
+            <Lock size={18} aria-hidden="true" />
+            <span>
+              {editing
+                ? 'Khi người dùng quên mật khẩu và không nhận được email, giáo vụ bấm Đặt lại mật khẩu: đặt về mã người dùng hoặc nhập mật khẩu mới.'
+                : 'Hệ thống tự tạo mã định danh và lưu mật khẩu ban đầu (bằng mã người dùng) dưới dạng mã hóa. Người dùng phải đổi mật khẩu ở lần đăng nhập đầu.'}
+            </span>
+          </div>
 
-          {user && (
-            <section className="app-drawer-section" aria-label="Tài khoản">
-              <h3>Tài khoản</h3>
-              <div className="app-drawer-actions">
+          <div className="usr-drawer-foot">
+            {user && (
+              <span className="usr-drawer-foot-left">
                 <button
                   type="button"
-                  className="app-button"
+                  className="usr-btn"
                   onClick={onResetPassword}
                 >
                   <KeyRound size={16} aria-hidden="true" />
                   Đặt lại mật khẩu
                 </button>
-                {!user.isActive && (
+                {canRemove && (
                   <button
                     type="button"
-                    className="app-button"
-                    onClick={onReactivate}
-                  >
-                    <UserCheck size={16} aria-hidden="true" />
-                    Kích hoạt lại
-                  </button>
-                )}
-                {(user.isActive || !user.hasData) && (
-                  <button
-                    type="button"
-                    className="app-button app-button-danger"
+                    className="usr-btn usr-btn-danger"
                     onClick={onRemove}
                     disabled={isSelf}
+                    title={
+                      isSelf
+                        ? 'Không xóa được tài khoản đang đăng nhập'
+                        : undefined
+                    }
                     aria-describedby={isSelf ? 'user-self-note' : undefined}
                   >
                     <Trash2 size={16} aria-hidden="true" />
-                    {user.hasData ? 'Vô hiệu hóa' : 'Xóa người dùng'}
+                    Xóa
                   </button>
                 )}
-              </div>
-              {isSelf && (
-                <p id="user-self-note" className="login-hint">
-                  {selfNote}
-                </p>
+                {disabledAccount && (
+                  <button
+                    type="button"
+                    className="usr-btn usr-btn-success"
+                    onClick={onReactivate}
+                  >
+                    <RotateCcw size={16} aria-hidden="true" />
+                    Kích hoạt lại
+                  </button>
+                )}
+              </span>
+            )}
+            {isSelf && (
+              <p id="user-self-note" className="usr-self-note">
+                Đây là tài khoản bạn đang đăng nhập nên không xóa hoặc vô hiệu
+                hóa được.
+              </p>
+            )}
+            <div className="usr-actions">
+              <button
+                type="button"
+                className="usr-btn"
+                onClick={onClose}
+                disabled={saving}
+              >
+                Hủy
+              </button>
+              {!editing && (
+                <button
+                  type="button"
+                  className="usr-btn usr-btn-outline-ink"
+                  onClick={() => void submit(true)}
+                  disabled={saving}
+                >
+                  Lưu và thêm tiếp
+                </button>
               )}
-              {!isSelf && user.isActive && (
-                <p className="login-hint">
-                  {user.hasData
-                    ? 'Người dùng đã có dữ liệu nên chỉ được vô hiệu hóa, không xóa.'
-                    : 'Người dùng chưa có dữ liệu nên có thể xóa hẳn.'}
-                </p>
-              )}
-            </section>
-          )}
-        </div>
-
-        <footer className="app-drawer-footer">
-          <button
-            type="button"
-            className="app-button"
-            onClick={onClose}
-            disabled={saving}
-          >
-            Hủy
-          </button>
-          <button
-            type="submit"
-            form="user-form"
-            className="app-button app-button-primary"
-            disabled={saving}
-            aria-busy={saving}
-          >
-            {saving
-              ? 'Đang lưu...'
-              : editing
-                ? 'Lưu thay đổi'
-                : 'Thêm người dùng'}
-          </button>
-        </footer>
+              <button
+                type="submit"
+                className="usr-btn usr-btn-primary"
+                disabled={saving}
+                aria-busy={saving}
+              >
+                {saving
+                  ? 'Đang lưu...'
+                  : editing
+                    ? 'Lưu thay đổi'
+                    : 'Tạo tài khoản'}
+              </button>
+            </div>
+          </div>
+        </form>
       </aside>
     </div>
   );

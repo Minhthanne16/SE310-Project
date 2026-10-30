@@ -13,8 +13,11 @@ export const normalizePhone = (phone: string): string =>
 
 export function validateAvatarFile(file: File): string | null {
   if (!AVATAR_TYPES.includes(file.type))
-    return 'Ảnh phải là JPG, PNG hoặc WebP.';
-  if (file.size > AVATAR_MAX_BYTES) return 'Ảnh tối đa 2 MB.';
+    return `Ảnh "${file.name}" không đúng định dạng. Chỉ nhận JPG, PNG hoặc WebP.`;
+  if (file.size > AVATAR_MAX_BYTES) {
+    const mb = (file.size / 1024 / 1024).toFixed(1).replace('.', ',');
+    return `Ảnh "${file.name}" nặng ${mb} MB, vượt quá 2 MB. Chọn ảnh nhỏ hơn hoặc giảm kích thước ảnh rồi thử lại.`;
+  }
   return null;
 }
 
@@ -35,12 +38,14 @@ export function validateProfileInput(
 
   const phone = normalizePhone(input.phone);
   if (phone && !/^0\d{9}$/.test(phone))
-    errors.phone = 'Số điện thoại gồm 10 chữ số, bắt đầu bằng 0.';
+    errors.phone =
+      'Số điện thoại không đúng định dạng. Nhập 10 chữ số, bắt đầu bằng 0, ví dụ 0912345678.';
 
   const email = input.secondaryEmail.trim().toLowerCase();
   if (email) {
     if (email.length > 256 || !EMAIL_PATTERN.test(email))
-      errors.secondaryEmail = 'Email phụ không hợp lệ.';
+      errors.secondaryEmail =
+        'Email phụ không đúng định dạng. Ví dụ: ten@gmail.com.';
     else if (email === accountEmail.toLowerCase())
       errors.secondaryEmail = 'Email phụ phải khác email tài khoản.';
   }

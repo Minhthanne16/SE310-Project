@@ -46,7 +46,24 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
   return (
     <div className="account-menu" ref={rootRef}>
       {open && (
-        <div id={menuId} role="menu" className="account-menu-popup">
+        <div
+          id={menuId}
+          role="menu"
+          aria-label="Tài khoản"
+          className="account-menu-popup"
+        >
+          <div className="account-menu-head">
+            <span
+              className={`avatar avatar-lg avatar-${user.role}`}
+              aria-hidden="true"
+            >
+              {initials(user.fullName)}
+            </span>
+            <span className="account-menu-head-text">
+              <strong>{user.fullName}</strong>
+              <span>{user.email}</span>
+            </span>
+          </div>
           <Link
             role="menuitem"
             href="/ho-so"
@@ -59,7 +76,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
           <button
             type="button"
             role="menuitem"
-            className="account-menu-item"
+            className="account-menu-item account-menu-item-danger"
             disabled={loggingOut}
             onClick={() => {
               setOpen(false);

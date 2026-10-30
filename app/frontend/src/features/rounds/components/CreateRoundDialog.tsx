@@ -1,95 +1,95 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { AlertCircle } from 'lucide-react';
-import {
-  validateRoundInput,
-  type RoundField,
-  type RoundFieldErrors,
-} from '@/features/rounds/roundValidation';
+import React, { useRef, useState } from 'react';
+import { RoundModal } from '@/features/rounds/components/RoundModal';
+import { nameKey, validateRoundInput } from '@/features/rounds/roundValidation';
 import {
   DuplicateRoundNameError,
   RoundValidationError,
   type RoundService,
 } from '@/features/rounds/services/roundService';
-import { ROUND_PROGRAMS, type Round, type RoundInput } from '@/types/round';
-import { useDialogFocus } from '@/lib/useDialogFocus';
+import { ROUND_PROGRAMS, type Round, type RoundProgram } from '@/types/round';
 
 interface CreateRoundDialogProps {
   roundService: RoundService;
-  // Đợt hiện có, dùng cho ô "Sao chép từ đợt cũ".
+  // Đợt hiện có, dùng cho ô "Sao chép cấu hình từ" và kiểm tra trùng tên.
   rounds: Round[];
+  // Mở sẵn một đợt nguồn (nút "Sao chép từ đợt cũ").
+  initialCopyFromId?: string;
   onClose: () => void;
   onCreated: (round: Round) => void;
 }
 
-// Tạo đợt mới (03: Danh sách đợt): thiếu thông tin, trùng tên đợt, sao chép từ
-// đợt cũ. Lỗi theo ô hiện sau khi bấm Tạo đợt.
+const TOP_MISSING =
+  'Chưa tạo được đợt. Vui lòng bổ sung các mục được đánh dấu bên dưới.';
+const TOP_DUPLICATE = 'Chưa tạo được đợt. Tên đợt bị trùng với một đợt đã có.';
+
+// Tạo đợt mới (artboard GiaoVu-DanhSachDot): chương trình + tên đợt, tùy chọn
+// sao chép cấu hình từ đợt cũ. Tên đợt lưu dạng "Chương trình · Tên đợt" nên
+// một tên chỉ trùng khi cùng chương trình. Lỗi hiện sau khi bấm Tạo đợt nháp.
 export const CreateRoundDialog: React.FC<CreateRoundDialogProps> = ({
   roundService,
   rounds,
+  initialCopyFromId = '',
   onClose,
   onCreated,
 }) => {
-  const [values, setValues] = useState<RoundInput>({
-    name: '',
-    program: '',
-    periodLabel: '',
-    copyFromId: '',
-  });
-  const [errors, setErrors] = useState<RoundFieldErrors>({});
-  const [formError, setFormError] = useState<string | null>(null);
+  const [program, setProgram] = useState<RoundProgram>('Văn bằng 1');
+  const [label, setLabel] = useState('');
+  const [copyFromId, setCopyFromId] = useState(initialCopyFromId);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [topError, setTopError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const savingRef = useRef(false);
-  const dialogRef = useDialogFocus<HTMLDivElement>();
+  const nameRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !savingRef.current) onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
-  }, [onClose]);
-
-  const setField = (field: RoundField | 'copyFromId', value: string) => {
-    setValues((v) => ({ ...v, [field]: value }));
-    if (field !== 'copyFromId')
-      setErrors((e) => ({ ...e, [field]: undefined }));
-    setFormError(null);
-  };
+  const source = rounds.find((r) => r.id === copyFromId);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (savingRef.current) return;
-    const found = validateRoundInput(values);
-    setErrors(found);
-    const count = Object.keys(found).length;
-    if (count > 0) {
-      setFormError(
-        `Thiếu thông tin: còn ${count} trường chưa hợp lệ. Điền đủ thông tin bắt buộc.`,
+    const composed = `${program} · ${label.trim().replace(/\s+/g, ' ')}`;
+    const found = validateRoundInput({
+      name: label,
+      program,
+      periodLabel: label,
+    });
+    if (found.name || found.periodLabel) {
+      setNameError(found.name ?? found.periodLabel ?? 'Nhập tên đợt.');
+      setTopError(TOP_MISSING);
+      return;
+    }
+    const duplicate = rounds.find((r) => nameKey(r.name) === nameKey(composed));
+    if (duplicate) {
+      setNameError(
+        `Chương trình ${program} đã có đợt “${duplicate.periodLabel}” (${duplicate.status}). Đặt tên khác để phân biệt.`,
       );
+      setTopError(TOP_DUPLICATE);
       return;
     }
     savingRef.current = true;
     setSaving(true);
-    setFormError(null);
+    setTopError(null);
     try {
       const created = await roundService.create({
-        ...values,
-        copyFromId: values.copyFromId || undefined,
+        name: composed,
+        program,
+        periodLabel: label.trim(),
+        copyFromId: copyFromId || undefined,
       });
       onCreated(created);
     } catch (err: unknown) {
       if (err instanceof DuplicateRoundNameError) {
-        setErrors({ name: err.message });
-        setFormError('Trùng tên đợt. Đặt tên khác rồi tạo lại.');
+        setNameError(err.message);
+        setTopError(TOP_DUPLICATE);
       } else if (err instanceof RoundValidationError) {
-        setErrors(err.fields);
+        setNameError(err.fields.name ?? err.fields.periodLabel ?? null);
+        setTopError(TOP_MISSING);
       } else {
-        setFormError(
+        setTopError(
           err instanceof Error && err.message
-            ? err.message
-            : 'Tạo đợt thất bại. Thử lại sau.',
+            ? `Chưa tạo được đợt. ${err.message}`
+            : 'Chưa tạo được đợt. Thử lại sau.',
         );
       }
     } finally {
@@ -98,95 +98,88 @@ export const CreateRoundDialog: React.FC<CreateRoundDialogProps> = ({
     }
   };
 
-  const fieldProps = (field: RoundField) => ({
-    'aria-invalid': errors[field] ? (true as const) : undefined,
-    'aria-describedby': errors[field] ? `round-${field}-error` : undefined,
-  });
-  const fieldError = (field: RoundField) =>
-    errors[field] && (
-      <p id={`round-${field}-error`} className="login-field-error">
-        {errors[field]}
-      </p>
-    );
-
   return (
-    <div className="dialog-backdrop">
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="create-round-title"
-        className="dialog"
+    <RoundModal
+      titleId="create-round-title"
+      size="lg"
+      busy={saving}
+      onClose={onClose}
+      initialFocusRef={nameRef}
+    >
+      <form
+        onSubmit={submit}
+        noValidate
+        style={{ display: 'flex', flexDirection: 'column', gap: 16 }}
       >
-        <form className="login-form" onSubmit={submit} noValidate>
-          <div className="login-heading">
-            <h2 id="create-round-title">Tạo đợt mới</h2>
-            <p>Đợt mới ở trạng thái Nháp, chỉ giáo vụ thấy đến khi mở đợt.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <h2 id="create-round-title">
+            {source ? 'Tạo đợt từ đợt cũ' : 'Tạo đợt mới'}
+          </h2>
+          <span className="rnd-modal-sub">
+            Đợt mới được tạo ở trạng thái Nháp, giảng viên và sinh viên chưa
+            thấy cho đến khi bạn mở đợt.
+          </span>
+        </div>
+        {topError && (
+          <div role="alert" className="rnd-alert">
+            {topError}
           </div>
-          {formError && (
-            <div role="alert" className="login-error">
-              <AlertCircle size={18} />
-              <span>{formError}</span>
-            </div>
-          )}
-          <div className="login-field">
-            <label htmlFor="round-name">
-              Tên đợt<span aria-hidden="true"> *</span>
-            </label>
-            <input
-              id="round-name"
-              type="text"
-              value={values.name}
-              autoFocus
-              required
-              placeholder="Ví dụ: Văn bằng 1 · HK2 2026–2027"
-              onChange={(e) => setField('name', e.target.value)}
-              {...fieldProps('name')}
-            />
-            {fieldError('name')}
-          </div>
-          <div className="login-field">
-            <label htmlFor="round-program">
-              Chương trình<span aria-hidden="true"> *</span>
-            </label>
+        )}
+        <div className="rnd-form-grid">
+          <label className="rnd-label" htmlFor="round-program">
+            Chương trình *
             <select
               id="round-program"
-              className="app-select"
-              value={values.program}
-              onChange={(e) => setField('program', e.target.value)}
-              {...fieldProps('program')}
+              className="rnd-select"
+              value={program}
+              onChange={(e) => {
+                setProgram(e.target.value as RoundProgram);
+                setNameError(null);
+                setTopError(null);
+              }}
             >
-              <option value="">Chọn chương trình</option>
               {ROUND_PROGRAMS.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
               ))}
             </select>
-            {fieldError('program')}
-          </div>
-          <div className="login-field">
-            <label htmlFor="round-period">
-              Học kỳ / Khóa<span aria-hidden="true"> *</span>
-            </label>
+          </label>
+          <div className="rnd-label">
+            <label htmlFor="round-name">Tên đợt *</label>
             <input
-              id="round-period"
+              ref={nameRef}
+              id="round-name"
               type="text"
-              value={values.periodLabel}
-              required
+              className="rnd-input"
+              value={label}
               placeholder="Ví dụ: HK2 2026–2027"
-              onChange={(e) => setField('periodLabel', e.target.value)}
-              {...fieldProps('periodLabel')}
+              aria-required="true"
+              aria-invalid={nameError ? true : undefined}
+              aria-describedby={nameError ? 'round-name-error' : undefined}
+              onChange={(e) => {
+                setLabel(e.target.value);
+                setNameError(null);
+                setTopError(null);
+              }}
             />
-            {fieldError('periodLabel')}
+            {nameError && (
+              <span id="round-name-error" className="rnd-field-err">
+                {nameError}
+              </span>
+            )}
           </div>
-          <div className="login-field">
-            <label htmlFor="round-copy">Sao chép từ đợt cũ</label>
+          <label
+            className="rnd-label"
+            htmlFor="round-copy"
+            style={{ gridColumn: '1 / -1' }}
+          >
+            Sao chép cấu hình từ
             <select
               id="round-copy"
-              className="app-select"
-              value={values.copyFromId ?? ''}
-              onChange={(e) => setField('copyFromId', e.target.value)}
+              className="rnd-select"
+              value={copyFromId}
+              onChange={(e) => setCopyFromId(e.target.value)}
             >
               <option value="">Không sao chép</option>
               {rounds.map((r) => (
@@ -195,31 +188,32 @@ export const CreateRoundDialog: React.FC<CreateRoundDialogProps> = ({
                 </option>
               ))}
             </select>
-            <p className="login-hint">
-              Sao chép cấu hình mốc và danh sách giảng viên; không sao chép ngày
-              và sinh viên.
-            </p>
-          </div>
-          <div className="dialog-actions dialog-actions-split">
-            <button
-              type="button"
-              className="app-button"
-              onClick={onClose}
-              disabled={saving}
-            >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="app-button app-button-primary"
-              disabled={saving}
-              aria-busy={saving}
-            >
-              {saving ? 'Đang tạo...' : 'Tạo đợt'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          </label>
+        </div>
+        <p className="rnd-note rnd-note-grey">
+          {source
+            ? `Sao chép từ ${source.name}: cấu hình mốc (Thông báo cho, Cho nộp trễ) và danh sách giảng viên. Không sao chép ngày và danh sách sinh viên; bạn đặt ngày ở tab Cấu hình và thêm sinh viên ở tab Sinh viên của đợt mới.`
+            : 'Đợt trống: bạn nhập 9 mốc ở tab Cấu hình, rồi thêm giảng viên, sinh viên.'}
+        </p>
+        <div className="rnd-modal-actions">
+          <button
+            type="button"
+            className="rnd-btn"
+            onClick={onClose}
+            disabled={saving}
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            className="rnd-btn rnd-btn-primary"
+            disabled={saving}
+            aria-busy={saving}
+          >
+            {saving ? 'Đang tạo...' : 'Tạo đợt nháp'}
+          </button>
+        </div>
+      </form>
+    </RoundModal>
   );
 };

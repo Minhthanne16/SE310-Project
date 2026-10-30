@@ -23,7 +23,7 @@ export type UserStatus = 'active' | 'pending' | 'disabled';
 
 export const USER_STATUS_LABEL: Record<UserStatus, string> = {
   active: 'Đang hoạt động',
-  pending: 'Chờ kích hoạt',
+  pending: 'Chưa đăng nhập',
   disabled: 'Đã vô hiệu hóa',
 };
 
