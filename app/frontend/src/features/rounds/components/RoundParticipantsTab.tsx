@@ -1,10 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Search } from 'lucide-react';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { AddParticipantsDialog } from '@/features/rounds/components/AddParticipantsDialog';
+import { Search } from 'lucide-react';
+import '@/features/rounds/rounds.css';
+import {
+  AddParticipantsDialog,
+  type AddMode,
+} from '@/features/rounds/components/AddParticipantsDialog';
+import { RoundModal } from '@/features/rounds/components/RoundModal';
+import { studentNoun } from '@/features/rounds/roundUtils';
 import type { RoundService } from '@/features/rounds/services/roundService';
 import type { Participant, ParticipantKind, Round } from '@/types/round';
 
@@ -15,29 +20,38 @@ interface RoundParticipantsTabProps {
   onChanged: (round: Round) => void;
 }
 
-const COPY: Record<
-  ParticipantKind,
-  { plural: string; unit: string; add: string }
-> = {
-  lecturer: { plural: 'giảng viên', unit: 'Bộ môn', add: 'Thêm giảng viên' },
-  student: { plural: 'sinh viên', unit: 'Lớp', add: 'Thêm sinh viên' },
+const NOTES: Record<ParticipantKind, string> = {
+  lecturer:
+    'Giảng viên được thêm từ tài khoản đã tạo ở trang Người dùng. Chỉ giảng viên có tên ở đây mới gửi đề tài, được sinh viên chọn hướng dẫn và được phân công phản biện, hội đồng trong đợt. Một giảng viên có thể tham gia nhiều đợt cùng lúc. Giảng viên gỡ được khỏi đợt (quy tắc khóa gỡ vì đã có dữ liệu chỉ áp dụng cho sinh viên).',
+  student:
+    'Sinh viên được thêm từ tài khoản đã tạo ở trang Người dùng. Sinh viên chỉ thấy đợt mình được ghi danh và chỉ thuộc một đợt đang diễn ra. Chỉ gỡ khỏi đợt được sinh viên chưa có dữ liệu trong đợt; sinh viên đã có dữ liệu thì không gỡ được.',
 };
 
 // Tab Giảng viên / Sinh viên của chi tiết đợt: danh sách, tìm kiếm, thêm (chọn
-// hoặc nhập mã) và gỡ khỏi đợt. Người đã có dữ liệu không gỡ được.
+// hoặc nhập mã) và gỡ khỏi đợt. Sinh viên đã có dữ liệu không gỡ được.
 export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
   kind,
   round,
   roundService,
   onChanged,
 }) => {
-  const copy = COPY[kind];
+  const isStudent = kind === 'student';
+  const noun = isStudent ? studentNoun(round.program) : 'giảng viên';
+  const heading = isStudent
+    ? noun === 'học viên'
+      ? 'Học viên'
+      : 'Sinh viên'
+    : 'Giảng viên';
+  const addLabel = isStudent ? `Thêm ${noun}` : 'Thêm giảng viên';
+  const unitLabel = isStudent ? 'Lớp' : 'Bộ môn';
+
   const [everyone, setEveryone] = useState<Participant[]>([]);
   const [search, setSearch] = useState('');
-  const [adding, setAdding] = useState(false);
+  const [adding, setAdding] = useState<AddMode | null>(null);
   const [removing, setRemoving] = useState<Participant | null>(null);
   const [busy, setBusy] = useState(false);
   const [removeError, setRemoveError] = useState<string | null>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,7 +63,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
     };
   }, [roundService, kind]);
 
-  const ids = kind === 'student' ? round.studentIds : round.lecturerIds;
+  const ids = isStudent ? round.studentIds : round.lecturerIds;
   const keyword = search.trim().toLowerCase();
   const members = ids
     .map((id) => everyone.find((p) => p.id === id))
@@ -58,12 +72,13 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
       (p) =>
         !keyword ||
         p.code.toLowerCase().includes(keyword) ||
-        p.name.toLowerCase().includes(keyword),
+        p.name.toLowerCase().includes(keyword) ||
+        p.unit.toLowerCase().includes(keyword),
     );
   const readOnly = round.status === 'Đã kết thúc';
   // Chỉ sinh viên có dữ liệu trong đợt này bị khóa (03: Chi tiết đợt).
   const isLocked = (p: Participant) =>
-    kind === 'student' && round.lockedStudentIds.includes(p.id);
+    isStudent && round.lockedStudentIds.includes(p.id);
 
   const confirmRemove = async () => {
     if (!removing || busy) return;
@@ -75,7 +90,9 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
         kind,
         removing.id,
       );
-      toast.success(`Đã gỡ ${removing.name} khỏi đợt.`);
+      toast.success(
+        `Đã gỡ ${removing.name} khỏi đợt. Có thể thêm lại bằng nút ${addLabel} nếu cần.`,
+      );
       setRemoving(null);
       onChanged(updated);
     } catch (err: unknown) {
@@ -89,136 +106,205 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
     }
   };
 
+  const colCount = readOnly ? 3 : 4;
+
   return (
-    <section className="app-card" aria-label={`Danh sách ${copy.plural}`}>
-      <div className="app-card-header">
-        <h2>
-          {copy.plural === 'giảng viên' ? 'Giảng viên' : 'Sinh viên'} (
-          {ids.length})
-        </h2>
-        <div className="app-toolbar-actions">
-          <div className="app-search">
-            <Search size={16} aria-hidden="true" />
-            <input
-              type="search"
-              aria-label={`Tìm ${copy.plural}`}
-              placeholder="Tìm theo mã hoặc họ tên"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <button
-            type="button"
-            className="app-button app-button-primary"
-            aria-haspopup="dialog"
-            disabled={readOnly}
-            onClick={() => setAdding(true)}
-          >
-            <Plus size={16} aria-hidden="true" />
-            {copy.add}
-          </button>
+    <div className="rnd-panel" aria-label={`Danh sách ${noun}`}>
+      <div className="rnd-people-tools">
+        <div className="rnd-people-search">
+          <Search size={18} strokeWidth={1.8} aria-hidden="true" />
+          <input
+            type="search"
+            aria-label={`Tìm ${noun}`}
+            placeholder={
+              isStudent
+                ? `Tìm ${noun} theo mã, họ tên, lớp`
+                : 'Tìm giảng viên theo mã, họ tên, bộ môn'
+            }
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+        {!readOnly && (
+          <>
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-lg"
+              aria-haspopup="dialog"
+              onClick={() => setAdding('codes')}
+            >
+              Nhập theo mã
+            </button>
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-lg rnd-btn-primary"
+              aria-haspopup="dialog"
+              onClick={() => setAdding('pick')}
+            >
+              {addLabel}
+            </button>
+          </>
+        )}
       </div>
 
       {members.length === 0 ? (
         <section className="status-state app-empty">
           <h2>
             {ids.length === 0
-              ? `Chưa có ${copy.plural} trong đợt`
-              : `Không có ${copy.plural} phù hợp`}
+              ? `Chưa có ${noun} trong đợt`
+              : `Không có ${noun} phù hợp`}
           </h2>
           <p>
             {ids.length === 0
-              ? `Bấm “${copy.add}” để chọn từ danh sách hoặc nhập mã.`
+              ? readOnly
+                ? 'Đợt đã kết thúc nên không thêm được nữa.'
+                : `Bấm “${addLabel}” để chọn từ danh sách hoặc nhập mã.`
               : 'Thử đổi từ khóa tìm kiếm.'}
           </p>
         </section>
       ) : (
-        <div className="app-table-scroll">
-          <table className="app-table">
+        <div className="rnd-people-box">
+          <table className="rnd-table rnd-table-people">
             <thead>
               <tr>
-                <th scope="col">Mã</th>
-                <th scope="col">Họ tên</th>
-                <th scope="col">{copy.unit}</th>
-                <th scope="col">Dữ liệu</th>
-                <th scope="col">
-                  <span className="app-visually-hidden">Thao tác</span>
-                </th>
+                <th scope="col">{heading}</th>
+                <th scope="col">{unitLabel}</th>
+                <th scope="col">Trạng thái</th>
+                {!readOnly && (
+                  <th scope="col" colSpan={colCount - 3}>
+                    Thao tác
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
-              {members.map((p) => (
-                <tr key={p.id}>
-                  <td>{p.code}</td>
-                  <td>{p.name}</td>
-                  <td>{p.unit}</td>
-                  <td>
-                    {isLocked(p) ? (
-                      <span className="app-chip app-chip-info">
-                        Đã có dữ liệu
+              {members.map((p) => {
+                const locked = isLocked(p);
+                return (
+                  <tr key={p.id}>
+                    <td>
+                      <span className="rnd-person">
+                        <b>{p.name}</b>
+                        <span>{p.code}</span>
                       </span>
-                    ) : (
-                      '—'
+                    </td>
+                    <td>{p.unit}</td>
+                    <td>
+                      <span
+                        className={`rnd-pill ${
+                          !isStudent
+                            ? 'rnd-pill-ok'
+                            : locked
+                              ? 'rnd-pill-purple'
+                              : 'rnd-pill-neutral'
+                        }`}
+                      >
+                        {!isStudent
+                          ? 'Đang tham gia'
+                          : locked
+                            ? 'Đã có dữ liệu'
+                            : 'Chưa có dữ liệu'}
+                      </span>
+                    </td>
+                    {!readOnly && (
+                      <td>
+                        <span className="rnd-remove-cell">
+                          <button
+                            type="button"
+                            className="rnd-btn rnd-btn-danger-outline"
+                            aria-haspopup="dialog"
+                            aria-label={`Gỡ ${p.name} khỏi đợt`}
+                            disabled={locked}
+                            aria-describedby={
+                              locked ? `locked-${p.id}` : undefined
+                            }
+                            onClick={() => {
+                              setRemoveError(null);
+                              setRemoving(p);
+                            }}
+                          >
+                            Gỡ khỏi đợt
+                          </button>
+                          {locked && (
+                            <small id={`locked-${p.id}`}>
+                              Đã có dữ liệu, không gỡ được
+                            </small>
+                          )}
+                        </span>
+                      </td>
                     )}
-                  </td>
-                  <td>
-                    <button
-                      type="button"
-                      className="app-button app-button-small app-button-danger"
-                      aria-haspopup="dialog"
-                      aria-label={`Gỡ ${p.name} khỏi đợt`}
-                      disabled={readOnly || isLocked(p)}
-                      aria-describedby={
-                        isLocked(p) ? `locked-${p.id}` : undefined
-                      }
-                      onClick={() => {
-                        setRemoveError(null);
-                        setRemoving(p);
-                      }}
-                    >
-                      Gỡ khỏi đợt
-                    </button>
-                    {isLocked(p) && (
-                      <p id={`locked-${p.id}`} className="login-hint">
-                        Đã có dữ liệu trong đợt nên không gỡ được.
-                      </p>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
+      <p className="rnd-foot">{NOTES[kind]}</p>
 
       {adding && (
         <AddParticipantsDialog
           kind={kind}
           round={round}
           roundService={roundService}
-          onClose={() => setAdding(false)}
+          initialMode={adding}
+          onClose={() => setAdding(null)}
           onAdded={(updated, added) => {
-            setAdding(false);
-            toast.success(`Đã thêm ${added} ${copy.plural}.`);
+            setAdding(null);
+            toast.success(
+              `Đã thêm ${added} ${noun} vào đợt. ${
+                round.status === 'Nháp'
+                  ? 'Họ sẽ thấy đợt này khi đợt được mở.'
+                  : 'Họ nhận thông báo và thấy đợt này ở lần đăng nhập tiếp theo.'
+              }`,
+            );
             onChanged(updated);
           }}
         />
       )}
 
       {removing && (
-        <ConfirmDialog
-          title={`Gỡ ${removing.name} khỏi đợt?`}
-          description={`${removing.name} sẽ không còn trong đợt này. Có thể thêm lại sau.`}
-          cancelLabel="Giữ lại"
-          confirmLabel="Gỡ khỏi đợt"
-          danger
+        <RoundModal
+          role="alertdialog"
+          titleId="remove-participant-title"
           busy={busy}
-          error={removeError}
-          onCancel={() => setRemoving(null)}
-          onConfirm={() => void confirmRemove()}
-        />
+          onClose={() => setRemoving(null)}
+          initialFocusRef={cancelRef}
+        >
+          <h2 id="remove-participant-title">Gỡ {removing.name} khỏi đợt?</h2>
+          <p className="rnd-modal-text">
+            Người này không còn thấy đợt này.{' '}
+            {isStudent
+              ? 'Sinh viên này chưa có dữ liệu trong đợt. Có thể thêm lại sau nếu cần.'
+              : 'Có thể thêm lại sau nếu cần.'}
+          </p>
+          {removeError && (
+            <p role="alert" className="rnd-note rnd-note-bad">
+              {removeError}
+            </p>
+          )}
+          <div className="rnd-modal-actions">
+            <button
+              ref={cancelRef}
+              type="button"
+              className="rnd-btn"
+              disabled={busy}
+              onClick={() => setRemoving(null)}
+            >
+              Hủy
+            </button>
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-danger"
+              disabled={busy}
+              aria-busy={busy}
+              onClick={() => void confirmRemove()}
+            >
+              {busy ? 'Đang xử lý...' : 'Gỡ khỏi đợt'}
+            </button>
+          </div>
+        </RoundModal>
       )}
-    </section>
+    </div>
   );
 };
