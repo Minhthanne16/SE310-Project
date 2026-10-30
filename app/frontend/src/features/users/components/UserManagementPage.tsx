@@ -373,11 +373,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
         <section className="status-state" role="alert">
           <h2>Không tải được danh sách</h2>
           <p>{loadError}</p>
-          <button
-            type="button"
-            className="usr-btn"
-            onClick={() => void load()}
-          >
+          <button type="button" className="usr-btn" onClick={() => void load()}>
             Thử lại
           </button>
         </section>
@@ -489,9 +485,9 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
       )}
 
       <p className="usr-footnote">
-        Tài khoản đã có dữ liệu (đề tài, phiếu chấm, bài nộp) không xóa được, chỉ
-        vô hiệu hóa; tài khoản đã vô hiệu hóa có thể kích hoạt lại trong màn hình
-        Sửa. Mã người dùng và email không được trùng.
+        Tài khoản đã có dữ liệu (đề tài, phiếu chấm, bài nộp) không xóa được,
+        chỉ vô hiệu hóa; tài khoản đã vô hiệu hóa có thể kích hoạt lại trong màn
+        hình Sửa. Mã người dùng và email không được trùng.
       </p>
 
       {drawer && (drawer.mode === 'create' || editingUser) && (
@@ -540,9 +536,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
       {dialog?.kind === 'remove' && dialogUser && (
         <UserConfirmDialog
           title={
-            dialogUser.hasData
-              ? 'Vô hiệu hóa tài khoản?'
-              : 'Xóa tài khoản?'
+            dialogUser.hasData ? 'Vô hiệu hóa tài khoản?' : 'Xóa tài khoản?'
           }
           who={who(dialogUser)}
           description={
@@ -552,7 +546,9 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
           }
           items={
             dialogUser.hasData
-              ? ['Đề tài, nhóm, bài nộp, điểm hoặc hội đồng đã gắn với tài khoản']
+              ? [
+                  'Đề tài, nhóm, bài nộp, điểm hoặc hội đồng đã gắn với tài khoản',
+                ]
               : undefined
           }
           confirmLabel={dialogUser.hasData ? 'Vô hiệu hóa' : 'Xóa tài khoản'}

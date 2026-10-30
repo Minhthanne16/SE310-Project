@@ -106,8 +106,6 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
     }
   };
 
-  const colCount = readOnly ? 3 : 4;
-
   return (
     <div className="rnd-panel" aria-label={`Danh sách ${noun}`}>
       <div className="rnd-people-tools">
@@ -171,9 +169,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                 <th scope="col">{unitLabel}</th>
                 <th scope="col">Trạng thái</th>
                 {!readOnly && (
-                  <th scope="col" colSpan={colCount - 3}>
-                    Thao tác
-                  </th>
+                  <th scope="col">Thao tác</th>
                 )}
               </tr>
             </thead>

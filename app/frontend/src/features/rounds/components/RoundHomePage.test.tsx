@@ -128,7 +128,7 @@ it('starts on the detail view when the URL has ?dot=', async () => {
   expect(
     await screen.findByRole('region', { name: 'Việc sắp đến hạn' }),
   ).toBeInTheDocument();
-  expect(screen.getByText('Đang diễn ra')).toBeInTheDocument();
+  expect(screen.getAllByText('Đang diễn ra').length).toBeGreaterThan(0);
 });
 
 it('shows a not-found state for an unknown ?dot=', async () => {
@@ -276,7 +276,7 @@ it('tells apart a running round before its first week and after its last milesto
   const later = {
     ...shift(400),
     id: 'later',
-    name: 'Mở đợt Văn bằng 1 Đợt tương lai',
+    name: 'Đợt tương lai',
   };
   const earlier = { ...shift(-400), id: 'earlier', name: 'Đợt đã qua mốc' };
   const service = createRoundService({

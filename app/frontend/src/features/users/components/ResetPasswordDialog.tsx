@@ -116,115 +116,115 @@ export const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
         onSubmit={handleSubmit}
         noValidate
       >
-          <div className="usr-dialog-title" style={{ gap: 4 }}>
-            <h2 id="reset-password-title" className="usr-h2-sm">
-              Đặt lại mật khẩu
-            </h2>
-            <span>
-              {user.fullName} · {user.userCode} · {ROLE_LABEL[user.role]}
-            </span>
+        <div className="usr-dialog-title" style={{ gap: 4 }}>
+          <h2 id="reset-password-title" className="usr-h2-sm">
+            Đặt lại mật khẩu
+          </h2>
+          <span>
+            {user.fullName} · {user.userCode} · {ROLE_LABEL[user.role]}
+          </span>
+        </div>
+
+        {error && (
+          <div role="alert" className="usr-alert">
+            {error}
           </div>
+        )}
 
-          {error && (
-            <div role="alert" className="usr-alert">
-              {error}
-            </div>
-          )}
+        <fieldset className="usr-radios">
+          <legend>Cách đặt lại</legend>
+          {options.map((o) => (
+            <label key={o.value} className="usr-radio">
+              <input
+                type="radio"
+                name="reset-mode"
+                checked={mode === o.value}
+                onChange={() => setMode(o.value)}
+              />
+              <span className="usr-radio-text">
+                <span className="usr-radio-title">{o.title}</span>
+                <span className="usr-radio-desc">{o.desc}</span>
+              </span>
+            </label>
+          ))}
+        </fieldset>
 
-          <fieldset className="usr-radios">
-            <legend>Cách đặt lại</legend>
-            {options.map((o) => (
-              <label key={o.value} className="usr-radio">
+        {mode === 'custom' && (
+          <div className="usr-pw-fields">
+            <div className="usr-pw-row">
+              <div className="usr-field">
+                <label htmlFor="reset-next-password">Mật khẩu mới</label>
                 <input
-                  type="radio"
-                  name="reset-mode"
-                  checked={mode === o.value}
-                  onChange={() => setMode(o.value)}
+                  id="reset-next-password"
+                  className="usr-input usr-input-sm"
+                  type="password"
+                  autoComplete="new-password"
+                  value={next}
+                  aria-invalid={
+                    submitted && !rules.slice(0, 3).every((r) => r.passed)
+                      ? true
+                      : undefined
+                  }
+                  aria-describedby="reset-password-rules"
+                  onChange={(e) => setNext(e.target.value)}
                 />
-                <span className="usr-radio-text">
-                  <span className="usr-radio-title">{o.title}</span>
-                  <span className="usr-radio-desc">{o.desc}</span>
-                </span>
-              </label>
-            ))}
-          </fieldset>
-
-          {mode === 'custom' && (
-            <div className="usr-pw-fields">
-              <div className="usr-pw-row">
-                <div className="usr-field">
-                  <label htmlFor="reset-next-password">Mật khẩu mới</label>
-                  <input
-                    id="reset-next-password"
-                    className="usr-input usr-input-sm"
-                    type="password"
-                    autoComplete="new-password"
-                    value={next}
-                    aria-invalid={
-                      submitted && !rules.slice(0, 3).every((r) => r.passed)
-                        ? true
-                        : undefined
-                    }
-                    aria-describedby="reset-password-rules"
-                    onChange={(e) => setNext(e.target.value)}
-                  />
-                </div>
-                <div className="usr-field">
-                  <label htmlFor="reset-confirm-password">
-                    Nhập lại mật khẩu mới
-                  </label>
-                  <input
-                    id="reset-confirm-password"
-                    className="usr-input usr-input-sm"
-                    type="password"
-                    autoComplete="new-password"
-                    value={confirm}
-                    aria-invalid={
-                      submitted && !rules[3].passed ? true : undefined
-                    }
-                    aria-describedby="reset-password-rules"
-                    onChange={(e) => setConfirm(e.target.value)}
-                  />
-                </div>
               </div>
-              <ul
-                id="reset-password-rules"
-                className="usr-rules"
-                aria-label="Yêu cầu mật khẩu"
-              >
-                {rules.map((r) => (
-                  <li key={r.label} className={r.passed ? 'passed' : undefined}>
-                    {r.label}
-                  </li>
-                ))}
-              </ul>
+              <div className="usr-field">
+                <label htmlFor="reset-confirm-password">
+                  Nhập lại mật khẩu mới
+                </label>
+                <input
+                  id="reset-confirm-password"
+                  className="usr-input usr-input-sm"
+                  type="password"
+                  autoComplete="new-password"
+                  value={confirm}
+                  aria-invalid={
+                    submitted && !rules[3].passed ? true : undefined
+                  }
+                  aria-describedby="reset-password-rules"
+                  onChange={(e) => setConfirm(e.target.value)}
+                />
+              </div>
             </div>
-          )}
-
-          <div className="usr-note usr-note-soft">
-            Người dùng nhận thông báo đã đặt lại mật khẩu và phải đổi mật khẩu ở
-            lần đăng nhập kế tiếp.
-          </div>
-
-          <div className="usr-actions">
-            <button
-              ref={cancelRef}
-              type="button"
-              className="usr-btn"
-              onClick={onClose}
-              disabled={saving}
+            <ul
+              id="reset-password-rules"
+              className="usr-rules"
+              aria-label="Yêu cầu mật khẩu"
             >
-              Hủy
-            </button>
-            <button
-              type="submit"
-              className="usr-btn usr-btn-primary"
-              disabled={saving || !canSubmit}
-              aria-busy={saving}
-            >
-              {saving ? 'Đang lưu...' : 'Đặt lại mật khẩu'}
-            </button>
+              {rules.map((r) => (
+                <li key={r.label} className={r.passed ? 'passed' : undefined}>
+                  {r.label}
+                </li>
+              ))}
+            </ul>
           </div>
+        )}
+
+        <div className="usr-note usr-note-soft">
+          Người dùng nhận thông báo đã đặt lại mật khẩu và phải đổi mật khẩu ở
+          lần đăng nhập kế tiếp.
+        </div>
+
+        <div className="usr-actions">
+          <button
+            ref={cancelRef}
+            type="button"
+            className="usr-btn"
+            onClick={onClose}
+            disabled={saving}
+          >
+            Hủy
+          </button>
+          <button
+            type="submit"
+            className="usr-btn usr-btn-primary"
+            disabled={saving || !canSubmit}
+            aria-busy={saving}
+          >
+            {saving ? 'Đang lưu...' : 'Đặt lại mật khẩu'}
+          </button>
+        </div>
       </form>
     </div>
   );

@@ -394,34 +394,34 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
                   </button>
                 </div>
                 {badRows.length > 0 && (
-                <div className="usr-err-table-scroll">
-                  <table className="usr-err-table">
-                    <thead>
-                      <tr>
-                        <th scope="col">Dòng</th>
-                        <th scope="col">Mã</th>
-                        <th scope="col">Họ tên</th>
-                        <th scope="col">Lỗi</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {badRows.map((row) => (
-                        <tr key={row.rowNumber}>
-                          <td className="usr-tabular">{row.rowNumber}</td>
-                          <td>{row.userCode || '(trống)'}</td>
-                          <td>{row.fullName}</td>
-                          <td className="usr-err-msg">
-                            <ul>
-                              {row.errors.map((message) => (
-                                <li key={message}>{message}</li>
-                              ))}
-                            </ul>
-                          </td>
+                  <div className="usr-err-table-scroll">
+                    <table className="usr-err-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Dòng</th>
+                          <th scope="col">Mã</th>
+                          <th scope="col">Họ tên</th>
+                          <th scope="col">Lỗi</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                      </thead>
+                      <tbody>
+                        {badRows.map((row) => (
+                          <tr key={row.rowNumber}>
+                            <td className="usr-tabular">{row.rowNumber}</td>
+                            <td>{row.userCode || '(trống)'}</td>
+                            <td>{row.fullName}</td>
+                            <td className="usr-err-msg">
+                              <ul>
+                                {row.errors.map((message) => (
+                                  <li key={message}>{message}</li>
+                                ))}
+                              </ul>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 )}
                 <span className="usr-hint-small">
                   Sửa các dòng này trong file rồi nhập lại; những dòng đã nhập
