@@ -26,7 +26,12 @@ Không thuộc phạm vi hiện tại: triển khai lại giao diện, API, cơ 
 
 `Chưa đăng ký` hoặc `Chờ GV duyệt` → `Đã đăng ký` → `Đang thực hiện` → `Đã cho điểm` → `Đã hoàn tất`.
 
+Nhánh ngoại lệ: từ `Đang thực hiện` hoặc `Đã cho điểm`, nếu không có bản khóa luận nào sau hạn bổ sung và Giáo vụ quyết định kết thúc có lý do, đề tài chuyển sang trạng thái kết thúc riêng `Không đủ điều kiện công bố`; nhánh này không phải `Đã hoàn tất` sau công bố điểm (xem [PDR-011](decisions/PDR-011-tham-quyen-xu-ly-nhom-chua-nop-ban-khoa-luan.md)).
+Trạng thái `Không đủ điều kiện công bố` không mở lại bằng thao tác thông thường; sai sót đặc biệt cần quyết định riêng trước khi có chức năng xử lý.
+
 `Bị từ chối` là kết quả của đề tài do sinh viên đề xuất. Các quy tắc chuyển trạng thái, bao gồm hủy đăng ký/đề xuất, nằm trong [requirements/BUSINESS_RULES.md](requirements/BUSINESS_RULES.md); điểm chưa đủ căn cứ nằm trong `OPEN_QUESTIONS.md`.
+
+Riêng **đề xuất** đang `Chờ GV duyệt` có thể được nhóm hủy; bản ghi đề xuất chuyển `Đã hủy` và còn trong lịch sử, không được tính là trạng thái đề tài đã đăng ký (xem [PDR-012](decisions/PDR-012-huy-de-xuat-dang-cho-giang-vien.md)).
 
 ## Nguyên tắc làm việc
 

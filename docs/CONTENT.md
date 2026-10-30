@@ -1,6 +1,6 @@
 # Mục lục tài liệu QLKLTN
 
-Đây là điểm bắt đầu để hiểu hệ thống quản lý khóa luận tốt nghiệp (QLKLTN). Tài liệu trong thư mục này chuẩn hóa yêu cầu từ báo cáo cuối kỳ đã được nhóm cung cấp; chúng thay thế cho việc suy đoán từ mã nguồn mẫu hiện có.
+Đây là điểm bắt đầu để hiểu hệ thống quản lý khóa luận tốt nghiệp (QLKLTN). Tài liệu trong thư mục này chuẩn hóa yêu cầu và các quyết định nghiệp vụ đã được xác nhận; chúng thay thế cho việc suy đoán từ mã nguồn mẫu hiện có.
 
 ## Thứ tự đọc bắt buộc trước khi code
 
@@ -21,13 +21,14 @@
 | `product/` | Tầm nhìn, phạm vi, vai trò và thuật ngữ nghiệp vụ. |
 | `requirements/` | Luồng cấp cao, quy tắc nghiệp vụ và ràng buộc phi chức năng. |
 | `architecture/` | Bối cảnh hệ thống và mô hình miền ở mức khái niệm. |
-| `decisions/` | Các quyết định đã được báo cáo nêu rõ, kèm lý do và hệ quả. |
+| `decisions/` | Các quyết định đã được nguồn tài liệu hoặc người phụ trách sản phẩm xác nhận, kèm lý do và hệ quả. |
 | `DESIGN/` | Bàn giao giao diện có sẵn, gồm Markdown và sitemap hình ảnh; chỉ là tài liệu bổ sung, không tự thay đổi yêu cầu nghiệp vụ. |
+| [`plan/`](plan/README.md) | Rà soát điểm bất nhất và lộ trình phase đề xuất để hoàn thiện QLKLTN; không thay thế quyết định nghiệp vụ. |
 | [NEON.md](NEON.md) | Hướng dẫn kỹ thuật có sẵn cho PostgreSQL/Neon của repo; không thay thế yêu cầu QLKLTN. |
 
 ## Nguồn và quy ước
 
-- Nguồn nghiệp vụ: *Báo cáo Cuối kỳ - SE310 - QLKLTN (cập nhật 16-10)* do nhóm cung cấp.
-- Các nội dung rõ ràng từ báo cáo được chuẩn hóa thành yêu cầu hoặc quyết định. Các chỗ thiếu, mơ hồ hoặc mâu thuẫn được ghi tại `OPEN_QUESTIONS.md`.
+- Nguồn nghiệp vụ được các tài liệu hiện có dẫn chiếu: *Báo cáo Cuối kỳ - SE310 - QLKLTN (cập nhật 16-10)*. Bản báo cáo gốc hiện không có trong `docs/`, nên lần rà soát này không kiểm chứng trực tiếp được nội dung báo cáo; xem [plan/REVIEW.md](plan/REVIEW.md).
+- Các nội dung đã được tài liệu hiện hành ghi nhận hoặc người dùng xác nhận được chuẩn hóa thành yêu cầu hoặc quyết định. Các chỗ thiếu, mơ hồ hoặc mâu thuẫn được ghi tại `OPEN_QUESTIONS.md`.
 - Khi tài liệu trong `DESIGN/` khác với yêu cầu, quy tắc, quyết định hoặc câu hỏi mở hiện hành, không tự chọn một bên: ghi nhận và làm rõ trước khi code.
 - Tài liệu này mô tả **sản phẩm mục tiêu**. Mã nguồn hiện tại chỉ là nền kỹ thuật ban đầu, chưa được coi là bằng chứng rằng một chức năng QLKLTN đã tồn tại.
