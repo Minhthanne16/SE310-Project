@@ -53,9 +53,7 @@ export const RoundListPage: React.FC<RoundListPageProps> = ({
   const [status, setStatus] = useState<StatusFilter>('Đang diễn ra');
   const [program, setProgram] = useState<RoundProgram | ''>('');
   const [page, setPage] = useState(1);
-  const [creating, setCreating] = useState<{ copyFromId: string } | null>(
-    null,
-  );
+  const [creating, setCreating] = useState<{ copyFromId: string } | null>(null);
   const [dialog, setDialog] = useState<{
     kind: LifecycleKind;
     roundId: string;

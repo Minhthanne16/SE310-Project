@@ -127,7 +127,8 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
     .map((c) => c.id);
   const shownFreeIds = shown.filter((c) => !c.blockedReason).map((c) => c.id);
   const allOn =
-    shownFreeIds.length > 0 && shownFreeIds.every((id) => selected.includes(id));
+    shownFreeIds.length > 0 &&
+    shownFreeIds.every((id) => selected.includes(id));
   const pickedIds = selected.filter((id) => freeIds.includes(id));
 
   const validResults = (results ?? []).filter((r) => r.status === 'valid');

@@ -111,12 +111,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
           </label>
           <label className="rnd-label">
             Ngày bắt đầu tuần 1
-            <input
-              type="date"
-              className="rnd-input"
-              readOnly
-              value={weekOne}
-            />
+            <input type="date" className="rnd-input" readOnly value={weekOne} />
           </label>
         </div>
         <p className="rnd-hint">

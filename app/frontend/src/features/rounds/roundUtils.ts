@@ -256,7 +256,9 @@ export function roundProgress(round: Round, today: string): RoundProgressInfo {
 }
 
 // Thạc sĩ gọi là học viên (03: Danh sách đợt), các chương trình khác là sinh viên.
-export function studentNoun(program: Round['program']): 'học viên' | 'sinh viên' {
+export function studentNoun(
+  program: Round['program'],
+): 'học viên' | 'sinh viên' {
   return program === 'Thạc sĩ' ? 'học viên' : 'sinh viên';
 }
 

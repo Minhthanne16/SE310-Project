@@ -168,9 +168,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                 <th scope="col">{heading}</th>
                 <th scope="col">{unitLabel}</th>
                 <th scope="col">Trạng thái</th>
-                {!readOnly && (
-                  <th scope="col">Thao tác</th>
-                )}
+                {!readOnly && <th scope="col">Thao tác</th>}
               </tr>
             </thead>
             <tbody>

@@ -1531,8 +1531,10 @@
 
 .rnd-gantt-row {
   display: grid;
-  grid-template-columns:
-    var(--rnd-label-col) repeat(var(--rnd-weeks), minmax(0, 1fr));
+  grid-template-columns: var(--rnd-label-col) repeat(
+      var(--rnd-weeks),
+      minmax(0, 1fr)
+    );
   border-bottom: 1px solid #efefee;
   margin: 0;
   padding: 0;

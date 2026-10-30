@@ -152,7 +152,8 @@ export const RoundGantt: React.FC<RoundGanttProps> = ({
                   const left = endWeek - (now ?? startWeek);
                   barText = left <= 0 ? 'Đến hạn' : `Còn ${left} tuần`;
                 } else if (status === 'Đã qua') barText = 'Đã kết thúc';
-                else if (endWeek > startWeek) barText = `Mở ${ddMM(m.startDate)}`;
+                else if (endWeek > startWeek)
+                  barText = `Mở ${ddMM(m.startDate)}`;
               }
               const actionClass =
                 status === 'Đang diễn ra'
@@ -160,10 +161,7 @@ export const RoundGantt: React.FC<RoundGanttProps> = ({
                   : 'rnd-gantt-action';
               const actionName = `${actionLabel} mốc ${m.name}`;
               return (
-                <li
-                  key={m.key}
-                  className="rnd-gantt-row rnd-gantt-row-body"
-                >
+                <li key={m.key} className="rnd-gantt-row rnd-gantt-row-body">
                   <div className="rnd-gantt-label">
                     <span className="rnd-gantt-name">{m.name}</span>
                     <span className="app-visually-hidden">

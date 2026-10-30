@@ -57,7 +57,9 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
         onDone(kind, updated);
       } else {
         await roundService.remove(round.id);
-        toast.success(`Đã xóa đợt ${round.name}. Đợt không còn trong danh sách.`);
+        toast.success(
+          `Đã xóa đợt ${round.name}. Đợt không còn trong danh sách.`,
+        );
         onDone(kind);
       }
     } catch (err: unknown) {
@@ -121,8 +123,8 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
         <h2 id={titleId}>Mở đợt {round.name}?</h2>
         <p className="rnd-modal-text">
           Hệ thống gửi thông báo cho {round.lecturerIds.length} giảng viên và{' '}
-          {round.studentIds.length} {noun} có tên trong đợt. Đợt sẽ hiện ở
-          Trang chủ của họ và mốc đầu tiên bắt đầu tính từ{' '}
+          {round.studentIds.length} {noun} có tên trong đợt. Đợt sẽ hiện ở Trang
+          chủ của họ và mốc đầu tiên bắt đầu tính từ{' '}
           {start ? formatDate(start) : 'ngày bạn đặt cho mốc đầu tiên'}.
         </p>
         <p className="rnd-note rnd-note-warn">
@@ -183,9 +185,9 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
     >
       <h2 id={titleId}>Xóa đợt {round.name}?</h2>
       <p className="rnd-modal-text">
-        Cấu hình mốc và danh sách giảng viên, sinh viên đã nhập sẽ bị xóa,
-        không khôi phục được. Chỉ xóa được đợt Nháp; đợt đã mở được giữ lại để
-        tra cứu.
+        Cấu hình mốc và danh sách giảng viên, sinh viên đã nhập sẽ bị xóa, không
+        khôi phục được. Chỉ xóa được đợt Nháp; đợt đã mở được giữ lại để tra
+        cứu.
       </p>
       {errorBox}
       {actions('Hủy', 'Xóa đợt', 'rnd-btn-danger')}
