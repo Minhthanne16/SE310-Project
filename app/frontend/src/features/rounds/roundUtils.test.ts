@@ -92,16 +92,20 @@ describe('warnings and tasks', () => {
   });
 
   it('warns about unpublished topics when finishing', () => {
-    expect(finishWarning(round('r-vb1-hk1'))).toBe(
-      'Còn 2 đề tài chưa công bố.',
+    expect(finishWarning(round('r-ths-1-2026'))).toBe(
+      'Còn 6 đề tài chưa công bố.',
     );
+    expect(finishWarning(round('r-vb1-hk1'))).toBeNull();
     expect(finishWarning(round('r-vb2-hk1'))).toBeNull();
   });
 
   it('derives tasks for running, draft and finished rounds', () => {
     const running = deriveTasks(round('r-vb1-hk1'), TODAY).map((t) => t.text);
     expect(running).toContain('Mốc “Báo cáo giữa kỳ” kết thúc sau 4 ngày.');
-    expect(running).toContain('2 đề tài chưa công bố.');
+    expect(running).not.toContain('18 đề tài chưa công bố.');
+    expect(
+      deriveTasks(round('r-ths-1-2026'), TODAY).map((t) => t.text),
+    ).toContain('6 đề tài chưa công bố.');
     expect(deriveTasks(round('r-vb2-hk2-nhap'), TODAY).length).toBe(2);
     expect(deriveTasks(round('r-vb1-hk2-2025'), TODAY)).toEqual([]);
   });
