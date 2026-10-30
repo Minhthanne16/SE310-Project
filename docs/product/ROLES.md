@@ -14,7 +14,7 @@ Một tài khoản Giảng viên có thể đảm nhiệm nhiều vai trò ở c
 
 - Giảng viên hướng dẫn không được phản biện hoặc chấm hội đồng cho chính đề tài mình hướng dẫn.
 - Một hội đồng có đúng một chủ tịch và một thư ký; một giảng viên chỉ giữ một vai trò trong cùng hội đồng.
-- Thư ký nhập điểm cho cả chủ tịch và thư ký; chủ tịch chỉ xem điểm hội đồng theo báo cáo nguồn.
+- Thư ký nhập điểm cho cả chủ tịch và thư ký. Chủ tịch xem và xác nhận điểm mang tên mình cho từng Sinh viên trước khi Giáo vụ xác nhận kết quả; nếu không đồng ý, Chủ tịch trả lại có lý do để Thư ký sửa và trình lại. Chủ tịch không tự nhập/sửa điểm qua thao tác này (xem [PDR-006](../decisions/PDR-006-xac-nhan-diem-chu-tich-hoi-dong.md)).
 
 ## Nguyên tắc truy cập
 
