@@ -48,6 +48,9 @@ it('filters unread and marks everything as read', async () => {
 });
 
 it('marks one item as read when it is opened, and closes on Escape', async () => {
+  // jsdom không điều hướng được: chặn mặc định của liên kết cho đỡ nhiễu.
+  const stop = (e: Event) => e.preventDefault();
+  document.addEventListener('click', stop);
   renderBell('sv');
   fireEvent.click(
     await screen.findByRole('button', { name: 'Thông báo, 4 chưa đọc' }),
@@ -63,4 +66,5 @@ it('marks one item as read when it is opened, and closes on Escape', async () =>
   fireEvent.click(screen.getByRole('button', { name: /Thông báo/ }));
   fireEvent.keyDown(document, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  document.removeEventListener('click', stop);
 });
