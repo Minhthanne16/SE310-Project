@@ -475,6 +475,13 @@ textarea:focus {
   padding-right: 48px;
 }
 
+/* Edge/IE tự chèn nút "hiện mật khẩu" (và nút xóa) vào ô password khi có
+   nội dung, trùng với nút toggle của app. Ẩn nút gốc của trình duyệt. */
+.login-password input::-ms-reveal,
+.login-password input::-ms-clear {
+  display: none;
+}
+
 .login-password-toggle {
   position: absolute;
   top: 3px;
