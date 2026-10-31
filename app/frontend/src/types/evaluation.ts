@@ -10,6 +10,22 @@ export const TEMPLATE_STATUS_LABEL: Record<TemplateStatus, string> = {
 };
 
 // Chủ tịch và thư ký dùng chung mẫu Hội đồng.
+// Trạng thái hiển thị suy ra từ nội dung và việc gán: Nháp (chưa đủ điều kiện),
+// Đủ điều kiện sử dụng (hợp lệ, chưa gán), Đang được sử dụng (đã gán cho đợt).
+export type TemplateState = 'draft' | 'ready' | 'inuse';
+
+export const TEMPLATE_STATE_LABEL: Record<TemplateState, string> = {
+  draft: 'Nháp',
+  ready: 'Đủ điều kiện sử dụng',
+  inuse: 'Đang được sử dụng',
+};
+
+export const templateState = (t: {
+  status: TemplateStatus;
+  assignments: unknown[];
+}): TemplateState =>
+  t.status === 'Draft' ? 'draft' : t.assignments.length > 0 ? 'inuse' : 'ready';
+
 export const GRADING_ROLES = ['Supervisor', 'Reviewer', 'Committee'] as const;
 export type GradingRole = (typeof GRADING_ROLES)[number];
 

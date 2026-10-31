@@ -40,6 +40,7 @@ it('calls the template endpoints with the expected method and body', async () =>
   await service.remove('a');
   await service.remove('a', { removeAssignments: true });
   await service.listAssignments('r-1');
+  await service.listAllAssignments();
   await service.assign('r-1', 'Committee', 'a');
   await service.unassign('r-1', 'Reviewer');
 
@@ -56,6 +57,7 @@ it('calls the template endpoints with the expected method and body', async () =>
     ['/api/evaluation-templates/a', 'DELETE', undefined],
     ['/api/evaluation-templates/a?removeAssignments=true', 'DELETE', undefined],
     ['/api/evaluation-templates/assignments?roundId=r-1', 'GET', undefined],
+    ['/api/evaluation-templates/assignments', 'GET', undefined],
     [
       '/api/evaluation-templates/assignments/r-1/Committee',
       'PUT',

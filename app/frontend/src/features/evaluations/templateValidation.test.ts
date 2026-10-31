@@ -5,14 +5,15 @@ import {
   newCriterion,
   newDraft,
   sameDraft,
+  statusOf,
   toHundredths,
+  uniqueName,
   type TemplateDraft,
 } from './templateValidation';
 
 const draft = (): TemplateDraft => ({
   name: ' Phiếu hội đồng ',
   description: '  ',
-  maxScore: '10',
   criteria: [
     {
       key: 'c1',
@@ -44,13 +45,15 @@ it('parses scores with comma or dot and at most two decimals', () => {
   expect(toHundredths('')).toBeNull();
 });
 
-it('accepts a complete template and builds the API input', () => {
-  expect(checkTemplate(draft())).toEqual({ errors: {}, summary: '' });
-  expect(draftToInput(draft(), 'Draft')).toEqual({
+it('treats a complete template as eligible and builds the API input', () => {
+  const check = checkTemplate(draft());
+  expect(check).toEqual({ errors: {}, blocking: '', incomplete: '' });
+  expect(statusOf(check)).toBe('Active');
+  expect(draftToInput(draft(), 'Active')).toEqual({
     name: 'Phiếu hội đồng',
     description: null,
     maxScore: 10,
-    status: 'Draft',
+    status: 'Active',
     criteria: [
       {
         name: 'Ý nghĩa khoa học',
@@ -71,47 +74,70 @@ it('accepts a complete template and builds the API input', () => {
   });
 });
 
-it('starts a new template that is already valid, like the design', () => {
-  const d = newDraft();
-  expect(d.name).toBe('Mẫu phiếu mới');
-  expect(checkTemplate(d).summary).toBe('');
+it('saves a new template as a draft, not as an error', () => {
+  const check = checkTemplate(newDraft());
+  expect(check.blocking).toBe('');
+  expect(statusOf(check)).toBe('Draft');
+  expect(check.incomplete).toContain(
+    'Tổng điểm các tiêu chí chung phải bằng 10 (đang là 0).',
+  );
+  expect(check.incomplete).toContain(
+    'Điểm tối đa phải lớn hơn 0 ở mục 1, 1.1.',
+  );
 });
 
-it('reports totals that do not match', () => {
+it('turns a template whose totals do not match into a draft', () => {
   const d = draft();
   d.criteria[1].maxScore = '6';
-  const { errors, summary } = checkTemplate(d);
-  expect(errors.total).toBe(
+  const check = checkTemplate(d);
+  expect(check.blocking).toBe('');
+  expect(statusOf(check)).toBe('Draft');
+  expect(check.errors.total).toBe(
     'Tổng điểm các tiêu chí chung phải bằng 10 (đang là 9).',
   );
-  expect(summary).toContain(
+  expect(check.incomplete).toContain(
     'Tổng hạng mục con chưa khớp điểm tiêu chí ở tiêu chí 2.',
   );
 });
 
-it('flags a new criterion with no score and no sub-criteria', () => {
+it('flags a new criterion with no sub-criteria as incomplete', () => {
   const d = draft();
   d.criteria.push(newCriterion());
-  const { summary } = checkTemplate(d);
-  expect(summary).toContain('ở tiêu chí 3.');
-  expect(summary).toContain('Điểm tối đa phải lớn hơn 0 ở mục 3.');
+  const check = checkTemplate(d);
+  expect(statusOf(check)).toBe('Draft');
+  expect(check.incomplete).toContain('ở tiêu chí 3.');
 });
 
-it('flags duplicate names ignoring case and spaces', () => {
+it('blocks saving on bad names and scores even for drafts', () => {
   const d = draft();
   d.criteria[1].name = '  ý NGHĨA khoa học ';
   d.criteria[0].subCriteria[1].name = 'tính mới';
-  const { errors, summary } = checkTemplate(d, ['Phiếu khác']);
-  expect(errors['c2.name']).toBe(
+  d.criteria[0].subCriteria[0].maxScore = 'abc';
+  const check = checkTemplate(d, ['Phiếu khác']);
+  expect(check.errors['c2.name']).toBe(
     'Trùng tên với tiêu chí 1. Đặt tên khác để phân biệt.',
   );
-  expect(errors['s2.name']).toBe(
+  expect(check.errors['s2.name']).toBe(
     'Trùng tên với hạng mục khác trong tiêu chí này.',
   );
-  expect(summary).toContain('Tên tiêu chí bị trùng ở tiêu chí 2.');
+  expect(check.blocking).toContain('Tên tiêu chí bị trùng ở tiêu chí 2.');
+  expect(check.blocking).toContain('Điểm không hợp lệ ở mục 1.1.');
   expect(checkTemplate(draft(), ['phiếu HỘI ĐỒNG']).errors.name).toBe(
     'Đã có mẫu phiếu cùng tên. Đặt tên khác để phân biệt.',
   );
+  expect(checkTemplate({ ...draft(), name: ' ' }).blocking).toContain(
+    'mẫu phiếu chưa có tên',
+  );
+});
+
+it('picks a name that does not clash with existing templates', () => {
+  expect(uniqueName('Mẫu phiếu mới', [])).toBe('Mẫu phiếu mới');
+  expect(uniqueName('Mẫu phiếu mới', ['mẫu phiếu MỚI'])).toBe(
+    'Mẫu phiếu mới (2)',
+  );
+  expect(
+    uniqueName('Mẫu phiếu mới', ['Mẫu phiếu mới', 'Mẫu phiếu mới (2)']),
+  ).toBe('Mẫu phiếu mới (3)');
 });
 
 it('compares drafts ignoring row keys', () => {

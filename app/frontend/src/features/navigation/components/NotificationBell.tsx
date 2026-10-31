@@ -170,6 +170,9 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
               Chưa đọc ({unread})
             </button>
           </div>
+          <p className="bell-demo-note">
+            Dữ liệu minh họa: thông báo thật sẽ có khi hệ thống kết nối.
+          </p>
           <div className="bell-list">
             {failed ? (
               <p className="bell-empty" role="alert">

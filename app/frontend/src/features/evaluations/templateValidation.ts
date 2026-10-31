@@ -23,24 +23,21 @@ export interface DraftCriterion {
 export interface TemplateDraft {
   name: string;
   description: string;
-  maxScore: string;
   criteria: DraftCriterion[];
 }
 
-// Giới hạn giống EvaluationTemplateRules ở backend; thang điểm cố định 10 theo
-// design (backend vẫn nhận thang khác cho các mẫu tạo qua API).
+// Thang điểm phiếu cố định 10 theo design; không cần cấu hình.
+export const TEMPLATE_SCALE = 10;
 export const MAX_NAME_LENGTH = 200;
 export const MAX_DESCRIPTION_LENGTH = 500;
-export const TEMPLATE_SCALE = 10;
 
-// Lỗi theo ô: 'name', 'description', 'total' (tổng tiêu chí chung),
-// `${key}.name`, `${key}.description`, `${key}.maxScore`, `${key}.total`.
+// Lỗi theo ô: 'name', 'description', 'total', `${key}.name`, `${key}.description`,
+// `${key}.maxScore`, `${key}.total`.
 export type TemplateErrors = Record<string, string>;
 
 let sequence = 0;
 export const newKey = () => `k${++sequence}`;
 
-// Giá trị mặc định khi thêm dòng theo design: tên gợi ý, điểm 0 để Giáo vụ điền.
 export const newSub = (): DraftSubCriterion => ({
   key: newKey(),
   name: 'Hạng mục mới',
@@ -55,40 +52,46 @@ export const newCriterion = (): DraftCriterion => ({
   subCriteria: [],
 });
 
+// Mẫu mới bắt đầu từ điểm 0: tổng chưa đủ 10 nên lưu ra là Nháp.
 export const newDraft = (name = 'Mẫu phiếu mới'): TemplateDraft => ({
   name,
   description: '',
-  maxScore: String(TEMPLATE_SCALE),
   criteria: [
     {
       key: newKey(),
       name: 'Tiêu chí 1',
       description: '',
-      maxScore: String(TEMPLATE_SCALE),
-      subCriteria: [
-        {
-          key: newKey(),
-          name: 'Hạng mục 1.1',
-          maxScore: String(TEMPLATE_SCALE),
-        },
-      ],
+      maxScore: '0',
+      subCriteria: [{ key: newKey(), name: 'Hạng mục 1.1', maxScore: '0' }],
     },
   ],
 });
 
+// Tên chưa trùng với names: "Mẫu phiếu mới", "Mẫu phiếu mới (2)", ...
+export function uniqueName(base: string, names: string[]): string {
+  const taken = new Set(names.map((n) => n.trim().toLocaleLowerCase('vi-VN')));
+  const isFree = (n: string) => !taken.has(n.trim().toLocaleLowerCase('vi-VN'));
+  if (isFree(base)) return base;
+  for (let n = 2; ; n += 1) {
+    const candidate = `${base} (${n})`;
+    if (isFree(candidate)) return candidate;
+  }
+}
+
+const formatInput = (value: number) => String(value).replace('.', ',');
+
 export const draftFromTemplate = (t: EvaluationTemplate): TemplateDraft => ({
   name: t.name,
   description: t.description ?? '',
-  maxScore: String(t.maxScore),
   criteria: t.criteria.map((c) => ({
     key: newKey(),
     name: c.name,
     description: c.description ?? '',
-    maxScore: String(c.maxScore),
+    maxScore: formatInput(c.maxScore),
     subCriteria: c.subCriteria.map((s) => ({
       key: newKey(),
       name: s.name,
-      maxScore: String(s.maxScore),
+      maxScore: formatInput(s.maxScore),
     })),
   })),
 });
@@ -129,26 +132,23 @@ export const subTotal = (criterion: DraftCriterion) =>
 
 export const nameKey = (name: string) => name.trim().toLocaleLowerCase('vi-VN');
 
-const validScore = (value: string) => {
-  const h = toHundredths(value);
-  return h !== null && h > 0;
-};
-
 export interface TemplateCheck {
   errors: TemplateErrors;
-  // Câu tóm tắt dưới bảng như design; rỗng khi mẫu hợp lệ.
-  summary: string;
+  // Lỗi chặn lưu ở mọi trạng thái (tên, độ dài, trùng tên, điểm không hợp lệ).
+  blocking: string;
+  // Chưa đủ điều kiện sử dụng (tổng điểm chưa khớp, điểm 0, thiếu hạng mục...):
+  // mẫu vẫn lưu được nhưng ở trạng thái Nháp.
+  incomplete: string;
 }
 
-// Cùng quy tắc với backend cho mẫu không phải nháp: đủ tiêu chí và hạng mục,
-// điểm > 0, tổng tiêu chí chung = thang phiếu, tổng hạng mục con = điểm tiêu chí,
-// không trùng tên. otherNames: tên các mẫu khác để báo trùng ngay khi gõ.
+// otherNames: tên các mẫu khác để báo trùng ngay khi gõ.
 export function checkTemplate(
   draft: TemplateDraft,
   otherNames: string[] = [],
 ): TemplateCheck {
   const errors: TemplateErrors = {};
-  const parts: string[] = [];
+  const blocking: string[] = [];
+  const incomplete: string[] = [];
 
   const name = nameKey(draft.name);
   if (!name) errors.name = 'Nhập tên mẫu phiếu.';
@@ -157,89 +157,118 @@ export function checkTemplate(
   else if (otherNames.some((n) => nameKey(n) === name))
     errors.name = 'Đã có mẫu phiếu cùng tên. Đặt tên khác để phân biệt.';
   if (errors.name)
-    parts.push(
+    blocking.push(
       !name
         ? 'Chưa lưu được: mẫu phiếu chưa có tên.'
         : 'Chưa lưu được: tên mẫu phiếu bị trùng hoặc quá dài.',
     );
-  if (draft.description.trim().length > MAX_DESCRIPTION_LENGTH)
+  if (draft.description.trim().length > MAX_DESCRIPTION_LENGTH) {
     errors.description = `Mô tả tối đa ${MAX_DESCRIPTION_LENGTH} ký tự.`;
+    blocking.push(errors.description);
+  }
 
-  const scale = toHundredths(draft.maxScore) ?? TEMPLATE_SCALE * 100;
+  const scale = TEMPLATE_SCALE * 100;
   const total = criteriaTotal(draft);
   if (draft.criteria.length === 0) {
     errors.total = 'Mẫu phải có ít nhất một tiêu chí chung.';
-    parts.push(errors.total);
+    incomplete.push(errors.total);
   } else if (total !== scale) {
     errors.total = `Tổng điểm các tiêu chí chung phải bằng ${formatScore(scale)} (đang là ${formatScore(total)}).`;
-    parts.push(errors.total);
+    incomplete.push(errors.total);
   }
 
   const mismatch: number[] = [];
+  const zero: string[] = [];
   const badScores: string[] = [];
   const dupCriteria: number[] = [];
   let dupSubs = false;
+  let emptyNames = false;
   const seen = new Map<string, number>();
   draft.criteria.forEach((c, i) => {
     const no = i + 1;
     const key = nameKey(c.name);
-    if (!key) errors[`${c.key}.name`] = 'Nhập tên tiêu chí chung.';
-    else if (seen.has(key)) {
+    if (!key) {
+      errors[`${c.key}.name`] = 'Nhập tên tiêu chí chung.';
+      emptyNames = true;
+    } else if (c.name.trim().length > MAX_NAME_LENGTH) {
+      errors[`${c.key}.name`] = `Tên tối đa ${MAX_NAME_LENGTH} ký tự.`;
+      emptyNames = true;
+    } else if (seen.has(key)) {
       errors[`${c.key}.name`] =
         `Trùng tên với tiêu chí ${seen.get(key)}. Đặt tên khác để phân biệt.`;
       dupCriteria.push(no);
     } else seen.set(key, no);
-    if (c.description.trim().length > MAX_DESCRIPTION_LENGTH)
+    if (c.description.trim().length > MAX_DESCRIPTION_LENGTH) {
       errors[`${c.key}.description`] =
         `Mô tả tối đa ${MAX_DESCRIPTION_LENGTH} ký tự.`;
-    if (!validScore(c.maxScore)) {
-      errors[`${c.key}.maxScore`] = 'Điểm phải lớn hơn 0.';
-      badScores.push(String(no));
+      emptyNames = true;
     }
+    const cMax = toHundredths(c.maxScore);
+    if (cMax === null) {
+      errors[`${c.key}.maxScore`] =
+        'Nhập điểm là số, tối đa hai chữ số thập phân.';
+      badScores.push(String(no));
+    } else if (cMax === 0) zero.push(String(no));
 
     const seenSubs = new Set<string>();
     c.subCriteria.forEach((s, j) => {
       const subKey = nameKey(s.name);
-      if (!subKey) errors[`${s.key}.name`] = 'Nhập tên hạng mục con.';
-      else if (seenSubs.has(subKey)) {
+      if (!subKey) {
+        errors[`${s.key}.name`] = 'Nhập tên hạng mục con.';
+        emptyNames = true;
+      } else if (s.name.trim().length > MAX_NAME_LENGTH) {
+        errors[`${s.key}.name`] = `Tên tối đa ${MAX_NAME_LENGTH} ký tự.`;
+        emptyNames = true;
+      } else if (seenSubs.has(subKey)) {
         errors[`${s.key}.name`] =
           'Trùng tên với hạng mục khác trong tiêu chí này.';
         dupSubs = true;
       }
       seenSubs.add(subKey);
-      if (!validScore(s.maxScore)) {
-        errors[`${s.key}.maxScore`] = 'Điểm phải lớn hơn 0.';
+      const sMax = toHundredths(s.maxScore);
+      if (sMax === null) {
+        errors[`${s.key}.maxScore`] =
+          'Nhập điểm là số, tối đa hai chữ số thập phân.';
         badScores.push(`${no}.${j + 1}`);
-      }
+      } else if (sMax === 0) zero.push(`${no}.${j + 1}`);
     });
 
     if (c.subCriteria.length === 0) {
       errors[`${c.key}.total`] = 'Tiêu chí phải có ít nhất một hạng mục con.';
       mismatch.push(no);
-    } else if (subTotal(c) !== toHundredths(c.maxScore)) {
+    } else if (subTotal(c) !== cMax) {
       errors[`${c.key}.total`] = 'mismatch';
       mismatch.push(no);
     }
   });
 
+  if (badScores.length)
+    blocking.push(`Điểm không hợp lệ ở mục ${badScores.join(', ')}.`);
+  if (dupCriteria.length)
+    blocking.push(
+      `Tên tiêu chí bị trùng ở tiêu chí ${dupCriteria.join(', ')}.`,
+    );
+  if (dupSubs) blocking.push('Có hạng mục con trùng tên trong cùng tiêu chí.');
+  if (emptyNames)
+    blocking.push('Còn tiêu chí hoặc hạng mục chưa có tên hoặc quá dài.');
+
   if (mismatch.length)
-    parts.push(
+    incomplete.push(
       `Tổng hạng mục con chưa khớp điểm tiêu chí ở tiêu chí ${mismatch.join(', ')}.`,
     );
-  if (badScores.length)
-    parts.push(`Điểm tối đa phải lớn hơn 0 ở mục ${badScores.join(', ')}.`);
-  if (dupCriteria.length)
-    parts.push(`Tên tiêu chí bị trùng ở tiêu chí ${dupCriteria.join(', ')}.`);
-  if (dupSubs) parts.push('Có hạng mục con trùng tên trong cùng tiêu chí.');
-  const emptyNames = Object.entries(errors).some(
-    ([k, v]) => k.endsWith('.name') && v.startsWith('Nhập tên'),
-  );
-  if (emptyNames) parts.push('Còn tiêu chí hoặc hạng mục chưa có tên.');
-  if (Object.keys(errors).some((k) => k.endsWith('description')))
-    parts.push(`Mô tả tối đa ${MAX_DESCRIPTION_LENGTH} ký tự.`);
+  if (zero.length)
+    incomplete.push(`Điểm tối đa phải lớn hơn 0 ở mục ${zero.join(', ')}.`);
 
-  return { errors, summary: parts.join(' ') };
+  return {
+    errors,
+    blocking: blocking.join(' '),
+    incomplete: incomplete.join(' '),
+  };
 }
+
+// Trạng thái lưu theo nội dung: đủ điều kiện thì Active, chưa đủ thì Nháp.
+export const statusOf = (check: TemplateCheck): TemplateStatus =>
+  check.incomplete ? 'Draft' : 'Active';
 
 const toNumber = (value: string) => (toHundredths(value) ?? 0) / 100;
 
@@ -249,7 +278,7 @@ export const draftToInput = (
 ): TemplateInput => ({
   name: draft.name.trim(),
   description: draft.description.trim() || null,
-  maxScore: toNumber(draft.maxScore),
+  maxScore: TEMPLATE_SCALE,
   status,
   criteria: draft.criteria.map((c) => ({
     name: c.name.trim(),

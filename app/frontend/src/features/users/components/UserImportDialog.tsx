@@ -44,7 +44,7 @@ const COLUMNS: Array<{
     key: 'role',
     need: 'must',
     label: 'Bắt buộc',
-    desc: 'STUDENT, LECTURER hoặc ACADEMIC_STAFF',
+    desc: 'Student, Lecturer hoặc AcademicAffairs',
   },
   {
     key: 'date_of_birth',
@@ -269,6 +269,7 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
               onDrop={(e) => {
                 e.preventDefault();
                 setDragging(false);
+                if (busyRef.current) return;
                 pickFile(e.dataTransfer.files?.[0]);
               }}
             >

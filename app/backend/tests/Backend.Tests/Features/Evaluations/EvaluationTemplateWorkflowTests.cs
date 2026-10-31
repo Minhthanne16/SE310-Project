@@ -194,8 +194,18 @@ public sealed class EvaluationTemplateWorkflowTests : IDisposable
         Assert.Equal(EvaluationResultStatus.Invalid, backToDraft.Status);
         var reopened = await Send(new ChangeEvaluationTemplateStatusCommand(created.Id, "Active"));
         Assert.Equal("Active", reopened.Response.Data!.Status);
+        // Đủ điều kiện ⇄ Nháp tự do khi chưa được gán.
         var editToDraft = await Send(new UpdateEvaluationTemplateCommand(created.Id, CommitteeTemplate(status: "Draft")));
-        Assert.Equal(EvaluationResultStatus.Invalid, editToDraft.Status);
+        Assert.Equal("Draft", editToDraft.Response.Data!.Status);
+        Assert.Equal("Active", (await Send(new UpdateEvaluationTemplateCommand(created.Id, CommitteeTemplate()))).Response.Data!.Status);
+
+        // Đang được gán thì phải giữ đủ điều kiện.
+        await Send(new AssignEvaluationTemplateCommand("r-vb1-hk1", "Committee", created.Id));
+        var assignedToDraft = await Send(new UpdateEvaluationTemplateCommand(created.Id, CommitteeTemplate(status: "Draft")));
+        Assert.Equal(EvaluationResultStatus.Invalid, assignedToDraft.Status);
+        Assert.Equal(EvaluationMapping_AssignedKeepValid, assignedToDraft.Response.Message);
+        var statusToDraft = await Send(new ChangeEvaluationTemplateStatusCommand(created.Id, "Draft"));
+        Assert.Equal(EvaluationResultStatus.Invalid, statusToDraft.Status);
     }
 
     [Fact]
@@ -249,6 +259,27 @@ public sealed class EvaluationTemplateWorkflowTests : IDisposable
         Assert.Equal(EvaluationResultStatus.NotFound, (await Send(new GetEvaluationTemplateQuery(template.Id))).Status);
         var remaining = Assert.Single((await Send(new GetEvaluationAssignmentsQuery(null))).Data!);
         Assert.Equal(kept.Id, remaining.TemplateId);
+    }
+
+    private const string EvaluationMapping_AssignedKeepValid = "Mẫu đang được sử dụng nên phải giữ đủ điều kiện. Gỡ gán mẫu trước khi sửa về nháp.";
+
+    [Fact]
+    public async Task DraftMayHaveZeroScoresButActiveMayNot()
+    {
+        var input = CommitteeTemplate("Mẫu mới", "Draft");
+        input.Criteria = [Criterion("Tiêu chí 1", 0, ("Hạng mục 1.1", 0))];
+        Assert.Equal("Draft", (await Create(input)).Status);
+
+        input.Name = "Mẫu mới 2";
+        input.Status = "Active";
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => Send(new CreateEvaluationTemplateCommand(input)));
+        Assert.Contains(ex.Errors, e => e.ErrorMessage.Contains("phải lớn hơn 0"));
+
+        input.Name = "Mẫu âm";
+        input.Status = "Draft";
+        input.Criteria[0].MaxScore = -1;
+        var negative = await Assert.ThrowsAsync<ValidationException>(() => Send(new CreateEvaluationTemplateCommand(input)));
+        Assert.Contains(negative.Errors, e => e.ErrorMessage == "Điểm tiêu chí chung không được âm.");
     }
 
     [Fact]

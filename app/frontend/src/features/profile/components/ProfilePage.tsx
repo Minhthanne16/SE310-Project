@@ -139,6 +139,7 @@ const ProfileContent: React.FC<{
   const { authService, logout } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [editing, setEditing] = useState(false);
   const [saved, setSaved] = useState(false);
   const [passwordChanged, setPasswordChanged] = useState(false);
@@ -316,9 +317,12 @@ const ProfileContent: React.FC<{
   };
 
   const handleLogout = async () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
     try {
       await logout();
     } catch (err: unknown) {
+      setLoggingOut(false);
       toast.error(
         err instanceof Error && err.message
           ? err.message
@@ -632,9 +636,10 @@ const ProfileContent: React.FC<{
               type="button"
               className="prf-btn prf-btn-lg prf-btn-danger"
               onClick={handleLogout}
+              disabled={loggingOut}
             >
               <LogOut size={16} aria-hidden="true" />
-              Đăng xuất
+              {loggingOut ? 'Đang đăng xuất...' : 'Đăng xuất'}
             </button>
           </section>
         </aside>

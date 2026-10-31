@@ -202,8 +202,8 @@ export const ResetPasswordDialog: React.FC<ResetPasswordDialogProps> = ({
         )}
 
         <div className="usr-note usr-note-soft">
-          Người dùng nhận thông báo đã đặt lại mật khẩu và phải đổi mật khẩu ở
-          lần đăng nhập kế tiếp.
+          Người dùng phải đổi mật khẩu ở lần đăng nhập kế tiếp. Hãy báo cho họ
+          mật khẩu mới.
         </div>
 
         <div className="usr-actions">

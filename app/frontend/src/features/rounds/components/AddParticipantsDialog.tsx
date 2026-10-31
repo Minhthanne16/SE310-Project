@@ -169,6 +169,7 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
 
   const switchMode = (next: AddMode) => {
     setMode(next);
+    setResults(null);
     setError(null);
   };
 

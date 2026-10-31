@@ -34,22 +34,25 @@ it('shows stat tiles and defaults to running rounds, with a count on each status
   await renderPage();
   expect(statValue('Đợt đang diễn ra')).toBe('3');
   expect(statValue('Giảng viên tham gia')).not.toBe('0');
-  expect(screen.getByRole('button', { name: 'Đang diễn ra (3)' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  expect(
+    screen.getByRole('button', { name: 'Đang diễn ra (3)' }),
+  ).toHaveAttribute('aria-pressed', 'true');
   expect(screen.getByRole('button', { name: 'Nháp (1)' })).toBeInTheDocument();
   expect(
     screen.getByRole('button', { name: 'Đã kết thúc (1)' }),
   ).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Tất cả (5)' })).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Tất cả (5)' }),
+  ).toBeInTheDocument();
   expect(screen.getByText('Tiến độ · mốc hiện tại')).toBeInTheDocument();
 });
 
 it('filters by status and program and shows the current milestone with a progress line', async () => {
   await renderPage();
   const ths = await rowOf('Thạc sĩ · Đợt 1/2026');
-  expect(within(ths).getByText(/^Báo cáo cuối kỳ · hạn \d\d\/\d\d$/)).toBeInTheDocument();
+  expect(
+    within(ths).getByText(/^Báo cáo cuối kỳ · hạn \d\d\/\d\d$/),
+  ).toBeInTheDocument();
   expect(within(ths).getByText(/^Tuần \d+\/\d+$/)).toBeInTheDocument();
   expect(
     screen.queryByRole('link', { name: 'Văn bằng 2 · HK2 2026–2027' }),
@@ -78,16 +81,21 @@ it('filters by status and program and shows the current milestone with a progres
     screen.getByRole('link', { name: 'Thạc sĩ · Đợt 1/2026' }),
   ).toBeInTheDocument();
   // Số đợt trên bộ lọc đổi theo chương trình đang chọn.
-  expect(screen.getByRole('button', { name: 'Tất cả (1)' })).toBeInTheDocument();
+  expect(
+    screen.getByRole('button', { name: 'Tất cả (1)' }),
+  ).toBeInTheDocument();
 });
 
 it('links each round to its detail page', async () => {
   await renderPage();
+  expect(await roundLink('Văn bằng 1 · HK1 2026–2027')).toHaveAttribute(
+    'href',
+    '/giao-vu/dot/r-vb1-hk1',
+  );
   expect(
-    await roundLink('Văn bằng 1 · HK1 2026–2027'),
-  ).toHaveAttribute('href', '/giao-vu/dot/r-vb1-hk1');
-  expect(
-    screen.getByRole('link', { name: 'Mở chi tiết Văn bằng 1 · HK1 2026–2027' }),
+    screen.getByRole('link', {
+      name: 'Mở chi tiết Văn bằng 1 · HK1 2026–2027',
+    }),
   ).toHaveAttribute('href', '/giao-vu/dot/r-vb1-hk1');
 });
 
@@ -167,10 +175,9 @@ it('creates a round copied from an old one and shows it as a draft', async () =>
   await waitFor(() =>
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
   );
-  expect(screen.getByRole('button', { name: /^Nháp \(2\)$/ })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  expect(
+    await screen.findByRole('button', { name: /^Nháp \(2\)$/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
   const row = await rowOf('Văn bằng 1 · HK2 2026–2027');
   expect(within(row).getByText('Nháp')).toBeInTheDocument();
   const created = (await service.list({ status: 'Nháp' })).find(
@@ -188,7 +195,9 @@ it('opens the copy dialog with a finished round preselected', async () => {
   expect(within(dialog).getByLabelText('Sao chép cấu hình từ')).toHaveValue(
     'r-vb1-hk2-2025',
   );
-  expect(dialog).toHaveTextContent('Không sao chép ngày và danh sách sinh viên');
+  expect(dialog).toHaveTextContent(
+    'Không sao chép ngày và danh sách sinh viên',
+  );
   fireEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
@@ -212,7 +221,7 @@ it('opens a draft after a confirmation that warns about unfinished setup', async
   );
   expect((await service.get('r-vb2-hk2-nhap')).status).toBe('Đang diễn ra');
   expect(
-    screen.getByRole('button', { name: /^Đang diễn ra \(4\)$/ }),
+    await screen.findByRole('button', { name: /^Đang diễn ra \(4\)$/ }),
   ).toHaveAttribute('aria-pressed', 'true');
 });
 
@@ -296,9 +305,7 @@ it('keeps the list visible while it reloads and ignores a stale response', async
     screen.queryByText('Đang tải danh sách đợt...'),
   ).not.toBeInTheDocument();
   setStatus('Đã kết thúc (1)');
-  expect(
-    await roundLink('Văn bằng 1 · HK2 2025–2026'),
-  ).toBeInTheDocument();
+  expect(await roundLink('Văn bằng 1 · HK2 2025–2026')).toBeInTheDocument();
   // Phản hồi "Nháp" đến muộn không được ghi đè kết quả mới.
   await act(async () => releaseFirst());
   expect(

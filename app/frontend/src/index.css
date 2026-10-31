@@ -2334,76 +2334,6 @@ textarea:focus {
   }
 }
 
-/* Đề tài của giáo vụ: bảng, thanh giai đoạn, dòng thời gian lịch sử */
-.app-topic-table {
-  min-width: 1080px;
-}
-
-.topic-banner {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px 16px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  background: #f5f5f4;
-  font-size: 14px;
-  line-height: 1.55;
-  color: #3d3d3d;
-}
-
-.topic-banner-published {
-  background: #ddf3d8;
-  color: #2b6a1f;
-}
-
-.topic-supervisor {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.topic-fields {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-}
-
-.topic-fields dt {
-  font-size: 13px;
-  font-weight: 700;
-  color: #5c5c5c;
-}
-
-.topic-fields dd {
-  margin: 4px 0 0;
-  font-size: 15px;
-  line-height: 1.55;
-}
-
-.topic-timeline {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  list-style: none;
-}
-
-.topic-timeline li {
-  display: grid;
-  gap: 4px;
-  padding: 12px 0 12px 16px;
-  border-left: 2px solid #e5e5e5;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.topic-timeline time {
-  font-size: 13px;
-  color: #5c5c5c;
-}
-
 /* Mẫu phiếu đánh giá (artboard GiaoVu-PhieuDanhGia) */
 .eval-heading {
   align-items: flex-end;
@@ -2419,43 +2349,6 @@ textarea:focus {
 .eval-breadcrumb,
 .eval-small {
   font-size: 13px;
-}
-
-.eval-assign {
-  gap: 14px;
-  padding: 20px 22px;
-}
-
-.eval-assign-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.eval-assign-title {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-}
-
-.eval-assign-title h2 {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.eval-round-select {
-  width: auto;
-  height: 42px;
-  font-size: 14.5px;
-}
-
-.eval-assign-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
 }
 
 .eval-assign-card {
@@ -2478,77 +2371,6 @@ textarea:focus {
   font-size: 14.5px;
 }
 
-.eval-layout {
-  display: grid;
-  grid-template-columns: 330px minmax(0, 1fr);
-  gap: 20px;
-  align-items: start;
-}
-
-.eval-list-column,
-.eval-list,
-.eval-editor-column {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  min-width: 0;
-}
-
-.eval-card {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  padding: 14px 16px;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  background: #fafaf9;
-  color: #1a1a1a;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-
-.eval-card-current {
-  border: 1.5px solid #1a1a1a;
-  background: #fff;
-  cursor: default;
-}
-
-.eval-card-name {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.4;
-}
-
-.eval-pagination {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 4px 0;
-  font-size: 13px;
-  color: #5c5c5c;
-}
-
-.eval-pagination-controls {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.eval-page-label {
-  min-width: 64px;
-  text-align: center;
-  font-weight: 600;
-  color: #1a1a1a;
-}
-
-.eval-editor {
-  gap: 16px;
-  padding: 22px;
-}
-
 .eval-editor-fields {
   display: flex;
   flex-direction: column;
@@ -2557,12 +2379,6 @@ textarea:focus {
   margin: 0;
   padding: 0;
   border: 0;
-}
-
-.eval-head-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 220px;
-  gap: 12px;
 }
 
 .eval-field,
@@ -2619,16 +2435,6 @@ textarea:focus {
 .eval-editor textarea:disabled {
   background: #f2f2f1;
   color: #5c5c5c;
-}
-
-.eval-readonly {
-  display: flex;
-  align-items: center;
-  height: 44px;
-  padding: 0 12px;
-  border-radius: 9px;
-  background: #f2f2f1;
-  font-size: 15px;
 }
 
 .eval-note {
@@ -2807,40 +2613,130 @@ textarea:focus {
   color: #1a1a1a;
 }
 
-.eval-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  align-items: center;
-  gap: 10px;
-  padding-top: 14px;
-  border-top: 1px solid #e5e5e5;
-}
-
-.eval-delete {
-  margin-right: auto;
-  border-color: #e3b3ad;
-  color: #a8281c;
-}
-
-.eval-copy {
-  border-color: #1a1a1a;
-}
-
 .eval-status-ok {
   font-size: 14px;
   font-weight: 600;
   color: #2b6a1f;
 }
 
-@media (max-width: 1100px) {
-  .eval-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.eval-section {
+  gap: 14px;
+  padding: 20px 22px;
+}
+
+.eval-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.eval-section-head h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.eval-section-head p {
+  max-width: 46rem;
+  margin-top: 4px;
+}
+
+.eval-round-table {
+  min-width: 860px;
+}
+
+.eval-round-name {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.eval-round-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-weight: 400;
+}
+
+.eval-assigned-name {
+  font-weight: 600;
+}
+
+.eval-template-table {
+  min-width: 880px;
+}
+
+.eval-name-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1f5fbf;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+
+.eval-name-button:hover {
+  text-decoration: underline;
+}
+
+.eval-row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.eval-icon-danger {
+  color: #a8281c;
+}
+
+.eval-drawer {
+  max-width: 760px;
+}
+
+.eval-drawer-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.eval-drawer-footer {
+  align-items: center;
+}
+
+.eval-drawer-footer .eval-delete {
+  margin-right: auto;
+  border-color: #e3b3ad;
+  color: #a8281c;
+}
+
+.eval-save-hint {
+  margin: 0;
+  font-size: 13.5px;
+  color: #3d3d3d;
+}
+
+.eval-assign-round {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.eval-note-warn {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.eval-note-warn svg {
+  flex: none;
+  margin-top: 2px;
 }
 
 @media (max-width: 720px) {
-  .eval-assign-grid,
   .eval-head-grid {
     grid-template-columns: minmax(0, 1fr);
   }

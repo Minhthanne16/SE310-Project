@@ -34,6 +34,8 @@ export interface EvaluationService {
   // removeAssignments: Giáo vụ đã xác nhận gỡ mọi lần gán của mẫu rồi xóa.
   remove(id: string, options?: { removeAssignments?: boolean }): Promise<void>;
   listAssignments(roundId: string): Promise<TemplateAssignment[]>;
+  // Mọi lần gán của mọi đợt, cho danh sách đợt.
+  listAllAssignments(): Promise<TemplateAssignment[]>;
   assign(
     roundId: string,
     role: GradingRole,
@@ -94,6 +96,9 @@ export function createEvaluationService(): EvaluationService {
         throw err;
       }
     },
+
+    listAllAssignments: () =>
+      apiRequest<TemplateAssignment[]>(`${BASE}/assignments`),
 
     listAssignments: (roundId) =>
       apiRequest<TemplateAssignment[]>(

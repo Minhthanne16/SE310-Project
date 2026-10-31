@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Eye, Pencil, Plus, Trash2 } from 'lucide-react';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { AssignmentSection } from '@/features/evaluations/components/AssignmentSection';
-import { TemplateEditor } from '@/features/evaluations/components/TemplateEditor';
+import { RoundAssignmentList } from '@/features/evaluations/components/RoundAssignmentList';
+import {
+  TemplateDrawer,
+  type DrawerMode,
+} from '@/features/evaluations/components/TemplateDrawer';
+import { TemplateStateChip } from '@/features/evaluations/components/TemplateStatusChip';
 import {
   evaluationService as defaultEvaluationService,
   TemplateInUseError,
@@ -13,17 +17,17 @@ import {
 } from '@/features/evaluations/services/evaluationService';
 import {
   newDraft,
+  uniqueName,
   type TemplateDraft,
 } from '@/features/evaluations/templateValidation';
 import {
   roundService as defaultRoundService,
   type RoundService,
 } from '@/features/rounds/services/roundService';
-import { useUrlParam } from '@/lib/useUrlParam';
 import {
   GRADING_ROLE_LABEL,
   type EvaluationTemplate,
-  type TemplateStatus,
+  type TemplateAssignment,
 } from '@/types/evaluation';
 import type { Round } from '@/types/round';
 
@@ -32,57 +36,51 @@ interface EvaluationTemplatePageProps {
   roundService?: RoundService;
 }
 
-// Mẫu đang chọn: một mẫu đã lưu, hoặc mẫu mới chưa lưu (kèm bản nháp ban đầu).
-type Selection =
-  | { kind: 'saved'; id: string }
-  | { kind: 'new'; draft: TemplateDraft; seq: number }
+type DrawerState =
+  | { mode: 'create'; draft: TemplateDraft; seq: number }
+  | { mode: Exclude<DrawerMode, 'create'>; templateId: string; seq: number }
   | null;
-
-type Dialog =
-  | { kind: 'remove'; templateId: string }
-  | { kind: 'status'; templateId: string; status: TemplateStatus }
-  | { kind: 'discard'; next: Selection }
-  | null;
-
-const PAGE_SIZE = 4;
 
 const countSubs = (t: EvaluationTemplate) =>
   t.criteria.reduce((n, c) => n + c.subCriteria.length, 0);
 
-// Màn Mẫu phiếu đánh giá của Giáo vụ theo artboard GiaoVu-PhieuDanhGia: khối gán
-// mẫu cho ba vai trò chấm của đợt, danh sách thẻ mẫu (4 mẫu/trang) và trình sửa
-// mẫu đặt bên phải.
+const formatDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+
+// Màn Mẫu phiếu đánh giá của Giáo vụ: mục trên là danh sách đợt khóa luận kèm
+// trạng thái gán phiếu cho từng vai trò chấm; mục dưới là danh sách mẫu phiếu,
+// bấm vào mẫu mở panel bên phải để xem, tạo, sửa.
 export const EvaluationTemplatePage: React.FC<EvaluationTemplatePageProps> = ({
   evaluationService = defaultEvaluationService,
   roundService = defaultRoundService,
 }) => {
-  const [roundParam, setRoundParam] = useUrlParam('dot');
   const [templates, setTemplates] = useState<EvaluationTemplate[]>([]);
+  const [assignments, setAssignments] = useState<TemplateAssignment[]>([]);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [selection, setSelection] = useState<Selection>(null);
-  const [newSeq, setNewSeq] = useState(0);
-  const [page, setPage] = useState(1);
-  const [dirty, setDirty] = useState(false);
-  const [dialog, setDialog] = useState<Dialog>(null);
+  const [drawer, setDrawer] = useState<DrawerState>(null);
+  const [seq, setSeq] = useState(0);
+  const [removeId, setRemoveId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setLoadError(null);
     try {
-      const [list, roundList] = await Promise.all([
+      const [list, all, roundList] = await Promise.all([
         evaluationService.list(),
+        evaluationService.listAllAssignments(),
         roundService.list(),
       ]);
       setTemplates(list);
+      setAssignments(all);
       setRounds(roundList);
-      setSelection(
-        (s) => s ?? (list[0] ? { kind: 'saved', id: list[0].id } : null),
-      );
     } catch (err: unknown) {
       setLoadError(
         err instanceof Error && err.message
@@ -103,114 +101,82 @@ export const EvaluationTemplatePage: React.FC<EvaluationTemplatePageProps> = ({
       .list()
       .then(setTemplates)
       .catch(() => {
-        // Nhãn "Đang gán" chỉ để tham khảo; lỗi tải lại không chặn thao tác.
+        // Nhãn trạng thái chỉ để tham khảo; lỗi tải lại không chặn thao tác.
       });
   }, [evaluationService]);
 
-  const round =
-    rounds.find((r) => r.id === roundParam) ??
-    rounds.find((r) => r.status === 'Đang diễn ra') ??
-    rounds[0] ??
-    null;
   const roundName = (id: string) =>
     rounds.find((r) => r.id === id)?.name ?? `Đợt ${id}`;
-
-  const selected =
-    selection?.kind === 'saved'
-      ? templates.find((t) => t.id === selection.id)
-      : undefined;
-
-  // Mẫu mới chưa lưu nằm cuối danh sách như trên design.
-  const cardCount = templates.length + (selection?.kind === 'new' ? 1 : 0);
-  const pageCount = Math.max(1, Math.ceil(cardCount / PAGE_SIZE));
-  const currentPage = Math.min(page, pageCount);
-  const start = (currentPage - 1) * PAGE_SIZE;
-  const visible = templates.slice(start, start + PAGE_SIZE);
-  const showNewCard =
-    selection?.kind === 'new' &&
-    templates.length >= start &&
-    templates.length < start + PAGE_SIZE;
-
-  const otherNames = useMemo(
-    () => templates.filter((t) => t.id !== selected?.id).map((t) => t.name),
-    [templates, selected?.id],
-  );
-
-  const rolesInRound = (t: EvaluationTemplate) =>
-    t.assignments
-      .filter((a) => a.roundId === round?.id)
-      .map((a) => GRADING_ROLE_LABEL[a.role]);
   const usageText = (t: EvaluationTemplate) =>
     t.assignments.map(
       (a) => `${roundName(a.roundId)} · ${GRADING_ROLE_LABEL[a.role]}`,
     );
 
-  const chipOf = (t: EvaluationTemplate) => {
-    const roles = rolesInRound(t);
-    if (t.status === 'Closed')
-      return {
-        text: roles.length
-          ? `Đã đóng · đang gán: ${roles.join(', ')}`
-          : 'Đã đóng',
-        className: 'app-chip-disabled',
-      };
-    if (t.status === 'Draft')
-      return { text: 'Nháp', className: 'app-chip-pending' };
-    return {
-      text: roles.length ? `Đang gán: ${roles.join(', ')}` : 'Đang dùng',
-      className: 'app-chip-active',
-    };
+  const open = (mode: Exclude<DrawerMode, 'create'>, templateId: string) => {
+    setSeq((n) => n + 1);
+    setDrawer({ mode, templateId, seq: seq + 1 });
+  };
+  const create = () => {
+    setSeq((n) => n + 1);
+    setDrawer({
+      mode: 'create',
+      draft: newDraft(
+        uniqueName(
+          'Mẫu phiếu mới',
+          templates.map((t) => t.name),
+        ),
+      ),
+      seq: seq + 1,
+    });
   };
 
-  // Đổi mẫu khi đang có thay đổi chưa lưu thì hỏi trước.
-  const select = (next: Selection) => {
-    if (dirty) {
-      setDialog({ kind: 'discard', next });
-      return;
-    }
-    setNotice(null);
-    setDirty(false);
-    setSelection(next);
-  };
-
-  const startNew = (draft = newDraft()) => {
-    const seq = newSeq + 1;
-    setNewSeq(seq);
-    select({ kind: 'new', draft, seq });
-    if (!dirty) setPage(Math.ceil((templates.length + 1) / PAGE_SIZE));
-  };
-
-  const replace = (saved: EvaluationTemplate) =>
+  const handleSaved = (saved: EvaluationTemplate, mode: 'create' | 'edit') => {
     setTemplates((list) =>
       list.some((t) => t.id === saved.id)
         ? list.map((t) => (t.id === saved.id ? saved : t))
         : [...list, saved],
     );
-
-  const handleSaved = (saved: EvaluationTemplate, mode: 'create' | 'edit') => {
-    replace(saved);
-    if (mode === 'create') {
-      setDirty(false);
-      setSelection({ kind: 'saved', id: saved.id });
-      setNotice(`Đã tạo mẫu phiếu ${saved.name} ở trạng thái Nháp.`);
-      toast.success('Đã tạo mẫu phiếu.');
-    } else {
-      toast.success('Đã lưu mẫu phiếu.');
-    }
+    setDrawer(null);
+    toast.success(
+      saved.status === 'Draft'
+        ? 'Đã lưu mẫu phiếu ở trạng thái Nháp.'
+        : mode === 'create'
+          ? 'Đã tạo mẫu phiếu, đủ điều kiện sử dụng.'
+          : 'Đã lưu mẫu phiếu.',
+    );
   };
 
-  const closeDialog = useCallback(() => {
-    setDialog(null);
+  const closeRemove = useCallback(() => {
+    setRemoveId(null);
     setActionError(null);
   }, []);
 
-  const runDialogAction = async (action: () => Promise<void>) => {
+  const removing = removeId
+    ? templates.find((t) => t.id === removeId)
+    : undefined;
+
+  const confirmRemove = async (template: EvaluationTemplate) => {
     if (busy) return;
     setBusy(true);
     setActionError(null);
     try {
-      await action();
+      await evaluationService.remove(template.id, {
+        removeAssignments: template.assignments.length > 0,
+      });
+      setTemplates((list) => list.filter((t) => t.id !== template.id));
+      setAssignments((list) =>
+        list.filter((a) => a.templateId !== template.id),
+      );
+      setRemoveId(null);
+      setDrawer(null);
+      toast.success(
+        template.assignments.length > 0
+          ? 'Đã gỡ gán và xóa mẫu phiếu.'
+          : 'Đã xóa mẫu phiếu.',
+      );
     } catch (err: unknown) {
+      // Có thể vừa được gán ở nơi khác: tải lại để hộp xác nhận nêu đúng.
+      if (err instanceof TemplateInUseError) refreshTemplates();
       setActionError(
         err instanceof Error && err.message
           ? err.message
@@ -221,57 +187,10 @@ export const EvaluationTemplatePage: React.FC<EvaluationTemplatePageProps> = ({
     }
   };
 
-  const confirmRemove = (template: EvaluationTemplate) =>
-    runDialogAction(async () => {
-      const roles = usageText(template);
-      try {
-        await evaluationService.remove(template.id, {
-          removeAssignments: roles.length > 0,
-        });
-      } catch (err) {
-        // Có thể vừa được gán ở nơi khác: tải lại để hộp xác nhận nêu đúng.
-        if (err instanceof TemplateInUseError) refreshTemplates();
-        throw err;
-      }
-      const rest = templates.filter((t) => t.id !== template.id);
-      setTemplates(rest);
-      setDirty(false);
-      setSelection(rest[0] ? { kind: 'saved', id: rest[0].id } : null);
-      setDialog(null);
-      setNotice(
-        `Đã xóa ${template.name}.` +
-          (roles.length ? ` Cần gán mẫu khác cho ${roles.join('; ')}.` : ''),
-      );
-    });
-
-  const confirmStatus = (
-    template: EvaluationTemplate,
-    status: TemplateStatus,
-  ) =>
-    runDialogAction(async () => {
-      const saved = await evaluationService.setStatus(template.id, status);
-      replace(saved);
-      setDialog(null);
-      toast.success(
-        status === 'Closed'
-          ? 'Đã đóng mẫu phiếu.'
-          : template.status === 'Draft'
-            ? 'Mẫu phiếu đã chuyển sang đang dùng.'
-            : 'Mẫu phiếu đã được dùng lại.',
-      );
-    });
-
-  const dialogTemplate =
-    dialog && dialog.kind !== 'discard'
-      ? templates.find((t) => t.id === dialog.templateId)
+  const drawerTemplate =
+    drawer && drawer.mode !== 'create'
+      ? templates.find((t) => t.id === drawer.templateId)
       : undefined;
-
-  const copyName = (name: string) => {
-    let candidate = `${name} (bản sao)`;
-    for (let n = 2; templates.some((t) => t.name === candidate); n += 1)
-      candidate = `${name} (bản sao ${n})`;
-    return candidate;
-  };
 
   return (
     <>
@@ -288,14 +207,6 @@ export const EvaluationTemplatePage: React.FC<EvaluationTemplatePageProps> = ({
               sinh viên trong nhóm (1 hoặc 2 sinh viên).
             </p>
           </div>
-          <button
-            type="button"
-            className="app-button app-button-primary"
-            disabled={loading || !!loadError}
-            onClick={() => startNew()}
-          >
-            Tạo mẫu phiếu
-          </button>
         </div>
       </div>
 
@@ -317,237 +228,189 @@ export const EvaluationTemplatePage: React.FC<EvaluationTemplatePageProps> = ({
         </section>
       ) : (
         <>
-          <AssignmentSection
+          <RoundAssignmentList
             rounds={rounds}
-            round={round}
             templates={templates}
+            assignments={assignments}
             evaluationService={evaluationService}
-            onSelectRound={(id) => setRoundParam(id, 'replace')}
-            onChanged={refreshTemplates}
+            onChange={(next) => {
+              setAssignments(next);
+              refreshTemplates();
+            }}
           />
 
-          <div className="eval-layout">
-            <div className="eval-list-column">
-              <div
-                role="list"
-                aria-label="Danh sách mẫu phiếu"
-                className="eval-list"
-              >
-                {visible.map((t) => {
-                  const chip = chipOf(t);
-                  const current =
-                    selection?.kind === 'saved' && selection.id === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      role="listitem"
-                      aria-current={current ? 'true' : undefined}
-                      className={
-                        current ? 'eval-card eval-card-current' : 'eval-card'
-                      }
-                      onClick={() =>
-                        !current && select({ kind: 'saved', id: t.id })
-                      }
-                    >
-                      <span className="eval-card-name">{t.name}</span>
-                      <span className="app-muted eval-small">
-                        {t.criteria.length} tiêu chí chung · {countSubs(t)} hạng
-                        mục con
-                      </span>
-                      <span className={`app-chip ${chip.className}`}>
-                        {chip.text}
-                      </span>
-                    </button>
-                  );
-                })}
-                {showNewCard && selection?.kind === 'new' && (
-                  <button
-                    type="button"
-                    role="listitem"
-                    aria-current="true"
-                    className="eval-card eval-card-current"
-                  >
-                    <span className="eval-card-name">
-                      Mẫu phiếu mới (chưa lưu)
-                    </span>
-                    <span className="app-muted eval-small">
-                      {selection.draft.criteria.length} tiêu chí chung
-                    </span>
-                    <span className="app-chip app-chip-pending">Nháp</span>
-                  </button>
-                )}
-                {cardCount === 0 && (
-                  <p className="app-muted">
-                    Chưa có mẫu phiếu. Chọn Tạo mẫu phiếu để bắt đầu.
-                  </p>
-                )}
+          <section
+            className="app-card eval-section"
+            aria-labelledby="eval-templates-h"
+          >
+            <div className="eval-section-head">
+              <div>
+                <h2 id="eval-templates-h">Danh sách mẫu phiếu</h2>
+                <p className="app-muted eval-small">
+                  Mẫu tổng điểm chưa đủ 10 lưu là Nháp. Đủ 10 điểm thì đủ điều
+                  kiện sử dụng; gán cho đợt thì thành đang được sử dụng.
+                </p>
               </div>
-              {cardCount > 0 && (
-                <nav
-                  aria-label="Phân trang mẫu phiếu"
-                  className="eval-pagination"
-                >
-                  <span>
-                    {start + 1}–{Math.min(start + PAGE_SIZE, cardCount)} trên{' '}
-                    {cardCount} mẫu
-                  </span>
-                  <span className="eval-pagination-controls">
-                    <button
-                      type="button"
-                      className="app-icon-button"
-                      aria-label="Trang trước"
-                      disabled={currentPage <= 1}
-                      onClick={() => setPage(currentPage - 1)}
-                    >
-                      <ChevronLeft size={15} aria-hidden="true" />
-                    </button>
-                    <span className="eval-page-label">
-                      Trang {currentPage} / {pageCount}
-                    </span>
-                    <button
-                      type="button"
-                      className="app-icon-button"
-                      aria-label="Trang sau"
-                      disabled={currentPage >= pageCount}
-                      onClick={() => setPage(currentPage + 1)}
-                    >
-                      <ChevronRight size={15} aria-hidden="true" />
-                    </button>
-                  </span>
-                </nav>
-              )}
+              <button
+                type="button"
+                className="app-button app-button-primary"
+                aria-haspopup="dialog"
+                onClick={create}
+              >
+                <Plus size={16} aria-hidden="true" />
+                Tạo mẫu phiếu
+              </button>
             </div>
 
-            <div className="eval-editor-column">
-              {notice && (
-                <span role="status" className="eval-status-ok">
-                  {notice}
-                </span>
-              )}
-              {selection?.kind === 'new' ? (
-                <TemplateEditor
-                  key={`new-${selection.seq}`}
-                  initialDraft={selection.draft}
-                  otherNames={otherNames}
-                  usage={[]}
-                  evaluationService={evaluationService}
-                  onDirtyChange={setDirty}
-                  onSaved={handleSaved}
-                  onDiscardNew={() => {
-                    setDirty(false);
-                    setSelection(
-                      templates[0]
-                        ? { kind: 'saved', id: templates[0].id }
-                        : null,
-                    );
-                    setNotice('Đã hủy tạo mẫu phiếu mới.');
-                  }}
-                  onRemove={() => undefined}
-                  onChangeStatus={() => undefined}
-                  onCopy={() => undefined}
-                />
-              ) : selected ? (
-                <TemplateEditor
-                  key={selected.id}
-                  template={selected}
-                  otherNames={otherNames}
-                  usage={usageText(selected)}
-                  evaluationService={evaluationService}
-                  onDirtyChange={setDirty}
-                  onSaved={handleSaved}
-                  onDiscardNew={() => undefined}
-                  onRemove={() =>
-                    setDialog({ kind: 'remove', templateId: selected.id })
-                  }
-                  onChangeStatus={(status) =>
-                    setDialog({
-                      kind: 'status',
-                      templateId: selected.id,
-                      status,
-                    })
-                  }
-                  onCopy={(draft) =>
-                    startNew({ ...draft, name: copyName(draft.name) })
-                  }
-                />
-              ) : (
-                <section className="status-state app-empty">
-                  <h2>Chưa chọn mẫu phiếu</h2>
-                  <p>Chọn một mẫu ở danh sách hoặc tạo mẫu mới.</p>
-                </section>
-              )}
-            </div>
-          </div>
+            {templates.length === 0 ? (
+              <p className="app-muted">
+                Chưa có mẫu phiếu. Chọn Tạo mẫu phiếu để bắt đầu.
+              </p>
+            ) : (
+              <div className="app-table-scroll">
+                <table className="app-table eval-template-table">
+                  <thead>
+                    <tr>
+                      <th scope="col">Tên mẫu</th>
+                      <th scope="col">Tiêu chí</th>
+                      <th scope="col">Trạng thái</th>
+                      <th scope="col">Đang gán cho</th>
+                      <th scope="col">Cập nhật</th>
+                      <th scope="col">
+                        <span className="app-visually-hidden">Thao tác</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {templates.map((t) => {
+                      const usage = usageText(t);
+                      return (
+                        <tr key={t.id}>
+                          <th scope="row" className="eval-template-name">
+                            <button
+                              type="button"
+                              className="eval-name-button"
+                              aria-haspopup="dialog"
+                              onClick={() => open('view', t.id)}
+                            >
+                              {t.name}
+                            </button>
+                            {t.description && (
+                              <span className="app-config-hint">
+                                {t.description}
+                              </span>
+                            )}
+                          </th>
+                          <td>
+                            {t.criteria.length} chung · {countSubs(t)} hạng mục
+                            con
+                          </td>
+                          <td>
+                            <TemplateStateChip template={t} />
+                          </td>
+                          <td>
+                            {usage.length === 0 ? (
+                              <span className="app-muted">—</span>
+                            ) : (
+                              <span title={usage.join('; ')}>
+                                {usage.length} vai trò
+                              </span>
+                            )}
+                          </td>
+                          <td>{formatDate(t.updatedAt ?? t.createdAt)}</td>
+                          <td>
+                            <div className="eval-row-actions">
+                              <button
+                                type="button"
+                                className="app-icon-button"
+                                aria-haspopup="dialog"
+                                aria-label={`Xem chi tiết ${t.name}`}
+                                title="Xem chi tiết"
+                                onClick={() => open('view', t.id)}
+                              >
+                                <Eye size={16} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                className="app-icon-button"
+                                aria-haspopup="dialog"
+                                aria-label={`Chỉnh sửa ${t.name}`}
+                                title="Chỉnh sửa"
+                                onClick={() => open('edit', t.id)}
+                              >
+                                <Pencil size={16} aria-hidden="true" />
+                              </button>
+                              <button
+                                type="button"
+                                className="app-icon-button eval-icon-danger"
+                                aria-haspopup="dialog"
+                                aria-label={`Xóa ${t.name}`}
+                                title="Xóa"
+                                onClick={() => setRemoveId(t.id)}
+                              >
+                                <Trash2 size={16} aria-hidden="true" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         </>
       )}
 
-      {dialog?.kind === 'discard' && (
-        <ConfirmDialog
-          title="Bỏ thay đổi chưa lưu?"
-          description="Mẫu đang sửa có thay đổi chưa lưu. Nếu chuyển sang mẫu khác, các thay đổi này sẽ mất."
-          cancelLabel="Tiếp tục sửa"
-          confirmLabel="Bỏ thay đổi"
-          danger
-          onCancel={closeDialog}
-          onConfirm={() => {
-            const next = dialog.next;
-            closeDialog();
-            setDirty(false);
-            setNotice(null);
-            setSelection(next);
-            if (next?.kind === 'new')
-              setPage(Math.ceil((templates.length + 1) / PAGE_SIZE));
-          }}
+      {drawer?.mode === 'create' && (
+        <TemplateDrawer
+          key={`new-${drawer.seq}`}
+          mode="create"
+          initialDraft={drawer.draft}
+          otherNames={templates.map((t) => t.name)}
+          usage={[]}
+          evaluationService={evaluationService}
+          escapeDisabled={removeId !== null}
+          onClose={() => setDrawer(null)}
+          onSaved={handleSaved}
+          onRemove={() => undefined}
+        />
+      )}
+      {drawer && drawer.mode !== 'create' && drawerTemplate && (
+        <TemplateDrawer
+          key={`${drawerTemplate.id}-${drawer.seq}`}
+          mode={drawer.mode}
+          template={drawerTemplate}
+          otherNames={templates
+            .filter((t) => t.id !== drawerTemplate.id)
+            .map((t) => t.name)}
+          usage={usageText(drawerTemplate)}
+          evaluationService={evaluationService}
+          escapeDisabled={removeId !== null}
+          onClose={() => setDrawer(null)}
+          onSaved={handleSaved}
+          onRemove={() => setRemoveId(drawerTemplate.id)}
         />
       )}
 
-      {dialog?.kind === 'remove' && dialogTemplate && (
+      {removing && (
         <ConfirmDialog
-          title={`Xóa ${dialogTemplate.name}?`}
+          title={`Xóa ${removing.name}?`}
           description={
-            dialogTemplate.assignments.length > 0
-              ? `Mẫu đang gán cho ${usageText(dialogTemplate).join('; ')} nhưng chưa có điểm nên xóa được. Sau khi xóa, vai trò này chưa có mẫu phiếu và cần gán mẫu khác trước khi chấm. Thao tác này không hoàn tác được.`
-              : 'Mẫu chưa gán cho vai trò nào và chưa có điểm nên xóa được. Thao tác này không hoàn tác được.'
-          }
-          cancelLabel="Hủy"
-          confirmLabel="Xóa mẫu phiếu"
-          danger
-          busy={busy}
-          error={actionError}
-          onCancel={closeDialog}
-          onConfirm={() => void confirmRemove(dialogTemplate)}
-        />
-      )}
-
-      {dialog?.kind === 'status' && dialogTemplate && (
-        <ConfirmDialog
-          title={
-            dialog.status === 'Closed'
-              ? `Đóng mẫu "${dialogTemplate.name}"?`
-              : dialogTemplate.status === 'Draft'
-                ? `Chuyển mẫu "${dialogTemplate.name}" sang đang dùng?`
-                : `Dùng lại mẫu "${dialogTemplate.name}"?`
-          }
-          description={
-            dialog.status === 'Closed'
-              ? 'Mẫu đã đóng không sửa được và không gán được cho đợt mới; các đợt đang dùng mẫu vẫn giữ nguyên. Có thể dùng lại sau.'
-              : dialogTemplate.status === 'Draft'
-                ? 'Sau khi dùng, mẫu gán được cho vai trò chấm trong đợt và không quay lại nháp.'
-                : 'Mẫu sẽ sửa được và gán được cho các đợt trở lại.'
+            removing.assignments.length > 0
+              ? `Mẫu đang được sử dụng cho ${usageText(removing).join('; ')}. Nếu xóa, các vai trò này sẽ chưa có mẫu phiếu và cần gán mẫu khác trước khi chấm. Thao tác này không hoàn tác được.`
+              : 'Mẫu chưa gán cho vai trò nào. Thao tác này không hoàn tác được.'
           }
           cancelLabel="Hủy"
           confirmLabel={
-            dialog.status === 'Closed'
-              ? 'Đóng mẫu'
-              : dialogTemplate.status === 'Draft'
-                ? 'Chuyển sang đang dùng'
-                : 'Dùng lại'
+            removing.assignments.length > 0 ? 'Gỡ gán và xóa' : 'Xóa mẫu phiếu'
           }
+          danger
           busy={busy}
           error={actionError}
-          onCancel={closeDialog}
-          onConfirm={() => void confirmStatus(dialogTemplate, dialog.status)}
+          onCancel={closeRemove}
+          onConfirm={() => void confirmRemove(removing)}
         />
       )}
     </>

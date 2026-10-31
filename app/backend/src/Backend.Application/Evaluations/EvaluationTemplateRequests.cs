@@ -59,8 +59,9 @@ public static partial class EvaluationTemplateRules
 
     public static bool HasAtMostTwoDecimals(decimal value) => decimal.Round(value, 2) == value;
 
-    // Trùng tên tiêu chí luôn bị chặn. Mẫu không còn là nháp phải đầy đủ: có tiêu chí,
-    // mỗi tiêu chí có hạng mục con, và các tổng điểm khớp nhau.
+    // Trùng tên tiêu chí luôn bị chặn. Mẫu nháp cho điểm 0 và chưa khớp tổng. Mẫu không
+    // phải nháp (đủ điều kiện sử dụng) phải đầy đủ: có tiêu chí, mỗi tiêu chí có hạng mục
+    // con, điểm > 0 và các tổng điểm khớp nhau.
     public static List<string> Check(decimal maxScore, IReadOnlyList<EvaluationCriterionInputDto> criteria, bool requireComplete)
     {
         var errors = new List<string>();
@@ -83,6 +84,10 @@ public static partial class EvaluationTemplateRules
         foreach (var criterion in criteria)
         {
             var name = Clean(criterion.Name);
+            if (criterion.MaxScore <= 0)
+                errors.Add($"Điểm tiêu chí \"{name}\" phải lớn hơn 0.");
+            foreach (var sub in criterion.SubCriteria.Where(s => s.MaxScore <= 0))
+                errors.Add($"Điểm hạng mục \"{Clean(sub.Name)}\" trong tiêu chí \"{name}\" phải lớn hơn 0.");
             if (criterion.SubCriteria.Count == 0)
             {
                 errors.Add($"Tiêu chí \"{name}\" phải có ít nhất một hạng mục con.");
@@ -104,11 +109,13 @@ public static partial class EvaluationTemplateRules
                 .Select(s => new EvaluationSubCriterionInputDto { Name = s.Name, MaxScore = s.MaxScore }).ToList()
         }).ToList(), requireComplete);
 
-    // Chuyển trạng thái hợp lệ: Nháp → Đang dùng, Đang dùng ⇄ Đã đóng. Không quay lại Nháp.
+    // Chuyển trạng thái hợp lệ: Nháp ⇄ Đủ điều kiện (Active), Active ⇄ Đã đóng. Closed không về Nháp.
+    // Mẫu đang được gán không được về Nháp (kiểm ở handler).
     public static bool CanTransition(EvaluationTemplateStatus from, EvaluationTemplateStatus to) =>
         from == to || (from, to) switch
         {
             (EvaluationTemplateStatus.Draft, EvaluationTemplateStatus.Active) => true,
+            (EvaluationTemplateStatus.Active, EvaluationTemplateStatus.Draft) => true,
             (EvaluationTemplateStatus.Active, EvaluationTemplateStatus.Closed) => true,
             (EvaluationTemplateStatus.Closed, EvaluationTemplateStatus.Active) => true,
             _ => false
@@ -151,7 +158,7 @@ public abstract class EvaluationTemplateInputValidator<T> : AbstractValidator<T>
                 .WithMessage($"Tên tiêu chí tối đa {EvaluationTemplateRules.MaxNameLength} ký tự.");
             criterion.RuleFor(c => c.Description).Must(d => (d ?? string.Empty).Trim().Length <= EvaluationTemplateRules.MaxDescriptionLength)
                 .WithMessage($"Mô tả tiêu chí tối đa {EvaluationTemplateRules.MaxDescriptionLength} ký tự.");
-            criterion.RuleFor(c => c.MaxScore).GreaterThan(0).WithMessage("Điểm tiêu chí chung phải lớn hơn 0.")
+            criterion.RuleFor(c => c.MaxScore).GreaterThanOrEqualTo(0).WithMessage("Điểm tiêu chí chung không được âm.")
                 .Must(EvaluationTemplateRules.HasAtMostTwoDecimals).WithMessage("Điểm tiêu chí tối đa hai chữ số thập phân.");
             criterion.RuleFor(c => c.SubCriteria).NotNull().WithMessage("Thiếu danh sách hạng mục con.")
                 .Must(s => s is null || s.Count <= EvaluationTemplateRules.MaxSubCriteria)
@@ -161,7 +168,7 @@ public abstract class EvaluationTemplateInputValidator<T> : AbstractValidator<T>
                 sub.RuleFor(s => s.Name).Must(n => !string.IsNullOrWhiteSpace(n)).WithMessage("Nhập tên hạng mục con.")
                     .Must(n => (n ?? string.Empty).Trim().Length <= EvaluationTemplateRules.MaxNameLength)
                     .WithMessage($"Tên hạng mục con tối đa {EvaluationTemplateRules.MaxNameLength} ký tự.");
-                sub.RuleFor(s => s.MaxScore).GreaterThan(0).WithMessage("Điểm hạng mục con phải lớn hơn 0.")
+                sub.RuleFor(s => s.MaxScore).GreaterThanOrEqualTo(0).WithMessage("Điểm hạng mục con không được âm.")
                     .Must(EvaluationTemplateRules.HasAtMostTwoDecimals).WithMessage("Điểm hạng mục con tối đa hai chữ số thập phân.");
             });
         });
@@ -241,6 +248,8 @@ internal static class EvaluationMapping
 {
     public const string NotFoundMessage = "Không tìm thấy mẫu phiếu.";
     public const string DuplicateNameMessage = "Tên mẫu phiếu đã tồn tại. Đặt tên khác.";
+    public const string CannotTransitionMessage = "Mẫu đã đóng không chuyển về nháp.";
+    public const string AssignedKeepValidMessage = "Mẫu đang được sử dụng nên phải giữ đủ điều kiện. Gỡ gán mẫu trước khi sửa về nháp.";
 
     public static EvaluationTemplateDto ToDto(EvaluationTemplate template, IEnumerable<EvaluationTemplateAssignment> assignments) => new()
     {
@@ -368,7 +377,10 @@ public sealed class UpdateEvaluationTemplateHandler(IEvaluationTemplateRepositor
 
         EvaluationTemplateRules.TryParseStatus(input.Status, out var status);
         if (!EvaluationTemplateRules.CanTransition(template.Status, status))
-            return EvaluationResult<EvaluationTemplateDto>.Fail(EvaluationResultStatus.Invalid, "Mẫu đã dùng không chuyển lại thành nháp.");
+            return EvaluationResult<EvaluationTemplateDto>.Fail(EvaluationResultStatus.Invalid, EvaluationMapping.CannotTransitionMessage);
+        if (status == EvaluationTemplateStatus.Draft && template.Status != status
+            && (await repository.GetAssignmentsOfTemplateAsync(template.Id, cancellationToken)).Count > 0)
+            return EvaluationResult<EvaluationTemplateDto>.Fail(EvaluationResultStatus.Invalid, EvaluationMapping.AssignedKeepValidMessage);
 
         var name = input.Name.Trim();
         var normalized = EvaluationTemplate.NormalizeName(name);
@@ -407,7 +419,10 @@ public sealed class ChangeEvaluationTemplateStatusHandler(IEvaluationTemplateRep
 
         EvaluationTemplateRules.TryParseStatus(request.Status, out var status);
         if (!EvaluationTemplateRules.CanTransition(template.Status, status))
-            return EvaluationResult<EvaluationTemplateDto>.Fail(EvaluationResultStatus.Invalid, "Mẫu đã dùng không chuyển lại thành nháp.");
+            return EvaluationResult<EvaluationTemplateDto>.Fail(EvaluationResultStatus.Invalid, EvaluationMapping.CannotTransitionMessage);
+        if (status == EvaluationTemplateStatus.Draft && template.Status != status
+            && (await repository.GetAssignmentsOfTemplateAsync(template.Id, cancellationToken)).Count > 0)
+            return EvaluationResult<EvaluationTemplateDto>.Fail(EvaluationResultStatus.Invalid, EvaluationMapping.AssignedKeepValidMessage);
         if (status != EvaluationTemplateStatus.Draft)
         {
             var errors = EvaluationTemplateRules.Check(template, requireComplete: true);

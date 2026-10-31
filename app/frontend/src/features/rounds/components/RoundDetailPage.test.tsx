@@ -35,7 +35,12 @@ const renderDetail = async (
 };
 
 const tab = (name: string) =>
-  fireEvent.click(screen.getByRole('button', { name }));
+  fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
+
+const tabSelected = (name: string) =>
+  expect(
+    screen.getByRole('tab', { name: new RegExp(`^${name}`) }),
+  ).toHaveAttribute('aria-selected', 'true');
 
 it('shows a not-found state with a link back for an unknown id', async () => {
   render(
@@ -56,12 +61,12 @@ it('shows the heading, chips and the progress tab with the Gantt by default', as
     }),
   ).toBeInTheDocument();
   expect(
-    screen.getByText('Đang diễn ra', { selector: '.app-chip' }),
+    screen.getByText('Đang diễn ra', { selector: '.rnd-pill' }),
   ).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Tiến độ' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  tabSelected('Tiến độ');
+  expect(
+    screen.getByRole('navigation', { name: 'Đường dẫn' }),
+  ).toHaveTextContent('Đợt khóa luận');
   expect(
     screen.getByRole('group', { name: /Tiến độ Văn bằng 1/ }),
   ).toBeInTheDocument();
@@ -80,7 +85,7 @@ it('switches between the four tabs and honours ?tab=', async () => {
   await renderDetail();
   tab('Cấu hình');
   expect(
-    screen.getByRole('heading', { name: 'Cấu hình 9 mốc' }),
+    screen.getByRole('heading', { name: 'Mốc thời gian' }),
   ).toBeInTheDocument();
   expect(currentUrl()).toBe('/giao-vu/dot/x?tab=cau-hinh');
   tab('Giảng viên');
@@ -91,25 +96,21 @@ it('switches between the four tabs and honours ?tab=', async () => {
   fireEvent.click(
     screen.getByRole('button', { name: 'Cấu hình mốc Đề cương' }),
   );
-  expect(screen.getByRole('button', { name: 'Cấu hình' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  tabSelected('Cấu hình');
 });
 
 it('starts on the tab named in the URL', async () => {
   setUrl('/giao-vu/dot/x?tab=sinh-vien');
   await renderDetail();
-  expect(screen.getByRole('button', { name: 'Sinh viên' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  tabSelected('Sinh viên');
 });
 
 it('validates milestone order live and saves a valid configuration', async () => {
   const service = await renderDetail();
   tab('Cấu hình');
-  const save = screen.getByRole('button', { name: 'Lưu' });
+  const save = screen.getByRole('button', {
+    name: 'Lưu và thông báo thay đổi',
+  });
   expect(save).toBeDisabled();
 
   fireEvent.change(screen.getByLabelText('Bắt đầu Báo cáo giữa kỳ'), {
@@ -118,7 +119,7 @@ it('validates milestone order live and saves a valid configuration', async () =>
   fireEvent.change(screen.getByLabelText('Kết thúc Báo cáo giữa kỳ'), {
     target: { value: '2026-09-05' },
   });
-  expect(screen.getByRole('alert')).toHaveTextContent('Có mốc sai thứ tự');
+  expect(screen.getByRole('alert')).toHaveTextContent('mốc sai thứ tự');
   expect(
     screen.getByText(/Mốc này bắt đầu trước mốc “Đề cương”/),
   ).toBeInTheDocument();
@@ -129,7 +130,7 @@ it('validates milestone order live and saves a valid configuration', async () =>
   expect(save).toBeDisabled();
 
   // Hủy trả về cấu hình đã lưu.
-  fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Hủy thay đổi' }));
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Bắt đầu Báo cáo giữa kỳ')).toHaveValue(
     '2026-10-19',
@@ -176,24 +177,32 @@ it('adds students by code and shows mixed check results before adding', async ()
   expect(await screen.findByText('Phạm Quốc Khánh')).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: 'Thêm sinh viên' }));
-  const dialog = screen.getByRole('dialog', { name: 'Thêm sinh viên' });
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Nhập mã' }));
-  fireEvent.change(within(dialog).getByLabelText(/Mã sinh viên/), {
+  const dialog = screen.getByRole('dialog', { name: 'Thêm sinh viên vào đợt' });
+  fireEvent.click(
+    within(dialog).getByRole('tab', { name: 'Nhập theo mã (dán danh sách)' }),
+  );
+  fireEvent.change(within(dialog).getByLabelText(/Dán mã sinh viên/), {
     target: { value: '22520010\n99999999, 22520001' },
   });
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Kiểm tra' }));
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Kiểm tra danh sách' }),
+  );
 
-  const results = await within(dialog).findByRole('list', {
+  const results = await within(dialog).findByRole('rowgroup', {
     name: 'Kết quả kiểm tra',
   });
-  expect(within(results).getByText('Hợp lệ')).toBeInTheDocument();
-  expect(within(results).getByText('Không tồn tại')).toBeInTheDocument();
-  expect(within(results).getByText('SV đang ở đợt khác')).toBeInTheDocument();
+  expect(within(results).getByText('Sẽ thêm')).toBeInTheDocument();
+  expect(
+    within(results).getByText('Không có trong hệ thống'),
+  ).toBeInTheDocument();
+  expect(within(results).getByText('Đang ở đợt khác')).toBeInTheDocument();
   expect(
     within(results).getByText(/Đang thuộc đợt “Văn bằng 1 · HK1 2026–2027”/),
   ).toBeInTheDocument();
 
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Thêm 1' }));
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Thêm 1 sinh viên hợp lệ' }),
+  );
   await waitFor(() =>
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
   );
@@ -205,13 +214,19 @@ it('adds lecturers picked from a list of people not yet in the round', async () 
   const service = await renderDetail('r-vb2-hk2-nhap');
   tab('Giảng viên');
   fireEvent.click(screen.getByRole('button', { name: 'Thêm giảng viên' }));
-  const dialog = screen.getByRole('dialog', { name: 'Thêm giảng viên' });
+  const dialog = screen.getByRole('dialog', {
+    name: 'Thêm giảng viên vào đợt',
+  });
   expect(await within(dialog).findByLabelText(/CB101/)).toBeInTheDocument();
   // CB103 đã trong đợt nên không có trong danh sách chọn.
   expect(within(dialog).queryByLabelText(/CB103/)).not.toBeInTheDocument();
-  expect(within(dialog).getByRole('button', { name: 'Thêm 0' })).toBeDisabled();
+  expect(
+    within(dialog).getByRole('button', { name: 'Thêm vào đợt' }),
+  ).toBeDisabled();
   fireEvent.click(within(dialog).getByLabelText(/CB101/));
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Thêm 1' }));
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Thêm 1 giảng viên' }),
+  );
   await waitFor(() =>
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
   );
@@ -237,9 +252,7 @@ it('removes a participant after confirming, and blocks one who has data in this 
     name: 'Gỡ Nguyễn Văn An khỏi đợt',
   });
   expect(locked).toBeDisabled();
-  expect(locked).toHaveAccessibleDescription(
-    'Đã có dữ liệu trong đợt nên không gỡ được.',
-  );
+  expect(locked).toHaveAccessibleDescription('Đã có dữ liệu, không gỡ được');
   expect(screen.getByText('Nguyễn Văn An')).toBeInTheDocument();
 });
 
@@ -270,7 +283,7 @@ it('asks before leaving the config tab with unsaved changes', async () => {
   const dialog = screen.getByRole('alertdialog', { name: 'Bỏ thay đổi?' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Ở lại' }));
   expect(
-    screen.getByRole('heading', { name: 'Cấu hình 9 mốc' }),
+    screen.getByRole('heading', { name: 'Mốc thời gian' }),
   ).toBeInTheDocument();
   expect(screen.getByLabelText('Kết thúc Báo cáo giữa kỳ')).toHaveValue(
     '2026-11-02',
@@ -296,7 +309,7 @@ it('closes a dialog with Escape and returns focus to the button that opened it',
   opener.focus();
   fireEvent.click(opener);
   const dialog = screen.getByRole('alertdialog');
-  expect(within(dialog).getByRole('button', { name: 'Giữ đợt' })).toHaveFocus();
+  expect(within(dialog).getByRole('button', { name: 'Để sau' })).toHaveFocus();
   fireEvent.keyDown(document, { key: 'Escape' });
   await waitFor(() =>
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
@@ -311,7 +324,7 @@ it('keeps Tab inside an open dialog', async () => {
   const confirm = within(dialog).getByRole('button', { name: 'Kết thúc đợt' });
   confirm.focus();
   fireEvent.keyDown(document, { key: 'Tab' });
-  expect(within(dialog).getByRole('button', { name: 'Giữ đợt' })).toHaveFocus();
+  expect(within(dialog).getByRole('button', { name: 'Để sau' })).toHaveFocus();
   fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
   expect(confirm).toHaveFocus();
 });
@@ -320,17 +333,14 @@ it('follows a tab change made by Next navigation', async () => {
   await renderDetail();
   act(() => setUrl('/giao-vu/dot/x?tab=giang-vien'));
   expect(await screen.findByText('Nguyễn Thị Hương')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: 'Giảng viên' })).toHaveAttribute(
-    'aria-pressed',
-    'true',
-  );
+  tabSelected('Giảng viên');
 });
 
 it('warns about unpublished topics before finishing a running round', async () => {
   const service = await renderDetail('r-ths-1-2026');
   fireEvent.click(screen.getByRole('button', { name: 'Kết thúc đợt' }));
   const dialog = screen.getByRole('alertdialog', {
-    name: 'Kết thúc đợt · còn đề tài chưa công bố',
+    name: 'Kết thúc đợt Thạc sĩ · Đợt 1/2026?',
   });
   expect(dialog).toHaveTextContent('Còn 6 đề tài chưa công bố');
   fireEvent.click(within(dialog).getByRole('button', { name: 'Kết thúc đợt' }));
@@ -339,7 +349,7 @@ it('warns about unpublished topics before finishing a running round', async () =
   );
   expect((await service.get('r-ths-1-2026')).status).toBe('Đã kết thúc');
   expect(
-    screen.getByText('Đã kết thúc', { selector: '.app-chip' }),
+    screen.getByText('Đã kết thúc', { selector: '.rnd-pill' }),
   ).toBeInTheDocument();
   expect(
     screen.queryByRole('button', { name: 'Kết thúc đợt' }),
@@ -359,7 +369,7 @@ it('opens a draft and deletes it, going back to the list', async () => {
   const service = await renderDetail('r-vb2-hk2-nhap');
   expect(screen.getByRole('button', { name: 'Mở đợt' })).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Xóa đợt' }));
-  const dialog = screen.getByRole('alertdialog');
+  const dialog = screen.getByRole('alertdialog', { name: 'Xác nhận xóa đợt' });
   fireEvent.click(within(dialog).getByRole('button', { name: 'Xóa đợt' }));
   await waitFor(() => expect(push).toHaveBeenCalledWith('/giao-vu/dot'));
   await expect(service.get('r-vb2-hk2-nhap')).rejects.toThrow(
@@ -370,9 +380,13 @@ it('opens a draft and deletes it, going back to the list', async () => {
 it('makes a finished round read-only', async () => {
   await renderDetail('r-vb1-hk2-2025');
   tab('Cấu hình');
-  expect(screen.getByText(/chỉ để xem/)).toBeInTheDocument();
+  expect(screen.getByText(/nên chỉ xem/)).toBeInTheDocument();
   expect(screen.getByLabelText('Bắt đầu Đề cương')).toBeDisabled();
-  expect(screen.queryByRole('button', { name: 'Lưu' })).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Lưu và thông báo thay đổi' }),
+  ).not.toBeInTheDocument();
   tab('Sinh viên');
-  expect(screen.getByRole('button', { name: 'Thêm sinh viên' })).toBeDisabled();
+  expect(
+    screen.queryByRole('button', { name: 'Thêm sinh viên' }),
+  ).not.toBeInTheDocument();
 });

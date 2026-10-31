@@ -521,7 +521,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
           onClose={closeDialog}
           onDone={(custom) => {
             setNotice({
-              text: `Đã đặt lại mật khẩu cho ${dialogUser.fullName}${custom ? '.' : ' về mã người dùng.'} Đã gửi thông báo cho người dùng.`,
+              text: `Đã đặt lại mật khẩu cho ${dialogUser.fullName}${custom ? '.' : ' về mã người dùng.'}`,
             });
             setUsers((list) =>
               list.map((u) =>
