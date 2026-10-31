@@ -16,6 +16,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<EvaluationCriterion> EvaluationCriteria => Set<EvaluationCriterion>();
     public DbSet<EvaluationSubCriterion> EvaluationSubCriteria => Set<EvaluationSubCriterion>();
     public DbSet<EvaluationTemplateAssignment> EvaluationTemplateAssignments => Set<EvaluationTemplateAssignment>();
+    public DbSet<UserAuditEntry> UserAuditEntries => Set<UserAuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -83,6 +84,15 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.RoundId, e.Role }).IsUnique();
             // Mẫu đang gán không được xóa (kiểm tra ở Application, chặn thêm ở database).
             entity.HasOne(e => e.Template).WithMany().HasForeignKey(e => e.TemplateId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UserAuditEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TargetUserCode).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(32);
+            entity.Property(e => e.Details).HasColumnType("jsonb");
+            entity.HasIndex(e => new { e.TargetUserId, e.CreatedAt });
         });
     }
 }

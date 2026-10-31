@@ -38,7 +38,7 @@ app/
 .github/workflows/             CI và publish GHCR theo lệnh thủ công
 ```
 
-CRUD sản phẩm chạy qua MediatR và EF Core PostgreSQL. Đã có API đăng nhập cục bộ (`/api/auth/login`, `me`, `activation-code`, `change-initial-password`, `logout`): JWT nằm trong cookie HttpOnly, phân quyền theo ba vai trò `Student`, `Lecturer`, `AcademicAffairs`, mật khẩu băm bằng BCrypt. Lần đăng nhập đầu yêu cầu OTP 6 số gửi qua email. Giáo vụ tạo tài khoản hàng loạt từ CSV qua `/api/users/import/preview` và `/api/users/import` ([PDR-004](docs/decisions/PDR-004-nhap-tai-khoan-csv.md)). Xem [PDR-002](docs/decisions/PDR-002-xac-thuc-va-lo-trinh-ma-nguon.md) và [PDR-003](docs/decisions/PDR-003-otp-kich-hoat-qua-email.md). Redis, MinIO và Google đã có package, cấu hình và adapter cơ bản; repo **chưa có** refresh token, Quên mật khẩu hoặc upload file.
+CRUD sản phẩm chạy qua MediatR và EF Core PostgreSQL. Đã có API đăng nhập cục bộ (`/api/auth/login`, `me`, `activation-code`, `change-initial-password`, `logout`): JWT nằm trong cookie HttpOnly, phân quyền theo ba vai trò `Student`, `Lecturer`, `AcademicAffairs`, mật khẩu băm bằng BCrypt. Lần đăng nhập đầu yêu cầu OTP 6 số gửi qua email. Giáo vụ tạo tài khoản hàng loạt từ CSV qua `/api/users/import/preview` và `/api/users/import`, và quản lý tài khoản (danh sách, thêm, sửa, vô hiệu hóa/kích hoạt lại, xóa, đặt lại mật khẩu, có lịch sử thao tác) qua `/api/users` ([PDR-004](docs/decisions/PDR-004-nhap-tai-khoan-csv.md)). Xem [PDR-002](docs/decisions/PDR-002-xac-thuc-va-lo-trinh-ma-nguon.md) và [PDR-003](docs/decisions/PDR-003-otp-kich-hoat-qua-email.md). Redis, MinIO và Google đã có package, cấu hình và adapter cơ bản; repo **chưa có** refresh token, Quên mật khẩu hoặc upload file.
 
 ### Gửi email (OTP)
 

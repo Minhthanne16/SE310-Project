@@ -11,17 +11,17 @@ import { ApiError } from '@/api/request';
 import { SessionProvider } from '@/features/auth/session/SessionProvider';
 import type { AuthService } from '@/features/auth/services/authService';
 import {
-  createUserService,
   DuplicateUserError,
   type UserService,
 } from '@/features/users/services/userService';
+import { createFakeUserService } from '@/test/fakeUserService';
 import type { CurrentUser } from '@/types/auth';
 import type { UserImportReport } from '@/types/user';
 import { UserManagementPage } from './UserManagementPage';
 
 afterEach(cleanup);
 
-// Trùng mã GV001 trong dữ liệu demo: đây là tài khoản của chính Giáo vụ.
+// Trùng mã GV001 trong dữ liệu giả lập: đây là tài khoản của chính Giáo vụ.
 const me: CurrentUser = {
   id: 'real-guid',
   userCode: 'GV001',
@@ -40,7 +40,7 @@ const fakeAuth = (): AuthService => ({
   logout: vi.fn(),
 });
 
-const renderPage = async (service: UserService = createUserService()) => {
+const renderPage = async (service: UserService = createFakeUserService()) => {
   render(
     <SessionProvider authService={fakeAuth()}>
       <UserManagementPage userService={service} />
@@ -157,7 +157,7 @@ it('reports duplicate code and duplicate email with the owning account', async (
 });
 
 it('shows the service duplicate error when the backend rejects after the pre-check', async () => {
-  const service = createUserService();
+  const service = createFakeUserService();
   const create = vi.fn().mockRejectedValue(new DuplicateUserError('userCode'));
   await renderPage({ ...service, create });
   fireEvent.click(screen.getByRole('button', { name: 'Thêm người dùng' }));
@@ -312,7 +312,7 @@ const importReport: UserImportReport = {
 };
 
 it('previews a CSV with per-row errors, then imports the valid rows', async () => {
-  const service = createUserService();
+  const service = createFakeUserService();
   const importPreview = vi.fn().mockResolvedValue(importReport);
   const importCommit = vi
     .fn()
@@ -368,7 +368,7 @@ it('previews a CSV with per-row errors, then imports the valid rows', async () =
 });
 
 const pickCsv = async (service: Partial<UserService>) => {
-  await renderPage({ ...createUserService(), ...service });
+  await renderPage({ ...createFakeUserService(), ...service });
   fireEvent.click(screen.getByRole('button', { name: 'Nhập CSV' }));
   const dialog = screen.getByRole('dialog', { name: 'Nhập người dùng từ CSV' });
   const file = new File(['user_code'], 'a.csv', { type: 'text/csv' });
