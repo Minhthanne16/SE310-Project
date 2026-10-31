@@ -94,6 +94,67 @@ export function thesisProgress(topic: Topic): string {
   }
 }
 
+// Số hiển thị điểm thành phần: một chữ số thập phân (8,5), hai chữ số khi điểm
+// có phần trăm (7,05) để không làm mất dữ liệu.
+export function formatComponentScore(value: number | null): string {
+  if (value === null) return '—';
+  const digits = Math.round(value * 100) % 10 === 0 ? 1 : 2;
+  return value.toFixed(digits).replace('.', ',');
+}
+
+export type ThesisTone = 'none' | 'submitted' | 'final';
+
+// Ô "Khóa luận" của danh sách: Chưa nộp, Đã nộp hoặc Chốt bản cuối kèm số
+// phiên bản. Đề tài Đã hoàn tất là đề tài đã chốt bản cuối.
+export function thesisCell(topic: Topic): {
+  label: string;
+  sub: string;
+  tone: ThesisTone;
+} {
+  const count = topic.submissions.length;
+  if (count === 0)
+    return { label: 'Chưa nộp', sub: 'Chưa có phiên bản', tone: 'none' };
+  const final = topic.status === 'Đã hoàn tất';
+  return {
+    label: final ? 'Chốt bản cuối' : 'Đã nộp',
+    sub: `${count} phiên bản`,
+    tone: final ? 'final' : 'submitted',
+  };
+}
+
+// "Nguyễn Văn An" → "N.V. An"
+export function shortName(name: string): string {
+  const parts = name.trim().split(/\s+/);
+  if (parts.length < 2) return name;
+  const last = parts[parts.length - 1];
+  return `${parts
+    .slice(0, -1)
+    .map((p) => `${p.charAt(0).toUpperCase()}.`)
+    .join('')} ${last}`;
+}
+
+// Chữ viết tắt cho avatar, bỏ học hàm/học vị ("TS.", "ThS.", "PGS.TS.").
+export function avatarInitials(name: string): string {
+  const parts = name
+    .trim()
+    .split(/\s+/)
+    .filter((p) => !p.endsWith('.'));
+  if (parts.length === 0) return '';
+  const first = parts[0].charAt(0);
+  const last = parts.length > 1 ? parts[parts.length - 1].charAt(0) : '';
+  return `${first}${last}`.toUpperCase();
+}
+
+// yyyy-MM-ddTHH:mm:ss → dd/MM/yyyy và HH:mm (không qua múi giờ).
+export function dateOf(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-');
+  return `${d}/${m}/${y}`;
+}
+
+export function timeOf(iso: string): string {
+  return iso.slice(11, 16);
+}
+
 export function groupLabel(topic: Topic): string {
   return topic.group.length > 0
     ? topic.group.map((m) => m.name).join(', ')

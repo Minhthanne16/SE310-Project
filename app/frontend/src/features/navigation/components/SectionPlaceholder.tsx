@@ -23,27 +23,21 @@ export const SectionPlaceholder: React.FC = () => {
     return (
       <>
         <div className="app-page-heading">
-          <h1>Xin chào, {user.fullName}</h1>
+          <h1>Chào {user.fullName}</h1>
           <p>Trang chủ hiển thị các đợt khóa luận và việc cần làm của bạn.</p>
         </div>
         <StatusState
           variant="building"
-          description="Danh sách đợt, việc cần làm và bảng thông báo chưa được làm."
+          description="Danh sách đợt, việc cần làm và bảng thông báo chưa được làm. Bạn có thể quay lại sau."
         />
       </>
     );
   }
 
-  return item ? (
-    <>
-      <div className="app-page-heading">
-        <h1>{item.label}</h1>
-      </div>
-      <StatusState variant="building" />
-    </>
-  ) : (
+  return (
     <StatusState
-      variant="notFound"
+      variant={item ? 'building' : 'notFound'}
+      fullPage
       action={{ href: home, label: 'Về trang chủ' }}
     />
   );

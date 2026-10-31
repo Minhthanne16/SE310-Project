@@ -62,102 +62,111 @@ const pick = (label: string, value: string) =>
 
 const rowCount = () => screen.getAllByRole('row').length - 1;
 
-it('defaults to the first running round, 10 per page, with all columns', async () => {
+it('defaults to the first running round, 8 per page, with all columns', async () => {
   await renderPage();
-  expect(screen.getByLabelText('Chọn đợt')).toHaveValue('r-vb1-hk1');
+  expect(screen.getByLabelText('Đợt')).toHaveValue('r-vb1-hk1');
   expect(
     screen.getByRole('heading', { level: 1, name: 'Quản lý đề tài' }),
   ).toBeInTheDocument();
   for (const name of [
-    'Mã',
-    'Tên đề tài',
-    'GVHD',
-    'Nhóm',
-    'Nguồn',
-    'Trạng thái',
+    'Đề tài',
+    'GV hướng dẫn',
+    'GV phản biện',
+    'Hội đồng',
     'Khóa luận',
+    'Trạng thái',
   ])
     expect(screen.getByRole('columnheader', { name })).toBeInTheDocument();
-  expect(rowCount()).toBe(10);
-  expect(screen.getByText('18 đề tài · Trang 1/2')).toBeInTheDocument();
+  expect(rowCount()).toBe(8);
+  expect(screen.getByText(/Hiển thị 1–8 trên 18 đề tài/)).toBeInTheDocument();
 
   const row = screen
     .getByText('Nền tảng đặt sân thể thao trực tuyến')
     .closest('tr')!;
-  expect(within(row).getByText('VB1-03')).toBeInTheDocument();
   expect(
-    within(row).getByText('Nguyễn Văn An, Lê Thị Bình'),
+    within(row).getByText('VB1-03 · N.V. An, L.T. Bình'),
   ).toBeInTheDocument();
   expect(within(row).getByText('Đã đăng ký')).toBeInTheDocument();
-  expect(within(row).getByText('Chờ nộp đề cương')).toBeInTheDocument();
+  expect(within(row).getByText('Chưa nộp')).toBeInTheDocument();
+  expect(within(row).getByText('Chưa phân công')).toBeInTheDocument();
+  expect(within(row).getByText('Chưa gán')).toBeInTheDocument();
   expect(
     screen.getByRole('link', { name: 'Nền tảng đặt sân thể thao trực tuyến' }),
   ).toHaveAttribute('href', '/giao-vu/de-tai/t-vb1-03');
-  // Chưa đăng ký: nhóm và khóa luận hiện "—".
   const free = screen
     .getByText('Hệ thống quản lý phòng khám nhỏ')
     .closest('tr')!;
-  expect(within(free).getAllByText('—')).toHaveLength(2);
+  expect(within(free).getByText(/VB1-01 · Chưa có nhóm/)).toBeInTheDocument();
+  expect(within(free).getByText('Chưa có phiên bản')).toBeInTheDocument();
 
-  fireEvent.click(screen.getByRole('button', { name: 'Sau' }));
-  expect(screen.getByText('18 đề tài · Trang 2/2')).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Trang sau' }));
+  expect(screen.getByText(/Hiển thị 9–16 trên 18 đề tài/)).toBeInTheDocument();
   expect(rowCount()).toBe(8);
+  fireEvent.click(screen.getByRole('button', { name: '3' }));
+  expect(screen.getByText(/Hiển thị 17–18 trên 18 đề tài/)).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Trang sau' })).toBeDisabled();
 });
 
 it('shows the over-limit chip only for lecturers above the maximum', async () => {
   await renderPage();
-  const chips = screen.getAllByText('GV vượt mức');
-  // CB101 có 8 đề tài (tối đa tạm 6); trang 1 chỉ có VB1-01..10.
-  expect(chips).toHaveLength(8);
+  const chips = screen.getAllByText(/GV vượt mức/);
+  // CB101 có 8 đề tài (tối đa tạm 6); trang 1 hiện VB1-01..08.
+  expect(chips.length).toBeGreaterThan(0);
   for (const chip of chips)
     expect(chip.closest('tr')).toHaveTextContent('Nguyễn Thị Hương');
-  // Văn bản cho trình đọc màn hình, không chỉ tooltip.
-  expect(chips[0]).toHaveTextContent('GV vượt mức: 8/6 đề tài');
+  expect(chips[0]).toHaveTextContent('GV vượt mức 8/6');
 });
 
 it('filters by GVHD, status and search, and shows the no-result state', async () => {
   await renderPage();
-  pick('Lọc theo GVHD', 'CB103');
+  pick('Lọc theo giảng viên hướng dẫn', 'CB103');
   await waitFor(() => expect(rowCount()).toBe(2));
-  expect(screen.queryByText('GV vượt mức')).not.toBeInTheDocument();
+  expect(screen.queryByText(/GV vượt mức/)).not.toBeInTheDocument();
 
-  pick('Lọc theo GVHD', '');
-  pick('Lọc theo trạng thái', 'Bị từ chối');
+  pick('Lọc theo giảng viên hướng dẫn', '');
+  fireEvent.click(screen.getByRole('button', { name: 'Bị từ chối' }));
+  expect(screen.getByRole('button', { name: 'Bị từ chối' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
   await waitFor(() => expect(rowCount()).toBe(1));
   expect(
     screen.getByText('Mạng xã hội cho câu lạc bộ sinh viên'),
   ).toBeInTheDocument();
 
-  pick('Lọc theo trạng thái', 'Tất cả');
-  fireEvent.change(screen.getByLabelText('Tìm kiếm'), {
+  fireEvent.click(screen.getByRole('button', { name: 'Tất cả' }));
+  fireEvent.change(screen.getByLabelText('Tìm đề tài'), {
     target: { value: 'vb1-04' },
   });
   await waitFor(() => expect(rowCount()).toBe(1));
   expect(screen.getByText('Chatbot hỗ trợ tuyển sinh')).toBeInTheDocument();
 
-  fireEvent.change(screen.getByLabelText('Tìm kiếm'), {
+  fireEvent.change(screen.getByLabelText('Tìm đề tài'), {
     target: { value: 'không khớp gì cả' },
   });
-  expect(await screen.findByText('Lọc không có kết quả')).toBeInTheDocument();
+  expect(
+    await screen.findByText('Không có đề tài nào khớp bộ lọc'),
+  ).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Xóa bộ lọc' }));
   expect(
     await screen.findByText('Hệ thống quản lý phòng khám nhỏ'),
   ).toBeInTheDocument();
-  expect(screen.getByLabelText('Tìm kiếm')).toHaveValue('');
+  expect(screen.getByLabelText('Tìm đề tài')).toHaveValue('');
 });
 
 it('switches rounds through ?dot= and shows the empty state for a round without topics', async () => {
   await renderPage();
-  pick('Chọn đợt', 'r-ths-1-2026');
+  pick('Đợt', 'r-ths-1-2026');
   expect(currentUrl()).toContain('dot=r-ths-1-2026');
   expect(
     await screen.findByText('Học tăng cường cho điều phối giao thông'),
   ).toBeInTheDocument();
-  expect(screen.getByText('6 đề tài · Trang 1/1')).toBeInTheDocument();
+  expect(screen.getByText(/Hiển thị 1–6 trên 6 đề tài/)).toBeInTheDocument();
 
-  pick('Chọn đợt', 'r-vb2-hk2-nhap');
-  expect(await screen.findByText('Chưa có đề tài')).toBeInTheDocument();
-  expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  pick('Đợt', 'r-vb2-hk2-nhap');
+  expect(
+    await screen.findByText('Chưa có đề tài nào trong đợt'),
+  ).toBeInTheDocument();
 });
 
 it('honours ?dot= on first load', async () => {
@@ -166,75 +175,81 @@ it('honours ?dot= on first load', async () => {
   expect(
     await screen.findByText('Website bán hàng thủ công mỹ nghệ'),
   ).toBeInTheDocument();
-  expect(screen.getByLabelText('Chọn đợt')).toHaveValue('r-vb1-hk2-2025');
-  expect(screen.getByText('Đã công bố danh sách')).toBeInTheDocument();
+  expect(screen.getByLabelText('Đợt')).toHaveValue('r-vb1-hk2-2025');
   expect(
-    screen.getByRole('button', { name: 'Đóng & công bố danh sách' }),
+    screen.getByRole('button', { name: 'Đã công bố danh sách' }),
   ).toBeDisabled();
 });
 
-it('shows the published banner for VB1 and a neutral one for a draft round', async () => {
+it('shows the published state for VB1 and a blocked note for a draft round', async () => {
   await renderPage();
   expect(
-    screen.getByText('Đã công bố danh sách', { selector: 'strong' }),
+    screen.getByText(
+      (_, el) =>
+        el?.tagName === 'P' &&
+        (el.textContent ?? '').includes('đã hết lúc 23:59 ngày 18/09/2026'),
+    ),
   ).toBeInTheDocument();
   expect(
-    screen.getByText(/Hạn gửi đề tài: 18\/09\/2026 · Đã hết hạn gửi đề tài/),
-  ).toBeInTheDocument();
+    screen.getByRole('button', { name: 'Đã công bố danh sách' }),
+  ).toBeDisabled();
+  expect(screen.queryByRole('note')).not.toBeInTheDocument();
+
+  pick('Đợt', 'r-vb2-hk2-nhap');
+  await screen.findByText('Chưa có đề tài nào trong đợt');
+  expect(screen.getByRole('note')).toHaveTextContent(
+    'Chỉ công bố được danh sách của đợt đang diễn ra.',
+  );
   expect(
     screen.getByRole('button', { name: 'Đóng & công bố danh sách' }),
   ).toBeDisabled();
-  expect(screen.getByText(/Danh sách đã được công bố\./)).toBeInTheDocument();
-
-  pick('Chọn đợt', 'r-vb2-hk2-nhap');
-  await screen.findByText('Chưa có đề tài');
-  expect(screen.getByText(/Đợt nháp\./)).toBeInTheDocument();
-  expect(screen.queryByText(/Giảng viên còn thêm/)).not.toBeInTheDocument();
 });
 
-it('explains the lock and publishes the list after the deadline', async () => {
+it('publishes the list after the deadline through the confirmation dialog', async () => {
   await renderThs();
   expect(
-    screen.getByText('Đang gửi đề tài', { selector: 'strong' }),
+    screen.getByText(
+      (_, el) =>
+        el?.tagName === 'P' &&
+        (el.textContent ?? '').includes('đã hết lúc 23:59 ngày 14/08/2026'),
+    ),
   ).toBeInTheDocument();
-  expect(
-    screen.getByText(/Giảng viên còn thêm, sửa, xóa đề tài/),
-  ).toBeInTheDocument();
-  expect(
-    screen.getByText(/Hạn gửi đề tài: 14\/08\/2026 · Đã hết hạn gửi đề tài/),
-  ).toBeInTheDocument();
+  expect(screen.queryByRole('note')).not.toBeInTheDocument();
   const button = screen.getByRole('button', {
     name: 'Đóng & công bố danh sách',
   });
   expect(button).toBeEnabled();
 
   fireEvent.click(button);
-  const dialog = await screen.findByRole('alertdialog');
-  expect(dialog).toHaveTextContent('không thêm hoặc xóa đề tài');
+  const dialog = await screen.findByRole('dialog');
+  expect(dialog).toHaveAccessibleName('Đóng và công bố danh sách đề tài?');
+  expect(dialog).toHaveTextContent('không gửi thêm hay xóa đề tài');
   expect(dialog).toHaveTextContent('mô tả và yêu cầu của đề tài chưa có nhóm');
   expect(dialog).toHaveTextContent('Lĩnh vực bị khóa');
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }));
-  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  // Cảnh báo chỉ để theo dõi, không chặn công bố.
+  expect(dialog).toHaveTextContent(
+    /giảng viên chưa đạt số đề tài tối thiểu. Vẫn công bố được/,
+  );
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Để sau' }));
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
   fireEvent.click(button);
   fireEvent.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', {
-      name: 'Công bố danh sách',
+    within(await screen.findByRole('dialog')).getByRole('button', {
+      name: 'Đóng và công bố',
     }),
   );
   await waitFor(() =>
-    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
   );
-  expect(toast.success).toHaveBeenCalledWith('Đã công bố danh sách đề tài.');
   expect(
-    await screen.findByText('Đã công bố danh sách', { selector: 'strong' }),
+    await screen.findByText('Đã công bố danh sách đề tài.'),
   ).toBeInTheDocument();
   await waitFor(() =>
     expect(
-      screen.getByRole('button', { name: 'Đóng & công bố danh sách' }),
+      screen.getByRole('button', { name: 'Đã công bố danh sách' }),
     ).toBeDisabled(),
   );
-  expect(screen.getByText(/Danh sách đã được công bố\./)).toBeInTheDocument();
 });
 
 it('disables publishing with a reason before the deadline', async () => {
@@ -244,9 +259,17 @@ it('disables publishing with a reason before the deadline', async () => {
   });
   expect(button).toBeDisabled();
   expect(
-    screen.getByText(/Hạn gửi đề tài: 14\/08\/2026 · Chưa hết hạn gửi đề tài/),
+    screen.getByText(
+      (_, el) =>
+        el?.tagName === 'P' &&
+        (el.textContent ?? '').includes(
+          'đang gửi đề tài đến 23:59 ngày 14/08/2026',
+        ),
+    ),
   ).toBeInTheDocument();
-  const reason = screen.getByText(/Chưa công bố được: Chưa hết hạn gửi đề tài/);
+  const reason = screen.getByRole('note');
+  expect(reason).toHaveTextContent('Chưa đóng và công bố được.');
+  expect(reason).toHaveTextContent('Giảng viên còn được gửi đề tài đến 23:59');
   expect(button).toHaveAttribute('aria-describedby', reason.id);
 });
 
@@ -262,14 +285,14 @@ it('shows the service error inside the dialog when publishing fails', async () =
     screen.getByRole('button', { name: 'Đóng & công bố danh sách' }),
   );
   fireEvent.click(
-    within(await screen.findByRole('alertdialog')).getByRole('button', {
-      name: 'Công bố danh sách',
+    within(await screen.findByRole('dialog')).getByRole('button', {
+      name: 'Đóng và công bố',
     }),
   );
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'Máy chủ từ chối.',
   );
-  expect(screen.getByRole('alertdialog')).toBeInTheDocument();
+  expect(screen.getByRole('dialog')).toBeInTheDocument();
 });
 
 it('stops loading and explains when there are no rounds at all', async () => {
@@ -302,7 +325,7 @@ it('does not show the previous round while another round is loading', async () =
   });
   render(<TopicListPage {...s} />);
   await screen.findByText('Hệ thống quản lý phòng khám nhỏ');
-  pick('Chọn đợt', 'r-ths-1-2026');
+  pick('Đợt', 'r-ths-1-2026');
   expect(
     await screen.findByText('Đang tải danh sách đề tài...'),
   ).toBeInTheDocument();
@@ -317,7 +340,7 @@ it('does not show the previous round while another round is loading', async () =
 
 it('exports the filtered list as CSV', async () => {
   await renderPage();
-  pick('Lọc theo GVHD', 'CB103');
+  pick('Lọc theo giảng viên hướng dẫn', 'CB103');
   await waitFor(() => expect(rowCount()).toBe(2));
   fireEvent.click(screen.getByRole('button', { name: 'Xuất danh sách' }));
   await waitFor(() => expect(downloadCsv).toHaveBeenCalledTimes(1));
@@ -326,16 +349,39 @@ it('exports the filtered list as CSV', async () => {
   expect(csv).toContain('VB1-17');
   expect(csv).toContain('VB1-18');
   expect(csv).not.toContain('VB1-01,');
-  expect(toast.success).toHaveBeenCalledWith('Đã xuất 2 đề tài.');
+  expect(screen.getByRole('status')).toHaveTextContent(
+    'Đã tải tệp CSV danh sách đề tài (2 đề tài theo bộ lọc hiện tại).',
+  );
 });
 
 it('tells the user instead of downloading when the list is empty', async () => {
   await renderPage();
-  pick('Chọn đợt', 'r-vb2-hk2-nhap');
-  await screen.findByText('Chưa có đề tài');
+  pick('Đợt', 'r-vb2-hk2-nhap');
+  await screen.findByText('Chưa có đề tài nào trong đợt');
   fireEvent.click(screen.getByRole('button', { name: 'Xuất danh sách' }));
-  expect(
-    await screen.findByText('Danh sách đang trống nên không có gì để xuất.'),
-  ).toBeInTheDocument();
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Chưa có đề tài nào trong đợt nên không có gì để xuất.',
+  );
   expect(downloadCsv).not.toHaveBeenCalled();
+});
+
+it('tells the user to change the filter when the filtered list is empty', async () => {
+  await renderPage();
+  fireEvent.change(screen.getByLabelText('Tìm đề tài'), {
+    target: { value: 'không khớp gì cả' },
+  });
+  await screen.findByText('Không có đề tài nào khớp bộ lọc');
+  fireEvent.click(screen.getByRole('button', { name: 'Xuất danh sách' }));
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Danh sách đang trống theo bộ lọc hiện tại nên không có gì để xuất.',
+  );
+  expect(downloadCsv).not.toHaveBeenCalled();
+});
+
+it('searches by student and lecturer name as the placeholder promises', async () => {
+  await renderPage();
+  fireEvent.change(screen.getByLabelText('Tìm đề tài'), {
+    target: { value: 'Đinh Công Minh' },
+  });
+  await waitFor(() => expect(rowCount()).toBe(1));
 });

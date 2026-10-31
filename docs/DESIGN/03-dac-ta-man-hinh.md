@@ -60,6 +60,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 - Mật khẩu mới theo `passwordRules` đã có trong repo.
 - Mã xác thực có hiệu lực 10 phút, dùng một lần, sai 5 lần thì bị hủy (xem [PDR-003](../decisions/PDR-003-otp-kich-hoat-qua-email.md)).
+- Ghi chú triển khai frontend: panel trái chỉ hiện tên khoa (chưa có "Đợt hiện tại" vì chưa có API và đây là trang công khai). Giữ bước mã OTP khi đổi mật khẩu lần đầu (PDR-003) và lỗi theo từng ô, khác artboard.
 
 ## Quên mật khẩu
 - **Vai trò:** Chung
@@ -83,6 +84,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Chỉ gửi liên kết cho tài khoản đang hoạt động và đã kích hoạt; tài khoản vô hiệu hóa/chưa kích hoạt cũng thấy phản hồi trung tính và được hướng dẫn liên hệ Giáo vụ theo [PDR-045](../decisions/PDR-045-chi-tai-khoan-hoat-dong-da-kich-hoat-duoc-tu-dat-lai-mat-khau.md).
 - Phản hồi màn hình và API không phân biệt email có/không có tài khoản theo [PDR-037](../decisions/PDR-037-phan-hoi-trung-tinh-khi-quen-mat-khau.md); giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn theo [PDR-044](../decisions/PDR-044-gioi-han-yeu-cau-dat-lai-mat-khau.md) vẫn dùng phản hồi trung tính khi bị giới hạn.
 - Không dùng được email: giáo vụ đặt lại mật khẩu (xem Người dùng).
+- Ghi chú triển khai frontend: mới có bản "đang xây dựng" trong layout của artboard; 7 trạng thái của artboard (gửi liên kết, đặt mật khẩu mới, hết hạn, đã dùng, đã đổi) chưa làm vì backend chưa có API quên mật khẩu.
 
 ## Trang chủ
 - **Vai trò:** Chung (3 vai trò)
@@ -108,6 +110,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Bảng thông báo không có trả lời, không có số người đã xem.
 - Đây là bản thử nghiệm của danh sách thẻ đợt, chưa chốt hẳn.
 - Ghi chú triển khai frontend (`/giao-vu`): Trang chủ Giáo vụ đã dựng (thẻ mọi đợt kể cả Nháp, chi tiết đợt với việc cần xử lý suy ra từ dữ liệu, Bảng thông báo, Gantt; đợt đang xem giữ trong `?dot=id`). Backend chưa có API đợt, đề tài, thông báo nên chạy trên kho demo trong bộ nhớ (`frontend/src/features/rounds/`, mất khi tải lại trang; "hôm nay" cố định ở 2026-10-26). Endpoint đề xuất: `GET /api/rounds`, `GET /api/rounds/{id}`, `GET /api/notifications`. Trang chủ SV và GV chưa dựng.
+- Cập nhật giao diện theo artboard TrangChu: thẻ đợt bấm được, thanh tiến độ, lưới "Việc sắp đến hạn", Bảng thông báo có avatar/chip nguồn và "Xem thêm". Bộ lọc Bảng thông báo giữ theo docs (Tất cả / Từ giáo vụ / Tôi đã gửi). Chưa có sidebar thu gọn chỉ còn biểu tượng và chip đếm "Đề xuất từ SV".
 
 ## Gantt tiến độ đợt (thành phần)
 - **Vai trò:** Chung
@@ -152,6 +155,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Prop `audience`: sv, gv, giaovu (nội dung khác nhau theo vai trò).
+- Ghi chú triển khai frontend: chuông hiện ở thanh trên của cả ba vai trò, chạy trên dữ liệu demo trong bộ nhớ (`navigation/services/notificationService.ts`), chờ endpoint đề xuất `GET /api/notifications/me`, `POST /api/notifications/read`.
 
 ## Hồ sơ cá nhân
 - **Vai trò:** Chung (3 file theo vai trò)
@@ -175,7 +179,8 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Ba file HoSo, HoSo-GV, HoSo-GiaoVu cùng mã, chỉ khác vai trò mặc định; dựng thành một màn nhận vai trò từ phiên đăng nhập.
-- Ghi chú triển khai frontend (`/ho-so`): quyền tự sửa họ tên đã chốt tại PDR-036, áp dụng cùng các trường ngày sinh, SĐT, email phụ, ảnh đại diện; mã, email, vai trò, đơn vị vẫn chỉ xem tại hồ sơ. Backend chưa có API hồ sơ nên sửa hồ sơ, ảnh đại diện, hoạt động đăng nhập chạy trên kho demo trong bộ nhớ; đổi mật khẩu là stub (501). Endpoint đề xuất: `GET /api/profile`, `PUT /api/profile`, `PUT /api/profile/avatar`, `POST /api/auth/change-password`. Ảnh JPG/PNG/WebP tối đa 2 MB đã chốt theo [PDR-043](../decisions/PDR-043-gioi-han-anh-dai-dien.md).
+- Ghi chú triển khai frontend (`/ho-so`): theo yêu cầu mới, **họ tên không tự sửa được** (do Giáo vụ quản lý, hiển thị cùng mã, email, vai trò, đơn vị); người dùng chỉ sửa ngày sinh, SĐT, email phụ, ảnh đại diện. Điểm này khác dòng "Sửa họ tên, ..." ở trên. Backend chưa có API hồ sơ nên sửa hồ sơ, ảnh đại diện, hoạt động đăng nhập chạy trên kho demo trong bộ nhớ; đổi mật khẩu là stub (501). Endpoint đề xuất: `GET /api/profile`, `PUT /api/profile`, `PUT /api/profile/avatar`, `POST /api/auth/change-password`. Giới hạn ảnh JPG/PNG/WebP, tối đa 2 MB là tạm thời, chờ OQ-006.
+- Cập nhật giao diện theo artboard HoSo/HoSo-GV/HoSo-GiaoVu: một component cho cả ba vai trò; thông báo lưu hồ sơ và đổi mật khẩu là banner trong trang (không còn toast); lỗi ảnh (sai định dạng, quá 2 MB) chặn lưu; cột phải chỉ có phần dữ liệu hiện có (hoạt động đăng nhập, quyền hạn của Giáo vụ). Chưa có card "Khóa luận" (SV), "Đợt" (GV), dòng Khoa/Đơn vị và "Lần đầu đăng nhập" vì chưa có dữ liệu/API.
 
 ## Trang 404
 - **Vai trò:** Chung
@@ -186,6 +191,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Trạng thái và prop trên canvas**
 
 - `variant` (mặc định "Đang xây dựng"): Đang xây dựng · Không tìm thấy
+- Ghi chú triển khai frontend: bố cục cả trang theo artboard (chữ 404, ô biểu tượng, nhãn, tiêu đề, hai nút). Nút "Về trang chủ" của `not-found` dẫn về trang đăng nhập vì trang này không biết vai trò.
 
 ## Tìm đề tài (đăng ký)
 - **Vai trò:** Sinh viên
@@ -497,7 +503,8 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Chỉ xóa được đợt Nháp.
 - Đợt Nháp ẩn với GV và SV.
 - Tên chương trình thạc sĩ ghi "Thạc sĩ · Đợt 1/2026".
-- Ghi chú triển khai frontend (`/giao-vu/dot`): chạy trên kho demo trong bộ nhớ, chờ endpoint đề xuất `GET/POST /api/rounds`, `POST /api/rounds/{id}/open`, `DELETE /api/rounds/{id}`. "Sao chép từ đợt cũ" phải theo [PDR-034](../decisions/PDR-034-sao-chep-khung-cau-hinh-dot.md): tạo đợt Nháp chỉ có khung chín mốc và cờ "Cho nộp trễ"; không mang ngày/giờ, danh sách người, mẫu phiếu hay dữ liệu nghiệp vụ của đợt nguồn.
+- Ghi chú triển khai frontend (`/giao-vu/dot`): chạy trên kho demo trong bộ nhớ, chờ endpoint đề xuất `GET/POST /api/rounds`, `POST /api/rounds/{id}/open`, `DELETE /api/rounds/{id}`. "Sao chép từ đợt cũ" sao chép cấu hình mốc (Thông báo cho, Cho nộp trễ) và danh sách giảng viên, không sao chép ngày và sinh viên (quy tắc sao chép chưa được tài liệu quy định, chọn tạm).
+- Cập nhật giao diện theo artboard: bỏ ô tìm kiếm; bộ lọc trạng thái dạng dải nút có số đếm kèm lọc Chương trình; mỗi đợt là một hàng (Đợt, Trạng thái, Tiến độ, Giảng viên, Sinh viên, Cần xử lý); 6 đợt/trang; "Sao chép từ đợt cũ" mở hộp thoại với đợt đã kết thúc gần nhất chọn sẵn; tên đợt lưu dạng "Chương trình · Tên đợt". Chưa có ô "Ngày bắt đầu tuần 1" vì service không nhận ngày.
 
 ## Chi tiết đợt khóa luận
 - **Vai trò:** Giáo vụ
@@ -524,9 +531,10 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Mở đợt chỉ khi đủ chín mốc với thời gian đầu/cuối và thứ tự hợp lệ; thiếu hoặc sai mốc phải CHẶN, hiển thị mốc/lỗi để Giáo vụ sửa (xem [PDR-032](../decisions/PDR-032-du-chin-moc-hop-le-truoc-khi-mo-dot.md)).
 - Nếu đã đủ mốc nhưng danh sách Sinh viên/Giảng viên còn trống, cảnh báo vai trò thiếu và vẫn cho Giáo vụ mở đợt; người tham gia có thể được thêm sau (xem [PDR-033](../decisions/PDR-033-mo-dot-duoc-khi-chua-co-nguoi-tham-gia.md)).
 - CSDL: `period_milestones.allow_late` mặc định TRUE.
-- Kết thúc đợt khi còn bất kỳ đề tài nào chưa ở `Đã hoàn tất` hoặc `Không đủ điều kiện công bố`: CHẶN và hiển thị đề tài/trạng thái cần xử lý, không chỉ cảnh báo (xem [PDR-031](../decisions/PDR-031-chi-ket-thuc-dot-khi-moi-de-tai-ket-thuc.md)).
-- Sinh viên hoặc Giảng viên đã có dữ liệu nghiệp vụ liên quan trong đợt đều không gỡ được bằng thao tác thông thường; người chưa có dữ liệu được gỡ có lịch sử. Thông báo đơn thuần không khóa gỡ (xem [PDR-030](../decisions/PDR-030-khoa-go-nguoi-tham-gia-da-co-du-lieu.md)).
-- Ghi chú triển khai frontend (`/giao-vu/dot/[id]`): chạy trên kho demo, chờ endpoint đề xuất `POST /api/rounds/{id}/finish`, `PUT /api/rounds/{id}/milestones`, `POST|DELETE /api/rounds/{id}/lecturers|students`. "Cho nộp trễ" hiện chỉ lưu công tắc `allow_late`; cần bổ sung hạn trễ riêng từng mốc theo PDR-041 trước khi dùng thật. Kiểm tra thứ tự mốc: mỗi mốc bắt đầu ≤ kết thúc và ngày bắt đầu không giảm theo thứ tự 9 mốc. Khóa gỡ "có dữ liệu nghiệp vụ" tính theo từng đợt và áp dụng cho cả Sinh viên lẫn Giảng viên theo PDR-030; đợt sao chép không mang theo người/dữ liệu nên không có trạng thái khóa gỡ của đợt nguồn theo PDR-034. Thêm Sinh viên vào đợt Nháp được phép chuẩn bị danh sách; quy tắc "một đợt đang diễn ra" kiểm khi thêm vào đợt đang diễn ra và khi mở đợt (không mở được nếu Sinh viên đang ở đợt đang diễn ra khác) theo PDR-029. Mở đợt phải đủ chín mốc hợp lệ theo PDR-032 và hạn trễ hợp lệ cho mốc bật nộp trễ theo PDR-041; thiếu người chỉ cảnh báo và vẫn cho mở theo PDR-033. Tab Giảng viên/Sinh viên và cấu hình chỉ xem được khi đợt đã kết thúc.
+- Kết thúc đợt khi còn đề tài chưa công bố: cảnh báo.
+- SV có dữ liệu chỉ không gỡ được khỏi đợt (không có trạng thái "Ngừng tham gia").
+- Ghi chú triển khai frontend (`/giao-vu/dot/[id]`): chạy trên kho demo, chờ endpoint đề xuất `POST /api/rounds/{id}/finish`, `PUT /api/rounds/{id}/milestones`, `POST|DELETE /api/rounds/{id}/lecturers|students`. "Cho nộp trễ" chỉ là công tắc lưu `allow_late`; thời hạn nộp trễ chưa triển khai (OQ-006). Kiểm tra thứ tự mốc: mỗi mốc bắt đầu ≤ kết thúc và ngày bắt đầu không giảm theo thứ tự 9 mốc. Khóa gỡ "có dữ liệu" tính theo từng đợt và chỉ áp dụng cho sinh viên (đúng như quy tắc trên); giảng viên gỡ được khỏi đợt, và sao chép từ đợt cũ không mang theo khóa. Thêm sinh viên vào đợt Nháp không kiểm tra đợt khác; quy tắc "một đợt đang diễn ra" kiểm khi thêm vào đợt đang diễn ra và khi mở đợt (không mở được nếu sinh viên đang ở đợt đang diễn ra khác). Mở đợt chỉ cảnh báo thiếu ngày hoặc thiếu người. Tab Giảng viên/Sinh viên và cấu hình chỉ xem được khi đợt đã kết thúc.
+- Cập nhật giao diện theo artboard: breadcrumb + chip trạng thái, tab `role=tab` có điều hướng phím mũi tên và số đếm; đợt đã kết thúc ẩn nút thêm/gỡ và hiện dải "chỉ xem"; đợt Nháp xóa bằng thanh xác nhận ngay trên trang rồi về danh sách. Chưa có: số đề tài mỗi giảng viên, cột nhắc trước hạn, tải Excel, nhắc sinh viên chưa có đề tài (chưa có dữ liệu/API). Nghiệp vụ giữ theo docs khi khác artboard: kết thúc đợt chỉ cảnh báo, sao chép mang theo danh sách giảng viên, giảng viên luôn gỡ được.
 
 ## Mẫu phiếu đánh giá
 - **Vai trò:** Giáo vụ
@@ -548,7 +556,16 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 **Quy tắc nghiệp vụ**
 
-- Mốc “Thời gian cho điểm” chỉ nhắc, không tự khóa phiếu; điểm chấm riêng từng Sinh viên (cột Điểm SV1, SV2). Sau khi Giáo vụ xác nhận kết quả của Sinh viên, điểm của Sinh viên đó bị khóa; trước công bố chỉ sửa qua luồng mở lại có lý do theo [PDR-005](../decisions/PDR-005-mo-lai-ket-qua-truoc-cong-bo.md).
+- Phiếu chấm luôn mở, điểm chấm riêng từng sinh viên (cột Điểm SV1, SV2).
+- Ghi chú triển khai (`/giao-vu/phieu-danh-gia`, API `api/evaluation-templates`, chỉ Giáo vụ). **Bố cục theo yêu cầu của người dùng 2026-10-31, khác artboard** (artboard để khối gán, danh sách thẻ và trình sửa chung một trang): trang chia hai mục.
+  - **Mục trên — Gán mẫu theo đợt khóa luận:** bảng mỗi đợt một hàng, ba cột vai trò (HD, PB, Hội đồng) hiện tên mẫu đang gán hoặc "Chưa gán", kèm "n/3 vai trò đã gán". "Gán mẫu" mở panel bên phải chọn mẫu cho từng vai trò (chọn là gán ngay, "Chưa chọn mẫu" là gỡ); **đợt đã kết thúc không hiện trong danh sách; đợt nháp và đang diễn ra hiện và gán được** (người dùng chốt 2026-10-31); phần này chỉ lọc ở giao diện vì backend chưa có mô-đun Đợt. Chỉ mẫu đủ điều kiện gán được.
+  - **Mục dưới — Danh sách mẫu phiếu:** bảng (tên, số tiêu chí, trạng thái, đang gán cho, cập nhật) với thao tác nhanh Xem chi tiết, Chỉnh sửa, Xóa (có cảnh báo). Bấm tên mẫu mở panel bên phải ở chế độ xem; "Tạo mẫu phiếu" mở panel tạo mới. Panel đóng được bằng nút X, Escape, bấm nền; đang sửa dở thì hỏi bỏ thay đổi.
+  - **Trạng thái tự suy ra** (thay cho nút đổi trạng thái thủ công và trạng thái "Đã đóng" trên giao diện): tổng điểm các tiêu chí chung chưa đủ 10 hoặc hạng mục con chưa khớp → lưu là **Nháp** (khung cảnh báo vàng); đủ điều kiện → **Đủ điều kiện sử dụng**; đã gán cho vai trò chấm của một đợt → **Đang được sử dụng**. Thang điểm cố định 10, không cần thiết lập. Mẫu mới bắt đầu từ điểm 0 (lưu là Nháp), tên mặc định "Mẫu phiếu mới" tự thêm số "(2)" để không trùng. Mẫu đang được sử dụng phải giữ đủ điều kiện: sửa về Nháp bị chặn (backend trả 400) cho tới khi gỡ gán.
+  - **Backend:** trạng thái lưu là `Draft` hoặc `Active` (`Closed` vẫn tồn tại ở API nhưng giao diện không dùng). Nháp cho điểm ≥ 0 và không cần khớp tổng; `Active` bắt buộc điểm > 0, có tiêu chí và hạng mục, tổng khớp. Chuyển Draft ⇄ Active tự do khi chưa gán; Closed không về Draft. Mẫu có `description` cho từng tiêu chí (≤ 500 ký tự).
+  - Quy tắc dữ liệu: tên mẫu duy nhất (không phân biệt hoa thường/khoảng trắng); không trùng tên tiêu chí trong mẫu, tên hạng mục trong tiêu chí; điểm tối đa hai chữ số thập phân. Có phần xem trước cột Điểm SV1/SV2.
+  - Xóa mẫu đang được sử dụng: hộp xác nhận nêu các (đợt, vai trò); xác nhận thì backend gỡ gán và xóa trong một lần lưu (`DELETE …/{id}?removeAssignments=true`); thiếu tham số thì 409.
+  - Chưa làm: nút "Tải phiếu PDF" và "Tạo bản sao" của artboard.
+  - Tạm thời: backend chưa có mô-đun Đợt nên mã đợt lưu dạng chuỗi (từ kho demo của màn Đợt), chưa là khóa ngoại. Chưa có phiếu điểm (thuộc không gian đề tài) nên chưa chặn sửa/đổi/xóa mẫu đã có điểm. Khi thang phiếu khác 10, điểm được quy về thang 10 (`ThesisScore.ToScale10`) trước khi vào công thức điểm khóa luận.
 
 ## Quản lý người dùng
 - **Vai trò:** Giáo vụ
@@ -571,6 +588,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 - Xóa: chưa có dữ liệu thì xóa; có dữ liệu thì vô hiệu hóa (và có nút kích hoạt lại).
 - Người dùng vẫn tự đổi mật khẩu ở Hồ sơ.
+- Ghi chú giao diện (theo artboard): trạng thái chờ đổi mật khẩu hiển thị là "Chưa đăng nhập"; nhập CSV tự kiểm tra khi chọn tệp rồi hiện bước 2/2, đóng hộp thoại khi nhập xong; thông báo thao tác là dải trong trang (không toast); có "Lưu và thêm tiếp"; Giáo vụ không tự xóa/vô hiệu hóa mình. Chưa có API thông báo nên không có câu "đã gửi thông báo cho người dùng" sau khi đặt lại mật khẩu. Nhập theo PDR-004 là CSV (artboard ghi Excel).
 
 ## Quản lý đề tài
 - **Vai trò:** Giáo vụ
@@ -593,6 +611,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Công bố xong thì GV không thêm hoặc xóa đề tài.
 
 - Ghi chú triển khai frontend (`/giao-vu/de-tai`): chạy trên kho demo trong bộ nhớ (`app/frontend/src/features/topics/`, mất khi tải lại trang; "hôm nay" cố định ở 2026-10-26), chờ endpoint đề xuất `GET /api/topics?roundId=…`, `GET /api/topics/{id}`, `POST /api/rounds/{id}/topics/publish`, `GET /api/topics/export?roundId=…`. Giai đoạn đề tài (Đang gửi đề tài / Đã công bố danh sách) tách khỏi trạng thái đợt; "Đóng & công bố danh sách" chỉ mở khi hạn "GV gửi đề tài" của đợt đã qua (hôm nay > ngày kết thúc mốc), đợt đang diễn ra và có đề tài, và không đảo ngược được. Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận (không tính Chờ GV duyệt, Bị từ chối). **Mức tối thiểu 2 và tối đa 6 đề tài mỗi GV chỉ là hằng số tạm của bản demo** (`LECTURER_LOAD_MIN/MAX` trong `topicUtils.ts`): tài liệu chưa nêu con số, chỉ dùng để hiện cờ "GV vượt mức" và không chặn thao tác; cần thay bằng giá trị chốt hoặc cấu hình theo đợt. Xuất danh sách là CSV của danh sách đã lọc, có chống công thức (`=`, `+`, `-`, `@`). Cột Khóa luận hiển thị phiên bản nộp mới nhất hoặc tiến độ khi chưa nộp. `topicSummary` và `lockedStudentIds` của đợt (`roundSeed.ts`) được giữ khớp với kho đề tài mẫu bằng test, chưa suy ra trực tiếp; công bố danh sách đặt `unpublishedCount` của đợt về 0. Dữ liệu mẫu: Thạc sĩ đã hết hạn gửi đề tài nhưng chưa công bố (đề tài GV gửi đều Chưa đăng ký, chưa có nhóm); VB1, VB2 và HK2 2025–2026 đã công bố; mọi bài nộp và lịch sử nằm trong cửa sổ mốc của đợt và không muộn hơn 2026-10-26, nên chỉ đợt đã kết thúc mới có Đã cho điểm / Đã hoàn tất. Trạng thái "chưa hết hạn gửi đề tài" chỉ tái hiện được bằng ngày hôm nay khác (test).
+- Cập nhật giao diện theo artboard: bảng 6 cột (Đề tài, GV hướng dẫn, GV phản biện, Hội đồng, Khóa luận, Trạng thái), 8 dòng/trang, thông báo xuất/công bố là banner trong trang, tìm kiếm cả tên/mã sinh viên và giảng viên, popup công bố có cảnh báo GV chưa đạt mức tối thiểu (từ hằng số tạm). Xuất danh sách là CSV.
 
 ## Chi tiết đề tài (giáo vụ)
 - **Vai trò:** Giáo vụ
@@ -610,6 +629,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Tab Lịch sử: lọc trạng thái, nhóm, bài nộp, phân công, điểm; có trạng thái trống.
 
 - Ghi chú triển khai frontend (`/giao-vu/de-tai/[id]`): chỉ xem, dùng chung kho demo với màn danh sách; tab giữ trong `?tab=` (tong-quan, bao-cao, diem, lich-su). Tab Điểm chỉ hiện điểm từng phiếu (CTHĐ, TKHĐ, CBHD, CBPB) và điểm tổng `(CTHĐ + TKHĐ + 2×CBHD + 2×CBPB) / 6` làm tròn hai chữ số khi đủ bốn phiếu, nếu không hiện "Chưa đủ điểm". **Không có cảnh báo lệch điểm ở màn này**: theo quyết định, cảnh báo lệch điểm thuộc màn Kết quả. Điểm tổng tính bằng số nguyên theo phần trăm điểm rồi làm tròn nửa lên (7,05 / 8 / 8,5 / 8,5 → 8,18); backend nên dùng decimal với `MidpointRounding.AwayFromZero` để cùng kết quả. Lịch sử mới nhất trước; đề tài chưa phát sinh sự kiện cần truy vết có lịch sử trống.
+- Cập nhật giao diện theo artboard: tab đổi tên thành "Báo cáo và phiên bản", tiến độ 6 chặng, báo cáo nhóm theo Đề cương/Giữa kỳ/Cuối kỳ/Bản khóa luận; chưa có link tải tệp (chưa có endpoint), nhóm sinh viên không có lớp, phân công chưa có Chủ tịch/Thư ký/lịch.
 
 ## Giảng viên phản biện
 - **Vai trò:** Giáo vụ

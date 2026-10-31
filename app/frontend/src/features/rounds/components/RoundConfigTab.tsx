@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
-import { AlertCircle } from 'lucide-react';
-import { validateMilestones } from '@/features/rounds/roundUtils';
+import '@/features/rounds/rounds.css';
+import { roundSpan, validateMilestones } from '@/features/rounds/roundUtils';
 import {
   MilestoneOrderError,
   type RoundService,
@@ -23,11 +24,18 @@ interface RoundConfigTabProps {
   onDirtyChange?: (dirty: boolean) => void;
 }
 
+const AUDIENCE_LABEL: Record<NotifyAudience, string> = {
+  'Sinh viên': 'Sinh viên',
+  'Giảng viên': 'Giảng viên',
+  'Tất cả': 'Sinh viên và giảng viên',
+};
+
 const sameConfig = (a: Milestone[], b: Milestone[]) =>
   JSON.stringify(a) === JSON.stringify(b);
 
-// Tab Cấu hình: 9 mốc, ngày bắt đầu/kết thúc, "Thông báo cho", công tắc "Cho
-// nộp trễ" (chỉ Đề cương, Giữa kỳ, Cuối kỳ). Kiểm tra thứ tự mốc ngay khi gõ.
+// Tab Cấu hình (artboard GiaoVu-DotKhoaLuan): thông tin đợt, 9 mốc với ngày bắt
+// đầu/kết thúc, "Thông báo cho", công tắc "Cho nộp trễ" (chỉ Đề cương, Giữa
+// kỳ, Cuối kỳ). Kiểm tra thứ tự mốc ngay khi gõ.
 export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   round,
   roundService,
@@ -40,13 +48,15 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const errors = useMemo(() => validateMilestones(draft), [draft]);
-  const invalid = Object.keys(errors).length > 0;
+  const errorCount = Object.keys(errors).length;
+  const invalid = errorCount > 0;
   const dirty = !sameConfig(draft, round.milestones);
   // Chỉ báo động (role=alert) khi dòng đã đủ hai ngày mà sai; dòng mới nhập
   // một ngày chỉ hiện lỗi tại dòng.
   const hardInvalid = draft.some(
     (m) => errors[m.key] && m.startDate && m.endDate,
   );
+  const weekOne = roundSpan(round.milestones)?.start ?? '';
 
   useEffect(() => {
     onDirtyChange?.(dirty);
@@ -66,7 +76,11 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
     setSaveError(null);
     try {
       const updated = await roundService.updateMilestones(round.id, draft);
-      toast.success('Đã lưu cấu hình.');
+      toast.success(
+        round.status === 'Nháp'
+          ? 'Đã lưu cấu hình. Đợt đang Nháp nên chưa gửi thông báo.'
+          : 'Đã lưu cấu hình. Giảng viên và sinh viên trong đợt nhận thông báo về các mốc đã đổi.',
+      );
       setDraft(updated.milestones);
       onSaved(updated);
     } catch (err: unknown) {
@@ -83,158 +97,222 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   };
 
   return (
-    <section className="app-card" aria-labelledby="round-config-title">
-      <div className="app-card-header">
-        <h2 id="round-config-title">Cấu hình 9 mốc</h2>
-      </div>
-      {readOnly && (
-        <p className="login-note">Đợt đã kết thúc nên cấu hình chỉ để xem.</p>
-      )}
-      {(hardInvalid || saveError) && (
-        <div role="alert" className="login-error">
-          <AlertCircle size={18} />
+    <div className="rnd-panel">
+      <section className="rnd-section" aria-labelledby="round-info-title">
+        <h2 id="round-info-title">Thông tin đợt</h2>
+        <div className="rnd-info-grid">
+          <label className="rnd-label">
+            Chương trình
+            <input className="rnd-input" readOnly value={round.program} />
+          </label>
+          <label className="rnd-label">
+            Tên đợt
+            <input className="rnd-input" readOnly value={round.periodLabel} />
+          </label>
+          <label className="rnd-label">
+            Ngày bắt đầu tuần 1
+            <input type="date" className="rnd-input" readOnly value={weekOne} />
+          </label>
+        </div>
+        <p className="rnd-hint">
+          Ngày bắt đầu tuần 1 là thứ Hai của tuần chứa mốc sớm nhất; đổi bằng
+          cách sửa ngày các mốc bên dưới.
+        </p>
+      </section>
+
+      <section
+        className="rnd-section rnd-section-flush"
+        aria-labelledby="round-config-title"
+      >
+        <div className="rnd-section-head">
+          <h2 id="round-config-title">Mốc thời gian</h2>
+          <p>
+            Bắt đầu và kết thúc của mỗi mục tạo thành một thanh trên biểu đồ
+            tuần. Thông báo cho chỉ gửi đến giảng viên có vai trò ở mục đó
+            (GVHD, GVPB, hội đồng). Với đề cương, giữa kỳ và cuối kỳ: bật Cho
+            nộp trễ thì quá hạn sinh viên vẫn nộp được và bài nộp gắn nhãn Nộp
+            trễ; tắt thì hết hạn là khóa nộp. Thời hạn nộp trễ chưa được quy
+            định.
+          </p>
+        </div>
+        <div className="rnd-table-scroll">
+          <table className="rnd-table rnd-table-ms">
+            <thead>
+              <tr>
+                <th scope="col">Mục</th>
+                <th scope="col">Bắt đầu</th>
+                <th scope="col">Kết thúc</th>
+                <th scope="col">Nộp trễ</th>
+                <th scope="col">Thông báo cho</th>
+              </tr>
+            </thead>
+            <tbody>
+              {draft.map((m) => {
+                const error = errors[m.key];
+                const errorId = `milestone-${m.key}-error`;
+                const invalidProps = error
+                  ? {
+                      'aria-invalid': true as const,
+                      'aria-describedby': errorId,
+                    }
+                  : {};
+                return (
+                  <tr key={m.key} className={error ? 'rnd-ms-row-bad' : ''}>
+                    <th scope="row">
+                      <span className="rnd-ms-name">
+                        <span>{m.name}</span>
+                        {m.key === 'grading' && (
+                          <span className="rnd-ms-hint">
+                            Chỉ để nhắc, không khóa phiếu chấm.
+                          </span>
+                        )}
+                        {error && (
+                          <span id={errorId} className="rnd-ms-err">
+                            {error}
+                          </span>
+                        )}
+                      </span>
+                    </th>
+                    <td>
+                      <input
+                        type="date"
+                        className="rnd-date"
+                        aria-label={`Bắt đầu ${m.name}`}
+                        value={m.startDate}
+                        disabled={readOnly}
+                        onChange={(e) =>
+                          patch(m.key, { startDate: e.target.value })
+                        }
+                        {...invalidProps}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="date"
+                        className="rnd-date"
+                        aria-label={`Kết thúc ${m.name}`}
+                        value={m.endDate}
+                        disabled={readOnly}
+                        onChange={(e) =>
+                          patch(m.key, { endDate: e.target.value })
+                        }
+                        {...invalidProps}
+                      />
+                    </td>
+                    <td>
+                      {m.allowLate === null ? (
+                        <>
+                          <span className="rnd-na" aria-hidden="true">
+                            —
+                          </span>
+                          <span className="app-visually-hidden">
+                            Không áp dụng
+                          </span>
+                        </>
+                      ) : (
+                        <label className="rnd-late">
+                          <input
+                            type="checkbox"
+                            role="switch"
+                            aria-label={`Cho nộp trễ ${m.name}`}
+                            checked={m.allowLate}
+                            disabled={readOnly}
+                            onChange={(e) =>
+                              patch(m.key, { allowLate: e.target.checked })
+                            }
+                          />
+                          Cho nộp trễ
+                        </label>
+                      )}
+                    </td>
+                    <td>
+                      <select
+                        aria-label={`Thông báo cho ${m.name}`}
+                        value={m.notifyAudience}
+                        disabled={readOnly}
+                        onChange={(e) =>
+                          patch(m.key, {
+                            notifyAudience: e.target.value as NotifyAudience,
+                          })
+                        }
+                      >
+                        {NOTIFY_AUDIENCES.map((a) => (
+                          <option key={a} value={a}>
+                            {AUDIENCE_LABEL[a]}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        <div
+          role={hardInvalid ? 'alert' : 'status'}
+          className={`rnd-check-box ${invalid ? 'rnd-check-bad' : 'rnd-check-ok'}`}
+          style={{ marginTop: 16 }}
+        >
+          <b>
+            {invalid
+              ? `${errorCount} mốc sai thứ tự. Sửa các dòng tô đỏ để lưu được.`
+              : 'Các mốc đúng thứ tự.'}
+          </b>
           <span>
-            {saveError ??
-              'Có mốc sai thứ tự hoặc thiếu ngày. Sửa các dòng báo lỗi trước khi lưu.'}
+            Thứ tự bắt buộc: mỗi mục kết thúc không trước ngày bắt đầu; các mục
+            bắt đầu theo đúng thứ tự trong bảng (giảng viên gửi đề tài, công bố
+            đề tài và đăng ký, đề cương, giữa kỳ, cuối kỳ, lịch phản biện, lịch
+            bảo vệ, thời gian cho điểm, chốt bản cuối).
           </span>
         </div>
-      )}
-      <div className="app-table-scroll">
-        <table className="app-table app-config-table">
-          <thead>
-            <tr>
-              <th scope="col">Mốc</th>
-              <th scope="col">Bắt đầu</th>
-              <th scope="col">Kết thúc</th>
-              <th scope="col">Thông báo cho</th>
-              <th scope="col">Cho nộp trễ</th>
-            </tr>
-          </thead>
-          <tbody>
-            {draft.map((m) => {
-              const error = errors[m.key];
-              const errorId = `milestone-${m.key}-error`;
-              const invalidProps = error
-                ? { 'aria-invalid': true as const, 'aria-describedby': errorId }
-                : {};
-              return (
-                <tr key={m.key}>
-                  <th scope="row" className="app-config-name">
-                    {m.name}
-                    {m.key === 'grading' && (
-                      <span className="app-config-hint">
-                        Chỉ để nhắc, không khóa phiếu chấm.
-                      </span>
-                    )}
-                    {error && (
-                      <p id={errorId} className="login-field-error">
-                        {error}
-                      </p>
-                    )}
-                  </th>
-                  <td>
-                    <input
-                      type="date"
-                      aria-label={`Bắt đầu ${m.name}`}
-                      value={m.startDate}
-                      disabled={readOnly}
-                      onChange={(e) =>
-                        patch(m.key, { startDate: e.target.value })
-                      }
-                      {...invalidProps}
-                    />
-                  </td>
-                  <td>
-                    <input
-                      type="date"
-                      aria-label={`Kết thúc ${m.name}`}
-                      value={m.endDate}
-                      disabled={readOnly}
-                      onChange={(e) =>
-                        patch(m.key, { endDate: e.target.value })
-                      }
-                      {...invalidProps}
-                    />
-                  </td>
-                  <td>
-                    <select
-                      className="app-select"
-                      aria-label={`Thông báo cho ${m.name}`}
-                      value={m.notifyAudience}
-                      disabled={readOnly}
-                      onChange={(e) =>
-                        patch(m.key, {
-                          notifyAudience: e.target.value as NotifyAudience,
-                        })
-                      }
-                    >
-                      {NOTIFY_AUDIENCES.map((a) => (
-                        <option key={a} value={a}>
-                          {a}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td>
-                    {m.allowLate === null ? (
-                      <>
-                        <span className="app-muted" aria-hidden="true">
-                          —
-                        </span>
-                        <span className="app-visually-hidden">
-                          Không áp dụng
-                        </span>
-                      </>
-                    ) : (
-                      <label className="app-switch">
-                        <input
-                          type="checkbox"
-                          role="switch"
-                          aria-label={`Cho nộp trễ ${m.name}`}
-                          checked={m.allowLate}
-                          disabled={readOnly}
-                          onChange={(e) =>
-                            patch(m.key, { allowLate: e.target.checked })
-                          }
-                        />
-                        <span>{m.allowLate ? 'Bật' : 'Tắt'}</span>
-                      </label>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-      <p className="login-hint">
-        “Cho nộp trễ” chỉ là công tắc bật hoặc tắt; thời hạn nộp trễ chưa được
-        quy định.
-      </p>
+      </section>
+
       {!readOnly && (
-        <div className="dialog-actions">
-          <button
-            type="button"
-            className="app-button"
-            disabled={!dirty || saving}
-            onClick={() => {
-              setDraft(round.milestones);
-              setSaveError(null);
-            }}
-          >
-            Hủy
-          </button>
-          <button
-            type="button"
-            className="app-button app-button-primary"
-            disabled={!dirty || invalid || saving}
-            aria-busy={saving}
-            onClick={() => void save()}
-          >
-            {saving ? 'Đang lưu...' : 'Lưu'}
-          </button>
-        </div>
+        <section className="rnd-save-bar" aria-label="Lưu cấu hình">
+          <span>
+            {invalid && (
+              <b id="save-why" className="rnd-save-why">
+                Chưa lưu được: còn {errorCount} mốc sai thứ tự.
+              </b>
+            )}
+            {saveError && (
+              <b role="alert" className="rnd-save-why">
+                {saveError}
+              </b>
+            )}
+            Mẫu phiếu đánh giá cho hướng dẫn, phản biện và hội đồng được gán
+            trong{' '}
+            <Link className="rnd-link" href="/giao-vu/phieu-danh-gia">
+              Phiếu đánh giá
+            </Link>
+            .
+          </span>
+          <span className="rnd-actions">
+            <button
+              type="button"
+              className="rnd-btn"
+              disabled={!dirty || saving}
+              onClick={() => {
+                setDraft(round.milestones);
+                setSaveError(null);
+              }}
+            >
+              Hủy thay đổi
+            </button>
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-primary"
+              disabled={!dirty || invalid || saving}
+              aria-busy={saving}
+              aria-describedby={invalid ? 'save-why' : undefined}
+              onClick={() => void save()}
+            >
+              {saving ? 'Đang lưu...' : 'Lưu và thông báo thay đổi'}
+            </button>
+          </span>
+        </section>
       )}
-    </section>
+    </div>
   );
 };

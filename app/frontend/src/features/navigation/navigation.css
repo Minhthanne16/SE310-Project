@@ -1,0 +1,234 @@
+/* Chuông thông báo ở thanh trên (artboard ThongBaoMenu) */
+.bell {
+  position: relative;
+  display: inline-flex;
+}
+
+.bell-button {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #1a1a1a;
+}
+
+.bell-button:hover,
+.bell-button.is-open {
+  background: #ebebea;
+}
+
+.bell-badge {
+  position: absolute;
+  top: 4px;
+  right: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #a8281c;
+  color: #fff;
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.bell-popup {
+  position: absolute;
+  top: 52px;
+  right: 0;
+  z-index: 40;
+  width: 400px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(26, 26, 26, 0.1);
+}
+
+.bell-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 10px;
+}
+
+.bell-head h2 {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.bell-mark-all {
+  min-height: 36px;
+  padding: 0 6px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #1f5fbf;
+}
+
+.bell-mark-all:disabled {
+  color: #8f8f8f;
+  cursor: default;
+}
+
+.bell-tabs {
+  align-self: flex-start;
+  display: flex;
+  gap: 4px;
+  margin: 0 16px 8px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #f2f2f1;
+}
+
+.bell-tabs button {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #1a1a1a;
+}
+
+.bell-tabs button[aria-pressed='true'] {
+  border-color: #e5e5e5;
+  background: #fff;
+  font-weight: 600;
+}
+
+.bell-list {
+  max-height: 440px;
+  overflow-y: auto;
+  border-top: 1px solid #e5e5e5;
+}
+
+.bell-group {
+  padding: 10px 16px 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #737373;
+}
+
+.bell-item {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  color: #1a1a1a;
+  text-decoration: none;
+  background: #fff;
+}
+
+.bell-item.is-unread {
+  background: #f7faff;
+}
+
+.bell-item:hover {
+  background: #f2f2f1;
+}
+
+.bell-icon {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #f2f2f1;
+  color: #3d3d3d;
+}
+
+.bell-icon-assign {
+  background: #e3ecfb;
+  color: #1f4fa0;
+}
+
+.bell-icon-success,
+.bell-icon-result {
+  background: #ddf3d8;
+  color: #2b6a1f;
+}
+
+.bell-icon-reject {
+  background: #fbe9e7;
+  color: #a8281c;
+}
+
+.bell-icon-schedule {
+  background: #ede7fb;
+  color: #5b3ba8;
+}
+
+.bell-icon-deadline {
+  background: #fef4e2;
+  color: #b45309;
+}
+
+.bell-icon-inbox {
+  background: #fdf1d8;
+  color: #6b3a06;
+}
+
+.bell-icon-post {
+  background: #fff7d6;
+  color: #7a5a00;
+}
+
+.bell-item-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.bell-item-title {
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.bell-item.is-unread .bell-item-title {
+  font-weight: 600;
+}
+
+.bell-item-meta {
+  font-size: 12.5px;
+  color: #5c5c5c;
+}
+
+.bell-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 6px;
+  flex: none;
+  border-radius: 999px;
+  background: #1f5fbf;
+}
+
+.bell-empty {
+  padding: 36px 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #5c5c5c;
+}
+
+.bell-demo-note {
+  margin: 0;
+  padding: 6px 16px 8px;
+  font-size: 12px;
+  color: #8a5a00;
+  background: #fef4e2;
+  border-top: 1px solid #f3d19a;
+}

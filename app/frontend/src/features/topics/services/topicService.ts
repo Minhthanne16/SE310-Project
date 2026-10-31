@@ -116,7 +116,14 @@ export function createTopicService(
       (!f.status || f.status === 'Tất cả' || t.status === f.status) &&
       (!keyword ||
         nameKey(t.title).includes(keyword) ||
-        nameKey(t.code).includes(keyword))
+        nameKey(t.code).includes(keyword) ||
+        nameKey(t.supervisor.name).includes(keyword) ||
+        (t.reviewer !== null && nameKey(t.reviewer.name).includes(keyword)) ||
+        t.group.some(
+          (m) =>
+            nameKey(m.name).includes(keyword) ||
+            nameKey(m.code).includes(keyword),
+        ))
     );
   };
 

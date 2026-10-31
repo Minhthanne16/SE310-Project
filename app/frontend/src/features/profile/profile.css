@@ -1,0 +1,416 @@
+/* Hồ sơ cá nhân (/ho-so). Tiền tố .prf- */
+.prf-page {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  max-width: 1120px;
+  width: 100%;
+}
+
+.prf-head {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  flex-wrap: wrap;
+}
+
+.prf-head-text {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.prf-head-text h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.prf-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.prf-badge {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #f2f2f1;
+  color: #3d3d3d;
+}
+
+.prf-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 999px;
+  object-fit: cover;
+  font-weight: 600;
+  width: 104px;
+  height: 104px;
+  font-size: 36px;
+}
+
+.prf-avatar-sm {
+  width: 44px;
+  height: 44px;
+  font-size: 15px;
+}
+
+.prf-role-Student {
+  background: #e3ecfb;
+  color: #1f4fa0;
+}
+
+.prf-role-Lecturer {
+  background: #ede7fb;
+  color: #5b3ba8;
+}
+
+.prf-role-AcademicAffairs {
+  background: #ddf3d8;
+  color: #2b6a1f;
+}
+
+.prf-cols {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
+.prf-main {
+  flex: 3 1 460px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.prf-side {
+  flex: 2 1 300px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.prf-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.prf-card-tight {
+  padding: 18px 24px;
+  gap: 12px;
+}
+
+.prf-card-side {
+  gap: 12px;
+}
+
+.prf-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.prf-card-head h2 {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.prf-card-head p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: #5c5c5c;
+}
+
+.prf-eyebrow {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #737373;
+}
+
+.prf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #d4d4d4;
+  border-radius: 9px;
+  background: #fff;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.prf-btn:hover:not(:disabled) {
+  background: #f5f5f4;
+}
+
+.prf-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.prf-btn-lg {
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-size: 14.5px;
+}
+
+.prf-btn-primary {
+  border: 0;
+  padding: 0 18px;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.prf-btn-primary:hover:not(:disabled) {
+  background: #333;
+}
+
+.prf-btn-danger {
+  border-color: #e8b4ae;
+  color: #a8281c;
+  text-decoration: none;
+}
+
+.prf-btn-danger:hover:not(:disabled) {
+  background: #fbe9e7;
+}
+
+.prf-notice {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.prf-notice-ok {
+  background: #ddf3d8;
+  color: #12301a;
+}
+
+.prf-notice-err {
+  background: #fbe9e7;
+  border: 1px solid #e8b4ae;
+  color: #a8281c;
+}
+
+.prf-list {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.prf-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  padding: 12px 0;
+  border-top: 1px solid #e5e5e5;
+}
+
+.prf-row:first-child {
+  border-top: 0;
+}
+
+.prf-row dt {
+  flex: 0 0 180px;
+  font-size: 14px;
+  color: #5c5c5c;
+}
+
+.prf-row dd {
+  flex: 1 1 220px;
+  min-width: 0;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+.prf-input {
+  width: 100%;
+  max-width: 320px;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #d4d4d4;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 15px;
+  box-sizing: border-box;
+}
+
+.prf-input[aria-invalid='true'] {
+  border: 1.5px solid #a8281c;
+}
+
+.prf-field-error {
+  display: block;
+  margin-top: 6px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #a8281c;
+}
+
+.prf-avatar-field {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.prf-avatar-status {
+  font-size: 14px;
+  font-weight: 400;
+  color: #5c5c5c;
+}
+
+.prf-avatar-hint {
+  font-size: 13px;
+  font-weight: 400;
+  color: #5c5c5c;
+}
+
+.prf-avatar-msg {
+  flex-basis: 100%;
+  font-size: 13.5px;
+  font-weight: 500;
+}
+
+.prf-avatar-msg-ok {
+  color: #2b6a1f;
+}
+
+.prf-avatar-msg-err {
+  color: #a8281c;
+}
+
+.prf-file-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid #d4d4d4;
+  border-radius: 9px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.prf-file-btn-err {
+  border: 1.5px solid #a8281c;
+}
+
+.prf-file-btn:focus-within {
+  outline: 2px solid #1f5fbf;
+  outline-offset: 2px;
+}
+
+.prf-file-btn input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.prf-form-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.prf-form-foot p {
+  margin: 0;
+  max-width: 26rem;
+  font-size: 13px;
+  color: #5c5c5c;
+}
+
+.prf-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.prf-side-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid #e5e5e5;
+}
+
+.prf-side-row:first-of-type {
+  border-top: 0;
+}
+
+.prf-side-row span:first-child {
+  font-size: 13px;
+  color: #5c5c5c;
+}
+
+.prf-side-row span:last-child {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.prf-state {
+  padding: 24px 0;
+}
+
+@media (max-width: 600px) {
+  .prf-head-text h1 {
+    font-size: 26px;
+  }
+
+  .prf-card {
+    padding: 18px 16px;
+  }
+
+  .prf-row dt {
+    flex-basis: 100%;
+  }
+
+  .prf-form-foot,
+  .prf-actions {
+    width: 100%;
+  }
+
+  .prf-actions .prf-btn {
+    flex: 1;
+  }
+}

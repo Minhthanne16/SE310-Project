@@ -4,7 +4,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, Check, Circle, Eye, EyeOff } from 'lucide-react';
+import '@/features/auth/auth.css';
 import { ApiError } from '@/api/request';
+import { AuthBrand } from '@/features/auth/components/AuthBrand';
 import { getNewPasswordRules } from '@/features/auth/passwordRules';
 import { ROLE_HOME } from '@/features/auth/roles';
 import {
@@ -207,24 +209,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   return (
     <div className="login-page">
-      <section className="login-brand">
-        <div className="login-brand-logo">
-          <span>Q</span>
-          QLKLTN
-        </div>
-        <div className="login-brand-copy">
-          <h1>
-            Khóa luận tốt nghiệp, <em>gọn trong một nơi.</em>
-          </h1>
-          <p>
-            Đăng ký đề tài, nộp đề cương và khóa luận, chấm điểm và nhận kết
-            quả.
-          </p>
-        </div>
-        <div className="login-brand-footer">
-          <span>Khoa Công nghệ Phần mềm</span>
-        </div>
-      </section>
+      <AuthBrand />
 
       <main className="login-main">
         <div className="login-column">

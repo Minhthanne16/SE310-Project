@@ -36,6 +36,7 @@ export interface NavSection {
 export const ROLE_MENUS: Record<UserRole, NavSection[]> = {
   Student: [
     {
+      title: 'Khóa luận',
       items: [
         { href: '/sv', label: 'Trang chủ', icon: House },
         { href: '/sv/dang-ky', label: 'Đăng ký đề tài', icon: Search },

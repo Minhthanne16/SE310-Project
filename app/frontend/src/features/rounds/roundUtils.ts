@@ -206,3 +206,64 @@ export function deriveTasks(round: Round, today: string): RoundTask[] {
   }
   return tasks;
 }
+
+const ddMM = (iso: string) => formatDate(iso).slice(0, 5);
+
+export interface RoundProgressInfo {
+  // Dòng đậm: mốc hiện tại hoặc tình trạng đợt.
+  milestone: string;
+  // "Tuần 6/20", "0/20", "20/20".
+  weeks: string;
+  percent: number;
+}
+
+// Tóm tắt tiến độ cho danh sách đợt (artboard: "Tiến độ · mốc hiện tại").
+export function roundProgress(round: Round, today: string): RoundProgressInfo {
+  const span = roundSpan(round.milestones);
+  const total = span ? span.weeks : 0;
+  const totalText = total > 0 ? String(total) : '–';
+  if (round.status === 'Nháp') {
+    return {
+      milestone: span
+        ? `Chưa mở · bắt đầu ${formatDate(span.start)}`
+        : 'Chưa mở · chưa đặt ngày',
+      weeks: `0/${totalText}`,
+      percent: 0,
+    };
+  }
+  if (round.status === 'Đã kết thúc') {
+    const ends = round.milestones.map((m) => m.endDate).filter(isIsoDate);
+    const last = ends.length > 0 ? ends.reduce((a, b) => (b > a ? b : a)) : '';
+    return {
+      milestone: last ? `Đã kết thúc ${formatDate(last)}` : 'Đã kết thúc',
+      weeks: `${totalText}/${totalText}`,
+      percent: 100,
+    };
+  }
+  const current = currentMilestone(round, today);
+  let week = 0;
+  if (span) {
+    const raw = Math.floor(daysBetween(span.start, today) / 7) + 1;
+    week = Math.min(Math.max(raw, 0), span.weeks);
+  }
+  return {
+    milestone: current
+      ? `${current.name} · hạn ${ddMM(current.endDate)}`
+      : 'Chưa có mốc đang diễn ra',
+    weeks: total > 0 ? `Tuần ${week}/${total}` : '–',
+    percent: total > 0 ? Math.round((week / total) * 100) : 0,
+  };
+}
+
+// Thạc sĩ gọi là học viên (03: Danh sách đợt), các chương trình khác là sinh viên.
+export function studentNoun(
+  program: Round['program'],
+): 'học viên' | 'sinh viên' {
+  return program === 'Thạc sĩ' ? 'học viên' : 'sinh viên';
+}
+
+// Ngày bắt đầu sớm nhất trong các mốc (yyyy-MM-dd), rỗng nếu chưa có ngày.
+export function earliestStart(round: Round): string {
+  const starts = round.milestones.map((m) => m.startDate).filter(isIsoDate);
+  return starts.length > 0 ? starts.reduce((a, b) => (b < a ? b : a)) : '';
+}

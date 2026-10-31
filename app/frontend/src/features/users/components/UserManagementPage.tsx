@@ -1,12 +1,13 @@
 'use client';
 
+import '@/features/users/users.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import toast from 'react-hot-toast';
 import { FileUp, Plus, Search } from 'lucide-react';
 import { ROLE_LABEL } from '@/features/auth/roles';
 import { useSession } from '@/features/auth/session/SessionProvider';
-import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { downloadErrorReport } from '@/features/users/csvReport';
 import { ResetPasswordDialog } from '@/features/users/components/ResetPasswordDialog';
+import { UserConfirmDialog } from '@/features/users/components/UserConfirmDialog';
 import { UserFormDrawer } from '@/features/users/components/UserFormDrawer';
 import { UserImportDialog } from '@/features/users/components/UserImportDialog';
 import {
@@ -18,6 +19,7 @@ import {
   getUserStatus,
   USER_STATUS_LABEL,
   type ManagedUser,
+  type UserImportRow,
   type UserStatus,
 } from '@/types/user';
 
@@ -30,9 +32,30 @@ type Dialog = {
   userId: string;
 } | null;
 
+interface Notice {
+  text: string;
+  // Dòng lỗi của lần nhập CSV vừa xong, để tải báo cáo.
+  errorRows?: UserImportRow[];
+}
+
 const PAGE_SIZE = 10;
 const ROLES: UserRole[] = ['Student', 'Lecturer', 'AcademicAffairs'];
 const STATUSES: UserStatus[] = ['active', 'pending', 'disabled'];
+
+const formatDate = (iso: string | null) => {
+  if (!iso) return '—';
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
+};
+
+const orgOf = (u: ManagedUser) => {
+  if (u.role === 'Student') return u.className || '—';
+  if (u.role === 'Lecturer')
+    return u.department
+      ? u.department + (u.academicTitle ? ` · ${u.academicTitle}` : '')
+      : '—';
+  return '—';
+};
 
 // Màn Quản lý người dùng của Giáo vụ (docs/DESIGN/03). Lọc và phân trang phía
 // client trên danh sách tải một lần từ userService.
@@ -56,6 +79,9 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
   const [importOpen, setImportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  // Tài khoản vừa tạo trong phiên, tô nền nhạt trong bảng.
+  const [freshIds, setFreshIds] = useState<ReadonlySet<string>>(new Set());
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -94,6 +120,16 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
     );
   }, [users, roleFilter, statusFilter, search]);
 
+  const stats = useMemo(
+    () => ({
+      Student: users.filter((u) => u.role === 'Student').length,
+      Lecturer: users.filter((u) => u.role === 'Lecturer').length,
+      AcademicAffairs: users.filter((u) => u.role === 'AcademicAffairs').length,
+      pending: users.filter((u) => getUserStatus(u) === 'pending').length,
+    }),
+    [users],
+  );
+
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);
   const visible = filtered.slice(
@@ -116,16 +152,24 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
   }, []);
   const closeImport = useCallback(() => setImportOpen(false), []);
 
-  const handleSaved = (saved: ManagedUser, mode: 'create' | 'edit') => {
+  const handleSaved = (
+    saved: ManagedUser,
+    mode: 'create' | 'edit',
+    keepOpen = false,
+  ) => {
     setUsers((list) =>
       mode === 'create'
         ? [...list, saved]
         : list.map((u) => (u.id === saved.id ? saved : u)),
     );
-    setDrawer(null);
-    toast.success(
-      mode === 'create' ? 'Đã thêm người dùng.' : 'Đã lưu thay đổi.',
-    );
+    if (mode === 'create') setFreshIds((ids) => new Set(ids).add(saved.id));
+    if (!keepOpen) setDrawer(null);
+    setNotice({
+      text:
+        mode === 'create'
+          ? `Đã tạo tài khoản ${saved.userCode}. Mật khẩu ban đầu là mã người dùng.`
+          : `Đã lưu thông tin ${saved.fullName}.`,
+    });
   };
 
   // Chạy hành động của hộp thoại xác nhận, báo lỗi ngay trong hộp thoại.
@@ -153,12 +197,14 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
       const result = await userService.remove(user.id);
       if (result === 'deleted') {
         setUsers((list) => list.filter((u) => u.id !== user.id));
-        toast.success('Đã xóa người dùng.');
+        setNotice({ text: `Đã xóa tài khoản ${user.userCode}.` });
       } else {
         setUsers((list) =>
           list.map((u) => (u.id === user.id ? { ...u, isActive: false } : u)),
         );
-        toast.success('Đã vô hiệu hóa người dùng.');
+        setNotice({
+          text: `Đã vô hiệu hóa tài khoản ${user.userCode}. Dữ liệu liên quan vẫn được giữ.`,
+        });
       }
       setDialog(null);
       setDrawer(null);
@@ -168,34 +214,130 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
     runDialogAction(async () => {
       const updated = await userService.setActive(user.id, true);
       setUsers((list) => list.map((u) => (u.id === user.id ? updated : u)));
-      toast.success('Đã kích hoạt lại người dùng.');
+      setNotice({
+        text: `Đã kích hoạt lại tài khoản ${user.userCode}. Người dùng đăng nhập lại được bằng mật khẩu hiện tại.`,
+      });
       setDialog(null);
+      setDrawer(null);
     });
 
-  const removeLabel = (user: ManagedUser) =>
-    user.hasData ? 'Vô hiệu hóa' : 'Xóa người dùng';
+  const who = (u: ManagedUser) =>
+    `${u.fullName} · ${u.userCode} · ${ROLE_LABEL[u.role]}`;
+
+  const roleTabs: Array<{ value: UserRole | ''; label: string }> = [
+    { value: '', label: 'Tất cả' },
+    ...ROLES.map((r) => ({ value: r, label: ROLE_LABEL[r] })),
+  ];
+
+  const openAdd = () => {
+    setNotice(null);
+    setDrawer({ mode: 'create' });
+  };
+  const openImport = () => {
+    setNotice(null);
+    setImportOpen(true);
+  };
 
   return (
-    <>
-      <div className="app-page-heading">
-        <h1>Quản lý người dùng</h1>
-        <p>
-          Thêm, sửa, nhập CSV, đặt lại mật khẩu và xóa hoặc vô hiệu hóa tài
-          khoản.
-        </p>
+    <div className="usr-page">
+      <div className="usr-head">
+        <div className="usr-head-text">
+          <h1>Người dùng</h1>
+          <p>
+            Tài khoản sinh viên, giảng viên và giáo vụ. Giáo vụ tạo tài khoản
+            trước khi ghi danh vào đợt; mật khẩu ban đầu là mã người dùng và
+            người dùng phải đổi ở lần đăng nhập đầu.
+          </p>
+        </div>
+        <div className="usr-head-actions">
+          <button
+            type="button"
+            className="usr-btn usr-btn-lg"
+            aria-haspopup="dialog"
+            onClick={openImport}
+          >
+            <FileUp size={16} aria-hidden="true" />
+            Nhập CSV
+          </button>
+          <button
+            type="button"
+            className="usr-btn usr-btn-lg usr-btn-primary"
+            aria-haspopup="dialog"
+            onClick={openAdd}
+          >
+            <Plus size={16} aria-hidden="true" />
+            Thêm người dùng
+          </button>
+        </div>
       </div>
 
-      <div className="app-toolbar">
-        <div
-          className="app-filters"
-          role="search"
-          aria-label="Lọc vai trò, trạng thái, tìm kiếm"
-        >
-          <div className="app-search">
+      {notice && (
+        <div role="status" className="usr-notice">
+          <span>{notice.text}</span>
+          {notice.errorRows && notice.errorRows.length > 0 && (
+            <button
+              type="button"
+              className="usr-link-button"
+              onClick={() => downloadErrorReport(notice.errorRows ?? [])}
+            >
+              Tải báo cáo dòng lỗi (.csv)
+            </button>
+          )}
+        </div>
+      )}
+
+      {!loading && !loadError && (
+        <div className="usr-stats">
+          <div className="usr-stat">
+            <span className="usr-stat-label">Sinh viên</span>
+            <span className="usr-stat-value">
+              {stats.Student.toLocaleString('vi-VN')}
+            </span>
+          </div>
+          <div className="usr-stat">
+            <span className="usr-stat-label">Giảng viên</span>
+            <span className="usr-stat-value">
+              {stats.Lecturer.toLocaleString('vi-VN')}
+            </span>
+          </div>
+          <div className="usr-stat">
+            <span className="usr-stat-label">Giáo vụ</span>
+            <span className="usr-stat-value">
+              {stats.AcademicAffairs.toLocaleString('vi-VN')}
+            </span>
+          </div>
+          <div className="usr-stat usr-stat-warn">
+            <span className="usr-stat-label">Chưa đăng nhập lần đầu</span>
+            <span className="usr-stat-value">
+              {stats.pending.toLocaleString('vi-VN')}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="usr-filters">
+        <div role="group" aria-label="Lọc theo vai trò" className="usr-tabs">
+          {roleTabs.map((tab) => (
+            <button
+              key={tab.value || 'all'}
+              type="button"
+              className="usr-tab"
+              aria-pressed={roleFilter === tab.value}
+              onClick={() => {
+                setRoleFilter(tab.value);
+                setPage(1);
+              }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+        <div className="usr-filter-right">
+          <label className="usr-search">
             <Search size={16} aria-hidden="true" />
             <input
               type="search"
-              aria-label="Tìm kiếm"
+              aria-label="Tìm người dùng"
               placeholder="Tìm theo mã, họ tên, email"
               value={search}
               onChange={(e) => {
@@ -203,26 +345,10 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
                 setPage(1);
               }}
             />
-          </div>
+          </label>
           <select
-            className="app-select"
-            aria-label="Lọc theo vai trò"
-            value={roleFilter}
-            onChange={(e) => {
-              setRoleFilter(e.target.value as UserRole | '');
-              setPage(1);
-            }}
-          >
-            <option value="">Tất cả vai trò</option>
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
-                {ROLE_LABEL[r]}
-              </option>
-            ))}
-          </select>
-          <select
-            className="app-select"
-            aria-label="Lọc theo trạng thái"
+            className="usr-select"
+            aria-label="Trạng thái tài khoản"
             value={statusFilter}
             onChange={(e) => {
               setStatusFilter(e.target.value as UserStatus | '');
@@ -237,26 +363,6 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
             ))}
           </select>
         </div>
-        <div className="app-toolbar-actions">
-          <button
-            type="button"
-            className="app-button"
-            aria-haspopup="dialog"
-            onClick={() => setImportOpen(true)}
-          >
-            <FileUp size={16} aria-hidden="true" />
-            Nhập CSV
-          </button>
-          <button
-            type="button"
-            className="app-button app-button-primary"
-            aria-haspopup="dialog"
-            onClick={() => setDrawer({ mode: 'create' })}
-          >
-            <Plus size={16} aria-hidden="true" />
-            Thêm
-          </button>
-        </div>
       </div>
 
       {loading ? (
@@ -267,34 +373,21 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
         <section className="status-state" role="alert">
           <h2>Không tải được danh sách</h2>
           <p>{loadError}</p>
-          <button
-            type="button"
-            className="app-button"
-            onClick={() => void load()}
-          >
+          <button type="button" className="usr-btn" onClick={() => void load()}>
             Thử lại
           </button>
         </section>
-      ) : filtered.length === 0 ? (
-        <section className="status-state app-empty">
-          <h2>Không có người dùng phù hợp</h2>
-          <p>
-            {users.length === 0
-              ? 'Chưa có người dùng nào. Thêm thủ công hoặc nhập từ tệp CSV.'
-              : 'Thử đổi bộ lọc hoặc từ khóa tìm kiếm.'}
-          </p>
-        </section>
       ) : (
-        <>
-          <div className="app-table-scroll">
-            <table className="app-table app-user-table">
+        <div className="usr-table-box">
+          <div className="usr-table-scroll">
+            <table className="usr-table" aria-label="Danh sách người dùng">
               <thead>
                 <tr>
                   <th scope="col">Mã</th>
-                  <th scope="col">Họ tên</th>
-                  <th scope="col">Email</th>
+                  <th scope="col">Họ tên · Email</th>
                   <th scope="col">Vai trò</th>
-                  <th scope="col">Lớp / Bộ môn</th>
+                  <th scope="col">Lớp / Bộ môn · Học hàm</th>
+                  <th scope="col">Ngày sinh</th>
                   <th scope="col">Trạng thái</th>
                   <th scope="col">
                     <span className="app-visually-hidden">Thao tác</span>
@@ -305,30 +398,46 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
                 {visible.map((user) => {
                   const status = getUserStatus(user);
                   return (
-                    <tr key={user.id}>
-                      <td>{user.userCode}</td>
-                      <td>{user.fullName}</td>
-                      <td>{user.email}</td>
+                    <tr
+                      key={user.id}
+                      className={freshIds.has(user.id) ? 'usr-row-new' : ''}
+                    >
+                      <td className="usr-code">{user.userCode}</td>
                       <td>
-                        <span className={`app-chip app-chip-${user.role}`}>
+                        <span className="usr-person">
+                          <span className="usr-name">
+                            {user.fullName}
+                            {isSelf(user) && (
+                              <span className="usr-me">Bạn</span>
+                            )}
+                          </span>
+                          <span className="usr-email">{user.email}</span>
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`usr-role usr-role-${user.role}`}>
                           {ROLE_LABEL[user.role]}
                         </span>
                       </td>
-                      <td>{user.className ?? user.department ?? '—'}</td>
+                      <td>{orgOf(user)}</td>
+                      <td className="usr-tabular">
+                        {formatDate(user.dateOfBirth)}
+                      </td>
                       <td>
-                        <span className={`app-chip app-chip-${status}`}>
+                        <span className={`usr-status usr-status-${status}`}>
                           {USER_STATUS_LABEL[status]}
                         </span>
                       </td>
                       <td>
                         <button
                           type="button"
-                          className="app-button app-button-small"
+                          className="usr-btn usr-btn-sm"
                           aria-haspopup="dialog"
                           aria-label={`Sửa ${user.fullName}`}
-                          onClick={() =>
-                            setDrawer({ mode: 'edit', userId: user.id })
-                          }
+                          onClick={() => {
+                            setNotice(null);
+                            setDrawer({ mode: 'edit', userId: user.id });
+                          }}
                         >
                           Sửa
                         </button>
@@ -339,38 +448,54 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
               </tbody>
             </table>
           </div>
-
-          <nav className="app-pagination" aria-label="Phân trang">
-            <span className="app-muted">
-              {filtered.length} người dùng · Trang {currentPage}/{pageCount}
+          {filtered.length === 0 && (
+            <div className="usr-empty">
+              {users.length === 0
+                ? 'Chưa có người dùng nào. Thêm thủ công hoặc nhập từ tệp CSV.'
+                : 'Không có người dùng nào khớp bộ lọc.'}
+            </div>
+          )}
+          <nav className="usr-table-foot" aria-label="Phân trang">
+            <span>
+              Hiển thị {visible.length} trên {filtered.length} người dùng
             </span>
-            <div className="app-toolbar-actions">
+            <span className="usr-pager">
               <button
                 type="button"
-                className="app-button app-button-small"
+                className="usr-btn usr-btn-sm"
                 disabled={currentPage <= 1}
                 onClick={() => setPage(currentPage - 1)}
               >
                 Trước
               </button>
+              <span>
+                Trang {currentPage} / {pageCount}
+              </span>
               <button
                 type="button"
-                className="app-button app-button-small"
+                className="usr-btn usr-btn-sm"
                 disabled={currentPage >= pageCount}
                 onClick={() => setPage(currentPage + 1)}
               >
                 Sau
               </button>
-            </div>
+            </span>
           </nav>
-        </>
+        </div>
       )}
+
+      <p className="usr-footnote">
+        Tài khoản đã có dữ liệu (đề tài, phiếu chấm, bài nộp) không xóa được,
+        chỉ vô hiệu hóa; tài khoản đã vô hiệu hóa có thể kích hoạt lại trong màn
+        hình Sửa. Mã người dùng và email không được trùng.
+      </p>
 
       {drawer && (drawer.mode === 'create' || editingUser) && (
         <UserFormDrawer
           // key để form khởi tạo lại khi chuyển sang người dùng khác.
           key={editingUser?.id ?? 'create'}
           user={editingUser}
+          users={users}
           userService={userService}
           isSelf={!!editingUser && isSelf(editingUser)}
           escapeDisabled={!!dialog}
@@ -394,8 +519,10 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
           user={dialogUser}
           userService={userService}
           onClose={closeDialog}
-          onDone={() => {
-            toast.success('Đã đặt lại mật khẩu.');
+          onDone={(custom) => {
+            setNotice({
+              text: `Đã đặt lại mật khẩu cho ${dialogUser.fullName}${custom ? '.' : ' về mã người dùng.'}`,
+            });
             setUsers((list) =>
               list.map((u) =>
                 u.id === dialogUser.id ? { ...u, mustChangePassword: true } : u,
@@ -407,19 +534,24 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
       )}
 
       {dialog?.kind === 'remove' && dialogUser && (
-        <ConfirmDialog
+        <UserConfirmDialog
           title={
-            dialogUser.hasData
-              ? `Vô hiệu hóa ${dialogUser.fullName}?`
-              : `Xóa ${dialogUser.fullName}?`
+            dialogUser.hasData ? 'Vô hiệu hóa tài khoản?' : 'Xóa tài khoản?'
           }
+          who={who(dialogUser)}
           description={
             dialogUser.hasData
-              ? 'Người dùng đã có dữ liệu nên không thể xóa. Tài khoản sẽ bị vô hiệu hóa và không đăng nhập được; có thể kích hoạt lại sau.'
-              : 'Người dùng chưa có dữ liệu. Tài khoản sẽ bị xóa hẳn và không thể khôi phục.'
+              ? 'Tài khoản đã có dữ liệu nên không xóa được. Hệ thống sẽ vô hiệu hóa: người dùng không đăng nhập được, dữ liệu dưới đây vẫn được giữ.'
+              : 'Tài khoản chưa phát sinh dữ liệu (đề tài, nhóm, bài nộp, điểm, hội đồng) và sẽ bị xóa vĩnh viễn khỏi hệ thống.'
           }
-          cancelLabel={dialogUser.hasData ? 'Giữ hoạt động' : 'Hủy'}
-          confirmLabel={removeLabel(dialogUser)}
+          items={
+            dialogUser.hasData
+              ? [
+                  'Đề tài, nhóm, bài nộp, điểm hoặc hội đồng đã gắn với tài khoản',
+                ]
+              : undefined
+          }
+          confirmLabel={dialogUser.hasData ? 'Vô hiệu hóa' : 'Xóa tài khoản'}
           danger
           busy={busy}
           error={actionError}
@@ -429,10 +561,10 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
       )}
 
       {dialog?.kind === 'reactivate' && dialogUser && (
-        <ConfirmDialog
-          title={`Kích hoạt lại ${dialogUser.fullName}?`}
-          description="Tài khoản sẽ đăng nhập được trở lại với mật khẩu hiện có."
-          cancelLabel="Hủy"
+        <UserConfirmDialog
+          title={`Kích hoạt lại tài khoản ${dialogUser.userCode}?`}
+          who={who(dialogUser)}
+          description="Người dùng đăng nhập lại được bằng mật khẩu hiện tại. Dữ liệu đã có vẫn giữ nguyên."
           confirmLabel="Kích hoạt lại"
           busy={busy}
           error={actionError}
@@ -445,12 +577,21 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
         <UserImportDialog
           userService={userService}
           onClose={closeImport}
-          onImported={(report) => {
-            toast.success(`Đã nhập ${report.importedRows} người dùng.`);
+          onImported={(report, fileName) => {
+            const errorRows = report.rows.filter((r) => r.errors.length > 0);
+            setNotice({
+              text:
+                `Đã nhập ${report.importedRows} người dùng từ ${fileName}` +
+                (errorRows.length > 0
+                  ? `; ${errorRows.length} dòng đã có hoặc lỗi không được nhập.`
+                  : '.'),
+              errorRows,
+            });
+            setImportOpen(false);
             void load();
           }}
         />
       )}
-    </>
+    </div>
   );
 };

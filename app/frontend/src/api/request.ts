@@ -38,6 +38,13 @@ export async function apiRequest<T>(
   try {
     body = (await response.json()) as ApiResponse<T>;
   } catch {
+    if (response.status === 401)
+      throw new ApiError(
+        'Phiên đăng nhập đã hết hạn. Tải lại trang và đăng nhập lại.',
+        401,
+      );
+    if (response.status === 403)
+      throw new ApiError('Bạn không có quyền thực hiện thao tác này.', 403);
     throw new ApiError(
       `Backend unavailable (HTTP ${response.status})`,
       response.status,

@@ -52,13 +52,15 @@ it('rejects invalid secondary emails and the account email', () => {
 
 it('limits avatar type and size', () => {
   const f = (type: string, size: number) => {
-    const file = new File(['x'], 'a', { type });
+    const file = new File(['x'], 'a.png', { type });
     Object.defineProperty(file, 'size', { value: size });
     return file;
   };
   expect(validateAvatarFile(f('image/webp', 2 * 1024 * 1024))).toBeNull();
-  expect(validateAvatarFile(f('image/gif', 10))).toMatch(/JPG, PNG hoặc WebP/);
-  expect(validateAvatarFile(f('image/png', 2 * 1024 * 1024 + 1))).toBe(
-    'Ảnh tối đa 2 MB.',
+  expect(validateAvatarFile(f('image/gif', 10))).toMatch(
+    /không đúng định dạng/,
+  );
+  expect(validateAvatarFile(f('image/png', 5.4 * 1024 * 1024))).toBe(
+    'Ảnh "a.png" nặng 5,4 MB, vượt quá 2 MB. Chọn ảnh nhỏ hơn hoặc giảm kích thước ảnh rồi thử lại.',
   );
 });
