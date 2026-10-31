@@ -103,7 +103,8 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
     void load();
   }, [load]);
 
-  // Không có id người dùng trong phiên demo trùng với backend, nên so cả mã.
+  // So id và cả mã (duy nhất, không đổi) để không phụ thuộc nguồn dữ liệu.
+  // Backend vẫn chặn tự xóa/vô hiệu hóa; đây chỉ là để ẩn nút.
   const isSelf = (user: ManagedUser) =>
     !!me && (user.id === me.id || user.userCode === me.userCode);
 

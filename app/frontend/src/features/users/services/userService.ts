@@ -1,6 +1,5 @@
-import { apiRequest } from '@/api/request';
+import { ApiError, apiRequest } from '@/api/request';
 import { normalizeUserInput } from '@/features/users/userValidation';
-import type { UserRole } from '@/types/auth';
 import type { ManagedUser, UserImportReport, UserInput } from '@/types/user';
 
 export type DuplicateField = 'userCode' | 'email';
@@ -21,7 +20,7 @@ export class DuplicateUserError extends Error {
 }
 
 // Hợp đồng chung của màn Quản lý người dùng. Component chỉ phụ thuộc interface
-// này, nên khi backend có đủ API chỉ cần thay phần cài đặt.
+// này; test giao diện dùng bản giả lập trong src/test/fakeUserService.ts.
 export interface UserService {
   list(): Promise<ManagedUser[]>;
   create(input: UserInput): Promise<ManagedUser>;
@@ -43,248 +42,112 @@ function fileForm(file: File): FormData {
   return form;
 }
 
-const ROLES: UserRole[] = ['Student', 'Lecturer', 'AcademicAffairs'];
-
+// Ô trống gửi null (API nhận ngày dạng yyyy-MM-dd hoặc null, không nhận chuỗi rỗng).
 const blank = (value: string) => value.trim() || null;
 
-function seedUsers(): ManagedUser[] {
-  const base = {
-    dateOfBirth: null,
-    className: null,
-    department: null,
-    academicTitle: null,
-    isActive: true,
-    mustChangePassword: false,
-    hasData: false,
-  } satisfies Partial<ManagedUser>;
-  const rows: Omit<ManagedUser, 'id'>[] = [
-    {
-      ...base,
-      userCode: 'GV001',
-      fullName: 'Phạm Minh Châu',
-      email: 'chau.pm@truong.edu.vn',
-      role: 'AcademicAffairs',
-      hasData: true,
-    },
-    {
-      ...base,
-      userCode: 'GV002',
-      fullName: 'Lê Hoàng Nam',
-      email: 'nam.lh@truong.edu.vn',
-      role: 'AcademicAffairs',
-    },
-    {
-      ...base,
-      userCode: 'CB101',
-      fullName: 'Nguyễn Thị Hương',
-      email: 'huong.nt@truong.edu.vn',
-      role: 'Lecturer',
-      department: 'Công nghệ phần mềm',
-      academicTitle: 'TS.',
-      hasData: true,
-    },
-    {
-      ...base,
-      userCode: 'CB102',
-      fullName: 'Trần Quốc Bảo',
-      email: 'bao.tq@truong.edu.vn',
-      role: 'Lecturer',
-      department: 'Hệ thống thông tin',
-      academicTitle: 'ThS.',
-    },
-    {
-      ...base,
-      userCode: 'CB103',
-      fullName: 'Vũ Đức Anh',
-      email: 'anh.vd@truong.edu.vn',
-      role: 'Lecturer',
-      department: 'Mạng máy tính',
-      academicTitle: 'PGS.TS.',
-      mustChangePassword: true,
-    },
-    {
-      ...base,
-      userCode: '22520001',
-      fullName: 'Nguyễn Văn An',
-      email: 'an.nv@truong.edu.vn',
-      role: 'Student',
-      dateOfBirth: '2004-03-12',
-      className: 'KTPM2022',
-      hasData: true,
-    },
-    {
-      ...base,
-      userCode: '22520002',
-      fullName: 'Lê Thị Bình',
-      email: 'binh.lt@truong.edu.vn',
-      role: 'Student',
-      className: 'KTPM2022',
-      mustChangePassword: true,
-    },
-    {
-      ...base,
-      userCode: '22520003',
-      fullName: 'Hoàng Gia Huy',
-      email: 'huy.hg@truong.edu.vn',
-      role: 'Student',
-      className: 'HTTT2022',
-      isActive: false,
-      hasData: true,
-    },
-    {
-      ...base,
-      userCode: '22520004',
-      fullName: 'Đỗ Thu Trang',
-      email: 'trang.dt@truong.edu.vn',
-      role: 'Student',
-      className: 'ATTT2022',
-    },
-  ];
-  return rows.map((row, index) => ({ ...row, id: `demo-${index + 1}` }));
+function profileBody(input: UserInput) {
+  return {
+    fullName: input.fullName,
+    email: input.email,
+    dateOfBirth: blank(input.dateOfBirth),
+    className: blank(input.className),
+    department: blank(input.department),
+    academicTitle: blank(input.academicTitle),
+  };
 }
 
-// DEMO: backend mới có hai endpoint nhập CSV (importPreview/importCommit, gọi
-// API thật). Các thao tác còn lại chưa có API nên dùng kho trong bộ nhớ dưới
-// đây; dữ liệu mất khi tải lại trang. Endpoint đề xuất cho từng hàm nằm ở chú
-// thích bên dưới; khi backend có, thay thân hàm bằng apiRequest tương ứng.
+// 409 của POST/PUT /api/users trả data.field cho biết ô bị trùng.
+async function rethrowDuplicate<T>(request: Promise<T>): Promise<T> {
+  try {
+    return await request;
+  } catch (err: unknown) {
+    if (err instanceof ApiError && err.status === 409) {
+      const field = (err.data as { field?: unknown } | null)?.field;
+      if (field === 'userCode' || field === 'email')
+        throw new DuplicateUserError(field);
+    }
+    throw err;
+  }
+}
+
+const json = (method: string, body: unknown): RequestInit => ({
+  method,
+  body: JSON.stringify(body),
+});
+
+// API thật (docs/decisions/PDR-004, mục Hợp đồng API), chỉ vai trò Giáo vụ.
 export function createUserService(): UserService {
-  let users = seedUsers();
-  let nextId = users.length + 1;
-
-  const find = (id: string): ManagedUser => {
-    const user = users.find((u) => u.id === id);
-    if (!user) throw new Error('Không tìm thấy người dùng.');
-    return user;
-  };
-
-  const replace = (next: ManagedUser): ManagedUser => {
-    users = users.map((u) => (u.id === next.id ? next : u));
-    return { ...next };
-  };
-
-  // Mã phân biệt hoa thường (chỉ mục duy nhất của backend); email đã được
-  // chuẩn hóa viết thường nên so sánh không phân biệt hoa thường.
-  const assertUnique = (input: UserInput, exceptId?: string) => {
-    const others = users.filter((u) => u.id !== exceptId);
-    if (others.some((u) => u.userCode === input.userCode))
-      throw new DuplicateUserError('userCode');
-    if (others.some((u) => u.email.toLowerCase() === input.email))
-      throw new DuplicateUserError('email');
-  };
-
-  const addFromInput = (input: UserInput): ManagedUser => {
-    const user: ManagedUser = {
-      id: `demo-${nextId++}`,
-      userCode: input.userCode,
-      fullName: input.fullName,
-      email: input.email,
-      role: input.role,
-      dateOfBirth: blank(input.dateOfBirth),
-      className: input.role === 'Student' ? blank(input.className) : null,
-      department: input.role === 'Lecturer' ? blank(input.department) : null,
-      academicTitle:
-        input.role === 'Lecturer' ? blank(input.academicTitle) : null,
-      isActive: true,
-      // Giống backend: tài khoản mới có mật khẩu ban đầu là mã người dùng.
-      mustChangePassword: true,
-      hasData: false,
-    };
-    users = [...users, user];
-    return { ...user };
-  };
-
   return {
-    // Đề xuất: GET /api/users → ApiResponse<UserDto[]> (có lọc/phân trang phía máy chủ).
-    async list() {
-      return users.map((u) => ({ ...u }));
+    // GET /api/users → UserDto[]; lọc và phân trang ở client.
+    list() {
+      return apiRequest<ManagedUser[]>('/users');
     },
 
-    // Đề xuất: POST /api/users { ...UserInput } → 201 UserDto; 409 trùng mã/email.
-    async create(raw) {
+    // POST /api/users → 201 UserDto; 409 { field } khi trùng mã/email.
+    create(raw) {
       const input = normalizeUserInput(raw);
-      assertUnique(input);
-      return addFromInput(input);
+      return rethrowDuplicate(
+        apiRequest<ManagedUser>(
+          '/users',
+          json('POST', {
+            userCode: input.userCode,
+            role: input.role,
+            ...profileBody(input),
+          }),
+        ),
+      );
     },
 
-    // Đề xuất: PUT /api/users/{id} → 200 UserDto; 409 trùng email. Mã và vai trò giữ nguyên.
-    async update(id, raw) {
-      const input = normalizeUserInput(raw);
-      const current = find(id);
-      assertUnique({ ...input, userCode: current.userCode }, id);
-      return replace({
-        ...current,
-        fullName: input.fullName,
-        email: input.email,
-        dateOfBirth: blank(input.dateOfBirth),
-        className: current.role === 'Student' ? blank(input.className) : null,
-        department:
-          current.role === 'Lecturer' ? blank(input.department) : null,
-        academicTitle:
-          current.role === 'Lecturer' ? blank(input.academicTitle) : null,
-      });
+    // PUT /api/users/{id} → UserDto; mã và vai trò không đổi nên không gửi.
+    update(id, raw) {
+      return rethrowDuplicate(
+        apiRequest<ManagedUser>(
+          `/users/${encodeURIComponent(id)}`,
+          json('PUT', profileBody(normalizeUserInput(raw))),
+        ),
+      );
     },
 
-    // Đề xuất: PATCH /api/users/{id}/status { isActive } → 200 UserDto.
-    async setActive(id, active) {
-      return replace({ ...find(id), isActive: active });
+    // PATCH /api/users/{id}/status { isActive } → UserDto.
+    setActive(id, active) {
+      return apiRequest<ManagedUser>(
+        `/users/${encodeURIComponent(id)}/status`,
+        json('PATCH', { isActive: active }),
+      );
     },
 
-    // Đề xuất: DELETE /api/users/{id} → 200 { result: 'deleted' | 'disabled' };
-    // máy chủ quyết định theo dữ liệu phát sinh (hasData).
+    // DELETE /api/users/{id} → { result }; máy chủ quyết định theo dữ liệu phát sinh.
     async remove(id) {
-      const user = find(id);
-      if (user.hasData) {
-        replace({ ...user, isActive: false });
-        return 'disabled';
-      }
-      users = users.filter((u) => u.id !== id);
-      return 'deleted';
+      const { result } = await apiRequest<{ result: 'deleted' | 'disabled' }>(
+        `/users/${encodeURIComponent(id)}`,
+        { method: 'DELETE' },
+      );
+      return result;
     },
 
-    // Đề xuất: POST /api/users/{id}/reset-password { newPassword? } → 204.
-    // Sau khi đặt lại, người dùng phải đổi mật khẩu ở lần đăng nhập kế tiếp.
-    async resetPassword(id) {
-      replace({ ...find(id), mustChangePassword: true });
+    // POST /api/users/{id}/reset-password { newPassword | null }. Người dùng phải
+    // đổi mật khẩu ở lần đăng nhập kế tiếp; phiên đang mở của họ hết hiệu lực.
+    async resetPassword(id, newPassword) {
+      await apiRequest<ManagedUser>(
+        `/users/${encodeURIComponent(id)}/reset-password`,
+        json('POST', { newPassword: newPassword ?? null }),
+      );
     },
 
-    // API thật: POST /api/users/import/preview (multipart, trường "file").
-    async importPreview(file) {
+    // POST /api/users/import/preview (multipart, trường "file").
+    importPreview(file) {
       return apiRequest<UserImportReport>('/users/import/preview', {
         method: 'POST',
         body: fileForm(file),
       });
     },
 
-    // API thật: POST /api/users/import. Sau khi nhập thành công, thêm các dòng
-    // hợp lệ vào kho demo để danh sách khớp với kết quả nhập.
-    async importCommit(file) {
-      const report = await apiRequest<UserImportReport>('/users/import', {
+    // POST /api/users/import; danh sách được tải lại sau khi nhập.
+    importCommit(file) {
+      return apiRequest<UserImportReport>('/users/import', {
         method: 'POST',
         body: fileForm(file),
       });
-      for (const row of report.rows) {
-        if (row.errors.length > 0) continue;
-        const role = ROLES.find((r) => r === row.role);
-        if (!role) continue;
-        try {
-          const input = normalizeUserInput({
-            userCode: row.userCode,
-            fullName: row.fullName,
-            email: row.email,
-            role,
-            dateOfBirth: row.dateOfBirth ?? '',
-            className: row.className ?? '',
-            department: row.department ?? '',
-            academicTitle: row.academicTitle ?? '',
-          });
-          // Demo: dòng trùng mã/email với người dùng đang có thì bỏ qua, không báo lỗi.
-          assertUnique(input);
-          addFromInput(input);
-        } catch (err: unknown) {
-          if (!(err instanceof DuplicateUserError)) throw err;
-        }
-      }
-      return report;
     },
   };
 }

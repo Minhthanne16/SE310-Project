@@ -589,6 +589,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Xóa: chưa có dữ liệu thì xóa; có dữ liệu thì vô hiệu hóa (và có nút kích hoạt lại).
 - Người dùng vẫn tự đổi mật khẩu ở Hồ sơ.
 - Ghi chú giao diện (theo artboard): trạng thái chờ đổi mật khẩu hiển thị là "Chưa đăng nhập"; nhập CSV tự kiểm tra khi chọn tệp rồi hiện bước 2/2, đóng hộp thoại khi nhập xong; thông báo thao tác là dải trong trang (không toast); có "Lưu và thêm tiếp"; Giáo vụ không tự xóa/vô hiệu hóa mình. Chưa có API thông báo nên không có câu "đã gửi thông báo cho người dùng" sau khi đặt lại mật khẩu. Nhập theo PDR-004 là CSV (artboard ghi Excel).
+- Ghi chú triển khai frontend (`/giao-vu/nguoi-dung`): mọi thao tác dùng API thật `/api/users` (hợp đồng tại [PDR-004](../decisions/PDR-004-nhap-tai-khoan-csv.md#hợp-đồng-api-quản-lý-tài-khoản)); không còn kho demo. Danh sách tải một lần, lọc/tìm/phân trang ở client. Lỗi trùng mã/email đến từ phản hồi 409 của máy chủ. Backend tự chặn Giáo vụ xóa hoặc vô hiệu hóa chính mình; nút trên giao diện chỉ là lớp ngoài. Đặt lại mật khẩu làm phiên đang mở của người đó hết hiệu lực và bắt đổi mật khẩu kèm OTP ở lần đăng nhập kế tiếp.
 
 ## Quản lý đề tài
 - **Vai trò:** Giáo vụ
