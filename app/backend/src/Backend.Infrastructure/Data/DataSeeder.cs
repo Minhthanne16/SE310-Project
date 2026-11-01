@@ -1,5 +1,6 @@
 using Backend.Application.Common.Security;
 using Backend.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Backend.Infrastructure.Data;
@@ -46,33 +47,66 @@ public static class DataSeeder
         }
     }
 
-    // Chỉ dùng cho database phát triển local. Mật khẩu ban đầu là mã người dùng và
-    // bắt đổi ở lần đăng nhập đầu, giống tài khoản do Giáo vụ tạo.
+    // Chỉ dùng cho database phát triển local. Sinh viên và giảng viên dùng mật khẩu
+    // ban đầu là mã người dùng và phải đổi ở lần đăng nhập đầu. Tài khoản Giáo vụ
+    // mẫu đã được kích hoạt sẵn để có thể quản trị dữ liệu phát triển ngay.
     public static async Task SeedDevelopmentUsersAsync(IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        if (context.Users.Any()) return;
 
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        User Create(string code, string fullName, string email, UserRole role) => new()
+        User Create(string code, string fullName, string email, UserRole role, bool mustChangePassword = true) => new()
         {
             UserCode = code,
             FullName = fullName,
             Email = User.NormalizeEmail(email),
             PasswordHash = hasher.Hash(code),
             Role = role,
-            MustChangePassword = true
+            MustChangePassword = mustChangePassword
         };
 
         var student = Create("22520001", "Nguyễn Văn An", "sv.22520001@qlkltn.local", UserRole.Student);
         student.ClassName = "KTPM2022";
         var lecturer = Create("GV0001", "Trần Thị Bình", "gv.0001@qlkltn.local", UserRole.Lecturer);
         lecturer.Department = "Công nghệ phần mềm";
-        await context.Users.AddRangeAsync(
+        var developmentUsers = new[]
+        {
             student,
             lecturer,
-            Create("GVU0001", "Lê Văn Cường", "giaovu.0001@qlkltn.local", UserRole.AcademicAffairs));
-        await context.SaveChangesAsync();
+            Create("GVU0001", "Lê Văn Cường", "giaovu.0001@qlkltn.local", UserRole.AcademicAffairs, mustChangePassword: false)
+        };
+
+        var seededAcademicAffairs = await context.Users.SingleOrDefaultAsync(user =>
+            user.UserCode == "GVU0001" &&
+            user.Email == "giaovu.0001@qlkltn.local" &&
+            user.Role == UserRole.AcademicAffairs);
+
+        if (seededAcademicAffairs is not null)
+        {
+            if (seededAcademicAffairs.MustChangePassword)
+                seededAcademicAffairs.SecurityStamp = Guid.NewGuid().ToString("N");
+
+            seededAcademicAffairs.MustChangePassword = false;
+            seededAcademicAffairs.ClearActivationCode();
+        }
+
+        var existingUsers = await context.Users
+            .AsNoTracking()
+            .Select(user => new { user.UserCode, user.Email })
+            .ToListAsync();
+        var userCodes = existingUsers.Select(user => user.UserCode).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var emails = existingUsers.Select(user => User.NormalizeEmail(user.Email)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var user in developmentUsers)
+        {
+            if (userCodes.Contains(user.UserCode) || emails.Contains(user.Email)) continue;
+
+            context.Users.Add(user);
+            userCodes.Add(user.UserCode);
+            emails.Add(user.Email);
+        }
+
+        if (context.ChangeTracker.HasChanges()) await context.SaveChangesAsync();
     }
 }

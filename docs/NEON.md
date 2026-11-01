@@ -8,7 +8,7 @@ Hướng dẫn này dành cho repo hiện tại: frontend Next.js gọi `/api/*`
 - Vùng: `aws-ap-southeast-1` (Singapore). Branch đang liên kết: `main` trong file `app/.neon` local.
 - Migration `20261020143314_InitialCreate` đã áp dụng. Bảng `Products` hiện trống; API `GET /api/products` đã trả về thành công từ Neon.
 - Ba migration `20261024044840_AddUsers` (thêm bảng `Users` cho đăng nhập), `20261024060228_AddUserActivationCode` (thêm cột OTP) và `20261024070722_AddUserProfileFields` (thêm ngày sinh, lớp, bộ môn, học hàm) **chưa** áp dụng lên Neon. Cả ba chỉ thêm bảng hoặc cột, không đổi `Products`. Xem SQL bằng `dotnet tool run dotnet-ef migrations script 20261020143314_InitialCreate AddUserProfileFields --project src/Backend.Infrastructure --startup-project src/Backend.API`, rồi áp dụng có chủ đích theo mục 4, nên thử trên branch Neon riêng trước. Không bật `SeedDevelopmentUsers` trên Neon.
-- Chuỗi kết nối pooled cho Docker được lưu trong `app/.env` local và đã được gitignore. Nếu clone repo sang máy khác, tạo lại file này từ `app/.env.example` rồi điền chuỗi từ Neon Console; không commit secret.
+- Chuỗi kết nối pooled cho Docker được lưu trong `app/backend/.env` local và đã được gitignore. Nếu clone repo sang máy khác, tạo lại file này từ `app/backend/.env.example` rồi điền chuỗi từ Neon Console; không commit secret.
 
 Các bước tạo project và chạy migration bên dưới dành cho trường hợp muốn thiết lập lại ở project/branch khác. Đừng chạy lại quy trình tạo project nếu bạn tiếp tục dùng project trên.
 
@@ -102,7 +102,7 @@ Mở `http://localhost:3000`. `app/frontend/next.config.ts` chuyển `/api/*` sa
 SELECT "Id", "Name", "Price", "Stock" FROM "Products" ORDER BY "CreatedAt" DESC LIMIT 10;
 ```
 
-Để chạy bằng Docker, runtime workspace có file `app/compose.neon.yaml`. Nó dùng secret trong `app/.env` và chỉ khởi động backend/frontend, không khởi động PostgreSQL local. File `.env` được gitignore và cần một dòng theo cú pháp Npgsql:
+Để chạy bằng Docker, runtime workspace có file `app/compose.neon.yaml`. Nó dùng secret trong `app/backend/.env` và chỉ khởi động backend/frontend, không khởi động PostgreSQL local. File `.env` được gitignore và cần một dòng theo cú pháp Npgsql:
 
 ```text
 ConnectionStrings__DefaultConnection=Host=ep-example-pooler.region.aws.neon.tech;Port=5432;Database=neondb;Username=neondb_owner;Password=<MAT_KHAU>;SSL Mode=VerifyFull
@@ -112,16 +112,16 @@ Sau khi đã chạy mục 4 hoặc 6, từ thư mục gốc chạy:
 
 ```powershell
 cd app
-docker compose -f compose.neon.yaml up --build
+docker compose --env-file backend/.env -f compose.neon.yaml up --build
 ```
 
-Kiểm tra `http://localhost:5290/api/products` và `http://localhost:3000`. `app/compose.yaml` vẫn dành cho PostgreSQL local; không dùng `docker compose up` mặc định nếu bạn muốn API trỏ tới Neon. Frontend Docker proxy tới service API, không kết nối Neon trực tiếp. Không đưa chuỗi Neon vào `build.args` vì build args có thể lưu trong metadata/image.
+Kiểm tra `http://localhost:5290/api/products` và `http://localhost:3000`. `app/compose.yaml` vẫn dành cho PostgreSQL local; khi dùng nó, chạy `docker compose --env-file backend/.env up` thay vì lệnh mặc định. Frontend Docker proxy tới service API, không kết nối Neon trực tiếp. Không đưa chuỗi Neon vào `build.args` vì build args có thể lưu trong metadata/image.
 
 ## 6. Có dữ liệu local: chuyển sang Neon
 
 Quy trình này sao chép **schema và dữ liệu**, kể cả `__EFMigrationsHistory`, từ PostgreSQL local của `app/compose.yaml` (mặc định cổng `127.0.0.1:5432`). Đích Neon phải là database/branch trống, **chưa** chạy mục 4. Dừng các thao tác ghi vào nguồn trong lúc dump/cutover để tránh bỏ sót dữ liệu.
 
-1. Chạy PostgreSQL local nếu cần: `cd app; docker compose up -d db` từ thư mục gốc. Đọc `POSTGRES_USER`, `POSTGRES_DB` trong `app/.env` local; nếu chưa có, xem `app/.env.example`. Không chia sẻ mật khẩu.
+1. Chạy PostgreSQL local nếu cần: `cd app; docker compose --env-file backend/.env up -d db` từ thư mục gốc. Đọc `POSTGRES_USER`, `POSTGRES_DB` trong `app/backend/.env` local; nếu chưa có, xem `app/backend/.env.example`. Không chia sẻ mật khẩu.
 2. Tạo file dump ở nơi riêng, **ngoài repo** hoặc trong thư mục đã gitignore. Ví dụ trong PowerShell, từ thư mục gốc:
 
    ```powershell
@@ -130,7 +130,7 @@ Quy trình này sao chép **schema và dữ liệu**, kể cả `__EFMigrationsH
    Remove-Item Env:PGPASSWORD
    ```
 
-   Đổi `se310` theo `app/.env` của bạn. `-Fc` tạo custom archive; không mở file bằng editor hoặc commit file dump. `pg_dump` phiên bản client phải tương thích với PostgreSQL nguồn (Compose hiện dùng PostgreSQL 17).
+   Đổi `se310` theo `app/backend/.env` của bạn. `-Fc` tạo custom archive; không mở file bằng editor hoặc commit file dump. `pg_dump` phiên bản client phải tương thích với PostgreSQL nguồn (Compose hiện dùng PostgreSQL 17).
 3. Đặt các biến **direct** của Neon (cùng database/role đã chọn ở mục 2), rồi restore:
 
    ```powershell

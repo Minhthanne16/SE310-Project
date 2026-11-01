@@ -1,12 +1,12 @@
-# Chạy frontend và backend với Neon đã được cấu hình trong .env.
-# Dùng: docker compose -f compose.neon.yaml up --build
+# Chạy frontend và backend với Neon đã được cấu hình trong backend/.env.
+# Dùng: docker compose --env-file backend/.env -f compose.neon.yaml up --build
 services:
   api:
     build:
       context: .
       dockerfile: backend/Dockerfile
     env_file:
-      - .env
+      - backend/.env
     environment:
       ASPNETCORE_ENVIRONMENT: Development
       FrontendOrigin: http://localhost:3000
