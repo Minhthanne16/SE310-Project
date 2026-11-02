@@ -345,6 +345,53 @@ internal sealed class InMemoryUserRepository : IUserRepository
     }
 
     public Task UpdateAsync(User user, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    // Mô phỏng bảng nghiệp vụ tham chiếu tới tài khoản (chưa có trong schema thật).
+    public HashSet<Guid> WithRelatedData { get; } = [];
+    public List<UserAuditEntry> Audits { get; } = [];
+
+    public Task<IReadOnlyList<User>> ListAsync(CancellationToken cancellationToken = default)
+    {
+        lock (_users) return Task.FromResult<IReadOnlyList<User>>(_users.Values.OrderBy(u => u.UserCode).ToList());
+    }
+
+    public Task<IReadOnlySet<Guid>> GetUserIdsWithRelatedDataAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        lock (_users) return Task.FromResult<IReadOnlySet<Guid>>(userIds.Where(WithRelatedData.Contains).ToHashSet());
+    }
+
+    public Task AddAsync(User user, UserAuditEntry audit, CancellationToken cancellationToken = default)
+    {
+        lock (_users)
+        {
+            if (_users.Values.Any(u => u.UserCode == user.UserCode || u.Email == user.Email))
+                throw new DuplicateUserException();
+            _users.Add(user.Id, user);
+            Audits.Add(audit);
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(User user, UserAuditEntry audit, CancellationToken cancellationToken = default)
+    {
+        lock (_users)
+        {
+            if (_users.Values.Any(u => u.Id != user.Id && u.Email == user.Email))
+                throw new DuplicateUserException();
+            Audits.Add(audit);
+        }
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteAsync(User user, UserAuditEntry audit, CancellationToken cancellationToken = default)
+    {
+        lock (_users)
+        {
+            _users.Remove(user.Id);
+            Audits.Add(audit);
+        }
+        return Task.CompletedTask;
+    }
 }
 
 internal sealed class FakePasswordHasher : IPasswordHasher

@@ -26,9 +26,9 @@
 **Tham chiếu:** [BUSINESS_RULES — Truy vết và tài khoản](../requirements/BUSINESS_RULES.md), [DESIGN — Người dùng/Quên mật khẩu](../DESIGN/03-dac-ta-man-hinh.md), [PDR-037](../decisions/PDR-037-phan-hoi-trung-tinh-khi-quen-mat-khau.md), [PDR-044](../decisions/PDR-044-gioi-han-yeu-cau-dat-lai-mat-khau.md), [PDR-045](../decisions/PDR-045-chi-tai-khoan-hoat-dong-da-kich-hoat-duoc-tu-dat-lai-mat-khau.md), R10.
 
 **Công việc:**
-- [ ] Thiết kế, đối chiếu rồi triển khai API/UI danh sách, thêm/sửa, vô hiệu hóa/kích hoạt lại, xóa nếu chưa có dữ liệu, đặt lại mật khẩu; kiểm tra không xóa chính mình.
+- [x] Thiết kế, đối chiếu rồi triển khai API/UI danh sách, thêm/sửa, vô hiệu hóa/kích hoạt lại, xóa nếu chưa có dữ liệu, đặt lại mật khẩu; kiểm tra không xóa chính mình. *(2026-10-31: `/api/users` theo PDR-004, có test handler/API và kiểm thử UI→proxy→API trên DB local. Kiểm tra "đã có dữ liệu" mới là điểm mở rộng vì chưa có bảng nghiệp vụ tham chiếu tài khoản.)*
 - [ ] Triển khai luồng quên mật khẩu 30 phút, dùng một lần, email đúng định dạng luôn nhận phản hồi trung tính theo PDR-037; chỉ tài khoản hoạt động đã kích hoạt nhận/sử dụng liên kết theo PDR-045. Áp dụng giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn theo PDR-044 mà không làm lộ email có tài khoản.
-- [ ] Ghi lịch sử thao tác quản trị, bảo vệ dữ liệu cá nhân, không lộ token/mật khẩu trong log hoặc báo cáo CSV.
+- [ ] Ghi lịch sử thao tác quản trị, bảo vệ dữ liệu cá nhân, không lộ token/mật khẩu trong log hoặc báo cáo CSV. *(Lịch sử thao tác quản lý tài khoản đã lưu ở `UserAuditEntries`, không chứa mật khẩu; tài khoản tạo bằng nhập CSV chưa ghi lịch sử, chưa có màn xem lịch sử.)*
 
 **Acceptance criteria:**
 - [ ] Giáo vụ xử lý được tài khoản từ UI qua API thật; mã và vai trò không đổi; tài khoản có tham chiếu chỉ bị vô hiệu hóa; token cũ hết hiệu lực.

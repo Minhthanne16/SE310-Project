@@ -1,14 +1,17 @@
 import type { ApiResponse } from '@/types/api';
 
 // Lỗi từ API kèm mã HTTP để nơi gọi phân biệt hết phiên (401) với lỗi khác.
-// status = 0 nghĩa là không kết nối được máy chủ.
+// status = 0 nghĩa là không kết nối được máy chủ. data là trường data của
+// phản hồi lỗi (ví dụ 409 trùng người dùng trả { field }).
 export class ApiError extends Error {
   readonly status: number;
+  readonly data: unknown;
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, data: unknown = null) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -61,6 +64,7 @@ export async function apiRequest<T>(
     throw new ApiError(
       details || body.message || `HTTP ${response.status}`,
       response.status,
+      body.data ?? null,
     );
   }
   return body.data;

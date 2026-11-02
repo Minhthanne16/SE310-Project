@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ThesisRound> ThesisRounds => Set<ThesisRound>();
     public DbSet<RoundMilestone> RoundMilestones => Set<RoundMilestone>();
     public DbSet<RoundParticipant> RoundParticipants => Set<RoundParticipant>();
+    public DbSet<UserAuditEntry> UserAuditEntries => Set<UserAuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -120,6 +121,15 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId);
             // Không xóa được người dùng đang thuộc đợt.
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<UserAuditEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TargetUserCode).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(32);
+            entity.Property(e => e.Details).HasColumnType("jsonb");
+            entity.HasIndex(e => new { e.TargetUserId, e.CreatedAt });
         });
     }
 }

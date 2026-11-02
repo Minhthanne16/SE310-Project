@@ -40,6 +40,28 @@ Cả hai endpoint chỉ dành cho vai trò `AcademicAffairs`. Request gửi dạ
 
 ## Hệ quả
 
-- Màn Quản lý người dùng ở frontend (`/giao-vu/nguoi-dung`) đã dựng và dùng đúng hợp đồng trên cho hai bước nhập CSV. Các thao tác danh sách, thêm, sửa, đổi trạng thái, xóa và đặt lại mật khẩu hiện chạy trên kho dữ liệu demo trong bộ nhớ của frontend, chờ backend bổ sung endpoint đề xuất: `GET /api/users`, `POST /api/users`, `PUT /api/users/{id}`, `PATCH /api/users/{id}/status`, `DELETE /api/users/{id}`, `POST /api/users/{id}/reset-password`. Báo cáo lỗi xuất ra CSV phải chặn CSV formula injection (giá trị bắt đầu bằng `=`, `+`, `-`, `@`).
+- Màn Quản lý người dùng ở frontend (`/giao-vu/nguoi-dung`) dùng đúng hợp đồng trên cho hai bước nhập CSV, và dùng API thật cho các thao tác còn lại (bảng dưới, triển khai 2026-10-31). Báo cáo lỗi xuất ra CSV phải chặn CSV formula injection (giá trị bắt đầu bằng `=`, `+`, `-`, `@`).
+
+## Hợp đồng API quản lý tài khoản
+
+Mọi endpoint chỉ dành cho vai trò `AcademicAffairs` (401 khi chưa đăng nhập, 403 với vai trò khác, cùng dạng `ApiResponse`). `UserDto` gồm `{ id, userCode, fullName, email, role, dateOfBirth, className, department, academicTitle, isActive, mustChangePassword, hasData }`, `dateOfBirth` dạng `yyyy-MM-dd` hoặc `null`.
+
+| Method + route | Body | Thành công | Lỗi |
+| --- | --- | --- | --- |
+| `GET /api/users` | — | 200 `UserDto[]` (theo mã); lọc, tìm, phân trang ở client | 401, 403 |
+| `POST /api/users` | `{ userCode, fullName, email, role, dateOfBirth, className, department, academicTitle }` | 201 `UserDto` | 400 lỗi trường (`errors[]`), 409 trùng |
+| `PUT /api/users/{id}` | `{ fullName, email, dateOfBirth, className, department, academicTitle }` | 200 `UserDto` | 400, 404, 409 trùng email |
+| `PATCH /api/users/{id}/status` | `{ isActive }` | 200 `UserDto` | 400 tự vô hiệu hóa chính mình, 404 |
+| `DELETE /api/users/{id}` | — | 200 `{ result: "deleted" \| "disabled" }` | 400 tự xóa chính mình, 404 |
+| `POST /api/users/{id}/reset-password` | `{ newPassword }` (`null` = về mã người dùng) | 200 `UserDto` | 400 mật khẩu không đạt quy tắc hoặc trùng mã, 404 |
+
+- Kiểm tra trường giống nhập CSV: mã ≤ 50 ký tự gồm chữ, số, `.`, `-`, `_`; họ tên ≤ 200; email hợp lệ, lưu chữ thường; lớp bắt buộc với Sinh viên, bộ môn bắt buộc với Giảng viên; lớp/bộ môn/học hàm ≤ 100. Trường không thuộc vai trò bị bỏ khi lưu. `role` chỉ nhận `Student`, `Lecturer`, `AcademicAffairs`.
+- Tạo thủ công giống dòng CSV hợp lệ: mật khẩu ban đầu là mã, `MustChangePassword = true`, không gửi email.
+- **Mã và vai trò không đổi:** `PUT` không có hai trường này; giá trị gửi thừa bị bỏ qua.
+- **409** có `data = { field: "userCode" | "email" }` để form báo đúng ô. Mã so khớp phân biệt hoa thường; email không phân biệt (đã chuẩn hóa chữ thường).
+- **Xóa:** tài khoản có bản ghi nghiệp vụ tham chiếu (`hasData`) chỉ bị vô hiệu hóa, kết quả `disabled`; không có thì xóa hẳn, kết quả `deleted`. Hiện chưa có bảng nghiệp vụ nào tham chiếu tới tài khoản nên `hasData` luôn `false`; khi thêm bảng đề tài, phân công, phiếu điểm, thông báo… phải bổ sung kiểm tra trong `UserRepository.GetUserIdsWithRelatedDataAsync`.
+- **Thu hồi phiên:** vô hiệu hóa và đặt lại mật khẩu đổi `SecurityStamp`, nên token đã cấp hết hiệu lực ngay và không dùng lại được sau khi kích hoạt lại. Kích hoạt lại giữ mật khẩu hiện có.
+- **Đặt lại mật khẩu** (về mã hoặc mật khẩu mới theo quy tắc PDR-002, khác mã người dùng) luôn đặt `MustChangePassword = true` và xóa OTP đang chờ; lần đăng nhập kế tiếp người dùng phải kích hoạt lại bằng OTP (PDR-003).
+- **Lịch sử:** mọi thao tác tạo, sửa (giá trị trước/sau từng trường, theo PDR-036), vô hiệu hóa, kích hoạt lại, đặt lại mật khẩu (chỉ ghi cách đặt, không ghi mật khẩu) và xóa được lưu trong bảng `UserAuditEntries` cùng transaction với thay đổi, kèm người thực hiện và thời điểm. Bảng không có khóa ngoại tới `Users` để lịch sử còn sau khi xóa; lịch sử quản trị này **không** tính là "dữ liệu" chặn xóa tài khoản. Chưa có màn hình xem lịch sử này.
 - Upload dùng cookie xác thực; `SameSite=Lax` chặn form POST chéo site gửi kèm cookie.
 - Nếu máy chủ ít nhân và tệp lớn, request nhập có thể chạm timeout của proxy. Khi đó cần chia tệp hoặc chuyển sang xử lý nền.
