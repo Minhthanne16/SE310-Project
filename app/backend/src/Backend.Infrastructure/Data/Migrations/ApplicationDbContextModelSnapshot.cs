@@ -208,6 +208,139 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.RoundMilestone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool?>("AllowLate")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("NotifyAudience")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateOnly?>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoundId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("RoundMilestones");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.RoundParticipant", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("RoundId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("RoundParticipants");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.ThesisRound", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CopiedFromId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("FinishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime?>("OpenedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("PeriodLabel")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Program")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CopiedFromId");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.ToTable("ThesisRounds");
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -327,6 +460,42 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.Navigation("Template");
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.RoundMilestone", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.ThesisRound", null)
+                        .WithMany("Milestones")
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.RoundParticipant", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.ThesisRound", "Round")
+                        .WithMany("Participants")
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Round");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.ThesisRound", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.ThesisRound", null)
+                        .WithMany()
+                        .HasForeignKey("CopiedFromId")
+                        .OnDelete(DeleteBehavior.SetNull);
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.EvaluationCriterion", b =>
                 {
                     b.Navigation("SubCriteria");
@@ -335,6 +504,13 @@ namespace Backend.Infrastructure.Data.Migrations
             modelBuilder.Entity("Backend.Domain.Entities.EvaluationTemplate", b =>
                 {
                     b.Navigation("Criteria");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.ThesisRound", b =>
+                {
+                    b.Navigation("Milestones");
+
+                    b.Navigation("Participants");
                 });
 #pragma warning restore 612, 618
         }

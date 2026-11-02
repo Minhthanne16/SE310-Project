@@ -10,12 +10,14 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusState } from '@/components/ui/StatusState';
 import { RoundStatusPill } from '@/features/rounds/components/RoundChips';
 import { RoundConfigTab } from '@/features/rounds/components/RoundConfigTab';
+import { RoundEvaluationTab } from '@/features/rounds/components/RoundEvaluationTab';
 import { RoundGantt } from '@/features/rounds/components/RoundGantt';
 import {
   RoundLifecycleDialog,
   type LifecycleKind,
 } from '@/features/rounds/components/RoundLifecycleDialog';
 import { RoundParticipantsTab } from '@/features/rounds/components/RoundParticipantsTab';
+import { RoundTopicsTab } from '@/features/rounds/components/RoundTopicsTab';
 import {
   formatDate,
   roundSpan,
@@ -26,15 +28,26 @@ import {
   roundService as defaultRoundService,
   type RoundService,
 } from '@/features/rounds/services/roundService';
+import type { EvaluationService } from '@/features/evaluations/services/evaluationService';
+import type { TopicService } from '@/features/topics/services/topicService';
 import { useUrlParam } from '@/lib/useUrlParam';
 import { TOPIC_STATUSES, type Round, type RoundTab } from '@/types/round';
 
 interface RoundDetailPageProps {
   roundId: string;
   roundService?: RoundService;
+  topicService?: TopicService;
+  evaluationService?: EvaluationService;
 }
 
-const TAB_IDS: RoundTab[] = ['tien-do', 'cau-hinh', 'giang-vien', 'sinh-vien'];
+const TAB_IDS: RoundTab[] = [
+  'tien-do',
+  'cau-hinh',
+  'giang-vien',
+  'sinh-vien',
+  'de-tai',
+  'danh-gia',
+];
 
 const isTab = (value: string | null): value is RoundTab =>
   TAB_IDS.some((t) => t === value);
@@ -47,11 +60,13 @@ const GANTT_FOOTER_DONE =
   'Đợt đã kết thúc nên chỉ xem: không còn nút thao tác, không sửa mốc. Giảng viên và sinh viên vẫn xem được đợt.';
 
 // Màn Chi tiết đợt khóa luận của Giáo vụ (docs/DESIGN/03; artboard
-// GiaoVu-DotKhoaLuan): bốn tab Tiến độ, Cấu hình, Giảng viên, Sinh viên và các
-// thao tác Mở / Kết thúc / Xóa đợt.
+// GiaoVu-DotKhoaLuan): sáu tab Tiến độ, Cấu hình, Giảng viên, Sinh viên, Đề tài,
+// Đánh giá và các thao tác Mở / Kết thúc / Xóa đợt.
 export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
   roundId,
   roundService = defaultRoundService,
+  topicService,
+  evaluationService,
 }) => {
   const router = useRouter();
   const [tabParam, setTabParam] = useUrlParam('tab');
@@ -155,6 +170,8 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
       id: 'sinh-vien',
       label: `${noun === 'học viên' ? 'Học viên' : 'Sinh viên'} (${round.studentIds.length})`,
     },
+    { id: 'de-tai', label: `Đề tài (${topicSummary.total})` },
+    { id: 'danh-gia', label: 'Đánh giá' },
   ];
 
   const onTabKey = (e: React.KeyboardEvent, index: number) => {
@@ -243,7 +260,7 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
               </Link>
               <button
                 type="button"
-                className="rnd-btn"
+                className="rnd-btn rnd-btn-primary"
                 aria-haspopup="dialog"
                 onClick={() => setDialog('finish')}
               >
@@ -397,6 +414,18 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
             onChanged={setRound}
           />
         )}
+
+        {tab === 'de-tai' && (
+          <RoundTopicsTab round={round} topicService={topicService} />
+        )}
+
+        {tab === 'danh-gia' && (
+          <RoundEvaluationTab
+            round={round}
+            topicService={topicService}
+            evaluationService={evaluationService}
+          />
+        )}
       </div>
 
       {pendingTab && (
@@ -422,6 +451,10 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
           round={round}
           roundService={roundService}
           onClose={closeDialog}
+          onGoToConfig={() => {
+            setDialog(null);
+            selectTab('cau-hinh');
+          }}
           onDone={(kind, updated) => {
             setDialog(null);
             if (kind === 'remove') router.push(BACK_HREF);

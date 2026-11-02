@@ -1,12 +1,14 @@
 'use client';
 
 import React, { useRef, useState } from 'react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 import { RoundModal } from '@/features/rounds/components/RoundModal';
 import {
   earliestStart,
   finishWarning,
   formatDate,
+  openBlockers,
   setupWarnings,
   studentNoun,
 } from '@/features/rounds/roundUtils';
@@ -22,17 +24,22 @@ interface RoundLifecycleDialogProps {
   onClose: () => void;
   // Gọi sau khi thao tác thành công; round là đợt mới (không có khi xóa).
   onDone: (kind: LifecycleKind, round?: Round) => void;
+  // Chuyển sang tab Cấu hình ngay trong trang chi tiết; không truyền thì dùng
+  // liên kết tới trang chi tiết của đợt.
+  onGoToConfig?: () => void;
 }
 
 // Hộp xác nhận Mở đợt / Kết thúc đợt / Xóa đợt dùng chung cho danh sách và
-// chi tiết đợt (artboard GiaoVu-DanhSachDot, GiaoVu-DotKhoaLuan). Cảnh báo
-// (việc chưa xong, đề tài chưa công bố) không chặn: docs/DESIGN/03.
+// chi tiết đợt (artboard GiaoVu-DanhSachDot, GiaoVu-DotKhoaLuan). Mở đợt bị
+// chặn khi chín mốc chưa đủ ngày hợp lệ (PDR-032); thiếu giảng viên, sinh viên
+// (PDR-033) và đề tài chưa công bố chỉ cảnh báo: docs/DESIGN/03.
 export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
   kind,
   round,
   roundService,
   onClose,
   onDone,
+  onGoToConfig,
 }) => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,6 +88,7 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
     cancelLabel: string,
     confirmLabel: string,
     confirmClass: string,
+    confirmDisabled = false,
   ) => (
     <div className="rnd-modal-actions">
       <button
@@ -95,7 +103,7 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
       <button
         type="button"
         className={`rnd-btn ${confirmClass}`}
-        disabled={busy}
+        disabled={busy || confirmDisabled}
         aria-busy={busy}
         onClick={() => void run()}
       >
@@ -112,6 +120,7 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
 
   if (kind === 'open') {
     const warnings = setupWarnings(round);
+    const blockers = openBlockers(round);
     return (
       <RoundModal
         titleId={titleId}
@@ -127,13 +136,41 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
           chủ của họ và mốc đầu tiên bắt đầu tính từ{' '}
           {start ? formatDate(start) : 'ngày bạn đặt cho mốc đầu tiên'}.
         </p>
-        <p className="rnd-note rnd-note-warn">
-          {warnings.length > 0
-            ? `Còn ${warnings.length} việc chưa xong: ${warnings.join(', ')}. Vẫn mở được, có thể bổ sung sau.`
-            : 'Cấu hình đã đủ.'}
-        </p>
+        {blockers.length > 0 && (
+          <div role="alert" className="rnd-note rnd-note-bad">
+            <b>
+              Chưa mở được đợt: chín mốc phải có ngày hợp lệ và đúng thứ tự.
+            </b>
+            <ul>
+              {blockers.map((b) => (
+                <li key={b}>{b}</li>
+              ))}
+            </ul>
+            {onGoToConfig ? (
+              <button type="button" className="rnd-link" onClick={onGoToConfig}>
+                Đi tới tab Cấu hình
+              </button>
+            ) : (
+              <Link
+                className="rnd-link"
+                href={`/giao-vu/dot/${encodeURIComponent(round.id)}?tab=cau-hinh`}
+              >
+                Đi tới tab Cấu hình
+              </Link>
+            )}
+          </div>
+        )}
+        {warnings.length > 0 ? (
+          <p className="rnd-note rnd-note-warn">
+            {`Còn ${warnings.length} việc chưa xong: ${warnings.join(', ')}. Vẫn mở được, có thể bổ sung sau.`}
+          </p>
+        ) : (
+          blockers.length === 0 && (
+            <p className="rnd-note rnd-note-ok">Cấu hình đã đủ.</p>
+          )
+        )}
         {errorBox}
-        {actions('Để sau', 'Mở đợt', 'rnd-btn-primary')}
+        {actions('Để sau', 'Mở đợt', 'rnd-btn-primary', blockers.length > 0)}
       </RoundModal>
     );
   }

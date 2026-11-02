@@ -8,10 +8,27 @@ import {
 } from '@testing-library/react';
 import { act } from 'react';
 import { afterEach, expect, it } from 'vitest';
-import { createRoundService } from '@/features/rounds/services/roundService';
+import { addDays } from '@/features/rounds/roundUtils';
+import {
+  createRoundService,
+  type RoundService,
+} from '@/features/rounds/services/roundService';
 import { RoundListPage } from './RoundListPage';
 
 afterEach(cleanup);
+
+// Đợt Nháp mẫu thiếu ngày nên chưa mở được (PDR-032): đặt đủ chín mốc.
+const completeDates = async (service: RoundService, id: string) => {
+  const round = await service.get(id);
+  await service.updateMilestones(
+    id,
+    round.milestones.map((m, i) => ({
+      ...m,
+      startDate: addDays('2026-11-02', i * 7),
+      endDate: addDays('2026-11-02', i * 7 + 5),
+    })),
+  );
+};
 
 const roundLink = (name: string) => screen.findByRole('link', { name });
 
@@ -184,7 +201,8 @@ it('creates a round copied from an old one and shows it as a draft', async () =>
     (r) => r.name === 'Văn bằng 1 · HK2 2026–2027',
   )!;
   expect(created.periodLabel).toBe('HK2 2026–2027');
-  expect(created.lecturerIds).toHaveLength(3);
+  // PDR-034: sao chép chỉ mang khung mốc, không mang giảng viên.
+  expect(created.lecturerIds).toHaveLength(0);
   expect(created.studentIds).toHaveLength(0);
 });
 
@@ -196,13 +214,37 @@ it('opens the copy dialog with a finished round preselected', async () => {
     'r-vb1-hk2-2025',
   );
   expect(dialog).toHaveTextContent(
-    'Không sao chép ngày và danh sách sinh viên',
+    'Không sao chép ngày, giảng viên và sinh viên',
   );
   fireEvent.click(within(dialog).getByRole('button', { name: 'Hủy' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 });
 
-it('opens a draft after a confirmation that warns about unfinished setup', async () => {
+it('opens a draft after a confirmation that warns about missing people', async () => {
+  const service = await renderPage();
+  await completeDates(service, 'r-vb2-hk2-nhap');
+  setStatus('Nháp (1)');
+  fireEvent.click(
+    await screen.findByRole('button', {
+      name: 'Mở đợt Văn bằng 2 · HK2 2026–2027',
+    }),
+  );
+  const dialog = screen.getByRole('dialog', {
+    name: 'Mở đợt Văn bằng 2 · HK2 2026–2027?',
+  });
+  expect(dialog).toHaveTextContent('chưa có sinh viên');
+  expect(dialog).toHaveTextContent('Vẫn mở được, có thể bổ sung sau');
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Mở đợt' }));
+  await waitFor(() =>
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  );
+  expect((await service.get('r-vb2-hk2-nhap')).status).toBe('Đang diễn ra');
+  expect(
+    await screen.findByRole('button', { name: /^Đang diễn ra \(4\)$/ }),
+  ).toHaveAttribute('aria-pressed', 'true');
+});
+
+it('blocks opening a draft with unset milestones and lists them', async () => {
   const service = await renderPage();
   setStatus('Nháp (1)');
   fireEvent.click(
@@ -213,16 +255,15 @@ it('opens a draft after a confirmation that warns about unfinished setup', async
   const dialog = screen.getByRole('dialog', {
     name: 'Mở đợt Văn bằng 2 · HK2 2026–2027?',
   });
-  expect(dialog).toHaveTextContent('7 mốc chưa có ngày');
-  expect(dialog).toHaveTextContent('Vẫn mở được, có thể bổ sung sau');
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Mở đợt' }));
-  await waitFor(() =>
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+  const alert = within(dialog).getByRole('alert');
+  expect(alert).toHaveTextContent('Đề cương: chưa đặt ngày');
+  expect(within(alert).getAllByRole('listitem')).toHaveLength(7);
+  expect(within(alert).getByRole('link')).toHaveAttribute(
+    'href',
+    '/giao-vu/dot/r-vb2-hk2-nhap?tab=cau-hinh',
   );
-  expect((await service.get('r-vb2-hk2-nhap')).status).toBe('Đang diễn ra');
-  expect(
-    await screen.findByRole('button', { name: /^Đang diễn ra \(4\)$/ }),
-  ).toHaveAttribute('aria-pressed', 'true');
+  expect(within(dialog).getByRole('button', { name: 'Mở đợt' })).toBeDisabled();
+  expect((await service.get('r-vb2-hk2-nhap')).status).toBe('Nháp');
 });
 
 it('offers delete only for drafts and removes the round after confirming', async () => {

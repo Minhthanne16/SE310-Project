@@ -495,7 +495,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Hành vi**
 
 - Lọc trạng thái (mặc định Đang diễn ra) và chương trình (Văn bằng 1, Văn bằng 2, Thạc sĩ); phân trang.
-- Tạo đợt mới (lỗi thiếu thông tin, trùng tên đợt), Sao chép từ đợt cũ, Mở đợt (hộp xác nhận, gửi thông báo, cảnh báo việc chưa xong nhưng vẫn cho mở), Xóa đợt.
+- Tạo đợt mới (lỗi thiếu thông tin, trùng tên đợt), Sao chép từ đợt cũ, Mở đợt (hộp xác nhận, gửi thông báo; chặn khi chín mốc chưa đủ ngày hợp lệ, cảnh báo thiếu giảng viên/sinh viên nhưng vẫn cho mở), Xóa đợt.
 - Bấm một đợt mở chi tiết đợt.
 
 **Quy tắc nghiệp vụ**
@@ -503,7 +503,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Chỉ xóa được đợt Nháp.
 - Đợt Nháp ẩn với GV và SV.
 - Tên chương trình thạc sĩ ghi "Thạc sĩ · Đợt 1/2026".
-- Ghi chú triển khai frontend (`/giao-vu/dot`): chạy trên kho demo trong bộ nhớ, chờ endpoint đề xuất `GET/POST /api/rounds`, `POST /api/rounds/{id}/open`, `DELETE /api/rounds/{id}`. "Sao chép từ đợt cũ" sao chép cấu hình mốc (Thông báo cho, Cho nộp trễ) và danh sách giảng viên, không sao chép ngày và sinh viên (quy tắc sao chép chưa được tài liệu quy định, chọn tạm).
+- Ghi chú triển khai frontend (`/giao-vu/dot`): chạy trên kho demo trong bộ nhớ, chờ endpoint đề xuất `GET/POST /api/rounds`, `POST /api/rounds/{id}/open`, `DELETE /api/rounds/{id}`. "Sao chép từ đợt cũ" chỉ sao chép khung 9 mốc (Thông báo cho, Cho nộp trễ), không sao chép ngày, giảng viên và sinh viên (xem [PDR-034](../decisions/PDR-034-sao-chep-khung-cau-hinh-dot.md)). Hộp "Mở đợt" liệt kê từng mốc thiếu hoặc sai ngày (vai trò `alert`), khóa nút xác nhận và dẫn tới tab Cấu hình (xem [PDR-032](../decisions/PDR-032-du-chin-moc-hop-le-truoc-khi-mo-dot.md)); thiếu giảng viên/sinh viên chỉ cảnh báo (PDR-033). Mặc định vẫn chạy trên kho demo; đặt `NEXT_PUBLIC_ROUNDS_API=true` để dùng API thật (`frontend/src/features/rounds/services/roundApiService.ts`): `GET /api/rounds?status=&program=&search=`, `POST /api/rounds`, `DELETE /api/rounds/{id}`, `POST /api/rounds/{id}/open`. Chưa bật mặc định vì các màn khác (đề tài, phiếu đánh giá) còn dùng mã đợt demo.
 - Cập nhật giao diện theo artboard: bỏ ô tìm kiếm; bộ lọc trạng thái dạng dải nút có số đếm kèm lọc Chương trình; mỗi đợt là một hàng (Đợt, Trạng thái, Tiến độ, Giảng viên, Sinh viên, Cần xử lý); 6 đợt/trang; "Sao chép từ đợt cũ" mở hộp thoại với đợt đã kết thúc gần nhất chọn sẵn; tên đợt lưu dạng "Chương trình · Tên đợt". Chưa có ô "Ngày bắt đầu tuần 1" vì service không nhận ngày.
 
 ## Chi tiết đợt khóa luận
@@ -515,13 +515,16 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Trạng thái và prop trên canvas**
 
 - `period` (mặc định "ths"): vb1 · vb2 · ths · vb1o
-- `tab` (mặc định "Tiến độ"): Tiến độ · Cấu hình · Giảng viên · Sinh viên
+- `tab` (mặc định "Tiến độ"): Tiến độ · Cấu hình · Giảng viên · Sinh viên · Đề tài · Đánh giá
 - `dialog` (mặc định "Không"): Không · Thêm sinh viên · chọn · Thêm sinh viên · nhập mã · Thêm sinh viên · kết quả kiểm tra · Thêm giảng viên · chọn · Đã thêm · Gỡ khỏi đợt · Kết thúc đợt · Kết thúc đợt · còn đề tài chưa công bố · Xóa đợt · xác nhận · Đã xóa đợt
 - `config` (mặc định "Hợp lệ"): Hợp lệ · Có mốc sai thứ tự
 
 **Hành vi**
 
-- Bốn tab: Tiến độ (Gantt), Cấu hình, Giảng viên, Sinh viên. Prop `period` đổi giữa bốn đợt mẫu.
+- Sáu tab: Tiến độ (Gantt), Cấu hình, Giảng viên, Sinh viên, Đề tài, Đánh giá. Prop `period` đổi giữa bốn đợt mẫu.
+- Tab Đề tài: giáo vụ xem đề tài của đợt ngay tại đây (tìm theo mã, tên đề tài, giảng viên; lọc theo trạng thái kèm số đề tài; cột Đề tài, GV hướng dẫn, GV phản biện, Hội đồng, Khóa luận, Trạng thái) thay vì phải sang trang Đề tài; nút "Mở trang Đề tài" mở trang đó với đợt đang xem. Công bố danh sách, xuất tệp, phân công phản biện và hội đồng vẫn làm ở trang Đề tài.
+- Tab Đánh giá: chỉ tóm tắt ba thẻ (Phiếu đánh giá: đã gán n/3 vai trò; Phản biện: n/m đề tài đã có phản biện; Hội đồng bảo vệ: số hội đồng, số đề tài chưa xếp) và mở sang các trang riêng với bộ lọc đợt đang xem; thao tác chi tiết làm ở các trang đó.
+- Khi đợt đã mở (không còn Nháp), "Thông tin đợt" và "Số đề tài mỗi giảng viên nhận hướng dẫn" chỉ xem, có ghi chú; giáo vụ chỉ tiếp tục cập nhật các mốc thời gian (người dùng chốt 2026-11-02). Nút "Kết thúc đợt" ở đầu trang là nút chính (nền đen).
 - Cấu hình: 9 mốc, kiểm tra thứ tự mốc (trạng thái "Có mốc sai thứ tự"); cột "Thông báo cho" chọn được; công tắc "Cho nộp trễ" và hạn trễ riêng cho từng mốc Đề cương, Giữa kỳ, Cuối kỳ theo PDR-041.
 - Thêm giảng viên và sinh viên (chọn trong danh sách hoặc nhập mã, có bước kiểm tra), gỡ khỏi đợt, Kết thúc đợt, Xóa đợt.
 
@@ -533,8 +536,8 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - CSDL: `period_milestones.allow_late` mặc định TRUE.
 - Kết thúc đợt khi còn đề tài chưa công bố: cảnh báo.
 - SV có dữ liệu chỉ không gỡ được khỏi đợt (không có trạng thái "Ngừng tham gia").
-- Ghi chú triển khai frontend (`/giao-vu/dot/[id]`): chạy trên kho demo, chờ endpoint đề xuất `POST /api/rounds/{id}/finish`, `PUT /api/rounds/{id}/milestones`, `POST|DELETE /api/rounds/{id}/lecturers|students`. "Cho nộp trễ" chỉ là công tắc lưu `allow_late`; thời hạn nộp trễ chưa triển khai (OQ-006). Kiểm tra thứ tự mốc: mỗi mốc bắt đầu ≤ kết thúc và ngày bắt đầu không giảm theo thứ tự 9 mốc. Khóa gỡ "có dữ liệu" tính theo từng đợt và chỉ áp dụng cho sinh viên (đúng như quy tắc trên); giảng viên gỡ được khỏi đợt, và sao chép từ đợt cũ không mang theo khóa. Thêm sinh viên vào đợt Nháp không kiểm tra đợt khác; quy tắc "một đợt đang diễn ra" kiểm khi thêm vào đợt đang diễn ra và khi mở đợt (không mở được nếu sinh viên đang ở đợt đang diễn ra khác). Mở đợt chỉ cảnh báo thiếu ngày hoặc thiếu người. Tab Giảng viên/Sinh viên và cấu hình chỉ xem được khi đợt đã kết thúc.
-- Cập nhật giao diện theo artboard: breadcrumb + chip trạng thái, tab `role=tab` có điều hướng phím mũi tên và số đếm; đợt đã kết thúc ẩn nút thêm/gỡ và hiện dải "chỉ xem"; đợt Nháp xóa bằng thanh xác nhận ngay trên trang rồi về danh sách. Chưa có: số đề tài mỗi giảng viên, cột nhắc trước hạn, tải Excel, nhắc sinh viên chưa có đề tài (chưa có dữ liệu/API). Nghiệp vụ giữ theo docs khi khác artboard: kết thúc đợt chỉ cảnh báo, sao chép mang theo danh sách giảng viên, giảng viên luôn gỡ được.
+- Ghi chú triển khai frontend (`/giao-vu/dot/[id]`): chạy trên kho demo, chờ endpoint đề xuất `POST /api/rounds/{id}/finish`, `PUT /api/rounds/{id}/milestones`, `POST|DELETE /api/rounds/{id}/lecturers|students`. "Cho nộp trễ" chỉ là công tắc lưu `allow_late`; thời hạn nộp trễ chưa triển khai (OQ-006). Kiểm tra thứ tự mốc: mỗi mốc bắt đầu ≤ kết thúc và ngày bắt đầu không giảm theo thứ tự 9 mốc. Khóa gỡ "có dữ liệu" tính theo từng đợt và chỉ áp dụng cho sinh viên (đúng như quy tắc trên); giảng viên gỡ được khỏi đợt, và sao chép từ đợt cũ không mang theo khóa. Thêm sinh viên vào đợt Nháp không kiểm tra đợt khác; quy tắc "một đợt đang diễn ra" kiểm khi thêm vào đợt đang diễn ra và khi mở đợt (không mở được nếu sinh viên đang ở đợt đang diễn ra khác). Mở đợt bị chặn khi còn mốc thiếu hoặc sai ngày (PDR-032; demo và API cùng trả lỗi liệt kê từng mốc), còn thiếu người chỉ cảnh báo (PDR-033). Sao chép từ đợt cũ không mang theo giảng viên (PDR-034). Với API thật (`NEXT_PUBLIC_ROUNDS_API=true`) frontend gọi: `GET /api/rounds/{id}`, `PUT /api/rounds/{id}` (thông tin đợt, chỉ khi Nháp), `PUT /api/rounds/{id}/milestones`, `POST /api/rounds/{id}/open|finish`, `GET /api/rounds/people/lecturers|students`, `GET /api/rounds/{id}/lecturers|students/candidates`, `POST /api/rounds/{id}/lecturers|students/check`, `POST|DELETE /api/rounds/{id}/lecturers|students[/{userId}]`; lỗi 404 thành "Không tìm thấy đợt", lỗi 409 thành lỗi quy tắc hoặc trùng tên đợt. Thông báo của đợt và công bố đề tài vẫn chạy trên kho demo vì backend chưa có. Tab Giảng viên/Sinh viên và cấu hình chỉ xem được khi đợt đã kết thúc.
+- Cập nhật giao diện theo artboard: breadcrumb + chip trạng thái, tab `role=tab` có điều hướng phím mũi tên và số đếm; đợt đã kết thúc ẩn nút thêm/gỡ và hiện dải "chỉ xem"; đợt Nháp xóa bằng thanh xác nhận ngay trên trang rồi về danh sách. Tab Đề tài và Đánh giá (2026-11-02) lấy dữ liệu từ kho demo đề tài và API gán mẫu phiếu; số đề tài mỗi giảng viên hiển thị mức tối thiểu/tối đa dùng chung của hệ thống ở dạng chỉ xem, chưa lưu theo từng đợt; người dùng chốt 2026-11-02 tạm đặt cả hai về 0 = chưa đặt mức, chưa cảnh báo (artboard minh họa 2 và 5); "Thông tin đợt" (Chương trình, Tên đợt) sửa được khi đợt còn Nháp với nút "Lưu thông tin đợt" (kiểm tra bắt buộc và trùng tên như khi tạo), sang trạng thái khác thì khóa kèm ghi chú; "Ngày bắt đầu tuần 1" chỉ xem vì suy ra từ các mốc. Chưa có: cột nhắc trước hạn, tải Excel, nhắc sinh viên chưa có đề tài (chưa có dữ liệu/API). Nghiệp vụ giữ theo docs khi khác artboard: kết thúc đợt chỉ cảnh báo đề tài chưa công bố (PDR-031, vì đề tài chưa có trong backend), giảng viên luôn gỡ được (PDR-030 cần dữ liệu đề tài mới chặn được).
 
 ## Mẫu phiếu đánh giá
 - **Vai trò:** Giáo vụ

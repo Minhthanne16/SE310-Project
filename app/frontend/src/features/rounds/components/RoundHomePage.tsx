@@ -22,7 +22,7 @@ import {
   type RoundService,
 } from '@/features/rounds/services/roundService';
 import { useUrlParam } from '@/lib/useUrlParam';
-import type { Round, RoundStatus, RoundTab } from '@/types/round';
+import type { Round, RoundStatus, RoundTaskTab } from '@/types/round';
 
 interface RoundHomePageProps {
   roundService?: RoundService;
@@ -76,14 +76,14 @@ const STATUS_CLASS: Record<RoundStatus, string> = {
   'Đã kết thúc': 'is-ended',
 };
 
-const TASK_KIND: Record<RoundTab, string> = {
+const TASK_KIND: Record<RoundTaskTab, string> = {
   'cau-hinh': 'CẤU HÌNH',
   'giang-vien': 'GIẢNG VIÊN',
   'sinh-vien': 'SINH VIÊN',
   'tien-do': 'TIẾN ĐỘ',
 };
 
-const TASK_HINT: Record<RoundTab, string> = {
+const TASK_HINT: Record<RoundTaskTab, string> = {
   'cau-hinh': 'Mở cấu hình đợt để xử lý.',
   'giang-vien': 'Mở danh sách giảng viên của đợt để xử lý.',
   'sinh-vien': 'Mở danh sách sinh viên của đợt để xử lý.',

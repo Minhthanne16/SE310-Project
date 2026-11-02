@@ -192,7 +192,7 @@ export const CreateRoundDialog: React.FC<CreateRoundDialogProps> = ({
         </div>
         <p className="rnd-note rnd-note-grey">
           {source
-            ? `Sao chép từ ${source.name}: cấu hình mốc (Thông báo cho, Cho nộp trễ) và danh sách giảng viên. Không sao chép ngày và danh sách sinh viên; bạn đặt ngày ở tab Cấu hình và thêm sinh viên ở tab Sinh viên của đợt mới.`
+            ? `Sao chép từ ${source.name}: khung 9 mốc (Thông báo cho, Cho nộp trễ). Không sao chép ngày, giảng viên và sinh viên; bạn đặt ngày ở tab Cấu hình, thêm giảng viên và sinh viên ở các tab tương ứng của đợt mới.`
             : 'Đợt trống: bạn nhập 9 mốc ở tab Cấu hình, rồi thêm giảng viên, sinh viên.'}
         </p>
         <div className="rnd-modal-actions">
