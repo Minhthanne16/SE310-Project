@@ -46,6 +46,8 @@ export interface TopicPerson {
 export interface TopicMember extends TopicPerson {
   // Mỗi nhóm có đúng một đại diện.
   representative: boolean;
+  // Lớp, ví dụ "KTPM2022.1".
+  className: string;
 }
 
 export interface TopicSubmission {
@@ -56,6 +58,21 @@ export interface TopicSubmission {
   submittedAt: string;
   late: boolean;
   fileName: string;
+  // Ghi chú thay đổi của phiên bản (03: bắt buộc khi nộp).
+  note: string;
+}
+
+// Hội đồng và lịch bảo vệ của một đề tài.
+export interface TopicDefense {
+  council: string;
+  councilPublished: boolean;
+  chair: string;
+  secretary: string;
+  // yyyy-MM-ddTHH:mm:ss
+  start: string;
+  room: string;
+  // Thứ tự bảo vệ trong buổi.
+  order: number;
 }
 
 export type RoleScores = Record<ScoreRole, number | null>;
@@ -92,6 +109,12 @@ export interface Topic {
   group: TopicMember[];
   reviewer: TopicPerson | null;
   council: string | null;
+  // Chủ tịch, thư ký và lịch bảo vệ; null khi chưa xếp lịch.
+  defense: TopicDefense | null;
+  // Thời điểm duyệt đề cương (yyyy-MM-ddTHH:mm:ss); null khi chưa duyệt.
+  outlineApprovedAt: string | null;
+  // versionNo của bản Cuối kỳ đã chốt; null khi chưa chốt bản cuối.
+  finalLockedVersionNo: number | null;
   // Phiên bản cũ trước, mới sau.
   submissions: TopicSubmission[];
   scores: StudentScore[];

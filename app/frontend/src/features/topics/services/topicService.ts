@@ -150,7 +150,14 @@ export function createTopicService(
         round: await roundState(filters.roundId),
         items: filtered(filters).map(cloneTopic),
         roundTotal: all.length,
-        loads: lecturerLoads(all, round.lecturerIds, options.loadLimits),
+        loads: lecturerLoads(
+          all,
+          round.lecturerIds,
+          options.loadLimits ?? {
+            min: round.lecturerLoadMin,
+            max: round.lecturerLoadMax,
+          },
+        ),
       };
     },
 

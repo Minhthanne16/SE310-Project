@@ -48,6 +48,10 @@ public sealed class AddParticipantsValidator : AbstractValidator<AddParticipants
 
 internal static class RoundMapping
 {
+    // Đợt Nháp chỉ Giáo vụ thấy (docs/DESIGN/03); GV/SV thấy đợt đã mở mà mình có tên.
+    public static bool CanView(ThesisRound round, Guid? viewerId) =>
+        viewerId is not { } id || (round.Status != RoundStatus.Draft && round.Participants.Any(p => p.UserId == id));
+
     public static RoundDto ToDto(ThesisRound round) => new()
     {
         Id = round.Id,
@@ -55,6 +59,8 @@ internal static class RoundMapping
         Program = round.Program,
         PeriodLabel = round.PeriodLabel,
         Status = RoundRules.Label(round.Status),
+        LecturerLoadMin = round.LecturerLoadMin,
+        LecturerLoadMax = round.LecturerLoadMax,
         Milestones = round.Milestones.OrderBy(m => (int)m.Key).Select(m => new RoundMilestoneDto
         {
             Key = RoundRules.KeyName(m.Key),
@@ -92,6 +98,8 @@ internal static class RoundMapping
             NormalizedName = ThesisRound.NormalizeName(name),
             Program = program,
             PeriodLabel = periodLabel,
+            LecturerLoadMin = source?.LecturerLoadMin ?? 0,
+            LecturerLoadMax = source?.LecturerLoadMax ?? 0,
             CopiedFromId = source?.Id
         };
         // Đủ 9 mốc theo thứ tự cố định. Sao chép (PDR-034) chỉ lấy đối tượng thông báo và công tắc nộp trễ.
@@ -118,7 +126,8 @@ public sealed class GetRoundsHandler(IRoundRepository repository)
         RoundRules.TryParseStatusFilter(request.Status, out var status);
         var search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim().ToLowerInvariant();
         var rounds = await repository.ListAsync(status, request.Program?.Trim(), search, cancellationToken);
-        return ApiResponse<IReadOnlyList<RoundDto>>.Ok(rounds.Select(RoundMapping.ToDto).ToList());
+        return ApiResponse<IReadOnlyList<RoundDto>>.Ok(rounds
+            .Where(r => RoundMapping.CanView(r, request.ViewerId)).Select(RoundMapping.ToDto).ToList());
     }
 }
 
@@ -128,7 +137,7 @@ public sealed class GetRoundHandler(IRoundRepository repository)
     public async Task<RoundResult<RoundDto>> Handle(GetRoundQuery request, CancellationToken cancellationToken)
     {
         var round = await repository.GetByIdAsync(request.Id, cancellationToken);
-        return round is null
+        return round is null || !RoundMapping.CanView(round, request.ViewerId)
             ? RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage)
             : RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round));
     }
@@ -185,6 +194,8 @@ public sealed class UpdateRoundHandler(IRoundRepository repository, TimeProvider
         round.NormalizedName = normalized;
         round.Program = request.Round.Program.Trim();
         round.PeriodLabel = RoundRules.NormalizeText(request.Round.PeriodLabel);
+        round.LecturerLoadMin = request.Round.LecturerLoadMin ?? round.LecturerLoadMin;
+        round.LecturerLoadMax = request.Round.LecturerLoadMax ?? round.LecturerLoadMax;
         round.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         try
         {

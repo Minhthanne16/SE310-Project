@@ -4,14 +4,13 @@ import {
   type LecturerLoad,
   type LoadLevel,
   type RoleScores,
+  type ScoreRole,
   type Topic,
 } from '@/types/topic';
 
-// TẠM THỜI (demo): docs/DESIGN/03 chỉ nói "mức tối thiểu và tối đa của đợt
-// chỉ cảnh báo, không chặn" mà không nêu con số. Người dùng chốt 2026-11-02
-// tạm đặt cả hai về 0, nghĩa là CHƯA ĐẶT MỨC nên không cảnh báo (0 ở mức tối đa
-// là không giới hạn). Khi tài liệu chốt giá trị (hoặc đợt có cấu hình riêng) thì
-// thay bằng dữ liệu từ đợt.
+// Mặc định khi không truyền mức của đợt: 0 = CHƯA ĐẶT MỨC nên không cảnh báo
+// (0 ở mức tối đa là không giới hạn). Mức thật đặt theo từng đợt ở tab Cấu hình
+// (Round.lecturerLoadMin/Max), chỉ để cảnh báo, không chặn.
 export const LECTURER_LOAD_MIN = 0;
 export const LECTURER_LOAD_MAX = 0;
 
@@ -57,8 +56,8 @@ export function lecturerLoads(
 }
 
 // (CTHĐ + TKHĐ + 2×CBHD + 2×CBPB) / 6, thang 10, làm tròn 2 chữ số; chỉ tính
-// khi đủ bốn phiếu (BUSINESS_RULES). Không cảnh báo lệch điểm ở đây: quy tắc
-// lệch còn mơ hồ và thuộc màn Kết quả.
+// khi đủ bốn phiếu (BUSINESS_RULES). Cảnh báo lệch điểm tách riêng ở
+// scoreDeviations.
 export function totalScore(scores: RoleScores): number | null {
   if (SCORE_ROLES.some((role) => scores[role] === null)) return null;
   // Tính bằng phần trăm điểm nguyên để tránh sai số nhị phân ở các giá trị hòa
@@ -70,6 +69,40 @@ export function totalScore(scores: RoleScores): number | null {
     2 * cents(scores.CBHD) +
     2 * cents(scores.CBPB);
   return Math.round(sum / 6) / 100;
+}
+
+export interface ScoreDeviation {
+  // Một điểm hội đồng (CTHĐ/TKHĐ) và một điểm GV (CBHD/CBPB).
+  council: ScoreRole;
+  lecturer: ScoreRole;
+  // Chênh lệch tuyệt đối, đã làm tròn hai chữ số.
+  diff: number;
+}
+
+export const DEVIATION_THRESHOLD = 2;
+
+// Bốn cặp chéo CTHĐ–CBHD, CTHĐ–CBPB, TKHĐ–CBHD, TKHĐ–CBPB (PDR-007); chênh từ
+// 2 điểm trở lên thì lệch. Cặp thiếu điểm bị bỏ qua; CT–TK và HD–PB không tính.
+export function scoreDeviations(scores: RoleScores): {
+  pairs: ScoreDeviation[];
+  roles: Set<ScoreRole>;
+} {
+  const pairs: ScoreDeviation[] = [];
+  const roles = new Set<ScoreRole>();
+  for (const council of ['CTHĐ', 'TKHĐ'] as const)
+    for (const lecturer of ['CBHD', 'CBPB'] as const) {
+      const a = scores[council];
+      const b = scores[lecturer];
+      if (a === null || b === null) continue;
+      // So sánh theo phần trăm điểm nguyên để tránh sai số nhị phân.
+      const cents = Math.abs(Math.round(a * 100) - Math.round(b * 100));
+      if (cents >= DEVIATION_THRESHOLD * 100) {
+        pairs.push({ council, lecturer, diff: cents / 100 });
+        roles.add(council);
+        roles.add(lecturer);
+      }
+    }
+  return { pairs, roles };
 }
 
 // Dấu phẩy thập phân theo tiếng Việt.
@@ -158,6 +191,24 @@ export function dateOf(iso: string): string {
 
 export function timeOf(iso: string): string {
   return iso.slice(11, 16);
+}
+
+const WEEKDAYS = [
+  'Chủ Nhật',
+  'Thứ Hai',
+  'Thứ Ba',
+  'Thứ Tư',
+  'Thứ Năm',
+  'Thứ Sáu',
+  'Thứ Bảy',
+];
+
+// "Thứ Hai 22/12/2026 · 08:45" từ yyyy-MM-ddTHH:mm:ss (thứ tính theo UTC để
+// không lệch múi giờ).
+export function formatDefenseStart(iso: string): string {
+  const [y, m, d] = iso.slice(0, 10).split('-').map(Number);
+  const weekday = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `${weekday} ${dateOf(iso)} · ${timeOf(iso)}`;
 }
 
 export function groupLabel(topic: Topic): string {

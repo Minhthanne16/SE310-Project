@@ -9,6 +9,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { currentUrl, resetNavigation, setUrl } from '@/test/navigationMock';
 import { createRoundService } from '@/features/rounds/services/roundService';
 import { createTopicService } from '@/features/topics/services/topicService';
+import type { Topic } from '@/types/topic';
 import { TopicDetailPage } from './TopicDetailPage';
 
 vi.mock('next/navigation', async () => {
@@ -83,7 +84,9 @@ it('shows the header and the overview tab by default', async () => {
     expect(within(panel).getByRole('heading', { name })).toBeInTheDocument();
   expect(within(panel).getByText('Nguyễn Thị Hương')).toBeInTheDocument(); // GVHD
   expect(within(panel).getByText('Vũ Đức Anh')).toBeInTheDocument(); // GVPB
-  expect(within(panel).getByText('Hội đồng 1')).toBeInTheDocument();
+  expect(
+    within(panel).getByText('Hội đồng 1 · đã công bố'),
+  ).toBeInTheDocument();
   const member = within(panel).getByText('Đinh Công Minh').closest('li')!;
   expect(member).toHaveTextContent('Đại diện');
 });
@@ -116,6 +119,8 @@ it('shows placeholders for a topic with no group or assignments', async () => {
     screen.getByText('Chưa có nhóm', { selector: 'p' }),
   ).toBeInTheDocument();
   expect(screen.getAllByText('Chưa phân công')).toHaveLength(2);
+  expect(screen.getByText('Chưa xếp lịch')).toBeInTheDocument();
+  expect(screen.queryByText('Chủ tịch')).not.toBeInTheDocument();
 });
 
 it('switches tabs and honours ?tab=', async () => {
@@ -140,10 +145,68 @@ it('lists submission versions per document, newest first, with a late tag', asyn
   tab('Báo cáo và phiên bản');
   const versions = await screen.findAllByRole('listitem');
   expect(versions).toHaveLength(2);
-  expect(versions[0]).toHaveTextContent('v2');
+  expect(versions[0]).toHaveTextContent('Lần 2');
   expect(versions[0]).toHaveTextContent('Nộp trễ');
-  expect(versions[1]).toHaveTextContent('v1');
+  // Một nhãn mỗi dòng: Nộp trễ ưu tiên hơn Mới nhất.
+  expect(versions[0]).not.toHaveTextContent('Mới nhất');
+  expect(versions[0]).toHaveTextContent('Sửa phạm vi và kế hoạch');
+  expect(versions[0]).toHaveTextContent('.pdf');
+  expect(versions[1]).toHaveTextContent('Lần 1');
+  expect(versions[1]).toHaveTextContent('Bản đầu');
   expect(versions[1]).not.toHaveTextContent('Nộp trễ');
+  expect(versions[1]).not.toHaveTextContent('Mới nhất');
+});
+
+it('shows document group status chips and a disabled download action', async () => {
+  await renderDetail('t-vb1-25-01');
+  tab('Báo cáo và phiên bản');
+  const group = (name: string) =>
+    screen.getByRole('heading', { name }).closest('section')!;
+  expect(group('Đề cương')).toHaveTextContent(/Đã duyệt \d\d\/\d\d/);
+  expect(group('Báo cáo giữa kỳ')).toHaveTextContent('1 phiên bản');
+  expect(group('Báo cáo cuối kỳ')).toHaveTextContent('Đã chốt Bản 1');
+  const dl = within(group('Báo cáo cuối kỳ')).getByRole('button', {
+    name: /^Tải .*\.pdf$/,
+  });
+  expect(dl).toHaveAttribute('aria-disabled', 'true');
+  expect(dl).not.toBeDisabled();
+  const note = document.getElementById(dl.getAttribute('aria-describedby')!);
+  expect(note).toHaveTextContent('Chưa có API tải tệp');
+  fireEvent.click(dl);
+  expect(screen.queryByRole('link', { name: 'Tải' })).not.toBeInTheDocument();
+  cleanup();
+
+  // Đã cho điểm nhưng chưa chốt bản cuối.
+  await renderDetail('t-vb1-25-03');
+  tab('Báo cáo và phiên bản');
+  expect(group('Báo cáo cuối kỳ')).toHaveTextContent(
+    '1 phiên bản · chưa chốt bản cuối',
+  );
+});
+
+it('shows the class of each member and the defense schedule', async () => {
+  await renderDetail('t-vb1-25-01');
+  const panel = screen.getByRole('tabpanel');
+  const member = within(panel).getByText('Đinh Công Minh').closest('li')!;
+  expect(member).toHaveTextContent(/22520010 · \S+/);
+  const dl = within(panel)
+    .getByRole('heading', { name: 'Phân công và lịch bảo vệ' })
+    .closest('section')!;
+  for (const label of [
+    'Hướng dẫn',
+    'Phản biện',
+    'Hội đồng',
+    'Chủ tịch',
+    'Thư ký',
+    'Bảo vệ',
+    'Phòng',
+  ])
+    expect(within(dl).getByText(label, { selector: 'dt' })).toBeInTheDocument();
+  expect(dl).toHaveTextContent('Hội đồng 1 · đã công bố');
+  expect(dl).toHaveTextContent(
+    /(Thứ|Chủ Nhật) .*\d\d\/\d\d\/\d{4} · \d\d:\d\d/,
+  );
+  expect(dl).toHaveTextContent(/B4\.1\d · thứ tự \d/);
 });
 
 it('shows an empty state when nothing has been submitted', async () => {
@@ -168,8 +231,7 @@ it('shows per-role scores, the weighted total and the formula note', async () =>
     'Điểm KL',
   ])
     expect(screen.getByRole('columnheader', { name })).toBeInTheDocument();
-  // Không có cảnh báo lệch điểm ở màn này (thuộc màn Kết quả).
-  expect(screen.queryByText(/lệch điểm/i)).not.toBeInTheDocument();
+  expect(screen.queryByText('Cờ lệch điểm hội đồng')).not.toBeInTheDocument();
 });
 
 it('shows "Chưa đủ điểm" when a score is missing', async () => {
@@ -230,4 +292,96 @@ it('shows a retry state when loading fails', async () => {
   render(<TopicDetailPage topicId="t-vb1-01" topicService={topicService} />);
   expect(await screen.findByRole('alert')).toHaveTextContent('Mất kết nối.');
   expect(screen.getByRole('button', { name: 'Thử lại' })).toBeInTheDocument();
+});
+
+it('numbers version labels per kind, matching the file name', async () => {
+  await renderDetail('t-vb1-25-01');
+  tab('Báo cáo và phiên bản');
+  for (const item of screen.getAllByRole('listitem')) {
+    const label = /(?:Lần|Bản) (\d+)/.exec(item.textContent ?? '')![1];
+    expect(item.textContent).toContain(`-v${label}.pdf`);
+  }
+});
+
+it('shows a valid HH:mm defense time for every seeded defense', async () => {
+  const roundService = createRoundService({ today: TODAY });
+  const topicService = createTopicService({ today: TODAY, roundService });
+  const list = await topicService.list({ roundId: 'r-vb1-hk2-2025' });
+  const withDefense = list.items.filter((t) => t.defense);
+  expect(withDefense.length).toBeGreaterThan(0);
+  for (const t of withDefense) {
+    renderRaw(t.id);
+    const row = (await screen.findByText('Bảo vệ', { selector: 'dt' }))
+      .nextElementSibling!;
+    expect(row.textContent).toMatch(/ · \d\d:\d\d$/);
+    cleanup();
+  }
+});
+
+const fixtureTopic = async (patch: Partial<Topic>): Promise<Topic> => {
+  const roundService = createRoundService({ today: TODAY });
+  const base = await createTopicService({ today: TODAY, roundService }).get(
+    't-vb1-25-01',
+  );
+  return { ...base, ...patch };
+};
+
+it('shows "Chờ duyệt" for an unapproved outline and an unpublished council', async () => {
+  const roundService = createRoundService({ today: TODAY });
+  const base = await fixtureTopic({});
+  const topic = await fixtureTopic({
+    outlineApprovedAt: null,
+    defense: { ...base.defense!, councilPublished: false },
+  });
+  const topicService = createTopicService({
+    today: TODAY,
+    roundService,
+    topics: [topic],
+  });
+  render(<TopicDetailPage topicId={topic.id} topicService={topicService} />);
+  await screen.findByRole('heading', { level: 1 });
+  expect(screen.getByText('Hội đồng 1 · chưa công bố')).toBeInTheDocument();
+  tab('Báo cáo và phiên bản');
+  const outline = screen
+    .getByRole('heading', { name: 'Đề cương' })
+    .closest('section')!;
+  expect(outline).toHaveTextContent('Chờ duyệt');
+});
+
+it('shows the deviation chip, flagged cells and box for a deviating topic', async () => {
+  await renderDetail('t-vb1-25-02');
+  expect(
+    screen.getByText('Lệch điểm ≥ 2', { selector: '.tpc-chip' }),
+  ).toBeInTheDocument();
+  tab('Điểm');
+  const row = (await screen.findByText('Lý Thùy Dung')).closest('tr')!;
+  // CT 5,5 lệch HD 8,0 (2,5) và PB 7,5 (2,0); TK 6,0 lệch HD 8,0 (2,0).
+  const flagged = Array.from(row.querySelectorAll('td.tpc-score-dev')).map(
+    (td) => td.textContent,
+  );
+  expect(flagged).toEqual([
+    '8,0 (lệch ≥ 2)',
+    '7,5 (lệch ≥ 2)',
+    '5,5 (lệch ≥ 2)',
+    '6,0 (lệch ≥ 2)',
+  ]);
+  const flaggedCell = row.querySelector('td.tpc-score-dev')!;
+  expect(flaggedCell).toHaveAttribute('aria-describedby', 'tpc-dev-box');
+  expect(document.getElementById('tpc-dev-box')).toHaveTextContent(
+    'Cờ lệch điểm hội đồng',
+  );
+  const box = screen.getByText('Cờ lệch điểm hội đồng').closest('div')!;
+  expect(box).toHaveTextContent('Lý Thùy Dung: CT 5,5 lệch HD 8,0 (2,5 điểm)');
+  expect(box).toHaveTextContent('Lý Thùy Dung: CT 5,5 lệch PB 7,5 (2,0 điểm)');
+  expect(box).toHaveTextContent('Lý Thùy Dung: TK 6,0 lệch HD 8,0 (2,0 điểm)');
+  expect(box).not.toHaveTextContent('TK 6,0 lệch PB');
+});
+
+it('hides the deviation chip, cells and box when no pair deviates', async () => {
+  await renderDetail('t-vb1-25-01');
+  expect(screen.queryByText('Lệch điểm ≥ 2')).not.toBeInTheDocument();
+  tab('Điểm');
+  await screen.findByText('Đinh Công Minh');
+  expect(document.querySelector('.tpc-score-dev')).toBeNull();
+  expect(screen.queryByText('Cờ lệch điểm hội đồng')).not.toBeInTheDocument();
 });

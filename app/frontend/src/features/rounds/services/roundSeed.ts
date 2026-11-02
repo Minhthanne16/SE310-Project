@@ -127,6 +127,8 @@ export function seedRounds(): Round[] {
       program: 'Văn bằng 1',
       periodLabel: 'HK1 2026–2027',
       status: 'Đang diễn ra',
+      lecturerLoadMin: 0,
+      lecturerLoadMax: 0,
       milestones: withAudience(
         buildMilestones([
           ['2026-09-07', '2026-09-18'],
@@ -173,6 +175,8 @@ export function seedRounds(): Round[] {
       program: 'Văn bằng 2',
       periodLabel: 'HK1 2026–2027',
       status: 'Đang diễn ra',
+      lecturerLoadMin: 0,
+      lecturerLoadMax: 0,
       milestones: withAudience(
         buildMilestones([
           ['2026-09-14', '2026-09-25'],
@@ -197,6 +201,8 @@ export function seedRounds(): Round[] {
       program: 'Thạc sĩ',
       periodLabel: 'Đợt 1/2026',
       status: 'Đang diễn ra',
+      lecturerLoadMin: 0,
+      lecturerLoadMax: 0,
       milestones: withAudience(
         buildMilestones([
           ['2026-08-03', '2026-08-14'],
@@ -224,6 +230,8 @@ export function seedRounds(): Round[] {
       program: 'Văn bằng 2',
       periodLabel: 'HK2 2026–2027',
       status: 'Nháp',
+      lecturerLoadMin: 0,
+      lecturerLoadMax: 0,
       // Mới có hai mốc đầu có ngày: mở đợt sẽ hiện cảnh báo việc chưa xong.
       milestones: buildMilestones([
         ['2027-02-01', '2027-02-12'],
@@ -240,6 +248,8 @@ export function seedRounds(): Round[] {
       program: 'Văn bằng 1',
       periodLabel: 'HK2 2025–2026',
       status: 'Đã kết thúc',
+      lecturerLoadMin: 0,
+      lecturerLoadMax: 0,
       milestones: withAudience(
         buildMilestones([
           ['2026-02-02', '2026-02-13'],
@@ -253,7 +263,7 @@ export function seedRounds(): Round[] {
           ['2026-06-15', '2026-06-26'],
         ]),
       ),
-      lecturerIds: ['CB101', 'CB103'],
+      lecturerIds: ['CB101', 'CB102', 'CB103', 'CB104'],
       studentIds: ['22520010', '22520011', '22520012'],
       lockedStudentIds: ['22520010', '22520011', '22520012'],
       topicSummary: topics({ 'Đã cho điểm': 1, 'Đã hoàn tất': 2 }, 0),

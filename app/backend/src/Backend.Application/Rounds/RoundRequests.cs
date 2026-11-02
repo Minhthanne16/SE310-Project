@@ -18,8 +18,9 @@ public sealed record RoundResult<T>(RoundResultStatus Status, ApiResponse<T> Res
         new(status, ApiResponse<T>.Fail(message, errors));
 }
 
-public record GetRoundsQuery(string? Status, string? Program, string? Search) : IRequest<ApiResponse<IReadOnlyList<RoundDto>>>;
-public record GetRoundQuery(Guid Id) : IRequest<RoundResult<RoundDto>>;
+// ViewerId = null: Giáo vụ thấy mọi đợt. Có giá trị: Giảng viên/Sinh viên chỉ thấy đợt đã mở mà mình tham gia.
+public record GetRoundsQuery(string? Status, string? Program, string? Search, Guid? ViewerId = null) : IRequest<ApiResponse<IReadOnlyList<RoundDto>>>;
+public record GetRoundQuery(Guid Id, Guid? ViewerId = null) : IRequest<RoundResult<RoundDto>>;
 public record CreateRoundCommand(RoundInputDto Round) : IRequest<RoundResult<RoundDto>>;
 public record UpdateRoundCommand(Guid Id, RoundInfoDto Round) : IRequest<RoundResult<RoundDto>>;
 public record UpdateRoundMilestonesCommand(Guid Id, RoundMilestonesInputDto Input) : IRequest<RoundResult<RoundDto>>;
@@ -38,6 +39,7 @@ public static class RoundRules
 {
     public const int MaxTextLength = 200;
     public const int MaxCodesPerRequest = 500;
+    public const int MaxLecturerLoad = 50;
 
     public const string NotFoundMessage = "Không tìm thấy đợt.";
     public const string DuplicateNameMessage = "Tên đợt đã tồn tại. Đặt tên khác.";
@@ -207,7 +209,17 @@ public sealed class UpdateRoundValidator : RoundTextValidator<UpdateRoundCommand
     public UpdateRoundValidator()
     {
         RuleFor(x => x.Round).NotNull();
-        When(x => x.Round is not null, () => RulesFor(x => x.Round.Name, x => x.Round.Program, x => x.Round.PeriodLabel));
+        When(x => x.Round is not null, () =>
+        {
+            RulesFor(x => x.Round.Name, x => x.Round.Program, x => x.Round.PeriodLabel);
+            RuleFor(x => x.Round.LecturerLoadMin).InclusiveBetween(0, RoundRules.MaxLecturerLoad)
+                .WithMessage($"Số đề tài tối thiểu từ 0 đến {RoundRules.MaxLecturerLoad}.");
+            RuleFor(x => x.Round.LecturerLoadMax).InclusiveBetween(0, RoundRules.MaxLecturerLoad)
+                .WithMessage($"Số đề tài tối đa từ 0 đến {RoundRules.MaxLecturerLoad}.");
+            // 0 = chưa đặt mức nên chỉ so khi cả hai đều đã đặt.
+            RuleFor(x => x.Round).Must(r => r.LecturerLoadMin is not > 0 || r.LecturerLoadMax is not > 0 || r.LecturerLoadMin <= r.LecturerLoadMax)
+                .WithMessage("Số đề tài tối thiểu không được lớn hơn tối đa.").OverridePropertyName("lecturerLoad");
+        });
     }
 }
 

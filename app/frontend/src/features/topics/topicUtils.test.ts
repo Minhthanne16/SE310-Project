@@ -14,6 +14,7 @@ import {
   thesisCell,
   timeOf,
   thesisProgress,
+  scoreDeviations,
   totalScore,
 } from '@/features/topics/topicUtils';
 import { seedTopics } from '@/features/topics/services/topicSeed';
@@ -125,4 +126,35 @@ it('builds the thesis cell, abbreviated names and initials', () => {
   expect(avatarInitials('Nguyễn Thị Hương')).toBe('NH');
   expect(dateOf('2026-10-26T08:05:00')).toBe('26/10/2026');
   expect(timeOf('2026-10-26T08:05:00')).toBe('08:05');
+});
+
+const sc = (
+  CTHĐ: number | null,
+  TKHĐ: number | null,
+  CBHD: number | null,
+  CBPB: number | null,
+) => ({ CTHĐ, TKHĐ, CBHD, CBPB });
+
+it('flags a cross pair that differs by exactly 2.0 but not by 1.99', () => {
+  const at = scoreDeviations(sc(6, 7, 8, 7));
+  expect(at.pairs).toEqual([{ council: 'CTHĐ', lecturer: 'CBHD', diff: 2 }]);
+  expect([...at.roles].sort()).toEqual(['CBHD', 'CTHĐ']);
+  expect(scoreDeviations(sc(6.01, 7, 8, 7)).pairs).toHaveLength(0);
+});
+
+it('skips pairs with a missing score', () => {
+  expect(scoreDeviations(sc(5, null, null, 9)).pairs).toEqual([
+    { council: 'CTHĐ', lecturer: 'CBPB', diff: 4 },
+  ]);
+  expect(scoreDeviations(sc(null, null, null, null)).pairs).toHaveLength(0);
+});
+
+it('does not count CT-TK or HD-PB differences', () => {
+  const r = scoreDeviations(sc(5, 9, 6, 6));
+  expect(r.pairs.map((p) => [p.council, p.lecturer])).toEqual([
+    ['TKHĐ', 'CBHD'],
+    ['TKHĐ', 'CBPB'],
+  ]);
+  expect(scoreDeviations(sc(7.5, 7.5, 6.5, 8.5)).pairs).toHaveLength(0);
+  expect(scoreDeviations(sc(7, 7, 7, 7)).pairs).toHaveLength(0);
 });

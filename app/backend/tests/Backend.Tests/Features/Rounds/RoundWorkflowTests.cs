@@ -114,6 +114,24 @@ public sealed class RoundWorkflowTests : IDisposable
     }
 
     [Fact]
+    public async Task LecturersAndStudentsSeeOnlyOpenedRoundsTheyBelongTo()
+    {
+        var student = await Seed(UserRole.Student, "SV1");
+        var outsider = await Seed(UserRole.Student, "SV2");
+        var opened = await Open("Đợt đang mở", "SV1");
+        var draft = await Create("Đợt nháp");
+        await Send(new AddParticipantsCommand(draft.Id, "students", ["SV1"]));
+
+        var mine = (await Send(new GetRoundsQuery(null, null, null, student))).Data!;
+        Assert.Equal([opened.Id], mine.Select(r => r.Id));
+        Assert.Empty((await Send(new GetRoundsQuery(null, null, null, outsider))).Data!);
+        Assert.Equal(2, (await Send(new GetRoundsQuery(null, null, null))).Data!.Count);
+        Assert.Equal(RoundResultStatus.NotFound, (await Send(new GetRoundQuery(draft.Id, student))).Status);
+        Assert.Equal(RoundResultStatus.NotFound, (await Send(new GetRoundQuery(opened.Id, outsider))).Status);
+        Assert.Equal(RoundResultStatus.Ok, (await Send(new GetRoundQuery(opened.Id, student))).Status);
+    }
+
+    [Fact]
     public async Task CreatesDraftRoundWithNineOrderedMilestones()
     {
         var round = await Create("  Đợt   1/2026  ");

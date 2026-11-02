@@ -7,6 +7,7 @@ import {
   type RoleScores,
   type SubmissionKind,
   type Topic,
+  type TopicDefense,
   type TopicHistoryEntry,
   type TopicPerson,
   type TopicPhase,
@@ -47,6 +48,14 @@ interface Spec {
   students?: string[];
   reviewer?: string;
   council?: string;
+  // Lịch bảo vệ; chủ tịch và thư ký là mã GV của đợt, khác GVHD và GVPB.
+  defense?: {
+    chair: string;
+    secretary: string;
+    start: string;
+    room: string;
+    order: number;
+  };
   subs?: SubSpec[];
   scores?: Scores4[];
   // Số ngày kể từ mốc đầu của đợt tới lúc nhập phiếu (mặc định 124, trong
@@ -360,6 +369,15 @@ const OLD_SUBS: SubSpec[] = [
   ['Bản khóa luận', 101, false],
 ];
 
+// Hội đồng 1: một phòng, các suất liên tiếp bắt đầu từ 1 (mỗi suất một giờ).
+const HD1 = (order: number) => ({
+  chair: 'CB102',
+  secretary: 'CB104',
+  start: `2026-05-18T${String(7 + order).padStart(2, '0')}:45:00`,
+  room: 'B4.12',
+  order,
+});
+
 const old: Body[] = [
   {
     title: 'Website bán hàng thủ công mỹ nghệ',
@@ -370,6 +388,7 @@ const old: Body[] = [
     students: [S(10)],
     reviewer: 'CB103',
     council: 'Hội đồng 1',
+    defense: HD1(1),
     subs: OLD_SUBS,
     scores: [[8.5, 8.5, 9, 8.5]],
   },
@@ -382,8 +401,10 @@ const old: Body[] = [
     students: [S(11)],
     reviewer: 'CB101',
     council: 'Hội đồng 1',
+    defense: HD1(2),
     subs: OLD_SUBS,
-    scores: [[8, 8, 8, 8.5]],
+    // Chủ tịch 5,5 lệch GV hướng dẫn 8,0 (2,5 điểm): ví dụ cờ lệch điểm.
+    scores: [[5.5, 6, 8, 7.5]],
   },
   {
     title: 'Giải pháp cân bằng tải cho cụm web',
@@ -394,6 +415,13 @@ const old: Body[] = [
     students: [S(12)],
     reviewer: 'CB101',
     council: 'Hội đồng 2',
+    defense: {
+      chair: 'CB104',
+      secretary: 'CB102',
+      start: '2026-05-19T08:45:00',
+      room: 'B4.13',
+      order: 1,
+    },
     subs: OLD_SUBS,
     scores: [[9, 8.5, 9, 9]],
   },
@@ -413,6 +441,24 @@ const FILE_SLUG: Record<SubmissionKind, string> = {
   'Bản khóa luận': 'khoa-luan',
 };
 
+// Ghi chú thay đổi mẫu theo loại bài và thứ tự phiên bản trong loại đó.
+function noteFor(kind: SubmissionKind, ordinal: number): string {
+  if (ordinal === 1) {
+    return {
+      'Đề cương': 'Bản đầu',
+      'Giữa kỳ': 'Hoàn thành khảo sát và phần lõi của hệ thống',
+      'Cuối kỳ': 'Bản đầu đủ các chương',
+      'Bản khóa luận': 'Bản hoàn chỉnh sau chỉnh sửa theo hội đồng',
+    }[kind];
+  }
+  return {
+    'Đề cương': 'Sửa phạm vi và kế hoạch theo yêu cầu của GVHD',
+    'Giữa kỳ': 'Bổ sung kết quả thử nghiệm',
+    'Cuối kỳ': 'Sửa nội dung theo nhận xét của giảng viên phản biện',
+    'Bản khóa luận': 'Cập nhật theo góp ý cuối',
+  }[kind];
+}
+
 const toPerson = (p: Participant): TopicPerson => ({
   id: p.id,
   code: p.code,
@@ -431,6 +477,7 @@ function buildTopic(
   const group = (spec.students ?? []).map((id, i) => ({
     ...toPerson(students.get(id)!),
     representative: i === 0,
+    className: students.get(id)!.unit,
   }));
   const code = `${spec.codePrefix}-${String(spec.n).padStart(2, '0')}`;
   const id = `t-${code.toLowerCase()}`;
@@ -443,15 +490,21 @@ function buildTopic(
   const at = (offset: number, minutes = 0) =>
     `${addDays(spec.base, offset)}T${hhmm(minutes)}`;
 
+  const perKind = new Map<SubmissionKind, number>();
   const submissions: TopicSubmission[] = (spec.subs ?? []).map(
-    ([kind, offset, late], i) => ({
-      versionNo: i + 1,
-      kind,
-      submittedBy: rep,
-      submittedAt: at(offset),
-      late,
-      fileName: `${code}-${FILE_SLUG[kind]}-v${i + 1}.pdf`,
-    }),
+    ([kind, offset, late], i) => {
+      const ordinal = (perKind.get(kind) ?? 0) + 1;
+      perKind.set(kind, ordinal);
+      return {
+        versionNo: i + 1,
+        kind,
+        submittedBy: rep,
+        submittedAt: at(offset),
+        late,
+        fileName: `${code}-${FILE_SLUG[kind]}-v${ordinal}.pdf`,
+        note: noteFor(kind, ordinal),
+      };
+    },
   );
 
   const scores = (spec.scores ?? []).map((row, i) => ({
@@ -535,6 +588,22 @@ function buildTopic(
       'Duyệt đề cương',
       'Đề tài chuyển sang Đang thực hiện.',
     );
+  const defense: TopicDefense | null =
+    spec.council && spec.defense
+      ? {
+          council: spec.council,
+          councilPublished: true,
+          chair: toPerson(lecturers.get(spec.defense.chair)!).name,
+          secretary: toPerson(lecturers.get(spec.defense.secretary)!).name,
+          start: spec.defense.start,
+          room: spec.defense.room,
+          order: spec.defense.order,
+        }
+      : null;
+  const lockedFinal =
+    spec.status === 'Đã hoàn tất'
+      ? submissions.findLast((s) => s.kind === 'Cuối kỳ')
+      : undefined;
   scores.forEach((s, i) => {
     const filled = SCORE_ROLES.filter((r) => s.scores[r] !== null);
     if (filled.length > 0)
@@ -575,6 +644,11 @@ function buildTopic(
     group,
     reviewer,
     council: spec.council ?? null,
+    defense,
+    outlineApprovedAt: outline
+      ? `${addDays(outline.submittedAt.slice(0, 10), 2)}T10:00:00`
+      : null,
+    finalLockedVersionNo: lockedFinal?.versionNo ?? null,
     submissions,
     scores,
     history,

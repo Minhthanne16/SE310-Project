@@ -10,10 +10,6 @@ import {
   type RoundFieldErrors,
 } from '@/features/rounds/roundValidation';
 import {
-  LECTURER_LOAD_MAX,
-  LECTURER_LOAD_MIN,
-} from '@/features/topics/topicUtils';
-import {
   DuplicateRoundNameError,
   MilestoneOrderError,
   RoundValidationError,
@@ -45,6 +41,20 @@ const AUDIENCE_LABEL: Record<NotifyAudience, string> = {
 const sameConfig = (a: Milestone[], b: Milestone[]) =>
   JSON.stringify(a) === JSON.stringify(b);
 
+// Khớp RoundRules.MaxLecturerLoad ở backend.
+const LOAD_LIMIT = 50;
+
+// Số nguyên 0..50; 0 = chưa đặt mức nên chỉ so tối thiểu ≤ tối đa khi cả hai > 0.
+function validateLoad(min: string, max: string): string | null {
+  const valid = (v: string) =>
+    /^\d+$/.test(v.trim()) && Number(v) <= LOAD_LIMIT;
+  if (!valid(min) || !valid(max))
+    return `Nhập số nguyên từ 0 đến ${LOAD_LIMIT}.`;
+  if (Number(min) > 0 && Number(max) > 0 && Number(min) > Number(max))
+    return 'Số đề tài tối thiểu không được lớn hơn tối đa.';
+  return null;
+}
+
 // Tab Cấu hình (artboard GiaoVu-DotKhoaLuan): thông tin đợt, mức đề tài mỗi
 // giảng viên, 9 mốc với ngày bắt
 // đầu/kết thúc, "Thông báo cho", công tắc "Cho nộp trễ" (chỉ Đề cương, Giữa
@@ -71,7 +81,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   const [infoError, setInfoError] = useState<string | null>(null);
   const [serverFields, setServerFields] = useState<RoundFieldErrors>({});
 
-  const cleanLabel = label.trim().replace(/s+/g, ' ');
+  const cleanLabel = label.trim().replace(/\s+/g, ' ');
   const infoDirty =
     !infoLocked &&
     (program !== round.program || cleanLabel !== round.periodLabel);
@@ -86,6 +96,17 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
     : undefined;
   const infoInvalid = Object.keys(infoFields).length > 0;
 
+  // Số đề tài mỗi GV (chỉ sửa khi Nháp). Giữ chuỗi để ô trống khi đang gõ.
+  const [loadMin, setLoadMin] = useState(String(round.lecturerLoadMin));
+  const [loadMax, setLoadMax] = useState(String(round.lecturerLoadMax));
+  const [loadSaving, setLoadSaving] = useState(false);
+  const [loadSaveError, setLoadSaveError] = useState<string | null>(null);
+  const loadDirty =
+    !infoLocked &&
+    (loadMin !== String(round.lecturerLoadMin) ||
+      loadMax !== String(round.lecturerLoadMax));
+  const loadError = validateLoad(loadMin, loadMax);
+
   const errors = useMemo(() => validateMilestones(draft), [draft]);
   const errorCount = Object.keys(errors).length;
   const invalid = errorCount > 0;
@@ -97,7 +118,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   );
   const weekOne = roundSpan(round.milestones)?.start ?? '';
 
-  const anyDirty = dirty || infoDirty;
+  const anyDirty = dirty || infoDirty || loadDirty;
   useEffect(() => {
     onDirtyChange?.(anyDirty);
     return () => onDirtyChange?.(false);
@@ -130,6 +151,35 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
         );
     } finally {
       setInfoSaving(false);
+    }
+  };
+
+  const saveLoad = async () => {
+    if (loadSaving || loadError || !loadDirty) return;
+    setLoadSaving(true);
+    setLoadSaveError(null);
+    try {
+      const updated = await roundService.update(round.id, {
+        name: round.name,
+        program: round.program,
+        periodLabel: round.periodLabel,
+        lecturerLoadMin: Number(loadMin),
+        lecturerLoadMax: Number(loadMax),
+      });
+      toast.success('Đã lưu số đề tài mỗi giảng viên.');
+      setLoadMin(String(updated.lecturerLoadMin));
+      setLoadMax(String(updated.lecturerLoadMax));
+      onSaved(updated);
+    } catch (err: unknown) {
+      setLoadSaveError(
+        err instanceof RoundValidationError
+          ? Object.values(err.fields)[0] || err.message
+          : err instanceof Error && err.message
+            ? err.message
+            : 'Lưu số đề tài thất bại. Thử lại sau.',
+      );
+    } finally {
+      setLoadSaving(false);
     }
   };
 
@@ -263,8 +313,18 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
             <input
               type="number"
               className="rnd-input"
-              readOnly
-              value={LECTURER_LOAD_MIN}
+              min={0}
+              max={LOAD_LIMIT}
+              step={1}
+              inputMode="numeric"
+              readOnly={infoLocked}
+              aria-invalid={loadError ? true : undefined}
+              aria-describedby={loadError ? 'round-load-error' : undefined}
+              value={loadMin}
+              onChange={(e) => {
+                setLoadMin(e.target.value);
+                setLoadSaveError(null);
+              }}
             />
           </label>
           <label className="rnd-label">
@@ -272,8 +332,18 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
             <input
               type="number"
               className="rnd-input"
-              readOnly
-              value={LECTURER_LOAD_MAX}
+              min={0}
+              max={LOAD_LIMIT}
+              step={1}
+              inputMode="numeric"
+              readOnly={infoLocked}
+              aria-invalid={loadError ? true : undefined}
+              aria-describedby={loadError ? 'round-load-error' : undefined}
+              value={loadMax}
+              onChange={(e) => {
+                setLoadMax(e.target.value);
+                setLoadSaveError(null);
+              }}
             />
           </label>
         </div>
@@ -284,6 +354,24 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
           không chặn thao tác nào. Giá trị 0 nghĩa là chưa đặt mức nên chưa cảnh
           báo.
         </p>
+        {!infoLocked && (loadError || loadSaveError) && (
+          <p id="round-load-error" className="rnd-field-err" role="alert">
+            {loadError ?? loadSaveError}
+          </p>
+        )}
+        {!infoLocked && (
+          <div className="rnd-info-actions">
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-primary"
+              disabled={!loadDirty || !!loadError || loadSaving}
+              aria-busy={loadSaving}
+              onClick={() => void saveLoad()}
+            >
+              {loadSaving ? 'Đang lưu...' : 'Lưu số đề tài'}
+            </button>
+          </div>
+        )}
       </section>
 
       <section

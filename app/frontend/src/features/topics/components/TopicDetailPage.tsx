@@ -14,7 +14,9 @@ import {
   avatarInitials,
   dateOf,
   formatComponentScore,
+  formatDefenseStart,
   formatScore,
+  scoreDeviations,
   timeOf,
   totalScore,
 } from '@/features/topics/topicUtils';
@@ -22,6 +24,7 @@ import { useUrlParam } from '@/lib/useUrlParam';
 import {
   HISTORY_CATEGORIES,
   type HistoryCategory,
+  type ScoreRole,
   type SubmissionKind,
   type Topic,
   type TopicSubmission,
@@ -43,6 +46,13 @@ const TABS: { id: TopicTab; label: string }[] = [
 
 const isTab = (value: string | null): value is TopicTab =>
   TABS.some((t) => t.id === value);
+
+const ROLE_SHORT: Record<ScoreRole, string> = {
+  CTHĐ: 'CT',
+  TKHĐ: 'TK',
+  CBHD: 'HD',
+  CBPB: 'PB',
+};
 
 const BACK_HREF = '/giao-vu/de-tai';
 
@@ -122,9 +132,37 @@ const DOC_GROUPS: DocGroup[] = [
   { title: 'Bản khóa luận', kinds: ['Bản khóa luận'] },
 ];
 
+// Chip trạng thái ở đầu từng nhóm tài liệu.
+function docStatus(
+  topic: Topic,
+  group: DocGroup & { versions: TopicSubmission[] },
+): { text: string; className: string } {
+  const count = group.versions.length;
+  if (group.kinds[0] === 'Đề cương')
+    return topic.outlineApprovedAt
+      ? {
+          text: `Đã duyệt ${dateOf(topic.outlineApprovedAt).slice(0, 5)}`,
+          className: 'tpc-chip-ok',
+        }
+      : { text: 'Chờ duyệt', className: '' };
+  if (group.kinds[0] === 'Cuối kỳ') {
+    const locked = group.versions.findIndex(
+      (v) => v.versionNo === topic.finalLockedVersionNo,
+    );
+    return locked >= 0
+      ? { text: `Đã chốt Bản ${locked + 1}`, className: 'tpc-chip-ok' }
+      : {
+          text: `${count} phiên bản · chưa chốt bản cuối`,
+          className: 'tpc-chip-warn',
+        };
+  }
+  return { text: `${count} phiên bản`, className: '' };
+}
+
 // Màn Chi tiết đề tài của Giáo vụ (docs/DESIGN/03, artboard
 // GiaoVu-ChiTietDeTai): chỉ xem, bốn tab Tổng quan, Báo cáo và phiên bản, Điểm,
-// Lịch sử. Không có cảnh báo lệch điểm ở màn này (thuộc màn Kết quả).
+// Lịch sử. Có cờ lệch điểm (chip ở đầu trang, ô đỏ và hộp cảnh báo ở tab Điểm;
+// bốn cặp chéo, từ 2 điểm; PDR-007), quyết định 2026-11-02, bên cạnh màn Kết quả.
 export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
   topicId,
   topicService = defaultTopicService,
@@ -209,15 +247,16 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
     c === 'Tất cả'
       ? topic.history.length
       : topic.history.filter((h) => h.category === c).length;
+  const deviations = topic.scores.map((s) => ({
+    score: s,
+    ...scoreDeviations(s.scores),
+  }));
+  const hasDeviation = deviations.some((d) => d.pairs.length > 0);
   const steps = progressSteps(topic);
   const docGroups = DOC_GROUPS.map((g) => ({
     ...g,
     versions: topic.submissions.filter((s) => g.kinds.includes(s.kind)),
   })).filter((g) => g.versions.length > 0);
-  const newestVersionNo = topic.submissions.reduce(
-    (max, s) => Math.max(max, s.versionNo),
-    0,
-  );
   const tabId = (id: TopicTab) => `tpc-tab-${id}`;
   const panelId = (id: TopicTab) => `tpc-panel-${id}`;
 
@@ -233,6 +272,9 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
           <h1>{topic.title}</h1>
           <div className="tpc-meta">
             <TopicStatusChip status={topic.status} />
+            {hasDeviation && (
+              <span className="tpc-chip tpc-chip-deviation">Lệch điểm ≥ 2</span>
+            )}
             <span>
               {topic.code} ·{' '}
               <Link href={`${BACK_HREF}?dot=${topic.roundId}`}>
@@ -312,7 +354,7 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
                         <span className="tpc-member-text">
                           <span className="tpc-member-name">{m.name}</span>
                           <span className="tpc-sub">
-                            {m.code}
+                            {m.code} · {m.className}
                             {m.representative && ' · Đại diện'}
                           </span>
                         </span>
@@ -329,7 +371,34 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
                   <dt>Phản biện</dt>
                   <dd>{topic.reviewer?.name ?? 'Chưa phân công'}</dd>
                   <dt>Hội đồng</dt>
-                  <dd>{topic.council ?? 'Chưa phân công'}</dd>
+                  <dd>
+                    {topic.defense
+                      ? `${topic.defense.council} · ${
+                          topic.defense.councilPublished
+                            ? 'đã công bố'
+                            : 'chưa công bố'
+                        }`
+                      : (topic.council ?? 'Chưa phân công')}
+                  </dd>
+                  {topic.defense ? (
+                    <>
+                      <dt>Chủ tịch</dt>
+                      <dd>{topic.defense.chair}</dd>
+                      <dt>Thư ký</dt>
+                      <dd>{topic.defense.secretary}</dd>
+                      <dt>Bảo vệ</dt>
+                      <dd>{formatDefenseStart(topic.defense.start)}</dd>
+                      <dt>Phòng</dt>
+                      <dd>
+                        {topic.defense.room} · thứ tự {topic.defense.order}
+                      </dd>
+                    </>
+                  ) : (
+                    <>
+                      <dt>Bảo vệ</dt>
+                      <dd>Chưa xếp lịch</dd>
+                    </>
+                  )}
                 </dl>
               </section>
             </div>
@@ -341,45 +410,67 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
             <p className="app-muted">Nhóm chưa nộp bài nào.</p>
           ) : (
             <div className="tpc-docs">
-              {docGroups.map((g) => (
-                <section
-                  key={g.title}
-                  className="tpc-doc"
-                  aria-labelledby={`tpc-doc-${g.kinds[0]}`}
-                >
-                  <div className="tpc-doc-head">
-                    <h2 id={`tpc-doc-${g.kinds[0]}`}>{g.title}</h2>
-                    <span className="tpc-chip">
-                      {g.versions.length} phiên bản
-                    </span>
-                  </div>
-                  <ol className="tpc-vers">
-                    {[...g.versions].reverse().map((s: TopicSubmission) => (
-                      <li key={s.versionNo} className="tpc-ver">
-                        <span className="tpc-ver-no">v{s.versionNo}</span>
-                        <span className="tpc-ver-col">
-                          <span>{s.fileName}</span>
-                          <small>Người nộp: {s.submittedBy}</small>
-                        </span>
-                        <span className="tpc-ver-col">
-                          <span>
-                            {dateOf(s.submittedAt)} {timeOf(s.submittedAt)}
+              <span id="tpc-dl-note" className="tpc-visually-hidden">
+                Chưa có API tải tệp
+              </span>
+              {docGroups.map((g, gi) => {
+                const status = docStatus(topic, g);
+                const label = g.kinds[0] === 'Đề cương' ? 'Lần' : 'Bản';
+                const ordered = [...g.versions].reverse();
+                return (
+                  <section
+                    key={g.title}
+                    className="tpc-doc"
+                    aria-labelledby={`tpc-doc-${gi}`}
+                  >
+                    <div className="tpc-doc-head">
+                      <h2 id={`tpc-doc-${gi}`}>{g.title}</h2>
+                      <span className={`tpc-chip ${status.className}`}>
+                        {status.text}
+                      </span>
+                    </div>
+                    <ol className="tpc-vers">
+                      {ordered.map((s: TopicSubmission, i) => (
+                        <li key={s.versionNo} className="tpc-ver">
+                          <span className="tpc-ver-no">
+                            {label} {g.versions.length - i}
                           </span>
-                          {s.late ? (
-                            <span className="tpc-tag tpc-tag-late">
-                              Nộp trễ
+                          <span className="tpc-ver-col">
+                            <span>{s.note}</span>
+                            <small>{s.fileName}</small>
+                          </span>
+                          <span className="tpc-ver-col">
+                            <span>
+                              {dateOf(s.submittedAt).slice(0, 5)}{' '}
+                              {timeOf(s.submittedAt)}
                             </span>
-                          ) : (
-                            s.versionNo === newestVersionNo && (
-                              <span className="tpc-tag">Mới nhất</span>
-                            )
-                          )}
-                        </span>
-                      </li>
-                    ))}
-                  </ol>
-                </section>
-              ))}
+                            {s.late ? (
+                              <span className="tpc-tag tpc-tag-late">
+                                Nộp trễ
+                              </span>
+                            ) : (
+                              i === 0 &&
+                              g.versions.length > 1 && (
+                                <span className="tpc-tag">Mới nhất</span>
+                              )
+                            )}
+                          </span>
+                          <button
+                            type="button"
+                            className="tpc-ver-dl"
+                            aria-disabled="true"
+                            aria-describedby="tpc-dl-note"
+                            aria-label={`Tải ${s.fileName}`}
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            Tải
+                          </button>
+                        </li>
+                      ))}
+                    </ol>
+                  </section>
+                );
+              })}
             </div>
           ))}
 
@@ -401,8 +492,23 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {topic.scores.map((s) => {
+                    {deviations.map(({ score: s, roles }) => {
                       const total = totalScore(s.scores);
+                      const cell = (role: ScoreRole) =>
+                        roles.has(role) ? (
+                          <td
+                            className="tpc-score-dev"
+                            aria-describedby="tpc-dev-box"
+                          >
+                            {formatComponentScore(s.scores[role])}
+                            <span className="tpc-visually-hidden">
+                              {' '}
+                              (lệch ≥ 2)
+                            </span>
+                          </td>
+                        ) : (
+                          <td>{formatComponentScore(s.scores[role])}</td>
+                        );
                       return (
                         <tr key={s.studentId}>
                           <td>
@@ -411,10 +517,10 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
                               <small>{s.code}</small>
                             </span>
                           </td>
-                          <td>{formatComponentScore(s.scores.CBHD)}</td>
-                          <td>{formatComponentScore(s.scores.CBPB)}</td>
-                          <td>{formatComponentScore(s.scores.CTHĐ)}</td>
-                          <td>{formatComponentScore(s.scores.TKHĐ)}</td>
+                          {cell('CBHD')}
+                          {cell('CBPB')}
+                          {cell('CTHĐ')}
+                          {cell('TKHĐ')}
                           <td>
                             {total === null ? (
                               <span className="tpc-score-total tpc-score-missing">
@@ -433,10 +539,26 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
                 </table>
               </div>
             )}
+            {hasDeviation && (
+              <div id="tpc-dev-box" className="tpc-dev-box" role="note">
+                <strong>Cờ lệch điểm hội đồng</strong>
+                {deviations.flatMap(({ score: s, pairs }) =>
+                  pairs.map((p) => (
+                    <span key={`${s.studentId}-${p.council}-${p.lecturer}`}>
+                      {s.name}: {ROLE_SHORT[p.council]}{' '}
+                      {formatComponentScore(s.scores[p.council])} lệch{' '}
+                      {ROLE_SHORT[p.lecturer]}{' '}
+                      {formatComponentScore(s.scores[p.lecturer])} (
+                      {formatComponentScore(p.diff)} điểm)
+                    </span>
+                  )),
+                )}
+              </div>
+            )}
             <p className="tpc-foot">
               Điểm khóa luận = (CT + TK + HD × 2 + PB × 2) / 6, thang 10, làm
-              tròn hai chữ số; chỉ tính khi đủ bốn phiếu. Mọi lần sửa điểm được
-              ghi ở tab Lịch sử.
+              tròn hai chữ số; chỉ tính khi đủ bốn phiếu. Kết quả chưa xác nhận:
+              giảng viên vẫn sửa được điểm, mọi lần sửa được ghi ở tab Lịch sử.
             </p>
           </>
         )}
