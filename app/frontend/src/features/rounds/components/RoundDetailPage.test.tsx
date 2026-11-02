@@ -565,3 +565,25 @@ it('blocks opening from the detail page and jumps to the config tab', async () =
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   await waitFor(() => tabSelected('Cấu hình'));
 });
+
+it('edits the lecturer topic limits of a draft round and saves them', async () => {
+  const service = await renderDetail('r-vb2-hk2-nhap');
+  tab('Cấu hình');
+  const save = screen.getByRole('button', { name: 'Lưu số đề tài' });
+  expect(save).toBeDisabled();
+  const min = screen.getByLabelText('Tối thiểu');
+  const max = screen.getByLabelText('Tối đa');
+  fireEvent.change(min, { target: { value: '6' } });
+  fireEvent.change(max, { target: { value: '5' } });
+  expect(
+    screen.getByText('Số đề tài tối thiểu không được lớn hơn tối đa.'),
+  ).toBeInTheDocument();
+  expect(save).toBeDisabled();
+  fireEvent.change(min, { target: { value: '2' } });
+  expect(save).toBeEnabled();
+  fireEvent.click(save);
+  await waitFor(() => expect(save).toBeDisabled());
+  const saved = await service.get('r-vb2-hk2-nhap');
+  expect(saved.lecturerLoadMin).toBe(2);
+  expect(saved.lecturerLoadMax).toBe(5);
+});

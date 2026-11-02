@@ -21,12 +21,22 @@ public sealed class SmtpEmailSender(IOptions<EmailOptions> options) : IEmailSend
         message.Body = new TextPart("plain") { Text = text };
 
         using var client = new SmtpClient();
-        // Gmail bắt buộc STARTTLS; chỉ tắt cho SMTP local như Mailpit.
-        var security = settings.UseStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
-        await client.ConnectAsync(settings.Host, settings.Port, security, cancellationToken);
-        if (!string.IsNullOrWhiteSpace(settings.Username))
-            await client.AuthenticateAsync(settings.Username, settings.Password, cancellationToken);
+        if (IsLocalDomain(to) && !string.IsNullOrWhiteSpace(settings.LocalDomainHost))
+        {
+            await client.ConnectAsync(settings.LocalDomainHost, settings.LocalDomainPort, SecureSocketOptions.None, cancellationToken);
+        }
+        else
+        {
+            // Gmail bắt buộc STARTTLS; chỉ tắt cho SMTP local như Mailpit.
+            var security = settings.UseStartTls ? SecureSocketOptions.StartTls : SecureSocketOptions.None;
+            await client.ConnectAsync(settings.Host, settings.Port, security, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(settings.Username))
+                await client.AuthenticateAsync(settings.Username, settings.Password, cancellationToken);
+        }
         await client.SendAsync(message, cancellationToken);
         await client.DisconnectAsync(true, cancellationToken);
     }
+
+    private static bool IsLocalDomain(string address) =>
+        address.TrimEnd().EndsWith(".local", StringComparison.OrdinalIgnoreCase);
 }

@@ -298,6 +298,12 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.Property<DateTime?>("FinishedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<int>("LecturerLoadMax")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("LecturerLoadMin")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)

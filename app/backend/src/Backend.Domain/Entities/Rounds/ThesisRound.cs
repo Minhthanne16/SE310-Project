@@ -50,6 +50,9 @@ public class ThesisRound : BaseEntity
     // Học kỳ hoặc khóa, ví dụ "HK1 2026–2027".
     public string PeriodLabel { get; set; } = string.Empty;
     public RoundStatus Status { get; set; } = RoundStatus.Draft;
+    // Số đề tài mỗi GV nhận hướng dẫn; chỉ để cảnh báo, không chặn (BUSINESS_RULES). 0 = chưa đặt mức.
+    public int LecturerLoadMin { get; set; }
+    public int LecturerLoadMax { get; set; }
     // Đợt nguồn khi tạo bằng cách sao chép khung cấu hình (PDR-034), chỉ để truy vết.
     public Guid? CopiedFromId { get; set; }
     public DateTime? OpenedAt { get; set; }

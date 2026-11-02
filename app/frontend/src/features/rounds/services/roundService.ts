@@ -293,6 +293,8 @@ export function createRoundService(
         program: input.program as Round['program'],
         periodLabel: input.periodLabel,
         status: 'Nháp',
+        lecturerLoadMin: source?.lecturerLoadMin ?? 0,
+        lecturerLoadMax: source?.lecturerLoadMax ?? 0,
         milestones: source
           ? blank.map((m) => {
               const old = source.milestones.find((o) => o.key === m.key);
@@ -314,7 +316,8 @@ export function createRoundService(
       return cloneRound(round);
     },
 
-    // PUT /api/rounds/{id} { name, program, periodLabel } → RoundDto; chỉ đợt
+    // PUT /api/rounds/{id} { name, program, periodLabel, lecturerLoadMin?,
+    // lecturerLoadMax? } → RoundDto; chỉ đợt
     // Nháp (409 khi đã mở); 400 thiếu thông tin; 409 trùng tên đợt khác.
     async update(id, raw) {
       const round = find(id);
@@ -337,6 +340,8 @@ export function createRoundService(
         name: input.name,
         program: input.program as Round['program'],
         periodLabel: input.periodLabel,
+        lecturerLoadMin: raw.lecturerLoadMin ?? round.lecturerLoadMin,
+        lecturerLoadMax: raw.lecturerLoadMax ?? round.lecturerLoadMax,
       });
     },
 

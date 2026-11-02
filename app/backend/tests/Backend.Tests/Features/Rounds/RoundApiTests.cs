@@ -26,19 +26,56 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
 
     public RoundApiTests(Factory factory) => _factory = factory;
 
+    // Xem danh sách mở cho cả ba vai trò (GV/SV chỉ thấy đợt mình tham gia); thao tác ghi chỉ Giáo vụ.
     [Theory]
-    [InlineData(null, HttpStatusCode.Unauthorized)]
-    [InlineData(UserRole.Student, HttpStatusCode.Forbidden)]
-    [InlineData(UserRole.Lecturer, HttpStatusCode.Forbidden)]
-    [InlineData(UserRole.AcademicAffairs, HttpStatusCode.OK)]
-    public async Task OnlyAcademicAffairsCanAccess(UserRole? role, HttpStatusCode expected)
+    [InlineData(null, HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized)]
+    [InlineData(UserRole.Student, HttpStatusCode.OK, HttpStatusCode.Forbidden)]
+    [InlineData(UserRole.Lecturer, HttpStatusCode.OK, HttpStatusCode.Forbidden)]
+    [InlineData(UserRole.AcademicAffairs, HttpStatusCode.OK, HttpStatusCode.BadRequest)]
+    public async Task ReadIsOpenToAllRolesWritesOnlyToAcademicAffairs(UserRole? role, HttpStatusCode read, HttpStatusCode write)
     {
         var cookie = role is { } r ? await LoginAs(r) : null;
 
-        var response = await Send(HttpMethod.Get, "/api/rounds", cookie);
+        var list = await Send(HttpMethod.Get, "/api/rounds", cookie);
+        var create = await Send(HttpMethod.Post, "/api/rounds", cookie, new { name = "", program = "", periodLabel = "" });
 
-        Assert.Equal(expected, response.StatusCode);
-        Assert.Equal(expected == HttpStatusCode.OK, (await ReadJson(response)).GetProperty("success").GetBoolean());
+        Assert.Equal(read, list.StatusCode);
+        Assert.Equal(read == HttpStatusCode.OK, (await ReadJson(list)).GetProperty("success").GetBoolean());
+        Assert.Equal(write, create.StatusCode);
+    }
+
+    [Fact]
+    public async Task LecturerLoadIsSavedPerDraftRoundAndValidated()
+    {
+        var cookie = await LoginAs(UserRole.AcademicAffairs);
+        var name = $"Đợt tải {Guid.NewGuid().ToString("N")[..8]}";
+        var created = await ReadJson(await Send(HttpMethod.Post, "/api/rounds", cookie, new { name, program = "Văn bằng 1", periodLabel = "K1" }));
+        var id = created.GetProperty("data").GetProperty("id").GetGuid();
+        Assert.Equal(0, created.GetProperty("data").GetProperty("lecturerLoadMax").GetInt32());
+
+        var saved = await Send(HttpMethod.Put, $"/api/rounds/{id}", cookie,
+            new { name, program = "Văn bằng 1", periodLabel = "K1", lecturerLoadMin = 2, lecturerLoadMax = 5 });
+        Assert.Equal(HttpStatusCode.OK, saved.StatusCode);
+        var data = (await ReadJson(saved)).GetProperty("data");
+        Assert.Equal(2, data.GetProperty("lecturerLoadMin").GetInt32());
+        Assert.Equal(5, data.GetProperty("lecturerLoadMax").GetInt32());
+
+        // Không gửi hai trường thì giữ nguyên mức.
+        var kept = (await ReadJson(await Send(HttpMethod.Put, $"/api/rounds/{id}", cookie, new { name, program = "Văn bằng 1", periodLabel = "K2" }))).GetProperty("data");
+        Assert.Equal(5, kept.GetProperty("lecturerLoadMax").GetInt32());
+
+        var swapped = await Send(HttpMethod.Put, $"/api/rounds/{id}", cookie,
+            new { name, program = "Văn bằng 1", periodLabel = "K1", lecturerLoadMin = 6, lecturerLoadMax = 5 });
+        Assert.Equal(HttpStatusCode.BadRequest, swapped.StatusCode);
+        Assert.Contains("Số đề tài tối thiểu không được lớn hơn tối đa.",
+            (await ReadJson(swapped)).GetProperty("errors").EnumerateArray().Select(e => e.GetString()));
+        Assert.Equal(HttpStatusCode.BadRequest, (await Send(HttpMethod.Put, $"/api/rounds/{id}", cookie,
+            new { name, program = "Văn bằng 1", periodLabel = "K1", lecturerLoadMin = -1, lecturerLoadMax = 0 })).StatusCode);
+
+        // Sao chép đợt lấy luôn mức đề tài.
+        var copy = await ReadJson(await Send(HttpMethod.Post, "/api/rounds", cookie,
+            new { name = $"{name} sao chép", program = "Văn bằng 1", periodLabel = "K3", copyFromId = id }));
+        Assert.Equal(2, copy.GetProperty("data").GetProperty("lecturerLoadMin").GetInt32());
     }
 
     [Fact]

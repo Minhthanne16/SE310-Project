@@ -11,6 +11,8 @@ public sealed class RoundDto
     public string Program { get; set; } = string.Empty;
     public string PeriodLabel { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public int LecturerLoadMin { get; set; }
+    public int LecturerLoadMax { get; set; }
     public List<RoundMilestoneDto> Milestones { get; set; } = [];
     public List<Guid> LecturerIds { get; set; } = [];
     public List<Guid> StudentIds { get; set; } = [];
@@ -53,6 +55,9 @@ public sealed class RoundInfoDto
     public string Name { get; set; } = string.Empty;
     public string Program { get; set; } = string.Empty;
     public string PeriodLabel { get; set; } = string.Empty;
+    // null = giữ nguyên mức hiện có.
+    public int? LecturerLoadMin { get; set; }
+    public int? LecturerLoadMax { get; set; }
 }
 
 public sealed class RoundMilestonesInputDto

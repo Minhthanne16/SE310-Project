@@ -100,6 +100,9 @@ export interface Round {
   // Học kỳ hoặc khóa, ví dụ "HK1 2026–2027", "Đợt 1/2026".
   periodLabel: string;
   status: RoundStatus;
+  // Số đề tài mỗi giảng viên nhận hướng dẫn, chỉ để cảnh báo. 0 = chưa đặt mức.
+  lecturerLoadMin: number;
+  lecturerLoadMax: number;
   milestones: Milestone[];
   lecturerIds: string[];
   studentIds: string[];
@@ -117,6 +120,9 @@ export interface RoundInput {
   // Sao chép khung 9 mốc (Thông báo cho, Cho nộp trễ) từ đợt cũ; không sao chép
   // ngày, giảng viên hay sinh viên (PDR-034).
   copyFromId?: string;
+  // Chỉ dùng khi sửa đợt Nháp; bỏ trống thì giữ mức hiện có.
+  lecturerLoadMin?: number;
+  lecturerLoadMax?: number;
 }
 
 export interface RoundFilters {
