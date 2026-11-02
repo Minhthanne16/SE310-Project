@@ -26,7 +26,7 @@ public sealed class DataSeederTests : IDisposable
     }
 
     [Fact]
-    public async Task AddsMissingDevelopmentRolesWithoutChangingExistingUsers()
+    public async Task ActivatesEveryDevelopmentSeedUserWithoutChangingTheirPassword()
     {
         using (var scope = _provider.CreateScope())
         {
@@ -38,8 +38,12 @@ public sealed class DataSeederTests : IDisposable
                 Email = "sv.22520001@qlkltn.local",
                 PasswordHash = "existing-password-hash",
                 Role = UserRole.Student,
-                MustChangePassword = false,
-                ClassName = "KTPM2022"
+                MustChangePassword = true,
+                ClassName = "KTPM2022",
+                SecurityStamp = "old-student-security-stamp",
+                ActivationCodeHash = "student-activation-code-hash",
+                ActivationCodeSentAt = DateTime.UtcNow,
+                ActivationCodeExpiresAt = DateTime.UtcNow.AddMinutes(10)
             });
             db.Users.Add(new User
             {
@@ -69,11 +73,15 @@ public sealed class DataSeederTests : IDisposable
         Assert.Equal("Sinh viên có sẵn", existingStudent.FullName);
         Assert.Equal("existing-password-hash", existingStudent.PasswordHash);
         Assert.False(existingStudent.MustChangePassword);
+        Assert.NotEqual("old-student-security-stamp", existingStudent.SecurityStamp);
+        Assert.Null(existingStudent.ActivationCodeHash);
+        Assert.Null(existingStudent.ActivationCodeSentAt);
+        Assert.Null(existingStudent.ActivationCodeExpiresAt);
 
         var lecturer = Assert.Single(users, user => user.Role == UserRole.Lecturer);
         Assert.Equal("GV0001", lecturer.UserCode);
         Assert.Equal("hash:GV0001", lecturer.PasswordHash);
-        Assert.True(lecturer.MustChangePassword);
+        Assert.False(lecturer.MustChangePassword);
 
         var academicAffairs = Assert.Single(users, user => user.Role == UserRole.AcademicAffairs);
         Assert.Equal("GVU0001", academicAffairs.UserCode);

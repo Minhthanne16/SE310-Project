@@ -53,7 +53,7 @@ API bắt buộc có `Authentication__Jwt__SigningKey` (tối thiểu 32 byte, v
 2. Chạy `cd app; docker compose --env-file backend/.env up --build` từ thư mục gốc. Nếu cổng `5432` đang được PostgreSQL khác dùng, đặt `POSTGRES_HOST_PORT=5433` trong `app/backend/.env`.
 3. Mở frontend tại <http://localhost:3000>, API tại <http://localhost:5290>, Scalar tại <http://localhost:5290/scalar>, MinIO Console tại <http://localhost:9001> và hộp thư Mailpit tại <http://localhost:8025>.
 
-Compose tự chạy migration, seed ba sản phẩm mẫu và ba tài khoản thử. Sinh viên `sv.22520001@qlkltn.local` (22520001) và Giảng viên `gv.0001@qlkltn.local` (GV0001) phải đổi mật khẩu ở lần đăng nhập đầu bằng OTP. Giáo vụ seed `giaovu.0001@qlkltn.local` (GVU0001) đã kích hoạt sẵn để dùng quản trị dữ liệu development ngay; chỉ dùng ở PostgreSQL local, không bật seed này trên Neon/dữ liệu thật. Volume PostgreSQL, Redis, MinIO và Data Protection keys giữ dữ liệu giữa các lần khởi động.
+Compose tự chạy migration, seed ba sản phẩm mẫu và ba tài khoản thử: Sinh viên `sv.22520001@qlkltn.local` (22520001), Giảng viên `gv.0001@qlkltn.local` (GV0001) và Giáo vụ `giaovu.0001@qlkltn.local` (GVU0001). Cả ba chỉ là seed local, đã kích hoạt sẵn để đăng nhập trực tiếp, không cần OTP/đổi mật khẩu; không bật seed này trên Neon/dữ liệu thật. Volume PostgreSQL, Redis, MinIO và Data Protection keys giữ dữ liệu giữa các lần khởi động.
 
 ### Dùng Neon thay PostgreSQL local
 

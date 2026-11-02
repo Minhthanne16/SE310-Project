@@ -43,6 +43,20 @@ public sealed class AuthApiTests : IClassFixture<AuthApiTests.AuthApiFactory>
     }
 
     [Fact]
+    public async Task AuthenticatedUserCanReadOwnProfile()
+    {
+        var email = _factory.AddUser(UserRole.Student, "matkhau123", mustChange: false);
+        var cookie = await LoginCookie(email, "matkhau123");
+
+        var response = await Send(HttpMethod.Get, "/api/profile", cookie);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var data = (await ReadJson(response)).GetProperty("data");
+        Assert.Equal(email, data.GetProperty("email").GetString());
+        Assert.Equal("Student", data.GetProperty("role").GetString());
+    }
+
+    [Fact]
     public async Task LoginWithWrongPasswordReturns401ApiResponse()
     {
         var email = _factory.AddUser(UserRole.Student, "matkhau123", mustChange: false);

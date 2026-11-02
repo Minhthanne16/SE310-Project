@@ -47,23 +47,22 @@ public static class DataSeeder
         }
     }
 
-    // Chỉ dùng cho database phát triển local. Sinh viên và giảng viên dùng mật khẩu
-    // ban đầu là mã người dùng và phải đổi ở lần đăng nhập đầu. Tài khoản Giáo vụ
-    // mẫu đã được kích hoạt sẵn để có thể quản trị dữ liệu phát triển ngay.
+    // Chỉ dùng cho database phát triển local. Các tài khoản mẫu được kích hoạt sẵn
+    // để có thể đăng nhập trực tiếp khi phát triển mà không phụ thuộc email/OTP.
     public static async Task SeedDevelopmentUsersAsync(IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
         var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
-        User Create(string code, string fullName, string email, UserRole role, bool mustChangePassword = true) => new()
+        User Create(string code, string fullName, string email, UserRole role) => new()
         {
             UserCode = code,
             FullName = fullName,
             Email = User.NormalizeEmail(email),
             PasswordHash = hasher.Hash(code),
             Role = role,
-            MustChangePassword = mustChangePassword
+            MustChangePassword = false
         };
 
         var student = Create("22520001", "Nguyễn Văn An", "sv.22520001@qlkltn.local", UserRole.Student);
@@ -74,21 +73,22 @@ public static class DataSeeder
         {
             student,
             lecturer,
-            Create("GVU0001", "Lê Văn Cường", "giaovu.0001@qlkltn.local", UserRole.AcademicAffairs, mustChangePassword: false)
+            Create("GVU0001", "Lê Văn Cường", "giaovu.0001@qlkltn.local", UserRole.AcademicAffairs)
         };
 
-        var seededAcademicAffairs = await context.Users.SingleOrDefaultAsync(user =>
-            user.UserCode == "GVU0001" &&
-            user.Email == "giaovu.0001@qlkltn.local" &&
-            user.Role == UserRole.AcademicAffairs);
+        var existingDevelopmentUsers = await context.Users.Where(user =>
+            (user.UserCode == "22520001" && user.Email == "sv.22520001@qlkltn.local" && user.Role == UserRole.Student) ||
+            (user.UserCode == "GV0001" && user.Email == "gv.0001@qlkltn.local" && user.Role == UserRole.Lecturer) ||
+            (user.UserCode == "GVU0001" && user.Email == "giaovu.0001@qlkltn.local" && user.Role == UserRole.AcademicAffairs))
+            .ToListAsync();
 
-        if (seededAcademicAffairs is not null)
+        foreach (var developmentUser in existingDevelopmentUsers)
         {
-            if (seededAcademicAffairs.MustChangePassword)
-                seededAcademicAffairs.SecurityStamp = Guid.NewGuid().ToString("N");
+            if (developmentUser.MustChangePassword)
+                developmentUser.SecurityStamp = Guid.NewGuid().ToString("N");
 
-            seededAcademicAffairs.MustChangePassword = false;
-            seededAcademicAffairs.ClearActivationCode();
+            developmentUser.MustChangePassword = false;
+            developmentUser.ClearActivationCode();
         }
 
         var existingUsers = await context.Users
