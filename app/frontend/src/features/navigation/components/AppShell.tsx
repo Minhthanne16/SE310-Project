@@ -140,13 +140,6 @@ const ShellContent: React.FC<Omit<AppShellProps, 'authService'>> = ({
           </div>
           <div className="app-topbar-right">
             <NotificationBell audience={audienceOf(user.role)} />
-            <span
-              className={`avatar avatar-${user.role}`}
-              role="img"
-              aria-label={user.fullName}
-            >
-              {initials(user.fullName)}
-            </span>
           </div>
         </header>
         <TopbarSlotContext.Provider value={slot}>
