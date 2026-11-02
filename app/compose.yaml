@@ -75,6 +75,9 @@ services:
       Email__Username: ${SMTP_USER:-}
       Email__Password: ${SMTP_PASSWORD:-}
       Email__From: ${SMTP_FROM:-QLKLTN <no-reply@qlkltn.local>}
+      # Tài khoản mẫu (@qlkltn.local) luôn nhận thư ở Mailpit, kể cả khi SMTP_* trỏ tới Gmail.
+      Email__LocalDomainHost: mailpit
+      Email__LocalDomainPort: "1025"
       FrontendOrigin: http://localhost:3000
       InitializeDatabase: "true"
       SeedSampleProducts: "true"
@@ -97,6 +100,8 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         API_INTERNAL_URL: http://api:8080
+        # Màn đợt khóa luận lưu vào PostgreSQL qua /api/rounds; đặt false để quay về kho demo.
+        NEXT_PUBLIC_ROUNDS_API: ${NEXT_PUBLIC_ROUNDS_API:-true}
     depends_on:
       - api
     ports:

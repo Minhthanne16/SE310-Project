@@ -1,6 +1,6 @@
-// Đợt khóa luận (docs/DESIGN/03: Danh sách đợt, Chi tiết đợt, Gantt). Backend
-// chưa có API đợt/đề tài/thông báo nên các kiểu dưới đây do frontend đề xuất
-// và chạy trên kho demo (features/rounds/services/roundService.ts).
+// Đợt khóa luận (docs/DESIGN/03: Danh sách đợt, Chi tiết đợt, Gantt). Mặc định
+// chạy trên kho demo (features/rounds/services/roundService.ts); đặt
+// NEXT_PUBLIC_ROUNDS_API=true để dùng API thật (roundApiService.ts).
 
 export const ROUND_PROGRAMS = ['Văn bằng 1', 'Văn bằng 2', 'Thạc sĩ'] as const;
 export type RoundProgram = (typeof ROUND_PROGRAMS)[number];
@@ -100,6 +100,9 @@ export interface Round {
   // Học kỳ hoặc khóa, ví dụ "HK1 2026–2027", "Đợt 1/2026".
   periodLabel: string;
   status: RoundStatus;
+  // Số đề tài mỗi giảng viên nhận hướng dẫn, chỉ để cảnh báo. 0 = chưa đặt mức.
+  lecturerLoadMin: number;
+  lecturerLoadMax: number;
   milestones: Milestone[];
   lecturerIds: string[];
   studentIds: string[];
@@ -114,9 +117,12 @@ export interface RoundInput {
   name: string;
   program: RoundProgram | '';
   periodLabel: string;
-  // Sao chép cấu hình mốc và danh sách giảng viên từ đợt cũ (không sao chép
-  // sinh viên và không sao chép ngày).
+  // Sao chép khung 9 mốc (Thông báo cho, Cho nộp trễ) từ đợt cũ; không sao chép
+  // ngày, giảng viên hay sinh viên (PDR-034).
   copyFromId?: string;
+  // Chỉ dùng khi sửa đợt Nháp; bỏ trống thì giữ mức hiện có.
+  lecturerLoadMin?: number;
+  lecturerLoadMax?: number;
 }
 
 export interface RoundFilters {
@@ -167,11 +173,16 @@ export interface NotificationPage {
   total: number;
 }
 
-export type RoundTab = 'tien-do' | 'cau-hinh' | 'giang-vien' | 'sinh-vien';
+// Các tab có thể là đích của một việc cần làm ở Trang chủ.
+export type RoundTaskTab = 'tien-do' | 'cau-hinh' | 'giang-vien' | 'sinh-vien';
+
+// Sáu tab của chi tiết đợt (artboard GiaoVu-DotKhoaLuan): thêm Đề tài và
+// Đánh giá để giáo vụ xem đề tài và tóm tắt phiếu/phản biện/hội đồng của đợt.
+export type RoundTab = RoundTaskTab | 'de-tai' | 'danh-gia';
 
 export interface RoundTask {
   id: string;
   text: string;
   // Tab của chi tiết đợt để xử lý việc này.
-  tab: RoundTab;
+  tab: RoundTaskTab;
 }

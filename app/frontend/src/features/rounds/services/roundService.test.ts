@@ -6,10 +6,25 @@ import {
   RoundRuleError,
   RoundValidationError,
   createRoundService,
+  type RoundService,
 } from './roundService';
+import { addDays } from '@/features/rounds/roundUtils';
 
 const TODAY = '2026-10-26';
 const svc = () => createRoundService({ today: TODAY });
+
+// Đợt Nháp mẫu còn thiếu ngày nên chưa mở được (PDR-032): đặt đủ chín mốc.
+const completeDates = async (s: RoundService, id: string) => {
+  const round = await s.get(id);
+  await s.updateMilestones(
+    id,
+    round.milestones.map((m, i) => ({
+      ...m,
+      startDate: addDays('2026-11-02', i * 7),
+      endDate: addDays('2026-11-02', i * 7 + 5),
+    })),
+  );
+};
 
 describe('list and get', () => {
   it('filters by status, program and name', async () => {
@@ -78,7 +93,7 @@ describe('create', () => {
     expect(await s.get(round.id)).toEqual(round);
   });
 
-  it('copies settings and lecturers from an old round, not dates or students', async () => {
+  it('copies only the milestone frame from an old round, not dates, lecturers or students', async () => {
     const s = svc();
     const source = await s.get('r-vb1-hk1');
     const round = await s.create({
@@ -87,7 +102,8 @@ describe('create', () => {
       periodLabel: 'HK2 2026–2027',
       copyFromId: source.id,
     });
-    expect(round.lecturerIds).toEqual(source.lecturerIds);
+    expect(source.lecturerIds.length).toBeGreaterThan(0);
+    expect(round.lecturerIds).toEqual([]);
     expect(round.studentIds).toEqual([]);
     expect(round.milestones.every((m) => m.startDate === '')).toBe(true);
     expect(round.milestones[0].notifyAudience).toBe('Giảng viên');
@@ -102,6 +118,63 @@ describe('create', () => {
   });
 });
 
+describe('update', () => {
+  it('edits program and period of a draft and keeps the rest', async () => {
+    const s = svc();
+    const before = await s.get('r-vb2-hk2-nhap');
+    const round = await s.update('r-vb2-hk2-nhap', {
+      name: 'Thạc sĩ · HK3 2026–2027',
+      program: 'Thạc sĩ',
+      periodLabel: ' HK3 2026–2027 ',
+    });
+    expect(round.name).toBe('Thạc sĩ · HK3 2026–2027');
+    expect(round.program).toBe('Thạc sĩ');
+    expect(round.periodLabel).toBe('HK3 2026–2027');
+    expect(round.status).toBe('Nháp');
+    expect(round.milestones).toEqual(before.milestones);
+    expect(await s.get(round.id)).toEqual(round);
+  });
+
+  it('refuses a round that is already open or finished', async () => {
+    const s = svc();
+    const input = {
+      name: 'Văn bằng 1 · X',
+      program: 'Văn bằng 1' as const,
+      periodLabel: 'X',
+    };
+    for (const id of ['r-vb1-hk1', 'r-vb1-hk2-2025'])
+      await expect(s.update(id, input)).rejects.toBeInstanceOf(RoundRuleError);
+  });
+
+  it('validates input and rejects another round name but not its own', async () => {
+    const s = svc();
+    const draft = await s.get('r-vb2-hk2-nhap');
+    await expect(
+      s.update(draft.id, { name: '', program: '', periodLabel: '' }),
+    ).rejects.toBeInstanceOf(RoundValidationError);
+    await expect(
+      s.update(draft.id, {
+        name: 'văn bằng 1 · hk1 2026–2027',
+        program: 'Văn bằng 1',
+        periodLabel: 'hk1 2026–2027',
+      }),
+    ).rejects.toBeInstanceOf(DuplicateRoundNameError);
+    const same = await s.update(draft.id, {
+      name: draft.name,
+      program: draft.program,
+      periodLabel: draft.periodLabel,
+    });
+    expect(same.name).toBe(draft.name);
+    await expect(
+      s.update('khong-co', {
+        name: 'a · b',
+        program: 'Văn bằng 1',
+        periodLabel: 'b',
+      }),
+    ).rejects.toBeInstanceOf(RoundNotFoundError);
+  });
+});
+
 describe('open, finish, remove', () => {
   it('opens only a draft and finishes only a running round', async () => {
     const s = svc();
@@ -109,6 +182,7 @@ describe('open, finish, remove', () => {
     await expect(s.finish('r-vb2-hk2-nhap')).rejects.toBeInstanceOf(
       RoundRuleError,
     );
+    await completeDates(s, 'r-vb2-hk2-nhap');
     const opened = await s.open('r-vb2-hk2-nhap');
     expect(opened.status).toBe('Đang diễn ra');
     expect((await s.finish('r-vb2-hk2-nhap')).status).toBe('Đã kết thúc');
@@ -117,12 +191,44 @@ describe('open, finish, remove', () => {
     );
   });
 
-  it('opens a draft even when setup is incomplete', async () => {
+  it('blocks opening while milestones lack dates, naming each milestone', async () => {
     const s = svc();
     const draft = await s.get('r-vb2-hk2-nhap');
     expect(draft.milestones.filter((m) => !m.startDate).length).toBeGreaterThan(
       0,
     );
+    const err = await s.open(draft.id).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RoundRuleError);
+    expect((err as Error).message).toContain('Đề cương: chưa đặt ngày');
+    expect((await s.get(draft.id)).status).toBe('Nháp');
+  });
+
+  it('blocks opening when a milestone has only one date', async () => {
+    const s = svc();
+    await completeDates(s, 'r-vb2-hk2-nhap');
+    const draft = await s.get('r-vb2-hk2-nhap');
+    // updateMilestones từ chối mốc lệch ngày, nên dựng đợt có sẵn dữ liệu sai.
+    const broken = createRoundService({
+      today: TODAY,
+      rounds: [
+        {
+          ...draft,
+          milestones: draft.milestones.map((m) =>
+            m.key === 'midterm' ? { ...m, endDate: '' } : m,
+          ),
+        },
+      ],
+    });
+    const err = await broken.open(draft.id).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RoundRuleError);
+    expect((err as Error).message).toContain('Báo cáo giữa kỳ: Nhập đủ ngày');
+  });
+
+  it('opens a draft with all nine milestones even without lecturers or students', async () => {
+    const s = svc();
+    await completeDates(s, 'r-vb2-hk2-nhap');
+    const draft = await s.get('r-vb2-hk2-nhap');
+    expect(draft.studentIds).toEqual([]);
     expect((await s.open(draft.id)).status).toBe('Đang diễn ra');
   });
 
@@ -145,6 +251,8 @@ describe('open, finish, remove', () => {
       program: 'Văn bằng 2',
       periodLabel: 'HK2 2026–2027',
     });
+    await completeDates(s, 'r-vb2-hk2-nhap');
+    await completeDates(s, other.id);
     await s.addParticipants('r-vb2-hk2-nhap', 'student', ['22520010']);
     // Cả hai đều Nháp nên thêm được; mở đợt thứ hai sẽ vi phạm quy tắc.
     await s.addParticipants(other.id, 'student', ['22520010']);
@@ -282,6 +390,7 @@ describe('participants', () => {
     expect(students.every((c) => !c.blockedReason)).toBe(true);
     const outcome = await s.addParticipants(draft, 'student', ['22520001']);
     expect(outcome.added).toBe(1);
+    await completeDates(s, draft);
     const err = await s.open(draft).catch((e: unknown) => e);
     expect(err).toBeInstanceOf(RoundRuleError);
     // Báo mã và họ tên, không báo id nội bộ.
@@ -321,7 +430,8 @@ describe('participants', () => {
       periodLabel: 'HK2 2026–2027',
       copyFromId: 'r-ths-1-2026',
     });
-    expect(copy.lecturerIds).toContain('CB101');
+    expect(copy.lecturerIds).toEqual([]);
+    await s.addParticipants(copy.id, 'lecturer', ['CB101']);
     const afterLecturer = await s.removeParticipant(
       copy.id,
       'lecturer',

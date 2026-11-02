@@ -37,7 +37,12 @@ afterEach(cleanup);
 
 const services = (today = TODAY) => {
   const roundService = createRoundService({ today });
-  const topicService = createTopicService({ today, roundService });
+  // Mặc định mức đề tài là 0 (chưa đặt, không cảnh báo); test cảnh báo đặt 2–6.
+  const topicService = createTopicService({
+    today,
+    roundService,
+    loadLimits: { min: 2, max: 6 },
+  });
   return { roundService, topicService };
 };
 

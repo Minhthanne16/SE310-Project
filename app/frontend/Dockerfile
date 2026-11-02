@@ -9,6 +9,9 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY frontend/ ./
 ARG API_INTERNAL_URL=http://api:8080
 ENV API_INTERNAL_URL=$API_INTERNAL_URL
+# Biến NEXT_PUBLIC_* được gắn vào bundle lúc build: true = màn đợt khóa luận dùng API thật.
+ARG NEXT_PUBLIC_ROUNDS_API=false
+ENV NEXT_PUBLIC_ROUNDS_API=$NEXT_PUBLIC_ROUNDS_API
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 

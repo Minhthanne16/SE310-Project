@@ -56,6 +56,8 @@ interface TopicServiceOptions {
   roundService?: RoundService;
   topics?: Topic[];
   phases?: Record<string, TopicPhase>;
+  // Mức tối thiểu/tối đa đề tài mỗi giảng viên; mặc định lấy hằng số tạm (0 = chưa đặt).
+  loadLimits?: { min: number; max: number };
 }
 
 const cloneTopic = (t: Topic): Topic => ({
@@ -148,7 +150,14 @@ export function createTopicService(
         round: await roundState(filters.roundId),
         items: filtered(filters).map(cloneTopic),
         roundTotal: all.length,
-        loads: lecturerLoads(all, round.lecturerIds),
+        loads: lecturerLoads(
+          all,
+          round.lecturerIds,
+          options.loadLimits ?? {
+            min: round.lecturerLoadMin,
+            max: round.lecturerLoadMax,
+          },
+        ),
       };
     },
 

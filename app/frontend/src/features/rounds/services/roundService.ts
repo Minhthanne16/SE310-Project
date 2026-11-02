@@ -4,7 +4,7 @@ import {
   validateRoundInput,
   type RoundFieldErrors,
 } from '@/features/rounds/roundValidation';
-import { validateMilestones } from '@/features/rounds/roundUtils';
+import { openBlockers, validateMilestones } from '@/features/rounds/roundUtils';
 import {
   DEMO_TODAY,
   buildMilestones,
@@ -12,6 +12,7 @@ import {
   seedParticipants,
   seedRounds,
 } from '@/features/rounds/services/roundSeed';
+import { createApiRoundService } from '@/features/rounds/services/roundApiService';
 import type {
   Candidate,
   Milestone,
@@ -86,6 +87,8 @@ export interface RoundService {
   list(filters?: RoundFilters): Promise<Round[]>;
   get(id: string): Promise<Round>;
   create(input: RoundInput): Promise<Round>;
+  // Sửa thông tin đợt (chương trình, tên đợt); chỉ khi đợt còn Nháp.
+  update(id: string, input: RoundInput): Promise<Round>;
   open(id: string): Promise<Round>;
   finish(id: string): Promise<Round>;
   remove(id: string): Promise<void>;
@@ -271,9 +274,9 @@ export function createRoundService(
 
     // Đề xuất: POST /api/rounds { name, program, periodLabel, copyFromId? }
     // → 201 RoundDto (trạng thái Nháp); 400 thiếu thông tin; 409 trùng tên đợt.
-    // Sao chép từ đợt cũ: giữ cấu hình mốc ("Thông báo cho", "Cho nộp trễ") và
-    // danh sách giảng viên; xóa ngày (ngày của đợt cũ đã qua nên dễ gây lệch
-    // thứ tự) và không sao chép sinh viên.
+    // Sao chép từ đợt cũ (PDR-034): chỉ giữ khung 9 mốc ("Thông báo cho",
+    // "Cho nộp trễ"); không sao chép ngày (ngày của đợt cũ đã qua nên dễ gây
+    // lệch thứ tự), giảng viên hay sinh viên.
     async create(raw) {
       const fields = validateRoundInput(raw);
       if (Object.keys(fields).length > 0)
@@ -290,6 +293,8 @@ export function createRoundService(
         program: input.program as Round['program'],
         periodLabel: input.periodLabel,
         status: 'Nháp',
+        lecturerLoadMin: source?.lecturerLoadMin ?? 0,
+        lecturerLoadMax: source?.lecturerLoadMax ?? 0,
         milestones: source
           ? blank.map((m) => {
               const old = source.milestones.find((o) => o.key === m.key);
@@ -302,7 +307,7 @@ export function createRoundService(
                 : m;
             })
           : blank,
-        lecturerIds: source ? [...source.lecturerIds] : [],
+        lecturerIds: [],
         studentIds: [],
         lockedStudentIds: [],
         topicSummary: emptyTopics(),
@@ -311,14 +316,46 @@ export function createRoundService(
       return cloneRound(round);
     },
 
-    // Đề xuất: POST /api/rounds/{id}/open → RoundDto; 409 khi không phải Nháp
-    // hoặc có sinh viên đang ở đợt đang diễn ra khác. Việc chưa xong (thiếu ngày,
-    // chưa có người) chỉ cảnh báo ở giao diện, không chặn. Máy chủ gửi thông
-    // báo cho giảng viên và sinh viên của đợt.
+    // PUT /api/rounds/{id} { name, program, periodLabel, lecturerLoadMin?,
+    // lecturerLoadMax? } → RoundDto; chỉ đợt
+    // Nháp (409 khi đã mở); 400 thiếu thông tin; 409 trùng tên đợt khác.
+    async update(id, raw) {
+      const round = find(id);
+      if (round.status !== 'Nháp')
+        throw new RoundRuleError(
+          'Đợt đã mở nên không sửa thông tin đợt được nữa.',
+        );
+      const fields = validateRoundInput(raw);
+      if (Object.keys(fields).length > 0)
+        throw new RoundValidationError(fields);
+      const input = normalizeRoundInput(raw);
+      if (
+        rounds.some(
+          (r) => r.id !== id && nameKey(r.name) === nameKey(input.name),
+        )
+      )
+        throw new DuplicateRoundNameError();
+      return save({
+        ...round,
+        name: input.name,
+        program: input.program as Round['program'],
+        periodLabel: input.periodLabel,
+        lecturerLoadMin: raw.lecturerLoadMin ?? round.lecturerLoadMin,
+        lecturerLoadMax: raw.lecturerLoadMax ?? round.lecturerLoadMax,
+      });
+    },
+
+    // Đề xuất: POST /api/rounds/{id}/open → RoundDto; 409 khi không phải Nháp,
+    // còn mốc thiếu hoặc sai ngày (PDR-032, chặn) hoặc có sinh viên đang ở đợt
+    // đang diễn ra khác. Thiếu giảng viên, sinh viên chỉ cảnh báo ở giao diện
+    // (PDR-033). Máy chủ gửi thông báo cho giảng viên và sinh viên của đợt.
     async open(id) {
       const round = find(id);
       if (round.status !== 'Nháp')
         throw new RoundRuleError('Chỉ mở được đợt Nháp.');
+      const blockers = openBlockers(round);
+      if (blockers.length > 0)
+        throw new RoundRuleError(`Chưa mở được đợt: ${blockers.join('; ')}.`);
       const conflicts = round.studentIds.filter((s) =>
         runningRoundOf(s, round.id),
       );
@@ -477,4 +514,9 @@ export function createRoundService(
   };
 }
 
-export const roundService: RoundService = createRoundService();
+// Mặc định chạy kho demo vì các màn khác (đề tài, phiếu...) còn dùng mã đợt
+// demo; đặt NEXT_PUBLIC_ROUNDS_API=true để dùng API thật (roundApiService.ts).
+export const roundService: RoundService =
+  process.env.NEXT_PUBLIC_ROUNDS_API === 'true'
+    ? createApiRoundService()
+    : createRoundService();
