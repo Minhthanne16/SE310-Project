@@ -16,6 +16,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<EvaluationCriterion> EvaluationCriteria => Set<EvaluationCriterion>();
     public DbSet<EvaluationSubCriterion> EvaluationSubCriteria => Set<EvaluationSubCriterion>();
     public DbSet<EvaluationTemplateAssignment> EvaluationTemplateAssignments => Set<EvaluationTemplateAssignment>();
+    public DbSet<ThesisRound> ThesisRounds => Set<ThesisRound>();
+    public DbSet<RoundMilestone> RoundMilestones => Set<RoundMilestone>();
+    public DbSet<RoundParticipant> RoundParticipants => Set<RoundParticipant>();
     public DbSet<UserAuditEntry> UserAuditEntries => Set<UserAuditEntry>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -84,6 +87,40 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => new { e.RoundId, e.Role }).IsUnique();
             // Mẫu đang gán không được xóa (kiểm tra ở Application, chặn thêm ở database).
             entity.HasOne(e => e.Template).WithMany().HasForeignKey(e => e.TemplateId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ThesisRound>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.NormalizedName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Program).IsRequired().HasMaxLength(32);
+            entity.Property(e => e.PeriodLabel).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(16);
+            entity.HasIndex(e => e.NormalizedName).IsUnique();
+            entity.HasIndex(e => e.Status);
+            // Đợt nguồn bị xóa thì chỉ mất dấu truy vết, không xóa đợt sao chép.
+            entity.HasOne<ThesisRound>().WithMany().HasForeignKey(e => e.CopiedFromId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasMany(e => e.Milestones).WithOne().HasForeignKey(m => m.RoundId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasMany(e => e.Participants).WithOne(p => p.Round).HasForeignKey(p => p.RoundId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<RoundMilestone>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Key).HasConversion<string>().HasMaxLength(32);
+            entity.Property(e => e.NotifyAudience).HasConversion<string>().HasMaxLength(16);
+            entity.HasIndex(e => new { e.RoundId, e.Key }).IsUnique();
+        });
+
+        modelBuilder.Entity<RoundParticipant>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(16);
+            entity.HasIndex(e => new { e.RoundId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            // Không xóa được người dùng đang thuộc đợt.
+            entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<UserAuditEntry>(entity =>

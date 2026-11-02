@@ -8,11 +8,12 @@ import {
 } from '@/types/topic';
 
 // TẠM THỜI (demo): docs/DESIGN/03 chỉ nói "mức tối thiểu và tối đa của đợt
-// chỉ cảnh báo, không chặn" mà không nêu con số. Hai hằng số dưới đây chỉ để
-// màn hình có cờ "GV vượt mức"; khi tài liệu chốt giá trị (hoặc đợt có cấu
-// hình riêng) thì thay bằng dữ liệu từ đợt.
-export const LECTURER_LOAD_MIN = 2;
-export const LECTURER_LOAD_MAX = 6;
+// chỉ cảnh báo, không chặn" mà không nêu con số. Người dùng chốt 2026-11-02
+// tạm đặt cả hai về 0, nghĩa là CHƯA ĐẶT MỨC nên không cảnh báo (0 ở mức tối đa
+// là không giới hạn). Khi tài liệu chốt giá trị (hoặc đợt có cấu hình riêng) thì
+// thay bằng dữ liệu từ đợt.
+export const LECTURER_LOAD_MIN = 0;
+export const LECTURER_LOAD_MAX = 0;
 
 // Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận (03: Đề tài của
 // tôi). Đề xuất đang Chờ GV duyệt hoặc Bị từ chối chưa được tính.
@@ -26,7 +27,7 @@ export function loadLevel(
   min = LECTURER_LOAD_MIN,
   max = LECTURER_LOAD_MAX,
 ): LoadLevel {
-  if (count > max) return 'over';
+  if (max > 0 && count > max) return 'over';
   if (count < min) return 'below';
   return 'ok';
 }
@@ -34,6 +35,10 @@ export function loadLevel(
 export function lecturerLoads(
   topics: Topic[],
   lecturerIds: string[],
+  limits: { min: number; max: number } = {
+    min: LECTURER_LOAD_MIN,
+    max: LECTURER_LOAD_MAX,
+  },
 ): Record<string, LecturerLoad> {
   const loads: Record<string, LecturerLoad> = {};
   for (const id of lecturerIds) {
@@ -43,9 +48,9 @@ export function lecturerLoads(
     loads[id] = {
       lecturerId: id,
       count,
-      min: LECTURER_LOAD_MIN,
-      max: LECTURER_LOAD_MAX,
-      level: loadLevel(count),
+      min: limits.min,
+      max: limits.max,
+      level: loadLevel(count, limits.min, limits.max),
     };
   }
   return loads;

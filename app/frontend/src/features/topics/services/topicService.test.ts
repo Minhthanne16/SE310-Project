@@ -22,7 +22,11 @@ const make = (today = TODAY) => {
   const roundService = createRoundService({ today });
   return {
     roundService,
-    service: createTopicService({ today, roundService }),
+    service: createTopicService({
+      today,
+      roundService,
+      loadLimits: { min: 2, max: 6 },
+    }),
   };
 };
 

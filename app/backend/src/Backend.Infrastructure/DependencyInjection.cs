@@ -4,6 +4,7 @@ using Backend.Domain.Interfaces;
 using Backend.Infrastructure.Data;
 using Backend.Infrastructure.Repositories.Evaluations;
 using Backend.Infrastructure.Repositories.Products;
+using Backend.Infrastructure.Repositories.Rounds;
 using Backend.Infrastructure.Repositories.Users;
 using Backend.Infrastructure.Integrations.Authentication;
 using Backend.Infrastructure.Integrations.Email;
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEvaluationTemplateRepository, EvaluationTemplateRepository>();
+        services.AddScoped<IRoundRepository, RoundRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
         services.Configure<EmailOptions>(configuration.GetSection("Email"));

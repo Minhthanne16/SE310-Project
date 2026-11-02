@@ -33,10 +33,10 @@ type StatusFilter = RoundStatus | 'Tất cả';
 const PAGE_SIZE = 6;
 // Thứ tự trong artboard: Đang diễn ra, Nháp, Đã kết thúc, Tất cả.
 const STATUS_ORDER: StatusFilter[] = [
+  'Tất cả',
   'Đang diễn ra',
   'Nháp',
   'Đã kết thúc',
-  'Tất cả',
 ];
 
 // Màn Danh sách đợt khóa luận của Giáo vụ (docs/DESIGN/03, artboard

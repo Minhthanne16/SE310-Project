@@ -15,6 +15,8 @@ import {
   setUrl,
 } from '@/test/navigationMock';
 import { createRoundService } from '@/features/rounds/services/roundService';
+import type { EvaluationService } from '@/features/evaluations/services/evaluationService';
+import { createTopicService } from '@/features/topics/services/topicService';
 import { RoundDetailPage } from './RoundDetailPage';
 
 vi.mock('next/navigation', async () => {
@@ -389,4 +391,177 @@ it('makes a finished round read-only', async () => {
   expect(
     screen.queryByRole('button', { name: 'Thêm sinh viên' }),
   ).not.toBeInTheDocument();
+});
+
+const fakeEvaluation = (roles: ('Supervisor' | 'Reviewer' | 'Committee')[]) =>
+  ({
+    listAssignments: async (roundId: string) =>
+      roles.map((role) => ({
+        roundId,
+        role,
+        templateId: 't',
+        templateName: 't',
+      })),
+  }) as unknown as EvaluationService;
+
+const renderWithServices = async (
+  id: string,
+  roles: ('Supervisor' | 'Reviewer' | 'Committee')[] = [
+    'Supervisor',
+    'Reviewer',
+    'Committee',
+  ],
+) => {
+  const roundService = createRoundService();
+  render(
+    <RoundDetailPage
+      roundId={id}
+      roundService={roundService}
+      topicService={createTopicService({ roundService })}
+      evaluationService={fakeEvaluation(roles)}
+    />,
+  );
+  await screen.findByRole('heading', { level: 1 });
+};
+
+it('lists six tabs with the topic count and shows the finish button as primary', async () => {
+  await renderDetail();
+  const names = screen.getAllByRole('tab').map((t) => t.textContent);
+  expect(names).toEqual([
+    'Tiến độ',
+    'Cấu hình',
+    expect.stringMatching(/^Giảng viên \(\d+\)$/),
+    expect.stringMatching(/^Sinh viên \(\d+\)$/),
+    expect.stringMatching(/^Đề tài \(\d+\)$/),
+    'Đánh giá',
+  ]);
+  expect(screen.getByRole('button', { name: 'Kết thúc đợt' })).toHaveClass(
+    'rnd-btn-primary',
+  );
+});
+
+it('shows the round topics with a status filter, search and a link to the topics page', async () => {
+  await renderWithServices('r-vb1-hk1');
+  tab('Đề tài');
+  tabSelected('Đề tài');
+  expect(await screen.findByRole('table')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: 'Mở trang Đề tài' })).toHaveAttribute(
+    'href',
+    '/giao-vu/de-tai?dot=r-vb1-hk1',
+  );
+  const rowsBefore = screen.getAllByRole('row').length;
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Tìm đề tài' }), {
+    target: { value: 'zzzz-khong-co' },
+  });
+  expect(
+    screen.getByText('Không có đề tài nào khớp bộ lọc'),
+  ).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Xóa bộ lọc' }));
+  expect(screen.getAllByRole('row')).toHaveLength(rowsBefore);
+  const filter = screen.getByRole('combobox', { name: 'Lọc theo trạng thái' });
+  fireEvent.change(filter, { target: { value: 'Đang thực hiện' } });
+  expect(screen.getAllByRole('row').length).toBeLessThan(rowsBefore);
+});
+
+it('summarises forms, reviewers and councils in the evaluation tab', async () => {
+  await renderWithServices('r-vb1-hk1', ['Supervisor']);
+  tab('Đánh giá');
+  expect(await screen.findByText('Đã gán 1/3 vai trò')).toBeInTheDocument();
+  expect(
+    screen.getByRole('link', { name: /Mở Phiếu đánh giá/ }),
+  ).toHaveAttribute('href', '/giao-vu/phieu-danh-gia?dot=r-vb1-hk1');
+  expect(
+    screen.getByRole('link', { name: /Mở Giảng viên phản biện/ }),
+  ).toHaveAttribute('href', '/giao-vu/phan-bien?dot=r-vb1-hk1');
+  expect(
+    screen.getByRole('link', { name: /Mở Hội đồng bảo vệ/ }),
+  ).toHaveAttribute('href', '/giao-vu/hoi-dong?dot=r-vb1-hk1');
+});
+
+it('locks the round info and lecturer topic limits once the round is open', async () => {
+  await renderDetail();
+  tab('Cấu hình');
+  expect(
+    screen.getByRole('heading', {
+      name: 'Số đề tài mỗi giảng viên nhận hướng dẫn',
+    }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getAllByText(/Đợt đã mở nên không chỉnh sửa mục này nữa/),
+  ).toHaveLength(2);
+});
+
+it('edits the program and name of a draft round and saves them', async () => {
+  const service = await renderDetail('r-vb2-hk2-nhap');
+  tab('Cấu hình');
+  const save = screen.getByRole('button', { name: 'Lưu thông tin đợt' });
+  expect(save).toBeDisabled();
+  expect(
+    screen.queryByText(/Đợt đã mở nên không chỉnh sửa/),
+  ).not.toBeInTheDocument();
+  const label = screen.getByLabelText('Tên đợt');
+  fireEvent.change(label, { target: { value: '' } });
+  expect(screen.getByText('Nhập học kỳ hoặc khóa.')).toBeInTheDocument();
+  expect(save).toBeDisabled();
+  fireEvent.change(label, { target: { value: 'HK3 2026–2027' } });
+  fireEvent.change(screen.getByLabelText('Chương trình'), {
+    target: { value: 'Thạc sĩ' },
+  });
+  expect(save).toBeEnabled();
+  fireEvent.click(save);
+  await waitFor(() => expect(save).toBeDisabled());
+  const saved = await service.get('r-vb2-hk2-nhap');
+  expect(saved.name).toBe('Thạc sĩ · HK3 2026–2027');
+  expect(saved.program).toBe('Thạc sĩ');
+  expect(
+    await screen.findByRole('heading', { level: 1, name: /Thạc sĩ · HK3/ }),
+  ).toBeInTheDocument();
+});
+
+it('shows a duplicate name error from the service on the name field', async () => {
+  await renderDetail('r-vb2-hk2-nhap');
+  tab('Cấu hình');
+  fireEvent.change(screen.getByLabelText('Tên đợt'), {
+    target: { value: 'HK1 2026–2027' },
+  });
+  fireEvent.change(screen.getByLabelText('Chương trình'), {
+    target: { value: 'Văn bằng 1' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu thông tin đợt' }));
+  expect(await screen.findByText(/Tên đợt đã tồn tại/)).toBeInTheDocument();
+});
+
+it('asks before leaving the config tab with unsaved round info', async () => {
+  await renderDetail('r-vb2-hk2-nhap');
+  tab('Cấu hình');
+  fireEvent.change(screen.getByLabelText('Tên đợt'), {
+    target: { value: 'HK9 2030' },
+  });
+  tab('Giảng viên');
+  tabSelected('Cấu hình');
+});
+
+it('disables the program and name fields once the round is running', async () => {
+  await renderDetail('r-vb1-hk1');
+  tab('Cấu hình');
+  expect(screen.getByLabelText('Tên đợt')).toBeDisabled();
+  expect(screen.getByLabelText('Chương trình')).toBeDisabled();
+  expect(
+    screen.queryByRole('button', { name: 'Lưu thông tin đợt' }),
+  ).not.toBeInTheDocument();
+});
+
+it('blocks opening from the detail page and jumps to the config tab', async () => {
+  await renderDetail('r-vb2-hk2-nhap');
+  fireEvent.click(screen.getByRole('button', { name: 'Mở đợt' }));
+  const dialog = screen.getByRole('dialog');
+  expect(within(dialog).getByRole('alert')).toHaveTextContent(
+    'Đề cương: chưa đặt ngày',
+  );
+  expect(within(dialog).getByRole('button', { name: 'Mở đợt' })).toBeDisabled();
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Đi tới tab Cấu hình' }),
+  );
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  await waitFor(() => tabSelected('Cấu hình'));
 });

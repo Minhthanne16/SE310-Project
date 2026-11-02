@@ -6,6 +6,7 @@ import {
   finishWarning,
   formatDate,
   isIsoDate,
+  openBlockers,
   milestoneProgress,
   milestoneStatus,
   roundSpan,
@@ -83,12 +84,27 @@ describe('validateMilestones', () => {
 });
 
 describe('warnings and tasks', () => {
-  it('lists unfinished setup of a draft', () => {
+  it('lists the non-blocking setup gaps of a draft (people only)', () => {
     expect(setupWarnings(round('r-vb2-hk2-nhap'))).toEqual([
-      '7 mốc chưa có ngày',
       'chưa có sinh viên',
     ]);
     expect(setupWarnings(round('r-vb1-hk1'))).toEqual([]);
+  });
+
+  it('lists a blocker per milestone without a valid date', () => {
+    const blockers = openBlockers(round('r-vb2-hk2-nhap'));
+    expect(blockers).toHaveLength(7);
+    expect(blockers).toContain('Đề cương: chưa đặt ngày');
+    expect(openBlockers(round('r-vb1-hk1'))).toEqual([]);
+
+    const bad = round('r-vb1-hk1');
+    bad.milestones[3].endDate = '2026-01-01';
+    bad.milestones[4].startDate = '';
+    bad.milestones[4].endDate = '';
+    expect(openBlockers(bad)).toEqual([
+      expect.stringMatching(/^Báo cáo giữa kỳ: Ngày kết thúc phải sau/),
+      'Báo cáo cuối kỳ: chưa đặt ngày',
+    ]);
   });
 
   it('warns about unpublished topics when finishing', () => {

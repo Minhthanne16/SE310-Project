@@ -1718,3 +1718,104 @@
     font-size: 24px;
   }
 }
+
+/* Tab Đề tài và Đánh giá của chi tiết đợt (artboard GiaoVu-DotKhoaLuan). */
+.rnd-table-topics {
+  min-width: 1000px;
+}
+
+.rnd-table-topics td {
+  padding: 14px 16px;
+  vertical-align: top;
+}
+
+.rnd-cell-warn {
+  color: #8a4b08;
+}
+
+.rnd-empty-cell {
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.rnd-empty-cell > * {
+  display: block;
+  margin: 0 auto;
+}
+
+.rnd-empty-cell span {
+  max-width: 34rem;
+  margin-top: 6px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #5c5c5c;
+}
+
+.rnd-empty-cell .rnd-btn {
+  display: inline-flex;
+  margin-top: 10px;
+}
+
+.rnd-eval-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 14px;
+}
+
+.rnd-eval-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px 22px;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: #fafaf9;
+  color: #1a1a1a;
+  text-decoration: none;
+}
+
+.rnd-eval-card-attn {
+  border-color: #1a1a1a;
+  background: #fff;
+}
+
+.rnd-eval-title {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.rnd-eval-sub {
+  font-size: 14px;
+  line-height: 1.45;
+  color: #5c5c5c;
+}
+
+.rnd-eval-card-attn .rnd-eval-sub {
+  color: #5c3a06;
+}
+
+/* Nút "Lưu thông tin đợt" của tab Cấu hình */
+.rnd-info-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+/* Liên kết dạng nút (ví dụ "Đi tới tab Cấu hình" trong hộp Mở đợt) */
+button.rnd-link {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.rnd-note ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}

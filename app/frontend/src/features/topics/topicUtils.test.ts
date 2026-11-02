@@ -47,11 +47,18 @@ it('formats scores with a decimal comma', () => {
   expect(formatScore(null)).toBe('—');
 });
 
-it('classifies the lecturer load against the provisional min and max', () => {
-  expect(loadLevel(LECTURER_LOAD_MAX + 1)).toBe('over');
-  expect(loadLevel(LECTURER_LOAD_MAX)).toBe('ok');
-  expect(loadLevel(LECTURER_LOAD_MIN)).toBe('ok');
-  expect(loadLevel(LECTURER_LOAD_MIN - 1)).toBe('below');
+it('classifies the lecturer load against the given min and max', () => {
+  expect(loadLevel(7, 2, 6)).toBe('over');
+  expect(loadLevel(6, 2, 6)).toBe('ok');
+  expect(loadLevel(2, 2, 6)).toBe('ok');
+  expect(loadLevel(1, 2, 6)).toBe('below');
+});
+
+it('does not warn while the limits are unset (0)', () => {
+  expect(LECTURER_LOAD_MIN).toBe(0);
+  expect(LECTURER_LOAD_MAX).toBe(0);
+  expect(loadLevel(0)).toBe('ok');
+  expect(loadLevel(99)).toBe('ok');
 });
 
 it('counts GV topics and accepted SV proposals only', () => {
@@ -62,6 +69,7 @@ it('counts GV topics and accepted SV proposals only', () => {
   const loads = lecturerLoads(
     seedTopics().filter((t) => t.roundId === 'r-vb1-hk1'),
     ['CB101', 'CB102', 'CB103'],
+    { min: 2, max: 6 },
   );
   expect(loads.CB101).toMatchObject({ count: 8, level: 'over' });
   expect(loads.CB102).toMatchObject({ count: 6, level: 'ok' });

@@ -6,14 +6,26 @@ import toast from 'react-hot-toast';
 import '@/features/rounds/rounds.css';
 import { roundSpan, validateMilestones } from '@/features/rounds/roundUtils';
 import {
+  validateRoundInput,
+  type RoundFieldErrors,
+} from '@/features/rounds/roundValidation';
+import {
+  LECTURER_LOAD_MAX,
+  LECTURER_LOAD_MIN,
+} from '@/features/topics/topicUtils';
+import {
+  DuplicateRoundNameError,
   MilestoneOrderError,
+  RoundValidationError,
   type RoundService,
 } from '@/features/rounds/services/roundService';
 import {
   NOTIFY_AUDIENCES,
+  ROUND_PROGRAMS,
   type Milestone,
   type NotifyAudience,
   type Round,
+  type RoundProgram,
 } from '@/types/round';
 
 interface RoundConfigTabProps {
@@ -33,7 +45,8 @@ const AUDIENCE_LABEL: Record<NotifyAudience, string> = {
 const sameConfig = (a: Milestone[], b: Milestone[]) =>
   JSON.stringify(a) === JSON.stringify(b);
 
-// Tab Cấu hình (artboard GiaoVu-DotKhoaLuan): thông tin đợt, 9 mốc với ngày bắt
+// Tab Cấu hình (artboard GiaoVu-DotKhoaLuan): thông tin đợt, mức đề tài mỗi
+// giảng viên, 9 mốc với ngày bắt
 // đầu/kết thúc, "Thông báo cho", công tắc "Cho nộp trễ" (chỉ Đề cương, Giữa
 // kỳ, Cuối kỳ). Kiểm tra thứ tự mốc ngay khi gõ.
 export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
@@ -43,9 +56,35 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   onDirtyChange,
 }) => {
   const readOnly = round.status === 'Đã kết thúc';
+  // Đợt đã mở (đang diễn ra hoặc đã kết thúc): thông tin đợt và mức đề tài không
+  // sửa nữa, giáo vụ chỉ tiếp tục cập nhật các mốc thời gian.
+  const infoLocked = round.status !== 'Nháp';
   const [draft, setDraft] = useState<Milestone[]>(round.milestones);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Thông tin đợt (chỉ sửa được khi Nháp): chương trình và tên đợt. Tên lưu
+  // của đợt là "{chương trình} · {tên đợt}" như hộp Tạo đợt.
+  const [program, setProgram] = useState<RoundProgram>(round.program);
+  const [label, setLabel] = useState(round.periodLabel);
+  const [infoSaving, setInfoSaving] = useState(false);
+  const [infoError, setInfoError] = useState<string | null>(null);
+  const [serverFields, setServerFields] = useState<RoundFieldErrors>({});
+
+  const cleanLabel = label.trim().replace(/s+/g, ' ');
+  const infoDirty =
+    !infoLocked &&
+    (program !== round.program || cleanLabel !== round.periodLabel);
+  const infoFields = validateRoundInput({
+    name: `${program} · ${cleanLabel}`,
+    program,
+    periodLabel: cleanLabel,
+  });
+  // Lỗi tên đợt hiện khi đang sửa; lỗi từ máy chủ (trùng tên) hiện đến khi sửa tiếp.
+  const labelError = infoDirty
+    ? (infoFields.periodLabel ?? serverFields.name ?? serverFields.periodLabel)
+    : undefined;
+  const infoInvalid = Object.keys(infoFields).length > 0;
 
   const errors = useMemo(() => validateMilestones(draft), [draft]);
   const errorCount = Object.keys(errors).length;
@@ -58,10 +97,41 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   );
   const weekOne = roundSpan(round.milestones)?.start ?? '';
 
+  const anyDirty = dirty || infoDirty;
   useEffect(() => {
-    onDirtyChange?.(dirty);
+    onDirtyChange?.(anyDirty);
     return () => onDirtyChange?.(false);
-  }, [dirty, onDirtyChange]);
+  }, [anyDirty, onDirtyChange]);
+
+  const saveInfo = async () => {
+    if (infoSaving || infoInvalid || !infoDirty) return;
+    setInfoSaving(true);
+    setInfoError(null);
+    setServerFields({});
+    try {
+      const updated = await roundService.update(round.id, {
+        name: `${program} · ${cleanLabel}`,
+        program,
+        periodLabel: cleanLabel,
+      });
+      toast.success('Đã lưu thông tin đợt.');
+      setProgram(updated.program);
+      setLabel(updated.periodLabel);
+      onSaved(updated);
+    } catch (err: unknown) {
+      if (err instanceof DuplicateRoundNameError)
+        setServerFields({ periodLabel: err.message });
+      else if (err instanceof RoundValidationError) setServerFields(err.fields);
+      else
+        setInfoError(
+          err instanceof Error && err.message
+            ? err.message
+            : 'Lưu thông tin đợt thất bại. Thử lại sau.',
+        );
+    } finally {
+      setInfoSaving(false);
+    }
+  };
 
   const patch = (key: Milestone['key'], change: Partial<Milestone>) => {
     setDraft((list) =>
@@ -100,15 +170,56 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
     <div className="rnd-panel">
       <section className="rnd-section" aria-labelledby="round-info-title">
         <h2 id="round-info-title">Thông tin đợt</h2>
+        {infoLocked && (
+          <p className="rnd-note rnd-note-warn">
+            Đợt đã mở nên không chỉnh sửa mục này nữa. Giáo vụ chỉ tiếp tục cập
+            nhật các mốc thời gian.
+          </p>
+        )}
         <div className="rnd-info-grid">
           <label className="rnd-label">
             Chương trình
-            <input className="rnd-input" readOnly value={round.program} />
+            <select
+              className="rnd-select"
+              disabled={infoLocked || infoSaving}
+              value={infoLocked ? round.program : program}
+              onChange={(e) => {
+                setProgram(e.target.value as RoundProgram);
+                setServerFields({});
+                setInfoError(null);
+              }}
+            >
+              {ROUND_PROGRAMS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
           </label>
-          <label className="rnd-label">
-            Tên đợt
-            <input className="rnd-input" readOnly value={round.periodLabel} />
-          </label>
+          <div className="rnd-label">
+            <label htmlFor="round-info-label">Tên đợt</label>
+            <input
+              id="round-info-label"
+              type="text"
+              className="rnd-input"
+              disabled={infoLocked || infoSaving}
+              value={infoLocked ? round.periodLabel : label}
+              aria-invalid={labelError ? true : undefined}
+              aria-describedby={
+                labelError ? 'round-info-label-error' : undefined
+              }
+              onChange={(e) => {
+                setLabel(e.target.value);
+                setServerFields({});
+                setInfoError(null);
+              }}
+            />
+            {labelError && (
+              <span id="round-info-label-error" className="rnd-field-err">
+                {labelError}
+              </span>
+            )}
+          </div>
           <label className="rnd-label">
             Ngày bắt đầu tuần 1
             <input type="date" className="rnd-input" readOnly value={weekOne} />
@@ -117,6 +228,61 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
         <p className="rnd-hint">
           Ngày bắt đầu tuần 1 là thứ Hai của tuần chứa mốc sớm nhất; đổi bằng
           cách sửa ngày các mốc bên dưới.
+        </p>
+        {!infoLocked && (
+          <div className="rnd-info-actions">
+            {infoError && (
+              <b role="alert" className="rnd-save-why">
+                {infoError}
+              </b>
+            )}
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-primary"
+              disabled={!infoDirty || infoInvalid || infoSaving}
+              aria-busy={infoSaving}
+              onClick={() => void saveInfo()}
+            >
+              {infoSaving ? 'Đang lưu...' : 'Lưu thông tin đợt'}
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="rnd-section" aria-labelledby="round-load-title">
+        <h2 id="round-load-title">Số đề tài mỗi giảng viên nhận hướng dẫn</h2>
+        {infoLocked && (
+          <p className="rnd-note rnd-note-warn">
+            Đợt đã mở nên không chỉnh sửa mục này nữa. Giáo vụ chỉ tiếp tục cập
+            nhật các mốc thời gian.
+          </p>
+        )}
+        <div className="rnd-info-grid">
+          <label className="rnd-label">
+            Tối thiểu
+            <input
+              type="number"
+              className="rnd-input"
+              readOnly
+              value={LECTURER_LOAD_MIN}
+            />
+          </label>
+          <label className="rnd-label">
+            Tối đa
+            <input
+              type="number"
+              className="rnd-input"
+              readOnly
+              value={LECTURER_LOAD_MAX}
+            />
+          </label>
+        </div>
+        <p className="rnd-hint">
+          Tính cả đề tài giảng viên gửi và đề tài sinh viên đề xuất đã được
+          giảng viên chấp nhận. Hai mức chỉ để cảnh báo: dưới tối thiểu khi hết
+          hạn gửi đề tài, vượt tối đa khi chấp nhận hoặc khi có nhóm đăng ký;
+          không chặn thao tác nào. Giá trị 0 nghĩa là chưa đặt mức nên chưa cảnh
+          báo.
         </p>
       </section>
 

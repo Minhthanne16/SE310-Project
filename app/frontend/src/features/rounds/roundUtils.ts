@@ -135,13 +135,23 @@ export function validateMilestones(milestones: Milestone[]): MilestoneErrors {
   return errors;
 }
 
-// Việc chưa xong khi mở đợt: cảnh báo, không chặn.
+// Lý do chặn mở đợt (PDR-032): đủ chín mốc, mỗi mốc có ngày và đúng thứ tự.
+// Mỗi phần tử là một dòng "Tên mốc: vấn đề"; rỗng nghĩa là mở được.
+export function openBlockers(round: Round): string[] {
+  const errors = validateMilestones(round.milestones);
+  const blockers: string[] = [];
+  for (const m of round.milestones) {
+    if (!m.startDate.trim() && !m.endDate.trim())
+      blockers.push(`${m.name}: chưa đặt ngày`);
+    else if (errors[m.key]) blockers.push(`${m.name}: ${errors[m.key]}`);
+  }
+  return blockers;
+}
+
+// Việc chưa xong khi mở đợt nhưng không chặn (PDR-033): thiếu giảng viên,
+// sinh viên. Phần mốc xem openBlockers.
 export function setupWarnings(round: Round): string[] {
   const warnings: string[] = [];
-  const missing = round.milestones.filter((m) => !hasDates(m)).length;
-  if (missing > 0) warnings.push(`${missing} mốc chưa có ngày`);
-  if (Object.keys(validateMilestones(round.milestones)).length > 0)
-    warnings.push('có mốc sai thứ tự');
   if (round.lecturerIds.length === 0) warnings.push('chưa có giảng viên');
   if (round.studentIds.length === 0) warnings.push('chưa có sinh viên');
   return warnings;
