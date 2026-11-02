@@ -1,5 +1,7 @@
 # Kế hoạch hoàn thiện QLKLTN
 
+Kế hoạch triển khai tổng hợp có thứ tự phụ thuộc, baseline hiện tại và cổng nghiệm thu MVP: [MVP-COMPLETION-PLAN.md](MVP-COMPLETION-PLAN.md). Các file phase bên dưới vẫn là checklist chi tiết theo từng luồng nghiệp vụ.
+
 ## Cách dùng
 
 Đây là lộ trình **đề xuất**, không phải quyết định thay thế yêu cầu. Mỗi phase có bước, công việc, tiêu chí nghiệm thu, cách kiểm chứng và phụ thuộc theo cấu trúc tham khảo. `REVIEW.md` ghi các điểm cần thảo luận; kết luận trong đó chưa tự trở thành quy tắc nghiệp vụ. Trước khi làm một bước, đọc lại `docs/CONTENT.md`, `docs/OPEN_QUESTIONS.md` và nguồn được dẫn ở bước đó. Câu hỏi mở liên quan phải được chốt, cập nhật tài liệu yêu cầu/quyết định, rồi mới code hành vi phụ thuộc.

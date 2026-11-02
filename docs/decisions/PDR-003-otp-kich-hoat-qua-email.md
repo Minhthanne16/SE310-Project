@@ -34,3 +34,4 @@ Thẻ công việc backend yêu cầu "mã hóa mật khẩu BCrypt/Argon2 và t
 
 - Tài khoản phải có email nhận được thư thì mới kích hoạt được. Khi người dùng không dùng được email, Giáo vụ xử lý qua chức năng Người dùng (theo thiết kế màn Quên mật khẩu).
 - Gmail cá nhân giới hạn khoảng 500 người nhận/ngày. Tạo tài khoản hàng loạt (nhập CSV) cần tính tới giới hạn này hoặc dùng dịch vụ SMTP khác.
+- Ngoại lệ chỉ cho môi trường development: cả ba tài khoản seed local (`22520001`, `GV0001`, `GVU0001`) được tạo trực tiếp ở trạng thái đã kích hoạt (`MustChangePassword = false`), không gửi/không cần OTP. Ngoại lệ này không áp dụng cho tài khoản nhập CSV, Neon hoặc dữ liệu thật.

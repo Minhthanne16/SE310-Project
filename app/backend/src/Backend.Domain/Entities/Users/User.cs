@@ -23,6 +23,10 @@ public class User : BaseEntity
     public string? ClassName { get; set; }
     public string? Department { get; set; }
     public string? AcademicTitle { get; set; }
+    public string? Phone { get; set; }
+    public string? SecondaryEmail { get; set; }
+    // Khóa object private trong storage; không lưu URL public hoặc bytes ảnh trong DB.
+    public string? AvatarObjectKey { get; set; }
     public bool IsActive { get; set; } = true;
     public bool MustChangePassword { get; set; } = true;
     // Đổi giá trị khi đổi mật khẩu để vô hiệu hóa các token đã cấp trước đó.
