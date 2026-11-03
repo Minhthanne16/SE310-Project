@@ -13,6 +13,8 @@ public sealed class RoundDto
     public string Status { get; set; } = string.Empty;
     public int LecturerLoadMin { get; set; }
     public int LecturerLoadMax { get; set; }
+    // Thời điểm công bố danh sách đề tài (ISO 8601, UTC); null nếu chưa công bố.
+    public string? TopicsPublishedAt { get; set; }
     public List<RoundMilestoneDto> Milestones { get; set; } = [];
     public List<Guid> LecturerIds { get; set; } = [];
     public List<Guid> StudentIds { get; set; } = [];
@@ -33,11 +35,13 @@ public sealed class RoundMilestoneDto
     public bool? AllowLate { get; set; }
 }
 
-// Chưa có bảng đề tài nên mọi số đều 0; khóa là 7 nhãn trạng thái đề tài của frontend.
+// Chưa có bảng đề tài nên mọi số đều 0; khóa là 9 nhãn trạng thái đề tài của frontend.
 public sealed class RoundTopicSummaryDto
 {
     public int Total { get; set; }
-    public int UnpublishedCount { get; set; }
+    // Số đề tài chưa ở trạng thái kết thúc (Đã hoàn tất, Không đủ điều kiện công bố, Không có nhóm,
+    // Bị từ chối đều không tính; PDR-031). Luôn 0 cho tới khi có mô-đun đề tài; khi đó phải tính từ dữ liệu.
+    public int PendingResultCount { get; set; }
     public Dictionary<string, int> ByStatus { get; set; } = [];
 }
 
@@ -81,6 +85,9 @@ public sealed class ParticipantDto
     public string Name { get; set; } = string.Empty;
     // Lớp (sinh viên) hoặc bộ môn (giảng viên).
     public string Unit { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    // Đang hoạt động | Chưa đăng nhập | Vô hiệu hóa
+    public string AccountStatus { get; set; } = string.Empty;
 }
 
 public sealed class CandidateDto
@@ -89,12 +96,15 @@ public sealed class CandidateDto
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string AccountStatus { get; set; } = string.Empty;
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? BlockedReason { get; set; }
 }
 
 public sealed class ParticipantCheckDto
 {
+    // Đúng như người dùng nhập (mã hoặc email), đã cắt khoảng trắng.
     public string Code { get; set; } = string.Empty;
     // valid | notFound | alreadyInRound | inOtherRound
     public string Status { get; set; } = string.Empty;

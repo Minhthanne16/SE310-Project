@@ -57,6 +57,8 @@ public class ThesisRound : BaseEntity
     public Guid? CopiedFromId { get; set; }
     public DateTime? OpenedAt { get; set; }
     public DateTime? FinishedAt { get; set; }
+    // Thời điểm Giáo vụ công bố danh sách đề tài cho sinh viên (không hoàn tác). null = chưa công bố.
+    public DateTime? TopicsPublishedAt { get; set; }
     public List<RoundMilestone> Milestones { get; set; } = [];
     public List<RoundParticipant> Participants { get; set; } = [];
 

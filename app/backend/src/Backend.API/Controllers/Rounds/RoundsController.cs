@@ -62,6 +62,12 @@ public sealed class RoundsController(ISender sender) : ControllerBase
     public async Task<ActionResult<ApiResponse<RoundDto>>> Finish(Guid id, CancellationToken cancellationToken) =>
         ToAction(await sender.Send(new FinishRoundCommand(id), cancellationToken));
 
+    // Công bố danh sách đề tài cho sinh viên (không hoàn tác); điều kiện xem PublishRoundTopicsHandler.
+    [HttpPost("{id:guid}/topics/publish")]
+    [Authorize(Roles = AppRoles.AcademicAffairs)]
+    public async Task<ActionResult<ApiResponse<RoundDto>>> PublishTopics(Guid id, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new PublishRoundTopicsCommand(id), cancellationToken));
+
     // Trả 200 kèm ApiResponse<bool> (không phải 204) vì frontend luôn đọc thân JSON.
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
