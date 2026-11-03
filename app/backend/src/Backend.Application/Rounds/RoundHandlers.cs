@@ -61,6 +61,9 @@ internal static class RoundMapping
         Status = RoundRules.Label(round.Status),
         LecturerLoadMin = round.LecturerLoadMin,
         LecturerLoadMax = round.LecturerLoadMax,
+        TopicsPublishedAt = round.TopicsPublishedAt is { } published
+            ? DateTime.SpecifyKind(published, DateTimeKind.Utc).ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", System.Globalization.CultureInfo.InvariantCulture)
+            : null,
         Milestones = round.Milestones.OrderBy(m => (int)m.Key).Select(m => new RoundMilestoneDto
         {
             Key = RoundRules.KeyName(m.Key),
@@ -87,8 +90,14 @@ internal static class RoundMapping
         Id = user.Id,
         Code = user.UserCode,
         Name = user.FullName,
-        Unit = (user.Role == UserRole.Student ? user.ClassName : user.Department) ?? string.Empty
+        Unit = (user.Role == UserRole.Student ? user.ClassName : user.Department) ?? string.Empty,
+        Email = user.Email,
+        AccountStatus = AccountStatus(user)
     };
+
+    // Cùng quy tắc getUserStatus phía frontend (types/user.ts).
+    public static string AccountStatus(User user) =>
+        !user.IsActive ? "Vô hiệu hóa" : user.MustChangePassword ? "Chưa đăng nhập" : "Đang hoạt động";
 
     public static ThesisRound NewRound(string name, string program, string periodLabel, ThesisRound? source)
     {
@@ -300,14 +309,43 @@ public sealed class FinishRoundHandler(IRoundRepository repository, TimeProvider
         if (round.Status != RoundStatus.Running)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.OnlyRunningFinishMessage);
 
-        // PDR-031 (chỉ kết thúc khi mọi đề tài đã kết thúc) chưa kiểm tra được vì chưa có bảng đề tài;
-        // khi có mô-đun đề tài phải chặn tại đây.
+        // PDR-031 (chỉ kết thúc khi mọi đề tài đã kết thúc; Không có nhóm không tính) chưa kiểm tra được vì
+        // chưa có bảng đề tài (pendingResultCount luôn 0); khi có mô-đun đề tài phải chặn tại đây.
         var now = clock.GetUtcNow().UtcDateTime;
         round.Status = RoundStatus.Finished;
         round.FinishedAt = now;
         round.UpdatedAt = now;
         await repository.SaveAsync(cancellationToken);
         return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã kết thúc đợt");
+    }
+}
+
+public sealed class PublishRoundTopicsHandler(IRoundRepository repository, TimeProvider clock)
+    : IRequestHandler<PublishRoundTopicsCommand, RoundResult<RoundDto>>
+{
+    public async Task<RoundResult<RoundDto>> Handle(PublishRoundTopicsCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status != RoundStatus.Running)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.OnlyRunningPublishMessage);
+        if (round.TopicsPublishedAt is not null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.AlreadyPublishedMessage);
+
+        // Công bố không bị chặn bởi hạn "GV gửi đề tài", nhưng phải còn thời gian cho sinh viên đăng ký:
+        // đăng ký tự đóng cuối ngày kết thúc mốc "Công bố đề tài · SV đăng ký".
+        var registrationEnd = round.Milestones.FirstOrDefault(m => m.Key == MilestoneKey.TopicRegistration)?.EndDate;
+        if (registrationEnd is { } end && end < RoundRules.TodayVietnam(clock))
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.RegistrationEndedMessage(end));
+
+        // TODO(mô-đun đề tài): chặn khi đợt chưa có đề tài nào (cần ít nhất 1 đề tài) và khi công bố
+        // phải chuyển đề tài sang trạng thái sinh viên đăng ký được.
+        var now = clock.GetUtcNow().UtcDateTime;
+        round.TopicsPublishedAt = now;
+        round.UpdatedAt = now;
+        await repository.SaveAsync(cancellationToken);
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã công bố danh sách đề tài");
     }
 }
 
@@ -361,6 +399,8 @@ public sealed class GetCandidatesHandler(IRoundRepository repository)
                 Code = participant.Code,
                 Name = participant.Name,
                 Unit = participant.Unit,
+                Email = participant.Email,
+                AccountStatus = participant.AccountStatus,
                 BlockedReason = conflicts.TryGetValue(u.Id, out var other) ? $"Đang ở đợt “{other.RoundName}”" : null
             };
         }).ToList();
@@ -390,19 +430,27 @@ internal static class RoundParticipantRules
         // Bỏ mã trống, gộp mã trùng không phân biệt hoa thường, giữ thứ tự nhập.
         var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var codes = rawCodes.Select(c => c?.Trim() ?? string.Empty).Where(c => c.Length > 0 && seen.Add(c)).ToList();
-        var users = (await repository.GetActiveUsersByCodesAsync(RoundRules.RoleOf(kind), codes, cancellationToken))
-            .ToDictionary(u => u.UserCode, StringComparer.OrdinalIgnoreCase);
+        var found = await repository.GetActiveUsersByCodesOrEmailsAsync(RoundRules.RoleOf(kind), codes, cancellationToken);
+        // Mỗi mục nhập là mã người dùng hoặc email. Mã được ưu tiên khi trùng chuỗi với email của người khác.
+        var byCode = found.ToDictionary(u => u.UserCode, StringComparer.OrdinalIgnoreCase);
+        var byEmail = found.GroupBy(u => u.Email, StringComparer.OrdinalIgnoreCase).ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
+        var users = codes.Select(c => byCode.TryGetValue(c, out var u) ? u : byEmail.GetValueOrDefault(c))
+            .Where(u => u is not null).Select(u => u!).DistinctBy(u => u.Id).ToDictionary(u => u.Id);
         var inRound = round.Participants.Where(p => p.Kind == kind).Select(p => p.UserId).ToHashSet();
         var conflicts = await ConflictsAsync(repository, round, kind, users.Values.Select(u => u.Id).ToList(), cancellationToken);
 
-        return codes.Select(code =>
+        // Cùng một người nhập bằng mã rồi bằng email chỉ tính một lần (mục đầu tiên).
+        var counted = new HashSet<Guid>();
+        return codes.Select<string, Entry?>(code =>
         {
-            if (!users.TryGetValue(code, out var user))
+            var user = byCode.TryGetValue(code, out var byCodeUser) ? byCodeUser : byEmail.GetValueOrDefault(code);
+            if (user is not null && !counted.Add(user.Id)) return null;
+            if (user is null)
                 return new Entry(new ParticipantCheckDto
                 {
                     Code = code,
                     Status = "notFound",
-                    Message = $"Không tồn tại {RoundRules.KindLabel(kind)} có mã này."
+                    Message = $"Không tồn tại {RoundRules.KindLabel(kind)} có mã hoặc email này."
                 }, null);
 
             var participant = RoundMapping.ToParticipant(user);
@@ -417,7 +465,7 @@ internal static class RoundParticipantRules
                     Participant = participant
                 }, user);
             return new Entry(new ParticipantCheckDto { Code = code, Status = "valid", Message = "Hợp lệ.", Participant = participant }, user);
-        }).ToList();
+        }).OfType<Entry>().ToList();
     }
 }
 

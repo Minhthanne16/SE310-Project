@@ -1,8 +1,10 @@
 import type {
   Milestone,
   MilestoneErrors,
+  MilestoneKey,
   MilestoneStatus,
   Round,
+  RoundStage,
   RoundTask,
 } from '@/types/round';
 
@@ -157,12 +159,95 @@ export function setupWarnings(round: Round): string[] {
   return warnings;
 }
 
-export function finishWarning(round: Round): string | null {
-  const n = round.topicSummary.unpublishedCount;
-  return n > 0 ? `Còn ${n} đề tài chưa công bố.` : null;
+// Ngày kết thúc (yyyy-MM-dd) của một mốc; rỗng nếu chưa đặt ngày hợp lệ.
+export function milestoneEnd(round: Round, key: MilestoneKey): string {
+  const end = round.milestones.find((m) => m.key === key)?.endDate ?? '';
+  return isIsoDate(end) ? end : '';
+}
+
+// Giảng viên gửi đề tài từ NGÀY BẮT ĐẦU đến hết ngày kết thúc (23:59) của mốc
+// "GV gửi đề tài".
+export const submissionEnd = (round: Round) =>
+  milestoneEnd(round, 'topicSubmission');
+
+// Đăng ký đề tài tự đóng cuối ngày kết thúc mốc "Công bố đề tài · SV đăng ký".
+export const registrationEnd = (round: Round) =>
+  milestoneEnd(round, 'topicRegistration');
+
+export function submissionClosed(round: Round, today: string): boolean {
+  const end = submissionEnd(round);
+  return end !== '' && today > end;
+}
+
+export function registrationClosed(round: Round, today: string): boolean {
+  const end = registrationEnd(round);
+  return end !== '' && today > end;
+}
+
+// Số ngày sinh viên còn đăng ký được tính cả hôm nay, đến 23:59 ngày kết thúc;
+// 0 khi đã hết hạn, null khi mốc chưa đặt ngày.
+export function registrationDaysLeft(
+  round: Round,
+  today: string,
+): number | null {
+  const end = registrationEnd(round);
+  if (end === '') return null;
+  return today > end ? 0 : daysBetween(today, end) + 1;
+}
+
+// Cùng nội dung với backend (RoundRules.RegistrationEndedMessage).
+export const registrationEndedMessage = (endIso: string) =>
+  `Đã hết thời gian sinh viên đăng ký đề tài (hết ngày ${formatDate(endIso)}). Sửa mốc “Công bố đề tài · SV đăng ký” ở tab Cấu hình rồi công bố.`;
+
+export const ROUND_NOT_RUNNING_PUBLISH_MESSAGE =
+  'Chỉ công bố được danh sách đề tài của đợt đang diễn ra.';
+export const ROUND_ALREADY_PUBLISHED_MESSAGE =
+  'Danh sách đề tài của đợt đã được công bố.';
+export const ROUND_NO_TOPICS_PUBLISH_MESSAGE = 'Chưa có đề tài để công bố.';
+
+// Điều kiện công bố danh sách đề tài (tab Đề tài của chi tiết đợt). Không bị
+// chặn bởi hạn "GV gửi đề tài": công bố sớm chỉ cảnh báo. Lý do chặn là null
+// khi công bố được.
+export function publishBlocker(round: Round, today: string): string | null {
+  if (round.topicsPublishedAt !== null) return ROUND_ALREADY_PUBLISHED_MESSAGE;
+  if (round.status !== 'Đang diễn ra') return ROUND_NOT_RUNNING_PUBLISH_MESSAGE;
+  if (round.topicSummary.total === 0) return ROUND_NO_TOPICS_PUBLISH_MESSAGE;
+  if (registrationClosed(round, today))
+    return registrationEndedMessage(registrationEnd(round));
+  return null;
+}
+
+// Giai đoạn của đợt Đang diễn ra; các đợt khác không có giai đoạn (null).
+export function roundStage(round: Round, today: string): RoundStage | null {
+  if (round.status !== 'Đang diễn ra') return null;
+  if (round.topicsPublishedAt === null)
+    return submissionClosed(round, today)
+      ? 'Chờ công bố danh sách'
+      : 'GV gửi đề tài';
+  if (!registrationClosed(round, today)) return 'SV đăng ký';
+  // Chỉ sẵn sàng kết thúc khi mốc "Chốt bản cuối · công bố" đã tới và mọi đề
+  // tài có nhóm đã công bố kết quả; trước đó là giai đoạn Thực hiện.
+  const finalize = round.milestones.find((m) => m.key === 'finalize');
+  const finalizeReached =
+    finalize !== undefined && milestoneStatus(finalize, today) !== 'Sắp tới';
+  return finalizeReached && round.topicSummary.pendingResultCount === 0
+    ? 'Sẵn sàng kết thúc'
+    : 'Thực hiện';
+}
+
+// Cùng nội dung với backend khi chặn kết thúc đợt (PDR-031); null = kết thúc
+// được. Đề tài Không có nhóm không tính vào pendingResultCount.
+export function finishBlockedMessage(round: Round): string | null {
+  const n = round.topicSummary.pendingResultCount;
+  return n > 0
+    ? `Còn ${n} đề tài chưa công bố kết quả. Công bố hết ở trang Kết quả (/giao-vu/ket-qua) rồi mới kết thúc được đợt. Đề tài Không có nhóm không tính.`
+    : null;
 }
 
 const SOON_DAYS = 7;
+
+export const PUBLISH_TASK_TEXT =
+  'Đã hết hạn giảng viên gửi đề tài. Xem và công bố danh sách.';
 
 // Việc cần xử lý của giáo vụ, suy ra từ đợt và ngày hôm nay (demo).
 export function deriveTasks(round: Round, today: string): RoundTask[] {
@@ -207,10 +292,22 @@ export function deriveTasks(round: Round, today: string): RoundTask[] {
           tab: 'tien-do',
         });
     }
-    if (round.topicSummary.unpublishedCount > 0)
+    if (roundStage(round, today) === 'Chờ công bố danh sách')
       tasks.push({
-        id: 'unpublished-topics',
-        text: `${round.topicSummary.unpublishedCount} đề tài chưa công bố.`,
+        id: 'publish-topics',
+        text: PUBLISH_TASK_TEXT,
+        tab: 'de-tai',
+      });
+    // Kết quả chỉ cần công bố khi mốc "Chốt bản cuối · công bố" đã tới.
+    const finalize = round.milestones.find((m) => m.key === 'finalize');
+    if (
+      round.topicSummary.pendingResultCount > 0 &&
+      finalize &&
+      milestoneStatus(finalize, today) !== 'Sắp tới'
+    )
+      tasks.push({
+        id: 'pending-results',
+        text: `${round.topicSummary.pendingResultCount} đề tài chưa công bố kết quả.`,
         tab: 'tien-do',
       });
   }

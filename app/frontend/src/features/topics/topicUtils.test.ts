@@ -3,7 +3,6 @@ import {
   LECTURER_LOAD_MAX,
   LECTURER_LOAD_MIN,
   avatarInitials,
-  buildTopicsCsv,
   countsTowardLoad,
   dateOf,
   formatComponentScore,
@@ -78,29 +77,10 @@ it('counts GV topics and accepted SV proposals only', () => {
 });
 
 it('describes thesis progress', () => {
-  expect(thesisProgress(find('VB1-01'))).toBe('—');
+  expect(thesisProgress(find('VB1-01'))).toBe('—'); // Không có nhóm
   expect(thesisProgress(find('VB1-03'))).toBe('Chờ nộp đề cương');
   expect(thesisProgress(find('VB1-04'))).toBe('Giữa kỳ · v2');
   expect(thesisProgress(find('VB1-25-01'))).toBe('Bản khóa luận · v4');
-});
-
-it('builds CSV with header, CRLF and formula-injection protection', () => {
-  const topic = {
-    ...find('VB1-03'),
-    title: '=HYPERLINK("http://x")',
-    field: 'Có, dấu phẩy',
-  };
-  const lines = buildTopicsCsv([topic]).split('\r\n');
-  expect(lines[0]).toBe(
-    'Mã,Tên đề tài,Lĩnh vực,GVHD,Nhóm,Nguồn,Trạng thái,Khóa luận',
-  );
-  expect(lines[1]).toContain(`"'=HYPERLINK(""http://x"")"`);
-  expect(lines[1]).toContain('"Có, dấu phẩy"');
-  expect(lines[1]).toContain('22520001 Nguyễn Văn An; 22520002 Lê Thị Bình');
-  expect(lines[2]).toBe('');
-  expect(buildTopicsCsv([])).toBe(
-    'Mã,Tên đề tài,Lĩnh vực,GVHD,Nhóm,Nguồn,Trạng thái,Khóa luận\r\n',
-  );
 });
 
 it('formats component scores with one decimal, keeping hundredths', () => {

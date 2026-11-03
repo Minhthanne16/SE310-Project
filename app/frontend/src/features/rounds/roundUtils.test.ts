@@ -3,10 +3,17 @@ import {
   currentMilestone,
   currentWeek,
   deriveTasks,
-  finishWarning,
+  PUBLISH_TASK_TEXT,
+  finishBlockedMessage,
   formatDate,
   isIsoDate,
   openBlockers,
+  publishBlocker,
+  registrationClosed,
+  registrationDaysLeft,
+  registrationEndedMessage,
+  roundStage,
+  submissionClosed,
   milestoneProgress,
   milestoneStatus,
   roundSpan,
@@ -14,6 +21,7 @@ import {
   validateMilestones,
   weekOf,
 } from './roundUtils';
+import type { Round } from '@/types/round';
 import { buildMilestones, seedRounds } from './services/roundSeed';
 
 const TODAY = '2026-10-26';
@@ -107,23 +115,133 @@ describe('warnings and tasks', () => {
     ]);
   });
 
-  it('warns about unpublished topics when finishing', () => {
-    expect(finishWarning(round('r-ths-1-2026'))).toBe(
-      'Còn 6 đề tài chưa công bố.',
+  it('blocks finishing while topics are waiting for results', () => {
+    const vb1 = round('r-vb1-hk1');
+    expect(vb1.topicSummary.pendingResultCount).toBe(12);
+    expect(finishBlockedMessage(vb1)).toBe(
+      'Còn 12 đề tài chưa công bố kết quả. Công bố hết ở trang Kết quả (/giao-vu/ket-qua) rồi mới kết thúc được đợt. Đề tài Không có nhóm không tính.',
     );
-    expect(finishWarning(round('r-vb1-hk1'))).toBeNull();
-    expect(finishWarning(round('r-vb2-hk1'))).toBeNull();
+    expect(
+      finishBlockedMessage(withSummary(vb1, { pendingResultCount: 0 })),
+    ).toBeNull();
   });
 
   it('derives tasks for running, draft and finished rounds', () => {
     const running = deriveTasks(round('r-vb1-hk1'), TODAY).map((t) => t.text);
     expect(running).toContain('Mốc “Báo cáo giữa kỳ” kết thúc sau 4 ngày.');
-    expect(running).not.toContain('18 đề tài chưa công bố.');
-    expect(
-      deriveTasks(round('r-ths-1-2026'), TODAY).map((t) => t.text),
-    ).toContain('6 đề tài chưa công bố.');
+    expect(running).not.toContain(PUBLISH_TASK_TEXT);
     expect(deriveTasks(round('r-vb2-hk2-nhap'), TODAY).length).toBe(2);
     expect(deriveTasks(round('r-vb1-hk2-2025'), TODAY)).toEqual([]);
+  });
+
+  it('asks to review and publish once the lecturer deadline has passed', () => {
+    // ThS: hết hạn GV gửi (14/08) mà chưa công bố.
+    const task = deriveTasks(round('r-ths-1-2026'), TODAY).find(
+      (t) => t.id === 'publish-topics',
+    );
+    expect(task).toEqual({
+      id: 'publish-topics',
+      text: 'Đã hết hạn giảng viên gửi đề tài. Xem và công bố danh sách.',
+      tab: 'de-tai',
+    });
+    // Còn hạn gửi hoặc đã công bố thì không nhắc.
+    const early = deriveTasks(round('r-ths-1-2026'), '2026-08-14');
+    expect(early.some((t) => t.id === 'publish-topics')).toBe(false);
+    expect(
+      deriveTasks(round('r-vb1-hk1'), TODAY).some(
+        (t) => t.id === 'publish-topics',
+      ),
+    ).toBe(false);
+  });
+
+  it('reminds about unpublished results only once the finalize milestone has started', () => {
+    const vb1 = round('r-vb1-hk1');
+    const text = '12 đề tài chưa công bố kết quả.';
+    expect(deriveTasks(vb1, TODAY).map((t) => t.text)).not.toContain(text);
+    expect(deriveTasks(vb1, '2027-01-05').map((t) => t.text)).toContain(text);
+  });
+});
+
+const withSummary = (
+  r: Round,
+  patch: Partial<Round['topicSummary']>,
+): Round => ({
+  ...r,
+  topicSummary: { ...r.topicSummary, ...patch },
+});
+
+describe('registration window', () => {
+  const ths = round('r-ths-1-2026'); // GV gửi đến 14/08, đăng ký đến 28/08
+  it('closes at the end of the end date and counts days including today', () => {
+    expect(submissionClosed(ths, '2026-08-14')).toBe(false);
+    expect(submissionClosed(ths, '2026-08-15')).toBe(true);
+    expect(registrationClosed(ths, '2026-08-28')).toBe(false);
+    expect(registrationClosed(ths, '2026-08-29')).toBe(true);
+    expect(registrationDaysLeft(ths, '2026-08-20')).toBe(9);
+    expect(registrationDaysLeft(ths, '2026-08-28')).toBe(1);
+    expect(registrationDaysLeft(ths, '2026-08-29')).toBe(0);
+    expect(
+      registrationDaysLeft({ ...ths, milestones: buildMilestones([]) }, TODAY),
+    ).toBeNull();
+  });
+});
+
+describe('publishBlocker', () => {
+  const ths = round('r-ths-1-2026');
+  it('does not depend on the lecturer submission deadline', () => {
+    expect(publishBlocker(ths, '2026-08-05')).toBeNull(); // GV còn gửi
+    expect(publishBlocker(ths, '2026-08-28')).toBeNull();
+  });
+
+  it('blocks after registration ended, when published, not running or empty', () => {
+    expect(publishBlocker(ths, '2026-08-29')).toBe(
+      registrationEndedMessage('2026-08-28'),
+    );
+    expect(registrationEndedMessage('2026-08-28')).toBe(
+      'Đã hết thời gian sinh viên đăng ký đề tài (hết ngày 28/08/2026). Sửa mốc “Công bố đề tài · SV đăng ký” ở tab Cấu hình rồi công bố.',
+    );
+    expect(publishBlocker(round('r-vb1-hk1'), '2026-09-22')).toBe(
+      'Danh sách đề tài của đợt đã được công bố.',
+    );
+    expect(publishBlocker(round('r-vb2-hk2-nhap'), TODAY)).toBe(
+      'Chỉ công bố được danh sách đề tài của đợt đang diễn ra.',
+    );
+    expect(publishBlocker(withSummary(ths, { total: 0 }), '2026-08-20')).toBe(
+      'Chưa có đề tài để công bố.',
+    );
+  });
+});
+
+describe('roundStage', () => {
+  const ths = round('r-ths-1-2026');
+  const vb1 = round('r-vb1-hk1');
+  const published = (r: Round): Round => ({
+    ...r,
+    topicsPublishedAt: '2026-08-20T08:00:00.000Z',
+  });
+
+  it('follows the stages of a running round', () => {
+    expect(roundStage(ths, '2026-08-10')).toBe('GV gửi đề tài');
+    expect(roundStage(ths, '2026-08-14')).toBe('GV gửi đề tài');
+    expect(roundStage(ths, '2026-08-15')).toBe('Chờ công bố danh sách');
+    expect(roundStage(published(ths), '2026-08-25')).toBe('SV đăng ký');
+    expect(roundStage(published(ths), '2026-08-28')).toBe('SV đăng ký');
+    expect(roundStage(published(ths), '2026-08-29')).toBe('Thực hiện');
+    expect(roundStage(vb1, TODAY)).toBe('Thực hiện');
+  });
+
+  it('is ready to finish when no topic is waiting for results', () => {
+    const ready = withSummary(vb1, { pendingResultCount: 0 });
+    const finalize = vb1.milestones.find((m) => m.key === 'finalize')!;
+    // Chưa tới mốc "Chốt bản cuối · công bố" thì vẫn là Thực hiện.
+    expect(roundStage(ready, TODAY)).toBe('Thực hiện');
+    expect(roundStage(ready, finalize.startDate)).toBe('Sẵn sàng kết thúc');
+    expect(roundStage(vb1, finalize.startDate)).toBe('Thực hiện');
+  });
+
+  it('has no stage for draft and finished rounds', () => {
+    expect(roundStage(round('r-vb2-hk2-nhap'), TODAY)).toBeNull();
+    expect(roundStage(round('r-vb1-hk2-2025'), TODAY)).toBeNull();
   });
 });
 

@@ -6,6 +6,7 @@ import { Search, X } from 'lucide-react';
 import '@/features/rounds/rounds.css';
 import { RoundModal } from '@/features/rounds/components/RoundModal';
 import { studentNoun } from '@/features/rounds/roundUtils';
+import { readCodesFromFile } from '@/lib/xlsx';
 import type { RoundService } from '@/features/rounds/services/roundService';
 import type {
   Candidate,
@@ -21,6 +22,8 @@ interface AddParticipantsDialogProps {
   round: Round;
   roundService: RoundService;
   initialMode?: AddMode;
+  // Đọc cột đầu tiên của tệp .xlsx/.csv thành danh sách mã; tiêm được để kiểm thử.
+  readFile?: (file: File) => Promise<string[]>;
   onClose: () => void;
   onAdded: (round: Round, added: number) => void;
 }
@@ -56,6 +59,7 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
   round,
   roundService,
   initialMode = 'pick',
+  readFile = readCodesFromFile,
   onClose,
   onAdded,
 }) => {
@@ -73,6 +77,8 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busyRef = useRef(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [fileNote, setFileNote] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -119,6 +125,7 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
       (!unit || c.unit === unit) &&
       (!keyword ||
         c.code.toLowerCase().includes(keyword) ||
+        c.email.toLowerCase().includes(keyword) ||
         c.name.toLowerCase().includes(keyword) ||
         c.unit.toLowerCase().includes(keyword)),
   );
@@ -167,6 +174,30 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
       onAdded(outcome.round, outcome.added);
     });
 
+  const onPickFile = async (file: File | undefined) => {
+    if (!file) return;
+    setError(null);
+    setFileNote(null);
+    try {
+      const codes = await readFile(file);
+      if (codes.length === 0) {
+        setError(`Tệp ${file.name} không có mã hoặc email nào ở cột đầu tiên.`);
+        return;
+      }
+      setCodesText(codes.join('\n'));
+      setResults(null);
+      setFileNote(`Đã đọc ${codes.length} dòng từ tệp ${file.name}.`);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Không đọc được tệp. Chọn tệp .xlsx hoặc .csv.',
+      );
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
+
   const switchMode = (next: AddMode) => {
     setMode(next);
     setResults(null);
@@ -197,7 +228,7 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
   const footText =
     mode === 'pick'
       ? `${count > 0 ? `Đã chọn ${count} ${who}.` : 'Chưa chọn ai.'} Không thấy người cần thêm?`
-      : 'Mã chưa có tài khoản sẽ bị bỏ qua.';
+      : 'Mã hoặc email chưa có tài khoản sẽ bị bỏ qua.';
 
   const modes: { id: AddMode; label: string }[] = [
     { id: 'pick', label: 'Chọn từ danh sách người dùng' },
@@ -276,8 +307,8 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
                     aria-label="Tìm người dùng"
                     placeholder={
                       kind === 'lecturer'
-                        ? 'Tìm theo tên, mã giảng viên, bộ môn'
-                        : 'Tìm theo mã, họ tên, lớp'
+                        ? 'Tìm theo tên, mã, email, bộ môn'
+                        : 'Tìm theo mã, họ tên, email, lớp'
                     }
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
@@ -355,6 +386,7 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
                       <span className="rnd-pick-name">
                         <b>{c.name}</b>
                         <span>{c.code}</span>
+                        <span>{c.email}</span>
                       </span>
                       <span>{c.unit}</span>
                       <span className="rnd-pick-status">
@@ -378,7 +410,8 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
               htmlFor="participant-codes"
               style={{ fontSize: 14, fontWeight: 600 }}
             >
-              Dán mã {who}, mỗi dòng một người (hoặc ngăn cách bằng dấu phẩy)
+              Dán mã hoặc email {who}, mỗi dòng một người (hoặc ngăn cách bằng
+              dấu phẩy)
             </label>
             <textarea
               id="participant-codes"
@@ -388,8 +421,31 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
               onChange={(e) => {
                 setCodesText(e.target.value);
                 setError(null);
+                setFileNote(null);
               }}
             />
+            <div className="rnd-file-row">
+              <input
+                ref={fileRef}
+                type="file"
+                id="participant-file"
+                className="app-visually-hidden"
+                accept=".xlsx,.csv"
+                aria-label="Tệp Excel hoặc CSV"
+                onChange={(e) => void onPickFile(e.target.files?.[0])}
+              />
+              <button
+                type="button"
+                className="rnd-btn"
+                onClick={() => fileRef.current?.click()}
+              >
+                Chọn tệp Excel/CSV
+              </button>
+              <span className="rnd-hint">
+                {fileNote ??
+                  'Hoặc chọn tệp .xlsx / .csv. Hệ thống đọc cột đầu tiên là mã hoặc email, các cột khác bỏ qua; dòng tiêu đề tự bỏ qua.'}
+              </span>
+            </div>
           </>
         )}
 
@@ -410,7 +466,7 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
                 <thead>
                   <tr>
                     <th scope="col">Dòng</th>
-                    <th scope="col">Mã</th>
+                    <th scope="col">Mã hoặc email nhập</th>
                     <th scope="col">Họ tên</th>
                     <th scope="col">Kết quả</th>
                   </tr>
@@ -424,6 +480,12 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
                         <b style={{ fontWeight: 600 }}>
                           {r.participant?.name ?? '—'}
                         </b>
+                        {r.participant && (
+                          <small className="rnd-meta">
+                            {' '}
+                            {r.participant.code}
+                          </small>
+                        )}
                       </td>
                       <td>
                         <span className="rnd-pick-status">

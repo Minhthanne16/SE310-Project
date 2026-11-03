@@ -4,7 +4,12 @@ import {
   validateRoundInput,
   type RoundFieldErrors,
 } from '@/features/rounds/roundValidation';
-import { openBlockers, validateMilestones } from '@/features/rounds/roundUtils';
+import {
+  finishBlockedMessage,
+  openBlockers,
+  publishBlocker,
+  validateMilestones,
+} from '@/features/rounds/roundUtils';
 import {
   DEMO_TODAY,
   buildMilestones,
@@ -111,8 +116,9 @@ export interface RoundService {
     userId: string,
   ): Promise<Round>;
   listNotifications(query: NotificationQuery): Promise<NotificationPage>;
-  // Hệ quả của việc công bố danh sách đề tài (màn Quản lý đề tài): đợt không
-  // còn đề tài chưa công bố. Ở backend thật số này được suy ra từ dữ liệu đề tài.
+  // Công bố danh sách đề tài của đợt cho sinh viên (tab Đề tài của chi tiết
+  // đợt); không hoàn tác. Ném RoundRuleError khi đợt không Đang diễn ra, chưa
+  // có đề tài, đã công bố hoặc đã hết hạn đăng ký (không phụ thuộc hạn GV gửi).
   markTopicsPublished(id: string): Promise<Round>;
 }
 
@@ -138,7 +144,7 @@ const KIND_LABEL: Record<ParticipantKind, string> = {
 
 const emptyTopics = (): Round['topicSummary'] => ({
   total: 0,
-  unpublishedCount: 0,
+  pendingResultCount: 0,
   byStatus: Object.fromEntries(
     TOPIC_STATUSES.map((s) => [s, 0]),
   ) as Round['topicSummary']['byStatus'],
@@ -199,20 +205,28 @@ export function createRoundService(
     kind: ParticipantKind,
     codes: string[],
   ): ParticipantCheck[] => {
+    // Mỗi mục là mã hoặc email (không phân biệt hoa thường). Mục trùng và
+    // cùng một người nhập bằng mã rồi email chỉ tính một lần.
     const seen = new Set<string>();
+    const seenUsers = new Set<string>();
     const results: ParticipantCheck[] = [];
     for (const raw of codes) {
       const code = raw.trim();
       if (!code || seen.has(code.toLowerCase())) continue;
       seen.add(code.toLowerCase());
+      const key = code.toLowerCase();
       const participant = users[kind].find(
-        (u) => u.code.toLowerCase() === code.toLowerCase(),
+        (u) => u.code.toLowerCase() === key || u.email.toLowerCase() === key,
       );
+      if (participant) {
+        if (seenUsers.has(participant.id)) continue;
+        seenUsers.add(participant.id);
+      }
       if (!participant) {
         results.push({
           code,
           status: 'notFound',
-          message: `Không tồn tại ${KIND_LABEL[kind]} có mã này.`,
+          message: `Không tồn tại ${KIND_LABEL[kind]} có mã hoặc email này.`,
         });
       } else if (idsOf(round, kind).includes(participant.id)) {
         results.push({
@@ -295,6 +309,7 @@ export function createRoundService(
         status: 'Nháp',
         lecturerLoadMin: source?.lecturerLoadMin ?? 0,
         lecturerLoadMax: source?.lecturerLoadMax ?? 0,
+        topicsPublishedAt: null,
         milestones: source
           ? blank.map((m) => {
               const old = source.milestones.find((o) => o.key === m.key);
@@ -371,12 +386,15 @@ export function createRoundService(
       return save({ ...round, status: 'Đang diễn ra' });
     },
 
-    // Đề xuất: POST /api/rounds/{id}/finish → RoundDto; 409 khi không phải
-    // Đang diễn ra. Còn đề tài chưa công bố chỉ cảnh báo ở giao diện.
+    // POST /api/rounds/{id}/finish → RoundDto; 409 khi không phải
+    // Đang diễn ra hoặc còn đề tài chưa ở trạng thái kết thúc (PDR-031; đề tài
+    // Không có nhóm không tính).
     async finish(id) {
       const round = find(id);
       if (round.status !== 'Đang diễn ra')
         throw new RoundRuleError('Chỉ kết thúc được đợt đang diễn ra.');
+      const blocked = finishBlockedMessage(round);
+      if (blocked) throw new RoundRuleError(blocked);
       return save({ ...round, status: 'Đã kết thúc' });
     },
 
@@ -476,14 +494,15 @@ export function createRoundService(
       return save(next);
     },
 
-    // Đề xuất: không có endpoint riêng; trường topicSummary của RoundDto do
-    // máy chủ tính lại sau POST /api/rounds/{id}/topics/publish.
+    // POST /api/rounds/{id}/topics/publish → RoundDto; 404 không có đợt; 409
+    // khi không Đang diễn ra, đã công bố, hoặc đã hết hạn đăng ký. Không bị
+    // chặn bởi hạn "GV gửi đề tài". Backend thật chưa có bảng đề tài nên chưa
+    // kiểm tra "ít nhất 1 đề tài"; kho demo kiểm tra theo topicSummary.
     async markTopicsPublished(id) {
       const round = find(id);
-      return save({
-        ...round,
-        topicSummary: { ...round.topicSummary, unpublishedCount: 0 },
-      });
+      const blocked = publishBlocker(round, today);
+      if (blocked) throw new RoundRuleError(blocked);
+      return save({ ...round, topicsPublishedAt: `${today}T08:00:00.000Z` });
     },
 
     // Đề xuất: GET /api/notifications?roundId=&source=all|giaovu|mine&search=&limit=

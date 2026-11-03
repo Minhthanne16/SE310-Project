@@ -8,14 +8,6 @@ export { TOPIC_STATUSES, type TopicStatus } from '@/types/round';
 export const TOPIC_SOURCES = ['GV công bố', 'SV đề xuất'] as const;
 export type TopicSource = (typeof TOPIC_SOURCES)[number];
 
-// Giai đoạn đề tài của MỘT đợt, tách khỏi trạng thái đợt (03: Đề tài của tôi).
-// Công bố danh sách không đảo ngược được.
-export const TOPIC_PHASES = [
-  'Đang gửi đề tài',
-  'Đã công bố danh sách',
-] as const;
-export type TopicPhase = (typeof TOPIC_PHASES)[number];
-
 export const SUBMISSION_KINDS = [
   'Đề cương',
   'Giữa kỳ',
@@ -140,17 +132,12 @@ export interface LecturerLoad {
   level: LoadLevel;
 }
 
+// Tên và trạng thái của đợt chứa đề tài (breadcrumb, tiêu đề). Việc công bố
+// danh sách đề tài nằm ở Round.topicsPublishedAt (roundService).
 export interface TopicRoundState {
   roundId: string;
   roundName: string;
   roundStatus: RoundStatus;
-  phase: TopicPhase;
-  // Ngày kết thúc mốc "GV gửi đề tài" (yyyy-MM-dd); '' nếu chưa đặt.
-  submissionDeadline: string;
-  deadlinePassed: boolean;
-  canPublish: boolean;
-  // Lý do không công bố được (null khi canPublish).
-  publishBlockedReason: string | null;
 }
 
 export interface TopicList {

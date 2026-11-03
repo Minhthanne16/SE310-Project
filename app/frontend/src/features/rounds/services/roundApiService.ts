@@ -69,8 +69,6 @@ async function call<T>(
 // bằng NEXT_PUBLIC_ROUNDS_API=true; xem roundService.ts.
 export function createApiRoundService(): RoundService {
   // Backend chưa có thông báo của đợt nên listNotifications chạy trên kho demo.
-  // Công bố đề tài chưa có API (PDR-031: số đề tài chưa công bố sẽ do backend
-  // tính từ dữ liệu đề tài), nên markTopicsPublished chỉ chỉnh bản đợt đã lấy.
   const demo = createRoundService();
   const service: RoundService = {
     today: localToday(),
@@ -140,14 +138,8 @@ export function createApiRoundService(): RoundService {
       ),
 
     listNotifications: (query) => demo.listNotifications(query),
-    // Đợt thật không có trong kho demo: lấy đợt từ API rồi báo đã công bố hết.
-    async markTopicsPublished(id) {
-      const round = await service.get(id);
-      return {
-        ...round,
-        topicSummary: { ...round.topicSummary, unpublishedCount: 0 },
-      };
-    },
+    markTopicsPublished: (id) =>
+      call<Round>(`/rounds/${enc(id)}/topics/publish`, json('POST')),
   };
   return service;
 }

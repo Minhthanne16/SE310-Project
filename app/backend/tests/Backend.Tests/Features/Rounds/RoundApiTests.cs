@@ -108,13 +108,14 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
         Assert.Equal(JsonValueKind.Null, milestones[0].GetProperty("allowLate").ValueKind);
         Assert.True(milestones[2].GetProperty("allowLate").GetBoolean());
         Assert.Equal("finalize", milestones[8].GetProperty("key").GetString());
+        Assert.Equal(JsonValueKind.Null, data.GetProperty("topicsPublishedAt").ValueKind);
         Assert.Equal(0, data.GetProperty("lecturerIds").GetArrayLength());
         Assert.Equal(0, data.GetProperty("lockedStudentIds").GetArrayLength());
         var summary = data.GetProperty("topicSummary");
         Assert.Equal(0, summary.GetProperty("total").GetInt32());
-        Assert.Equal(0, summary.GetProperty("unpublishedCount").GetInt32());
+        Assert.Equal(0, summary.GetProperty("pendingResultCount").GetInt32());
         Assert.Equal(0, summary.GetProperty("byStatus").GetProperty("Chưa đăng ký").GetInt32());
-        Assert.Equal(7, summary.GetProperty("byStatus").EnumerateObject().Count());
+        Assert.Equal(9, summary.GetProperty("byStatus").EnumerateObject().Count());
 
         // Lỗi: 400 thiếu thông tin, 409 trùng tên, 404 thiếu đợt nguồn / đợt không có.
         var invalid = await Send(HttpMethod.Post, "/api/rounds", cookie, new { name = " ", program = "", periodLabel = "" });
@@ -177,6 +178,9 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
         Assert.Equal(HttpStatusCode.OK, add.StatusCode);
         var addData = (await ReadJson(add)).GetProperty("data");
         Assert.Equal(1, addData.GetProperty("added").GetInt32());
+        Assert.Equal("Nguyễn Văn An", addData.GetProperty("results")[0].GetProperty("participant").GetProperty("name").GetString());
+        Assert.Equal($"{studentCode.ToLowerInvariant()}@example.com", addData.GetProperty("results")[0].GetProperty("participant").GetProperty("email").GetString());
+        Assert.Equal("Chưa đăng nhập", addData.GetProperty("results")[0].GetProperty("participant").GetProperty("accountStatus").GetString());
         Assert.Equal(studentId, addData.GetProperty("round").GetProperty("studentIds")[0].GetGuid());
         Assert.Equal("valid", addData.GetProperty("results")[0].GetProperty("status").GetString());
         var addLecturer = await Send(HttpMethod.Post, $"/api/rounds/{id}/lecturers", cookie, new { codes = new[] { lecturerCode } });
@@ -213,6 +217,99 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
         Assert.Equal(HttpStatusCode.OK, deleted.StatusCode);
         Assert.True((await ReadJson(deleted)).GetProperty("data").GetBoolean());
         Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Get, $"/api/rounds/{draftId}", cookie)).StatusCode);
+    }
+
+    // Đợt Đang diễn ra có mốc đăng ký kết thúc registrationEnd (các mốc khác nối tiếp, vẫn đúng thứ tự).
+    private async Task<Guid> CreateRunningRound(string cookie, DateOnly registrationEnd)
+    {
+        var created = await ReadJson(await Send(HttpMethod.Post, "/api/rounds", cookie,
+            new { name = $"Đợt công bố {Guid.NewGuid():N}", program = "Văn bằng 1", periodLabel = "K1" }));
+        var id = created.GetProperty("data").GetProperty("id").GetGuid();
+        var anchor = registrationEnd.AddDays(-10);
+        var milestones = Milestones(m =>
+        {
+            for (var i = 0; i < m.Count; i++)
+            {
+                m[i].startDate = anchor.AddDays(i * 2).ToString("yyyy-MM-dd");
+                m[i].endDate = anchor.AddDays(i * 2 + 1).ToString("yyyy-MM-dd");
+            }
+            m[1].startDate = registrationEnd.AddDays(-1).ToString("yyyy-MM-dd");
+            m[1].endDate = registrationEnd.ToString("yyyy-MM-dd");
+            // Các mốc sau bắt đầu sau mốc đăng ký để giữ thứ tự thời gian.
+            for (var i = 2; i < m.Count; i++)
+            {
+                m[i].startDate = registrationEnd.AddDays(i).ToString("yyyy-MM-dd");
+                m[i].endDate = registrationEnd.AddDays(i + 1).ToString("yyyy-MM-dd");
+            }
+        });
+        Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Put, $"/api/rounds/{id}/milestones", cookie, new { milestones })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Post, $"/api/rounds/{id}/open", cookie)).StatusCode);
+        return id;
+    }
+
+    private static DateOnly Today => DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+
+    [Fact]
+    public async Task PublishTopicsPersistsTimeAndIsIrreversible()
+    {
+        var cookie = await LoginAs(UserRole.AcademicAffairs);
+        // Mốc "GV gửi đề tài" đã qua (mốc 0 kết thúc trước hôm nay) vẫn không chặn; đăng ký còn hạn đến hôm nay.
+        var id = await CreateRunningRound(cookie, Today);
+
+        var published = await Send(HttpMethod.Post, $"/api/rounds/{id}/topics/publish", cookie);
+        Assert.Equal(HttpStatusCode.OK, published.StatusCode);
+        var data = (await ReadJson(published)).GetProperty("data");
+        Assert.Equal(JsonValueKind.String, data.GetProperty("topicsPublishedAt").ValueKind);
+        Assert.True(DateTime.TryParse(data.GetProperty("topicsPublishedAt").GetString(), out _));
+
+        // Lưu bền: đọc lại vẫn thấy; công bố lần hai bị chặn.
+        var again = await ReadJson(await Send(HttpMethod.Get, $"/api/rounds/{id}", cookie));
+        Assert.Equal(JsonValueKind.String, again.GetProperty("data").GetProperty("topicsPublishedAt").ValueKind);
+        var second = await Send(HttpMethod.Post, $"/api/rounds/{id}/topics/publish", cookie);
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+        Assert.Equal("Danh sách đề tài của đợt đã được công bố.", (await ReadJson(second)).GetProperty("message").GetString());
+    }
+
+    [Fact]
+    public async Task PublishTopicsRequiresRunningRound()
+    {
+        var cookie = await LoginAs(UserRole.AcademicAffairs);
+        var draft = (await ReadJson(await Send(HttpMethod.Post, "/api/rounds", cookie,
+            new { name = $"Đợt nháp {Guid.NewGuid():N}", program = "Văn bằng 1", periodLabel = "K1" }))).GetProperty("data").GetProperty("id").GetGuid();
+
+        var response = await Send(HttpMethod.Post, $"/api/rounds/{draft}/topics/publish", cookie);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal("Chỉ công bố được danh sách đề tài của đợt đang diễn ra.", (await ReadJson(response)).GetProperty("message").GetString());
+        Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Post, $"/api/rounds/{Guid.NewGuid()}/topics/publish", cookie)).StatusCode);
+    }
+
+    [Fact]
+    public async Task PublishTopicsIsBlockedAfterRegistrationEnded()
+    {
+        var cookie = await LoginAs(UserRole.AcademicAffairs);
+        var end = Today.AddDays(-1);
+        var id = await CreateRunningRound(cookie, end);
+
+        var response = await Send(HttpMethod.Post, $"/api/rounds/{id}/topics/publish", cookie);
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Contains($"hết ngày {end:dd/MM/yyyy}", (await ReadJson(response)).GetProperty("message").GetString());
+        var round = await ReadJson(await Send(HttpMethod.Get, $"/api/rounds/{id}", cookie));
+        Assert.Equal(JsonValueKind.Null, round.GetProperty("data").GetProperty("topicsPublishedAt").ValueKind);
+    }
+
+    [Theory]
+    [InlineData(null, HttpStatusCode.Unauthorized)]
+    [InlineData(UserRole.Student, HttpStatusCode.Forbidden)]
+    [InlineData(UserRole.Lecturer, HttpStatusCode.Forbidden)]
+    public async Task PublishTopicsIsForAcademicAffairsOnly(UserRole? role, HttpStatusCode expected)
+    {
+        var cookie = role is { } r ? await LoginAs(r) : null;
+
+        var response = await Send(HttpMethod.Post, $"/api/rounds/{Guid.NewGuid()}/topics/publish", cookie);
+
+        Assert.Equal(expected, response.StatusCode);
     }
 
     // Chín mốc nối tiếp, mỗi mốc 5 ngày, cách nhau 7 ngày từ 2026-09-01.

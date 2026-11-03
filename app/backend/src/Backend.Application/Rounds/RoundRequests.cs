@@ -26,6 +26,7 @@ public record UpdateRoundCommand(Guid Id, RoundInfoDto Round) : IRequest<RoundRe
 public record UpdateRoundMilestonesCommand(Guid Id, RoundMilestonesInputDto Input) : IRequest<RoundResult<RoundDto>>;
 public record OpenRoundCommand(Guid Id) : IRequest<RoundResult<RoundDto>>;
 public record FinishRoundCommand(Guid Id) : IRequest<RoundResult<RoundDto>>;
+public record PublishRoundTopicsCommand(Guid Id) : IRequest<RoundResult<RoundDto>>;
 public record DeleteRoundCommand(Guid Id) : IRequest<RoundResult<bool>>;
 // Kind là "lecturers" hoặc "students" (đoạn cuối của URL).
 public record GetPeopleQuery(string Kind) : IRequest<ApiResponse<IReadOnlyList<ParticipantDto>>>;
@@ -49,10 +50,18 @@ public static class RoundRules
     public const string OnlyRunningFinishMessage = "Chỉ kết thúc được đợt đang diễn ra.";
     public const string OnlyDraftDeleteMessage = "Chỉ xóa được đợt Nháp.";
     public const string MilestonesIncompleteMessage = "Chưa mở được đợt: các mốc thời gian chưa đầy đủ hoặc chưa hợp lệ.";
+    public const string OnlyRunningPublishMessage = "Chỉ công bố được danh sách đề tài của đợt đang diễn ra.";
+    public const string AlreadyPublishedMessage = "Danh sách đề tài của đợt đã được công bố.";
+    // Đồng bộ với frontend (roundUtils.registrationEndedMessage).
+    public static string RegistrationEndedMessage(DateOnly end) =>
+        $"Đã hết thời gian sinh viên đăng ký đề tài (hết ngày {end:dd/MM/yyyy}). Sửa mốc “Công bố đề tài · SV đăng ký” ở tab Cấu hình rồi công bố.";
     public const string InvalidKindMessage = "Loại người tham gia phải là lecturers hoặc students.";
 
     public static readonly string[] TopicStatuses =
-        ["Chưa đăng ký", "Chờ GV duyệt", "Đã đăng ký", "Bị từ chối", "Đang thực hiện", "Đã cho điểm", "Đã hoàn tất"];
+        [
+            "Chưa đăng ký", "Chờ GV duyệt", "Đã đăng ký", "Bị từ chối", "Đang thực hiện", "Đã cho điểm", "Đã hoàn tất",
+            "Không đủ điều kiện công bố", "Không có nhóm"
+        ];
 
     private static readonly Dictionary<MilestoneKey, string> MilestoneNames = new()
     {
@@ -127,6 +136,10 @@ public static class RoundRules
         };
         return value is "lecturers" or "students";
     }
+
+    // Ngày hiện tại theo giờ Việt Nam (UTC+7): hạn mốc tính đến 23:59 của ngày kết thúc.
+    public static DateOnly TodayVietnam(TimeProvider clock) =>
+        DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime.AddHours(7));
 
     public static string KindLabel(ParticipantKind kind) => kind == ParticipantKind.Student ? "sinh viên" : "giảng viên";
     public static UserRole RoleOf(ParticipantKind kind) => kind == ParticipantKind.Student ? UserRole.Student : UserRole.Lecturer;

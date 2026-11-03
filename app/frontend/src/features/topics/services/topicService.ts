@@ -4,14 +4,13 @@ import {
   type RoundService,
 } from '@/features/rounds/services/roundService';
 import { DEMO_TODAY } from '@/features/rounds/services/roundSeed';
-import { SEED_PHASES, seedTopics } from '@/features/topics/services/topicSeed';
-import { buildTopicsCsv, lecturerLoads } from '@/features/topics/topicUtils';
+import { seedTopics } from '@/features/topics/services/topicSeed';
+import { lecturerLoads } from '@/features/topics/topicUtils';
 import type {
   Topic,
   TopicFilters,
   TopicList,
   TopicPerson,
-  TopicPhase,
   TopicRoundState,
 } from '@/types/topic';
 
@@ -22,32 +21,16 @@ export class TopicNotFoundError extends Error {
   }
 }
 
-// Vi phạm quy tắc nghiệp vụ (công bố khi chưa hết hạn, đã công bố...).
-export class TopicRuleError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'TopicRuleError';
-  }
-}
-
-export interface TopicCsvExport {
-  csv: string;
-  // Số đề tài trong tệp; 0 = danh sách trống, giao diện báo thay vì tải.
-  count: number;
-}
-
-// Hợp đồng chung của hai màn đề tài của Giáo vụ. Component chỉ phụ thuộc
+// Hợp đồng chung của các màn đề tài của Giáo vụ (danh sách, chi tiết, tab Đề tài). Component chỉ phụ thuộc
 // interface này nên khi backend có API chỉ cần thay phần cài đặt.
 export interface TopicService {
   readonly today: string;
   list(filters: TopicFilters): Promise<TopicList>;
   get(id: string): Promise<Topic>;
-  // Giai đoạn đề tài và điều kiện công bố của một đợt.
+  // Tên và trạng thái của đợt chứa đề tài.
   roundState(roundId: string): Promise<TopicRoundState>;
   // GVHD của các đề tài trong đợt (cho ô lọc), theo danh sách giảng viên của đợt.
   listSupervisors(roundId: string): Promise<TopicPerson[]>;
-  publish(roundId: string): Promise<TopicRoundState>;
-  exportCsv(filters: TopicFilters): Promise<TopicCsvExport>;
 }
 
 interface TopicServiceOptions {
@@ -55,7 +38,6 @@ interface TopicServiceOptions {
   // Dùng để lấy đợt, mốc "GV gửi đề tài" và giảng viên của đợt.
   roundService?: RoundService;
   topics?: Topic[];
-  phases?: Record<string, TopicPhase>;
   // Mức tối thiểu/tối đa đề tài mỗi giảng viên; mặc định lấy hằng số tạm (0 = chưa đặt).
   loadLimits?: { min: number; max: number };
 }
@@ -79,35 +61,11 @@ export function createTopicService(
   const today = options.today ?? DEMO_TODAY;
   const rounds = options.roundService ?? defaultRoundService;
   const topics = options.topics ?? seedTopics();
-  const phases: Record<string, TopicPhase> = {
-    ...(options.phases ?? SEED_PHASES),
-  };
 
   const roundState = async (roundId: string): Promise<TopicRoundState> => {
     // Ném RoundNotFoundError khi không có đợt.
     const round = await rounds.get(roundId);
-    const milestone = round.milestones.find((m) => m.key === 'topicSubmission');
-    const deadline = milestone?.endDate ?? '';
-    const phase = phases[roundId] ?? 'Đang gửi đề tài';
-    const deadlinePassed = deadline !== '' && today > deadline;
-    const total = topics.filter((t) => t.roundId === roundId).length;
-    let reason: string | null = null;
-    if (phase === 'Đã công bố danh sách') reason = 'Danh sách đã được công bố.';
-    else if (round.status !== 'Đang diễn ra')
-      reason = 'Chỉ công bố được danh sách của đợt đang diễn ra.';
-    else if (!deadline) reason = 'Chưa đặt hạn gửi đề tài của đợt.';
-    else if (!deadlinePassed) reason = 'Chưa hết hạn gửi đề tài.';
-    else if (total === 0) reason = 'Chưa có đề tài để công bố.';
-    return {
-      roundId,
-      roundName: round.name,
-      roundStatus: round.status,
-      phase,
-      submissionDeadline: deadline,
-      deadlinePassed,
-      canPublish: reason === null,
-      publishBlockedReason: reason,
-    };
+    return { roundId, roundName: round.name, roundStatus: round.status };
   };
 
   const matches = (t: Topic, f: TopicFilters): boolean => {
@@ -137,7 +95,7 @@ export function createTopicService(
   return {
     today,
 
-    // Đề xuất: GET /api/rounds/{id}/topics/state → TopicRoundStateDto.
+    // Đề xuất: GET /api/rounds/{id} (tên và trạng thái đợt).
     roundState,
 
     // Đề xuất: GET /api/topics?roundId=&supervisorId=&status=&search=
@@ -176,29 +134,6 @@ export function createTopicService(
       return people
         .filter((p) => round.lecturerIds.includes(p.id))
         .map((p) => ({ id: p.id, code: p.code, name: p.name }));
-    },
-
-    // Đề xuất: POST /api/rounds/{id}/topics/publish → TopicRoundStateDto;
-    // 409 khi chưa hết hạn gửi đề tài, đã công bố, đợt không đang diễn ra hoặc
-    // chưa có đề tài. Không đảo ngược được. Sau đó GV không thêm/xóa đề tài,
-    // chỉ sửa mô tả và yêu cầu của đề tài chưa có nhóm (khóa Lĩnh vực).
-    async publish(roundId) {
-      const state = await roundState(roundId);
-      if (!state.canPublish)
-        throw new TopicRuleError(
-          state.publishBlockedReason ?? 'Không công bố được danh sách.',
-        );
-      phases[roundId] = 'Đã công bố danh sách';
-      await rounds.markTopicsPublished(roundId);
-      return roundState(roundId);
-    },
-
-    // Đề xuất: GET /api/topics/export?roundId=&… (text/csv) với cùng bộ lọc
-    // như danh sách. Ô bắt đầu bằng = + - @ được chặn công thức.
-    async exportCsv(filters) {
-      await rounds.get(filters.roundId);
-      const items = filtered(filters);
-      return { csv: buildTopicsCsv(items), count: items.length };
     },
   };
 }

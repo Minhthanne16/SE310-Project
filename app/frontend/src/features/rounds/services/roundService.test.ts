@@ -9,6 +9,7 @@ import {
   type RoundService,
 } from './roundService';
 import { addDays } from '@/features/rounds/roundUtils';
+import { seedRounds } from './roundSeed';
 
 const TODAY = '2026-10-26';
 const svc = () => createRoundService({ today: TODAY });
@@ -447,6 +448,109 @@ describe('participants', () => {
       '22520010',
     );
     expect(afterStudent.studentIds).toEqual([]);
+  });
+});
+
+describe('participants by email', () => {
+  it('finds people by email case-insensitively and counts a person once', async () => {
+    const s = svc();
+    const id = 'r-vb2-hk1';
+    const results = await s.checkParticipants(id, 'student', [
+      ' 22520010@STUDENT.truong.edu.vn ',
+      '22520010',
+      '22520011',
+      '22520011@student.truong.edu.vn',
+      'khong-co@x.vn',
+    ]);
+    expect(results.map((r) => [r.code, r.status])).toEqual([
+      ['22520010@STUDENT.truong.edu.vn', 'valid'],
+      ['22520011', 'valid'],
+      ['khong-co@x.vn', 'notFound'],
+    ]);
+    expect(results[2].message).toBe(
+      'Không tồn tại sinh viên có mã hoặc email này.',
+    );
+    expect(results[0].participant).toMatchObject({
+      code: '22520010',
+      email: '22520010@student.truong.edu.vn',
+      accountStatus: 'Đang hoạt động',
+    });
+    const outcome = await s.addParticipants(id, 'student', [
+      '22520010@student.truong.edu.vn',
+      '22520010',
+    ]);
+    expect(outcome.added).toBe(1);
+  });
+
+  it('exposes email and account status for lecturers and candidates', async () => {
+    const s = svc();
+    const lecturers = await s.listParticipants('lecturer');
+    expect(lecturers.find((p) => p.code === 'CB106')).toMatchObject({
+      email: 'cb106@truong.edu.vn',
+      accountStatus: 'Chưa đăng nhập',
+    });
+    const candidates = await s.listCandidates('r-vb2-hk1', 'student');
+    expect(candidates[0].email).toContain('@');
+  });
+});
+
+describe('publishing the topic list', () => {
+  it('publishes a running round once, ignoring the lecturer submission deadline', async () => {
+    // 10/08: GV còn gửi đề tài (đến 14/08) nhưng vẫn công bố được.
+    const s = createRoundService({ today: '2026-08-10' });
+    const before = await s.get('r-ths-1-2026');
+    expect(before.topicsPublishedAt).toBeNull();
+    const after = await s.markTopicsPublished('r-ths-1-2026');
+    expect(after.topicsPublishedAt).toBe('2026-08-10T08:00:00.000Z');
+    // Không đổi số đề tài chờ kết quả: đó là việc khác với công bố danh sách.
+    expect(after.topicSummary.pendingResultCount).toBe(
+      before.topicSummary.pendingResultCount,
+    );
+    await expect(s.markTopicsPublished('r-ths-1-2026')).rejects.toThrow(
+      'đã được công bố',
+    );
+  });
+
+  it('is blocked after the registration end date, for draft rounds and for empty rounds', async () => {
+    const s = svc();
+    // Đăng ký của ThS kết thúc 28/08, hôm nay 26/10.
+    await expect(s.markTopicsPublished('r-ths-1-2026')).rejects.toThrow(
+      'Đã hết thời gian sinh viên đăng ký đề tài (hết ngày 28/08/2026)',
+    );
+    await expect(s.markTopicsPublished('r-vb2-hk2-nhap')).rejects.toThrow(
+      'Chỉ công bố được danh sách đề tài của đợt đang diễn ra.',
+    );
+    await expect(s.markTopicsPublished('khong-co')).rejects.toBeInstanceOf(
+      RoundNotFoundError,
+    );
+    // Ngày cuối của mốc vẫn công bố được (hết 23:59).
+    const lastDay = createRoundService({ today: '2026-08-28' });
+    expect(
+      (await lastDay.markTopicsPublished('r-ths-1-2026')).topicsPublishedAt,
+    ).not.toBeNull();
+  });
+});
+
+describe('finishing a round', () => {
+  it('is blocked while topics are not in a terminal state, Không có nhóm excluded', async () => {
+    const s = svc();
+    await expect(s.finish('r-ths-1-2026')).rejects.toBeInstanceOf(
+      RoundRuleError,
+    );
+    await expect(s.finish('r-ths-1-2026')).rejects.toThrow(
+      'Còn 5 đề tài chưa công bố kết quả.',
+    );
+    expect((await s.get('r-ths-1-2026')).status).toBe('Đang diễn ra');
+    // Đợt không còn đề tài chờ kết quả thì kết thúc được.
+    const ready = createRoundService({
+      today: TODAY,
+      rounds: seedRounds().map((r) =>
+        r.id === 'r-vb2-hk1'
+          ? { ...r, topicSummary: { ...r.topicSummary, pendingResultCount: 0 } }
+          : r,
+      ),
+    });
+    expect((await ready.finish('r-vb2-hk1')).status).toBe('Đã kết thúc');
   });
 });
 

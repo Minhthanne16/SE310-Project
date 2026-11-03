@@ -73,11 +73,11 @@ public class RoundRepository(ApplicationDbContext context) : IRoundRepository
         await context.Users.AsNoTracking().Where(u => u.Role == role && u.IsActive)
             .OrderBy(u => u.UserCode).ToListAsync(cancellationToken);
 
-    public async Task<IReadOnlyList<User>> GetActiveUsersByCodesAsync(UserRole role, IReadOnlyCollection<string> codes, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<User>> GetActiveUsersByCodesOrEmailsAsync(UserRole role, IReadOnlyCollection<string> codes, CancellationToken cancellationToken = default)
     {
         var lowered = codes.Select(c => c.ToLowerInvariant()).ToList();
         return await context.Users.AsNoTracking()
-            .Where(u => u.Role == role && u.IsActive && lowered.Contains(u.UserCode.ToLower()))
+            .Where(u => u.Role == role && u.IsActive && (lowered.Contains(u.UserCode.ToLower()) || lowered.Contains(u.Email.ToLower())))
             .ToListAsync(cancellationToken);
     }
 

@@ -81,6 +81,7 @@ const TASK_KIND: Record<RoundTaskTab, string> = {
   'giang-vien': 'GIẢNG VIÊN',
   'sinh-vien': 'SINH VIÊN',
   'tien-do': 'TIẾN ĐỘ',
+  'de-tai': 'ĐỀ TÀI',
 };
 
 const TASK_HINT: Record<RoundTaskTab, string> = {
@@ -88,6 +89,7 @@ const TASK_HINT: Record<RoundTaskTab, string> = {
   'giang-vien': 'Mở danh sách giảng viên của đợt để xử lý.',
   'sinh-vien': 'Mở danh sách sinh viên của đợt để xử lý.',
   'tien-do': 'Mở tiến độ đợt để xử lý.',
+  'de-tai': 'Mở danh sách đề tài của đợt để xử lý.',
 };
 
 interface RoundCardProps {

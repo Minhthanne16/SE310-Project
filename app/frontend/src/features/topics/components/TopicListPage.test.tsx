@@ -6,10 +6,8 @@ import {
   waitFor,
   within,
 } from '@testing-library/react';
-import toast from 'react-hot-toast';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { currentUrl, resetNavigation, setUrl } from '@/test/navigationMock';
-import { downloadCsv } from '@/lib/csv';
 import { createRoundService } from '@/features/rounds/services/roundService';
 import { createTopicService } from '@/features/topics/services/topicService';
 import { TopicListPage } from './TopicListPage';
@@ -18,20 +16,11 @@ vi.mock('next/navigation', async () => {
   const mod = await import('@/test/navigationMock');
   return mod.navigationModule;
 });
-vi.mock('react-hot-toast', () => ({
-  default: { success: vi.fn(), error: vi.fn() },
-}));
-vi.mock('@/lib/csv', async () => ({
-  ...(await vi.importActual<typeof import('@/lib/csv')>('@/lib/csv')),
-  downloadCsv: vi.fn(),
-}));
 
 const TODAY = '2026-10-26';
 
 beforeEach(() => {
   resetNavigation('/giao-vu/de-tai');
-  vi.mocked(downloadCsv).mockClear();
-  vi.mocked(toast.success).mockClear();
 });
 afterEach(cleanup);
 
@@ -44,15 +33,6 @@ const services = (today = TODAY) => {
     loadLimits: { min: 2, max: 6 },
   });
   return { roundService, topicService };
-};
-
-// Thạc sĩ: đã hết hạn gửi đề tài, chưa công bố (VB1 đã công bố).
-const renderThs = async (today = TODAY) => {
-  setUrl('/giao-vu/de-tai?dot=r-ths-1-2026');
-  const s = services(today);
-  render(<TopicListPage {...s} />);
-  await screen.findByText('Học tăng cường cho điều phối giao thông');
-  return s;
 };
 
 const renderPage = async () => {
@@ -71,7 +51,7 @@ it('defaults to the first running round, 8 per page, with all columns', async ()
   await renderPage();
   expect(screen.getByLabelText('Đợt')).toHaveValue('r-vb1-hk1');
   expect(
-    screen.getByRole('heading', { level: 1, name: 'Quản lý đề tài' }),
+    screen.getByRole('heading', { level: 1, name: 'Đề tài' }),
   ).toBeInTheDocument();
   for (const name of [
     'Đề tài',
@@ -181,123 +161,67 @@ it('honours ?dot= on first load', async () => {
     await screen.findByText('Website bán hàng thủ công mỹ nghệ'),
   ).toBeInTheDocument();
   expect(screen.getByLabelText('Đợt')).toHaveValue('r-vb1-hk2-2025');
-  expect(
-    screen.getByRole('button', { name: 'Đã công bố danh sách' }),
-  ).toBeDisabled();
+  expect(screen.getByRole('status')).toHaveTextContent(
+    'đã công bố cho sinh viên ngày 16/02/2026',
+  );
 });
 
-it('shows the published state for VB1 and a blocked note for a draft round', async () => {
+it('no longer publishes or exports here and points to the round detail instead', async () => {
   await renderPage();
   expect(
-    screen.getByText(
-      (_, el) =>
-        el?.tagName === 'P' &&
-        (el.textContent ?? '').includes('đã hết lúc 23:59 ngày 18/09/2026'),
-    ),
-  ).toBeInTheDocument();
+    screen.queryByRole('button', { name: /công bố danh sách/i }),
+  ).not.toBeInTheDocument();
   expect(
-    screen.getByRole('button', { name: 'Đã công bố danh sách' }),
-  ).toBeDisabled();
+    screen.queryByRole('button', { name: 'Xuất danh sách' }),
+  ).not.toBeInTheDocument();
   expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Đề tài');
+  expect(
+    screen.getByText(/làm ở Chi tiết đợt, tab Đề tài/),
+  ).toBeInTheDocument();
+});
+
+it('shows the publish state of the selected round with a link to its Đề tài tab', async () => {
+  await renderPage();
+  const line = screen.getByRole('status');
+  expect(line).toHaveTextContent(
+    'Danh sách đề tài đã công bố cho sinh viên ngày 21/09/2026.',
+  );
+  expect(
+    within(line).getByRole('link', { name: 'Mở tab Đề tài của đợt' }),
+  ).toHaveAttribute('href', '/giao-vu/dot/r-vb1-hk1?tab=de-tai');
+
+  pick('Đợt', 'r-ths-1-2026');
+  await screen.findByText('Học tăng cường cho điều phối giao thông');
+  expect(screen.getByRole('status')).toHaveTextContent(
+    'Danh sách đề tài chưa công bố cho sinh viên.',
+  );
+  expect(
+    screen.getByRole('link', { name: 'Mở tab Đề tài của đợt' }),
+  ).toHaveAttribute('href', '/giao-vu/dot/r-ths-1-2026?tab=de-tai');
 
   pick('Đợt', 'r-vb2-hk2-nhap');
   await screen.findByText('Chưa có đề tài nào trong đợt');
-  expect(screen.getByRole('note')).toHaveTextContent(
-    'Chỉ công bố được danh sách của đợt đang diễn ra.',
-  );
-  expect(
-    screen.getByRole('button', { name: 'Đóng & công bố danh sách' }),
-  ).toBeDisabled();
-});
-
-it('publishes the list after the deadline through the confirmation dialog', async () => {
-  await renderThs();
-  expect(
-    screen.getByText(
-      (_, el) =>
-        el?.tagName === 'P' &&
-        (el.textContent ?? '').includes('đã hết lúc 23:59 ngày 14/08/2026'),
-    ),
-  ).toBeInTheDocument();
-  expect(screen.queryByRole('note')).not.toBeInTheDocument();
-  const button = screen.getByRole('button', {
-    name: 'Đóng & công bố danh sách',
-  });
-  expect(button).toBeEnabled();
-
-  fireEvent.click(button);
-  const dialog = await screen.findByRole('dialog');
-  expect(dialog).toHaveAccessibleName('Đóng và công bố danh sách đề tài?');
-  expect(dialog).toHaveTextContent('không gửi thêm hay xóa đề tài');
-  expect(dialog).toHaveTextContent('mô tả và yêu cầu của đề tài chưa có nhóm');
-  expect(dialog).toHaveTextContent('Lĩnh vực bị khóa');
-  // Cảnh báo chỉ để theo dõi, không chặn công bố.
-  expect(dialog).toHaveTextContent(
-    /giảng viên chưa đạt số đề tài tối thiểu. Vẫn công bố được/,
-  );
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Để sau' }));
-  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-
-  fireEvent.click(button);
-  fireEvent.click(
-    within(await screen.findByRole('dialog')).getByRole('button', {
-      name: 'Đóng và công bố',
-    }),
-  );
-  await waitFor(() =>
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
-  );
-  expect(
-    await screen.findByText('Đã công bố danh sách đề tài.'),
-  ).toBeInTheDocument();
-  await waitFor(() =>
-    expect(
-      screen.getByRole('button', { name: 'Đã công bố danh sách' }),
-    ).toBeDisabled(),
+  expect(screen.getByRole('status')).toHaveTextContent(
+    'Đợt đang Nháp nên chưa công bố danh sách đề tài.',
   );
 });
 
-it('disables publishing with a reason before the deadline', async () => {
-  await renderThs('2026-08-14');
-  const button = screen.getByRole('button', {
-    name: 'Đóng & công bố danh sách',
-  });
-  expect(button).toBeDisabled();
-  expect(
-    screen.getByText(
-      (_, el) =>
-        el?.tagName === 'P' &&
-        (el.textContent ?? '').includes(
-          'đang gửi đề tài đến 23:59 ngày 14/08/2026',
-        ),
-    ),
-  ).toBeInTheDocument();
-  const reason = screen.getByRole('note');
-  expect(reason).toHaveTextContent('Chưa đóng và công bố được.');
-  expect(reason).toHaveTextContent('Giảng viên còn được gửi đề tài đến 23:59');
-  expect(button).toHaveAttribute('aria-describedby', reason.id);
-});
+it('filters by the new statuses Không có nhóm and Không đủ điều kiện công bố', async () => {
+  await renderPage();
+  fireEvent.click(screen.getByRole('button', { name: 'Không có nhóm' }));
+  await waitFor(() => expect(rowCount()).toBe(5));
+  for (const chip of screen.getAllByText('Không có nhóm'))
+    expect(chip).toBeInTheDocument();
 
-it('shows the service error inside the dialog when publishing fails', async () => {
-  const s = services();
-  vi.spyOn(s.topicService, 'publish').mockRejectedValue(
-    new Error('Máy chủ từ chối.'),
-  );
-  setUrl('/giao-vu/de-tai?dot=r-ths-1-2026');
-  render(<TopicListPage {...s} />);
-  await screen.findByText('Học tăng cường cho điều phối giao thông');
+  pick('Đợt', 'r-vb1-hk2-2025');
   fireEvent.click(
-    screen.getByRole('button', { name: 'Đóng & công bố danh sách' }),
+    screen.getByRole('button', { name: 'Không đủ điều kiện công bố' }),
   );
-  fireEvent.click(
-    within(await screen.findByRole('dialog')).getByRole('button', {
-      name: 'Đóng và công bố',
-    }),
-  );
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Máy chủ từ chối.',
-  );
-  expect(screen.getByRole('dialog')).toBeInTheDocument();
+  await waitFor(() => expect(rowCount()).toBe(1));
+  expect(
+    screen.getByText('Ứng dụng quản lý lịch hẹn khám bệnh'),
+  ).toBeInTheDocument();
 });
 
 it('stops loading and explains when there are no rounds at all', async () => {
@@ -341,46 +265,6 @@ it('does not show the previous round while another round is loading', async () =
   expect(
     await screen.findByText('Học tăng cường cho điều phối giao thông'),
   ).toBeInTheDocument();
-});
-
-it('exports the filtered list as CSV', async () => {
-  await renderPage();
-  pick('Lọc theo giảng viên hướng dẫn', 'CB103');
-  await waitFor(() => expect(rowCount()).toBe(2));
-  fireEvent.click(screen.getByRole('button', { name: 'Xuất danh sách' }));
-  await waitFor(() => expect(downloadCsv).toHaveBeenCalledTimes(1));
-  const [name, csv] = vi.mocked(downloadCsv).mock.calls[0];
-  expect(name).toBe('danh-sach-de-tai.csv');
-  expect(csv).toContain('VB1-17');
-  expect(csv).toContain('VB1-18');
-  expect(csv).not.toContain('VB1-01,');
-  expect(screen.getByRole('status')).toHaveTextContent(
-    'Đã tải tệp CSV danh sách đề tài (2 đề tài theo bộ lọc hiện tại).',
-  );
-});
-
-it('tells the user instead of downloading when the list is empty', async () => {
-  await renderPage();
-  pick('Đợt', 'r-vb2-hk2-nhap');
-  await screen.findByText('Chưa có đề tài nào trong đợt');
-  fireEvent.click(screen.getByRole('button', { name: 'Xuất danh sách' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Chưa có đề tài nào trong đợt nên không có gì để xuất.',
-  );
-  expect(downloadCsv).not.toHaveBeenCalled();
-});
-
-it('tells the user to change the filter when the filtered list is empty', async () => {
-  await renderPage();
-  fireEvent.change(screen.getByLabelText('Tìm đề tài'), {
-    target: { value: 'không khớp gì cả' },
-  });
-  await screen.findByText('Không có đề tài nào khớp bộ lọc');
-  fireEvent.click(screen.getByRole('button', { name: 'Xuất danh sách' }));
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Danh sách đang trống theo bộ lọc hiện tại nên không có gì để xuất.',
-  );
-  expect(downloadCsv).not.toHaveBeenCalled();
 });
 
 it('searches by student and lecturer name as the placeholder promises', async () => {

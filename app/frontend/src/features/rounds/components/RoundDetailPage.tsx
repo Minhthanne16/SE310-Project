@@ -19,8 +19,10 @@ import {
 import { RoundParticipantsTab } from '@/features/rounds/components/RoundParticipantsTab';
 import { RoundTopicsTab } from '@/features/rounds/components/RoundTopicsTab';
 import {
+  deriveTasks,
   formatDate,
   roundSpan,
+  roundStage,
   studentNoun,
 } from '@/features/rounds/roundUtils';
 import {
@@ -158,6 +160,10 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
   const readOnly = round.status === 'Đã kết thúc';
   const span = roundSpan(round.milestones);
   const { topicSummary } = round;
+  const stage = roundStage(round, roundService.today);
+  const canPublishNow = deriveTasks(round, roundService.today).some(
+    (t) => t.id === 'publish-topics',
+  );
 
   const tabs: { id: RoundTab; label: string }[] = [
     { id: 'tien-do', label: 'Tiến độ' },
@@ -222,6 +228,11 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
           <span className="rnd-detail-title">
             <h1>{round.name}</h1>
             <RoundStatusPill status={round.status} />
+            {stage && (
+              <span className="rnd-pill rnd-pill-sm rnd-pill-info rnd-stage-chip">
+                Giai đoạn: {stage}
+              </span>
+            )}
           </span>
           <span className="rnd-meta">
             Bắt đầu {span ? formatDate(span.start) : 'chưa đặt ngày'} ·{' '}
@@ -348,6 +359,21 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
       >
         {tab === 'tien-do' && (
           <section className="rnd-section rnd-section-flush">
+            {canPublishNow && (
+              <div role="note" className="rnd-callout">
+                <p>
+                  <b>Việc cần làm:</b> đã hết hạn giảng viên gửi đề tài. Xem lại
+                  danh sách rồi đóng và công bố để sinh viên đăng ký.
+                </p>
+                <button
+                  type="button"
+                  className="rnd-btn rnd-btn-primary"
+                  onClick={() => selectTab('de-tai')}
+                >
+                  Xem và công bố
+                </button>
+              </div>
+            )}
             <RoundGantt
               round={round}
               today={roundService.today}
@@ -358,8 +384,10 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
             <div className="rnd-topics">
               <p>
                 {topicSummary.total} đề tài
-                {topicSummary.unpublishedCount > 0
-                  ? `, ${topicSummary.unpublishedCount} chưa công bố`
+                {round.status === 'Đang diễn ra' && topicSummary.total > 0
+                  ? round.topicsPublishedAt === null
+                    ? ', danh sách chưa công bố cho sinh viên'
+                    : `, ${topicSummary.pendingResultCount} chưa công bố kết quả`
                   : ''}
                 .
               </p>
@@ -411,7 +439,13 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
         )}
 
         {tab === 'de-tai' && (
-          <RoundTopicsTab round={round} topicService={topicService} />
+          <RoundTopicsTab
+            round={round}
+            roundService={roundService}
+            topicService={topicService}
+            onRoundChange={setRound}
+            onGoToConfig={() => selectTab('cau-hinh')}
+          />
         )}
 
         {tab === 'danh-gia' && (

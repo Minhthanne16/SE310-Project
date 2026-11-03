@@ -24,8 +24,8 @@ public interface IRoundRepository
 
     // Người dùng đang hoạt động của vai trò, sắp theo mã.
     Task<IReadOnlyList<User>> GetActiveUsersAsync(UserRole role, CancellationToken cancellationToken = default);
-    // Người dùng đang hoạt động theo mã (không phân biệt hoa thường).
-    Task<IReadOnlyList<User>> GetActiveUsersByCodesAsync(UserRole role, IReadOnlyCollection<string> codes, CancellationToken cancellationToken = default);
+    // Người dùng đang hoạt động khớp mã người dùng hoặc email (không phân biệt hoa thường).
+    Task<IReadOnlyList<User>> GetActiveUsersByCodesOrEmailsAsync(UserRole role, IReadOnlyCollection<string> codes, CancellationToken cancellationToken = default);
     // Trong các sinh viên đã cho, những ai đang ở đợt Đang diễn ra khác đợt exceptRoundId.
     Task<IReadOnlyList<RoundConflict>> FindRunningRoundConflictsAsync(Guid exceptRoundId, IReadOnlyCollection<Guid> studentIds, CancellationToken cancellationToken = default);
 }

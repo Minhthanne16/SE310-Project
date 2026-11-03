@@ -148,7 +148,7 @@ public sealed class RoundWorkflowTests : IDisposable
         Assert.Equal([null, null, true, true, true, null, null, null, null], round.Milestones.Select(m => m.AllowLate));
         Assert.Equal("Đề cương", round.Milestones[2].Name);
         Assert.Empty(round.LecturerIds);
-        Assert.Equal(7, round.TopicSummary.ByStatus.Count);
+        Assert.Equal(9, round.TopicSummary.ByStatus.Count);
         Assert.All(round.TopicSummary.ByStatus.Values, v => Assert.Equal(0, v));
     }
 
@@ -405,10 +405,41 @@ public sealed class RoundWorkflowTests : IDisposable
         Assert.Equal("Hợp lệ.", result[0].Message);
         Assert.Equal((sv1, "SV1", "An", "KTPM2022"), (result[0].Participant!.Id, result[0].Participant!.Code, result[0].Participant!.Name, result[0].Participant!.Unit));
         Assert.Equal("Đã có trong đợt này.", result[1].Message);
-        Assert.Equal("Không tồn tại sinh viên có mã này.", result[2].Message);
+        Assert.Equal("Không tồn tại sinh viên có mã hoặc email này.", result[2].Message);
         Assert.Null(result[2].Participant);
         // Chỉ kiểm tra, không ghi.
         Assert.Single((await Send(new GetRoundQuery(round.Id))).Response.Data!.StudentIds);
+    }
+
+    [Fact]
+    public async Task CheckAcceptsEmailsCaseInsensitivelyAndEchoesInput()
+    {
+        var sv1 = await Seed(UserRole.Student, "SV1", "An", "KTPM2022");
+        var round = await Create();
+
+        // SeedUser đặt email = mã viết thường + @example.com.
+        var result = (await Send(new CheckParticipantsCommand(round.Id, "students", ["  Sv1@Example.COM ", "khong@example.com"]))).Response.Data!;
+
+        Assert.Equal(["Sv1@Example.COM", "khong@example.com"], result.Select(r => r.Code));
+        Assert.Equal(["valid", "notFound"], result.Select(r => r.Status));
+        var participant = result[0].Participant!;
+        Assert.Equal((sv1, "SV1", "sv1@example.com", "Chưa đăng nhập"), (participant.Id, participant.Code, participant.Email, participant.AccountStatus));
+    }
+
+    [Fact]
+    public async Task MixedCodeAndEmailForSameUserCountsOnce()
+    {
+        var sv1 = await Seed(UserRole.Student, "SV1");
+        await Seed(UserRole.Student, "SV2");
+        var round = await Create();
+
+        var check = (await Send(new CheckParticipantsCommand(round.Id, "students", ["SV1", "sv2@example.com", "sv1@example.com", "SV2"]))).Response.Data!;
+        Assert.Equal(["SV1", "sv2@example.com"], check.Select(r => r.Code));
+
+        var added = (await Send(new AddParticipantsCommand(round.Id, "students", ["SV1", "sv2@example.com", "sv1@example.com", "SV2"]))).Response.Data!;
+        Assert.Equal(2, added.Added);
+        Assert.Contains(sv1, added.Round.StudentIds);
+        Assert.Equal(2, added.Round.StudentIds.Count);
     }
 
     [Fact]

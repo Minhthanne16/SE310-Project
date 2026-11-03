@@ -15,6 +15,7 @@ import {
   setUrl,
 } from '@/test/navigationMock';
 import { createRoundService } from '@/features/rounds/services/roundService';
+import { seedRounds } from '@/features/rounds/services/roundSeed';
 import type { EvaluationService } from '@/features/evaluations/services/evaluationService';
 import { createTopicService } from '@/features/topics/services/topicService';
 import { RoundDetailPage } from './RoundDetailPage';
@@ -35,6 +36,16 @@ const renderDetail = async (
   await screen.findByRole('heading', { level: 1 });
   return service;
 };
+
+// Dịch vụ đợt mà đề tài của đợt `id` đều đã ở trạng thái kết thúc (kết thúc được).
+const serviceReadyToFinish = (id: string) =>
+  createRoundService({
+    rounds: seedRounds().map((r) =>
+      r.id === id
+        ? { ...r, topicSummary: { ...r.topicSummary, pendingResultCount: 0 } }
+        : r,
+    ),
+  });
 
 const tab = (name: string) =>
   fireEvent.click(screen.getByRole('tab', { name: new RegExp(`^${name}`) }));
@@ -183,9 +194,14 @@ it('adds students by code and shows mixed check results before adding', async ()
   fireEvent.click(
     within(dialog).getByRole('tab', { name: 'Nhập theo mã (dán danh sách)' }),
   );
-  fireEvent.change(within(dialog).getByLabelText(/Dán mã sinh viên/), {
-    target: { value: '22520010\n99999999, 22520001' },
-  });
+  fireEvent.change(
+    within(dialog).getByLabelText(/Dán mã hoặc email sinh viên/),
+    {
+      target: {
+        value: '22520010\n99999999, 22520001, 22520010@student.truong.edu.vn',
+      },
+    },
+  );
   fireEvent.click(
     within(dialog).getByRole('button', { name: 'Kiểm tra danh sách' }),
   );
@@ -193,7 +209,8 @@ it('adds students by code and shows mixed check results before adding', async ()
   const results = await within(dialog).findByRole('rowgroup', {
     name: 'Kết quả kiểm tra',
   });
-  expect(within(results).getByText('Sẽ thêm')).toBeInTheDocument();
+  // Email của cùng một sinh viên (22520010) chỉ tính một lần.
+  expect(within(results).getAllByText('Sẽ thêm')).toHaveLength(1);
   expect(
     within(results).getByText('Không có trong hệ thống'),
   ).toBeInTheDocument();
@@ -210,6 +227,68 @@ it('adds students by code and shows mixed check results before adding', async ()
   );
   expect(await screen.findByText('Đinh Công Minh')).toBeInTheDocument();
   expect((await service.get('r-vb2-hk1')).studentIds).toContain('22520010');
+});
+
+it('fills the code box from a CSV file, skipping the header, and checks the entries', async () => {
+  await renderDetail('r-vb2-hk1');
+  tab('Sinh viên');
+  await screen.findByText('Phạm Quốc Khánh');
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm sinh viên' }));
+  const dialog = screen.getByRole('dialog', { name: 'Thêm sinh viên vào đợt' });
+  fireEvent.click(
+    within(dialog).getByRole('tab', { name: 'Nhập theo mã (dán danh sách)' }),
+  );
+  expect(
+    within(dialog).getByRole('button', { name: 'Chọn tệp Excel/CSV' }),
+  ).toBeInTheDocument();
+  const file = new File(
+    [
+      'MSSV,Họ tên\r\n22520010,Đinh Công Minh\r\n22520011@student.truong.edu.vn,Lý\r\n',
+    ],
+    'ds.csv',
+    { type: 'text/csv' },
+  );
+  fireEvent.change(within(dialog).getByLabelText('Tệp Excel hoặc CSV'), {
+    target: { files: [file] },
+  });
+  const box = within(dialog).getByLabelText(/Dán mã hoặc email sinh viên/);
+  await waitFor(() =>
+    expect(box).toHaveValue('22520010\n22520011@student.truong.edu.vn'),
+  );
+  expect(
+    within(dialog).getByText('Đã đọc 2 dòng từ tệp ds.csv.'),
+  ).toBeInTheDocument();
+
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Kiểm tra danh sách' }),
+  );
+  const results = await within(dialog).findByRole('rowgroup', {
+    name: 'Kết quả kiểm tra',
+  });
+  expect(within(results).getAllByText('Sẽ thêm')).toHaveLength(2);
+});
+
+it('shows the email and account status of each person in the participants tab', async () => {
+  await renderDetail('r-vb1-hk1');
+  tab('Giảng viên');
+  expect(await screen.findByText('cb101@truong.edu.vn')).toBeInTheDocument();
+  expect(
+    screen.getByRole('columnheader', { name: 'Tài khoản' }),
+  ).toBeInTheDocument();
+  expect(screen.getAllByText('Đang hoạt động').length).toBeGreaterThan(0);
+  tab('Sinh viên');
+  expect(
+    await screen.findByText('22520001@student.truong.edu.vn'),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText('22520030@student.truong.edu.vn'),
+  ).toBeInTheDocument();
+  expect(screen.getAllByText('Chưa đăng nhập').length).toBeGreaterThan(0);
+  fireEvent.change(screen.getByRole('searchbox'), {
+    target: { value: '22520030@student' },
+  });
+  expect(screen.getByText('Cao Thị Hồng')).toBeInTheDocument();
+  expect(screen.queryByText('Nguyễn Văn An')).not.toBeInTheDocument();
 });
 
 it('adds lecturers picked from a list of people not yet in the round', async () => {
@@ -320,7 +399,7 @@ it('closes a dialog with Escape and returns focus to the button that opened it',
 });
 
 it('keeps Tab inside an open dialog', async () => {
-  await renderDetail();
+  await renderDetail('r-vb1-hk1', serviceReadyToFinish('r-vb1-hk1'));
   fireEvent.click(screen.getByRole('button', { name: 'Kết thúc đợt' }));
   const dialog = screen.getByRole('alertdialog');
   const confirm = within(dialog).getByRole('button', { name: 'Kết thúc đợt' });
@@ -338,33 +417,107 @@ it('follows a tab change made by Next navigation', async () => {
   tabSelected('Giảng viên');
 });
 
-it('warns about unpublished topics before finishing a running round', async () => {
+it('blocks finishing while topics still wait for results and explains where to publish them', async () => {
   const service = await renderDetail('r-ths-1-2026');
   fireEvent.click(screen.getByRole('button', { name: 'Kết thúc đợt' }));
   const dialog = screen.getByRole('alertdialog', {
     name: 'Kết thúc đợt Thạc sĩ · Đợt 1/2026?',
   });
-  expect(dialog).toHaveTextContent('Còn 6 đề tài chưa công bố');
+  expect(dialog).toHaveTextContent('Còn 5 đề tài chưa công bố kết quả.');
+  expect(dialog).toHaveTextContent(
+    'rồi mới kết thúc được đợt. Đề tài Không có nhóm không tính.',
+  );
+  expect(within(dialog).getByRole('link', { name: 'Kết quả' })).toHaveAttribute(
+    'href',
+    '/giao-vu/ket-qua',
+  );
+  const confirm = within(dialog).getByRole('button', { name: 'Kết thúc đợt' });
+  expect(confirm).toBeDisabled();
+  fireEvent.click(confirm);
+  expect((await service.get('r-ths-1-2026')).status).toBe('Đang diễn ra');
+});
+
+it('finishes a round once every topic is settled, after a plain confirmation', async () => {
+  const service = await renderDetail(
+    'r-vb2-hk1',
+    serviceReadyToFinish('r-vb2-hk1'),
+  );
+  fireEvent.click(screen.getByRole('button', { name: 'Kết thúc đợt' }));
+  const dialog = screen.getByRole('alertdialog');
+  expect(dialog).toHaveTextContent('không mở lại được');
+  expect(dialog).not.toHaveTextContent('chưa công bố kết quả');
   fireEvent.click(within(dialog).getByRole('button', { name: 'Kết thúc đợt' }));
   await waitFor(() =>
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
   );
-  expect((await service.get('r-ths-1-2026')).status).toBe('Đã kết thúc');
+  expect((await service.get('r-vb2-hk1')).status).toBe('Đã kết thúc');
   expect(
     screen.getByText('Đã kết thúc', { selector: '.rnd-pill' }),
   ).toBeInTheDocument();
+  expect(screen.queryByText(/Giai đoạn:/)).not.toBeInTheDocument();
+});
+
+it('rejects finishing in the demo service while topics are pending', async () => {
+  const service = createRoundService();
+  await expect(service.finish('r-vb1-hk1')).rejects.toThrow(
+    'Còn 12 đề tài chưa công bố kết quả.',
+  );
+});
+
+it('shows the derived stage next to the status chip only for running rounds', async () => {
+  await renderDetail('r-vb1-hk1');
+  expect(screen.getByText('Giai đoạn: Thực hiện')).toBeInTheDocument();
+  cleanup();
+  await renderDetail('r-ths-1-2026');
   expect(
-    screen.queryByRole('button', { name: 'Kết thúc đợt' }),
+    screen.getByText('Giai đoạn: Chờ công bố danh sách'),
+  ).toBeInTheDocument();
+  cleanup();
+  await renderDetail('r-vb2-hk2-nhap');
+  expect(screen.queryByText(/Giai đoạn:/)).not.toBeInTheDocument();
+  cleanup();
+  await renderDetail('r-vb1-hk2-2025');
+  expect(screen.queryByText(/Giai đoạn:/)).not.toBeInTheDocument();
+});
+
+it('reminds to review and publish on the progress tab and jumps to the topics tab', async () => {
+  await renderDetail('r-ths-1-2026');
+  const callout = screen.getByText(/Việc cần làm:/).closest('div')!;
+  expect(callout).toHaveTextContent(
+    'đã hết hạn giảng viên gửi đề tài. Xem lại danh sách rồi đóng và công bố để sinh viên đăng ký.',
+  );
+  fireEvent.click(
+    within(callout).getByRole('button', { name: 'Xem và công bố' }),
+  );
+  await waitFor(() => tabSelected('Đề tài'));
+  expect(currentUrl()).toContain('tab=de-tai');
+  cleanup();
+
+  resetNavigation('/giao-vu/dot/x');
+  await renderDetail('r-vb1-hk1');
+  expect(screen.queryByText(/Việc cần làm:/)).not.toBeInTheDocument();
+});
+
+it('has no header shortcut to the topics tab (removed on main)', async () => {
+  await renderDetail('r-vb1-hk1');
+  expect(
+    screen.queryByRole('button', { name: 'Đề tài của đợt' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('link', { name: 'Đề tài của đợt' }),
   ).not.toBeInTheDocument();
 });
 
-it('finishes a round with all topics published after a plain confirmation', async () => {
-  await renderDetail('r-vb2-hk1');
-  fireEvent.click(screen.getByRole('button', { name: 'Kết thúc đợt' }));
-  expect(screen.getByRole('alertdialog')).toHaveTextContent(
-    'không mở lại được',
-  );
-  expect(screen.getByRole('alertdialog')).not.toHaveTextContent('chưa công bố');
+it('describes the topic list as unpublished until it is published', async () => {
+  await renderDetail('r-ths-1-2026');
+  expect(
+    screen.getByText(/6 đề tài, danh sách chưa công bố cho sinh viên/),
+  ).toBeInTheDocument();
+  cleanup();
+  await renderDetail('r-vb1-hk1');
+  expect(
+    screen.getByText(/18 đề tài, 12 chưa công bố kết quả/),
+  ).toBeInTheDocument();
 });
 
 it('opens a draft and deletes it, going back to the list', async () => {
