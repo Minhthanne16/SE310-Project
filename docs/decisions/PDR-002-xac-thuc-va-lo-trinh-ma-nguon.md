@@ -43,4 +43,4 @@ Nhiệm vụ backend yêu cầu "API đăng nhập cục bộ (JWT/Session) và 
 
 - Tạo tài khoản (nhập CSV, gửi email kích hoạt) là tác vụ riêng và phải tuân theo vai trò, mật khẩu ban đầu và `MustChangePassword` ở trên.
 - Products vẫn ẩn danh. Endpoint QLKLTN mới phải tự khai báo `[Authorize]`, vì chưa đặt fallback policy toàn cục để giữ nguyên mã mẫu.
-- `SeedDevelopmentUsers=true` tạo ba tài khoản mẫu, chỉ dùng cho database local. Không bật trên Neon hoặc dữ liệu thật.
+- `SeedDevelopmentUsers=true` tạo ba tài khoản mẫu, chỉ dùng cho database local. Cả ba tài khoản seed được đánh dấu đã kích hoạt (`MustChangePassword = false`) để thử giao diện mà không phụ thuộc email/OTP; ngoại lệ này không áp dụng cho tài khoản nhập CSV, Neon hoặc dữ liệu thật. Không bật seed trên Neon hoặc dữ liệu thật.

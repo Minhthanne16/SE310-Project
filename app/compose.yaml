@@ -13,7 +13,7 @@ services:
       timeout: 3s
       retries: 10
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
 
   redis:
     image: redis:8-alpine
@@ -41,6 +41,16 @@ services:
     image: axllent/mailpit:v1.31.4
     ports:
       - "127.0.0.1:8025:8025"
+
+  # Docker tạo named volume thuộc root; init này chỉ sửa ownership rồi thoát để
+  # API vẫn chạy bằng user app không đặc quyền.
+  data-protection-init:
+    image: app-api
+    user: "0:0"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["mkdir -p /keys && chown -R 1654:1654 /keys"]
+    volumes:
+      - data_protection_keys:/keys
 
   api:
     build:
@@ -77,6 +87,10 @@ services:
         condition: service_healthy
       mailpit:
         condition: service_started
+      data-protection-init:
+        condition: service_completed_successfully
+    volumes:
+      - data_protection_keys:/home/app/.aspnet/DataProtection-Keys
     ports:
       - "127.0.0.1:5290:8080"
 
@@ -97,3 +111,4 @@ volumes:
   postgres_data:
   redis_data:
   minio_data:
+  data_protection_keys:

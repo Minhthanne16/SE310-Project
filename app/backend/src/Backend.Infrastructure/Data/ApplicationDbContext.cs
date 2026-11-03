@@ -45,6 +45,9 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.ClassName).HasMaxLength(100);
             entity.Property(e => e.Department).HasMaxLength(100);
             entity.Property(e => e.AcademicTitle).HasMaxLength(100);
+            entity.Property(e => e.Phone).HasMaxLength(32);
+            entity.Property(e => e.SecondaryEmail).HasMaxLength(256);
+            entity.Property(e => e.AvatarObjectKey).HasMaxLength(512);
             entity.HasIndex(e => e.UserCode).IsUnique();
             entity.HasIndex(e => e.Email).IsUnique();
         });
