@@ -174,6 +174,16 @@ export const submissionEnd = (round: Round) =>
 export const registrationEnd = (round: Round) =>
   milestoneEnd(round, 'topicRegistration');
 
+// Hạn chốt bản cuối: hết ngày kết thúc mốc "Chốt bản cuối · công bố"; sau đó
+// hệ thống chốt phiên bản mới nhất nên công bố kết quả không cần chờ nhóm chốt
+// (PDR-011, PDR-049).
+export const finalLockEnd = (round: Round) => milestoneEnd(round, 'finalize');
+
+export function finalLockClosed(round: Round, today: string): boolean {
+  const end = finalLockEnd(round);
+  return end !== '' && today > end;
+}
+
 export function submissionClosed(round: Round, today: string): boolean {
   const end = submissionEnd(round);
   return end !== '' && today > end;

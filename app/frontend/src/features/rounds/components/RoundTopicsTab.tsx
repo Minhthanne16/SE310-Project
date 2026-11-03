@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Download, Search } from 'lucide-react';
 import '@/features/rounds/rounds.css';
 import {
+  finalLockClosed,
   formatDate,
   publishBlocker,
   registrationClosed,
@@ -21,6 +22,7 @@ import { PublishTopicsDialog } from '@/features/topics/components/PublishTopicsD
 import { TopicStatusChip } from '@/features/topics/components/TopicChips';
 import {
   topicService as defaultTopicService,
+  type ResultOutcome,
   type TopicService,
 } from '@/features/topics/services/topicService';
 import {
@@ -30,10 +32,15 @@ import {
   type TopicExportKind,
 } from '@/features/topics/topicExport';
 import {
+  confirmResultBlocker,
+  displayStatus,
   groupLabel,
+  publishResultBlocker,
+  remindDeviationBlocker,
   shortName,
   thesisCell,
 } from '@/features/topics/topicUtils';
+import { TopicResultPanel } from '@/features/rounds/components/TopicResultPanel';
 import { downloadXlsx } from '@/lib/xlsx';
 import {
   TOPIC_STATUSES,
@@ -54,6 +61,28 @@ interface RoundTopicsTabProps {
   // Tải tệp .xlsx về máy; tiêm được để kiểm thử.
   downloadFile?: typeof downloadXlsx;
 }
+
+// Trạng thái chấm điểm và kết quả: khi đợt có đề tài ở các trạng thái này, bảng
+// có cột chọn theo lô và cột Thao tác (PDR-049).
+const RESULT_STATUSES: readonly TopicStatus[] = [
+  'Đang cho điểm',
+  'Đã cho điểm',
+  'Có lệch điểm',
+  'Đã xác nhận',
+  'Đã hoàn tất',
+];
+
+interface BulkReport {
+  title: string;
+  rows: ResultOutcome[];
+}
+
+const BULK_LABEL = {
+  confirm: 'Xác nhận kết quả',
+  publish: 'Công bố kết quả',
+  remind: 'Nhắc lệch điểm',
+} as const;
+type BulkAction = keyof typeof BULK_LABEL;
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
@@ -85,6 +114,11 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportedText, setExportedText] = useState<string | null>(null);
   const [unassigned, setUnassigned] = useState<Participant[] | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [expanded, setExpanded] = useState<string[]>([]);
+  const [report, setReport] = useState<BulkReport | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [confirmingPublish, setConfirmingPublish] = useState(false);
   const today = roundService.today;
   // Hết hạn đăng ký (đã công bố): liệt kê sinh viên của đợt chưa có đề tài.
   const listUnassigned =
@@ -116,7 +150,37 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
     };
   }, [topicService, round.id]);
 
-  const all = useMemo(() => topics ?? [], [topics]);
+  // Tải lại danh sách sau một thao tác kết quả mà không nháy "Đang tải".
+  const refresh = async () => {
+    const result = await topicService.list({ roundId: round.id });
+    setTopics(result.items);
+    setLoads(result.loads);
+  };
+
+  // Sau hạn đăng ký (đã công bố) không còn đề tài Đã đăng ký / Chờ GV duyệt và
+  // ẩn đề xuất Bị từ chối (PDR-049); bản ghi vẫn nằm trong lịch sử đề tài.
+  const registrationOver =
+    round.topicsPublishedAt !== null && registrationClosed(round, today);
+  // Mọi đề tài của đợt với trạng thái hiển thị; dùng cho xuất danh sách đăng ký.
+  const everyTopic = useMemo(
+    () =>
+      (topics ?? []).map((t) => {
+        const shown = displayStatus(t.status, registrationOver);
+        return shown === t.status ? t : { ...t, status: shown };
+      }),
+    [topics, registrationOver],
+  );
+  const all = useMemo(
+    () =>
+      registrationOver
+        ? everyTopic.filter((t) => t.status !== 'Bị từ chối')
+        : everyTopic,
+    [everyTopic, registrationOver],
+  );
+  const removedRejected = everyTopic.length - all.length;
+  const lockClosed = finalLockClosed(round, today);
+  const finishedRound = round.status === 'Đã kết thúc';
+  const hasResults = all.some((t) => RESULT_STATUSES.includes(t.status));
 
   useEffect(() => {
     if (!listUnassigned || topics === null) {
@@ -168,6 +232,78 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
     [all],
   );
 
+  const selectedTopics = all.filter((t) => selected.includes(t.id));
+  const eligible = (action: BulkAction) =>
+    selectedTopics.filter((t) =>
+      action === 'confirm'
+        ? confirmResultBlocker(t) === null
+        : action === 'publish'
+          ? publishResultBlocker(t, lockClosed) === null
+          : remindDeviationBlocker(t) === null,
+    );
+  const allVisibleChecked =
+    rows.length > 0 && rows.every((t) => selected.includes(t.id));
+
+  const toggleRow = (id: string) => {
+    setReport(null);
+    setConfirmingPublish(false);
+    setSelected((cur) =>
+      cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
+    );
+  };
+  const toggleAll = () => {
+    setReport(null);
+    setConfirmingPublish(false);
+    const visible = rows.map((t) => t.id);
+    setSelected((cur) =>
+      allVisibleChecked
+        ? cur.filter((id) => !visible.includes(id))
+        : [...cur, ...visible.filter((id) => !cur.includes(id))],
+    );
+  };
+  const toggleExpand = (id: string) =>
+    setExpanded((cur) =>
+      cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id],
+    );
+
+  // Chạy cho cả lô đã chọn; dịch vụ kiểm tra lại từng đề tài và báo lý do bỏ qua.
+  const runBulk = async (action: BulkAction) => {
+    if (bulkBusy) return;
+    setBulkBusy(true);
+    setConfirmingPublish(false);
+    try {
+      const ids = selectedTopics.map((t) => t.id);
+      const outcomes =
+        action === 'confirm'
+          ? await topicService.confirmResults(ids)
+          : action === 'publish'
+            ? await topicService.publishResults(ids)
+            : await topicService.remindDeviations(ids);
+      const ok = outcomes.filter((o) => o.ok).length;
+      setReport({
+        title: `${BULK_LABEL[action]}: ${ok} thành công, ${outcomes.length - ok} bị bỏ qua`,
+        rows: [...outcomes].sort((a, b) => Number(b.ok) - Number(a.ok)),
+      });
+      setSelected([]);
+      await refresh();
+    } catch (err: unknown) {
+      setReport({
+        title: `${BULK_LABEL[action]}: không thực hiện được`,
+        rows: [
+          {
+            topicId: 'error',
+            code: '',
+            title: '',
+            ok: false,
+            message: errorMessage(err, 'Có lỗi khi xử lý lô đề tài.'),
+          },
+        ],
+      });
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const closePublish = () => {
     setPublishing(false);
     setPublishError(null);
@@ -202,7 +338,7 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
       } else {
         const people = await roundService.listParticipants('student');
         const students = people.filter((p) => round.studentIds.includes(p.id));
-        table = buildRegistrationTable(students, all);
+        table = buildRegistrationTable(students, everyTopic);
         text = `Đã tải tệp Excel danh sách đăng ký của đợt (${students.length} sinh viên, kèm trạng thái đăng ký).`;
       }
       await downloadFile(exportFileName(kind, round.name), table);
@@ -230,6 +366,8 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
       </p>
     );
 
+  const columnCount =
+    6 + (hasResults ? 1 : 0) + (hasResults && !finishedRound ? 1 : 0);
   const clearable = all.length > 0 && (status !== 'Tất cả' || query !== '');
   const empty = rows.length === 0;
   const live = round.status === 'Đang diễn ra';
@@ -414,58 +552,219 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
         {rows.length} / {all.length} đề tài
       </span>
 
+      {hasResults && !finishedRound && selectedTopics.length > 0 && (
+        <div
+          className="rnd-bulk-bar"
+          role="toolbar"
+          aria-label="Thao tác theo lô"
+        >
+          <b>Đã chọn {selectedTopics.length} đề tài</b>
+          <button
+            type="button"
+            className="rnd-btn rnd-btn-sm rnd-btn-primary"
+            disabled={bulkBusy}
+            onClick={() => void runBulk('confirm')}
+          >
+            Xác nhận ({eligible('confirm').length})
+          </button>
+          <button
+            type="button"
+            className="rnd-btn rnd-btn-sm rnd-btn-primary"
+            disabled={bulkBusy || eligible('publish').length === 0}
+            onClick={() => setConfirmingPublish(true)}
+          >
+            Công bố ({eligible('publish').length})
+          </button>
+          <button
+            type="button"
+            className="rnd-btn rnd-btn-sm"
+            disabled={bulkBusy}
+            onClick={() => void runBulk('remind')}
+          >
+            Gửi nhắc lệch điểm ({eligible('remind').length})
+          </button>
+          <button
+            type="button"
+            className="rnd-btn rnd-btn-sm"
+            onClick={() => {
+              setSelected([]);
+              setConfirmingPublish(false);
+            }}
+          >
+            Bỏ chọn
+          </button>
+          {confirmingPublish && (
+            <div
+              className="rnd-inline-confirm"
+              role="group"
+              aria-label="Xác nhận công bố theo lô"
+            >
+              <p>
+                Công bố kết quả cho {eligible('publish').length} đề tài hợp lệ
+                {selectedTopics.length > eligible('publish').length
+                  ? `; ${selectedTopics.length - eligible('publish').length} đề tài không hợp lệ sẽ bị bỏ qua và báo lý do`
+                  : ''}
+                ? Công bố xong không mở lại được.
+              </p>
+              <button
+                type="button"
+                className="rnd-btn rnd-btn-sm rnd-btn-primary"
+                disabled={bulkBusy}
+                onClick={() => void runBulk('publish')}
+              >
+                Công bố
+              </button>
+              <button
+                type="button"
+                className="rnd-btn rnd-btn-sm"
+                onClick={() => setConfirmingPublish(false)}
+              >
+                Để sau
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
+      {report && (
+        <section className="rnd-report" aria-label="Báo cáo thao tác theo lô">
+          <header>
+            <b>{report.title}</b>
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-sm"
+              onClick={() => setReport(null)}
+            >
+              Đóng báo cáo
+            </button>
+          </header>
+          <ul>
+            {report.rows.map((r) => (
+              <li
+                key={r.topicId}
+                className={r.ok ? 'rnd-report-ok' : 'rnd-report-skip'}
+              >
+                <span className="rnd-report-mark">
+                  {r.ok ? 'Thành công' : 'Bỏ qua'}
+                </span>
+                <span>
+                  {r.code && <b>{r.code}</b>}
+                  {r.title && <span className="rnd-meta"> {r.title}</span>}
+                  <br />
+                  {r.message}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       <div className="rnd-people-box">
         <table className="rnd-table rnd-table-topics">
           <thead>
             <tr>
+              {hasResults && !finishedRound && (
+                <th scope="col" className="rnd-col-check">
+                  <input
+                    type="checkbox"
+                    aria-label="Chọn tất cả đề tài đang hiển thị"
+                    checked={allVisibleChecked}
+                    disabled={rows.length === 0}
+                    onChange={toggleAll}
+                  />
+                </th>
+              )}
               <th scope="col">Đề tài</th>
               <th scope="col">GV hướng dẫn</th>
               <th scope="col">GV phản biện</th>
               <th scope="col">Hội đồng</th>
               <th scope="col">Khóa luận</th>
               <th scope="col">Trạng thái</th>
+              {hasResults && <th scope="col">Thao tác</th>}
             </tr>
           </thead>
           <tbody>
             {rows.map((t) => {
               const thesis = thesisCell(t);
+              const open = expanded.includes(t.id);
               return (
-                <tr key={t.id}>
-                  <td>
-                    <span className="rnd-person">
-                      <Link
-                        className="rnd-row-link"
-                        href={`/giao-vu/de-tai/${encodeURIComponent(t.id)}`}
-                      >
-                        {t.title}
-                      </Link>
-                      <span className="rnd-meta">
-                        {t.code} · {groupLabel(t)}
+                <React.Fragment key={t.id}>
+                  <tr aria-selected={selected.includes(t.id) || undefined}>
+                    {hasResults && !finishedRound && (
+                      <td className="rnd-col-check">
+                        <input
+                          type="checkbox"
+                          aria-label={`Chọn đề tài ${t.code}`}
+                          checked={selected.includes(t.id)}
+                          onChange={() => toggleRow(t.id)}
+                        />
+                      </td>
+                    )}
+                    <td>
+                      <span className="rnd-person">
+                        <Link
+                          className="rnd-row-link"
+                          href={`/giao-vu/de-tai/${encodeURIComponent(t.id)}`}
+                        >
+                          {t.title}
+                        </Link>
+                        <span className="rnd-meta">
+                          {t.code} · {groupLabel(t)}
+                        </span>
                       </span>
-                    </span>
-                  </td>
-                  <td>{shortName(t.supervisor.name)}</td>
-                  <td className={t.reviewer ? '' : 'rnd-cell-warn'}>
-                    {t.reviewer ? shortName(t.reviewer.name) : 'Chưa phân công'}
-                  </td>
-                  <td className={t.council ? '' : 'rnd-cell-warn'}>
-                    {t.council ?? 'Chưa gán'}
-                  </td>
-                  <td>
-                    <span className="rnd-person">
-                      <b>{thesis.label}</b>
-                      <span className="rnd-meta">{thesis.sub}</span>
-                    </span>
-                  </td>
-                  <td>
-                    <TopicStatusChip status={t.status} />
-                  </td>
-                </tr>
+                    </td>
+                    <td>{shortName(t.supervisor.name)}</td>
+                    <td className={t.reviewer ? '' : 'rnd-cell-warn'}>
+                      {t.reviewer
+                        ? shortName(t.reviewer.name)
+                        : 'Chưa phân công'}
+                    </td>
+                    <td className={t.council ? '' : 'rnd-cell-warn'}>
+                      {t.council ?? 'Chưa gán'}
+                    </td>
+                    <td>
+                      <span className="rnd-person">
+                        <b>{thesis.label}</b>
+                        <span className="rnd-meta">{thesis.sub}</span>
+                      </span>
+                    </td>
+                    <td>
+                      <TopicStatusChip status={t.status} />
+                    </td>
+                    {hasResults && (
+                      <td>
+                        <button
+                          type="button"
+                          className="rnd-btn rnd-btn-sm"
+                          aria-expanded={open}
+                          aria-controls={`result-${t.id}`}
+                          aria-label={`${open ? 'Thu gọn' : 'Chi tiết'} ${t.code}`}
+                          onClick={() => toggleExpand(t.id)}
+                        >
+                          {open ? 'Thu gọn' : 'Chi tiết'}
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                  {open && hasResults && (
+                    <tr id={`result-${t.id}`} className="rnd-expand-row">
+                      <td colSpan={columnCount}>
+                        <TopicResultPanel
+                          topic={t}
+                          topicService={topicService}
+                          finalLockClosed={lockClosed}
+                          readOnly={finishedRound}
+                          onChanged={refresh}
+                        />
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
             {empty && (
               <tr>
-                <td colSpan={6} className="rnd-empty-cell">
+                <td colSpan={columnCount} className="rnd-empty-cell">
                   <b>
                     {all.length === 0
                       ? 'Chưa có đề tài nào trong đợt'
@@ -500,8 +799,14 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
       <p className="rnd-foot">
         {round.status === 'Đã kết thúc'
           ? 'Đợt đã kết thúc nên danh sách chỉ để xem; vẫn xuất được tệp Excel.'
-          : 'Đóng & công bố danh sách và xuất Excel làm ngay tại tab này. Phân công phản biện, hội đồng làm ở trang Đề tài.'}
+          : 'Đóng & công bố danh sách và xuất Excel làm ngay tại tab này. Phân công phản biện, hội đồng làm ở trang Đề tài. Kết quả xác nhận và công bố theo cả nhóm đề tài.'}
       </p>
+      {removedRejected > 0 && (
+        <p className="rnd-foot">
+          Đã gỡ {removedRejected} đề xuất bị từ chối khỏi danh sách sau hạn đăng
+          ký; vẫn xem được trong lịch sử đề tài.
+        </p>
+      )}
 
       {publishing && (
         <PublishTopicsDialog

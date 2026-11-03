@@ -217,7 +217,7 @@ it('exports the topic list for the current filters as an .xlsx table', async () 
   fireEvent.click(screen.getByRole('button', { name: 'Xuất danh sách' }));
   const dialog = await screen.findByRole('dialog');
   expect(dialog).toHaveAccessibleName('Xuất danh sách ra Excel');
-  expect(dialog).toHaveTextContent('theo bộ lọc đang chọn ở bảng (8 đề tài)');
+  expect(dialog).toHaveTextContent('theo bộ lọc đang chọn ở bảng (6 đề tài)');
   expect(
     within(dialog).getByRole('radio', { name: /Danh sách đề tài/ }),
   ).toBeChecked();
@@ -229,11 +229,11 @@ it('exports the topic list for the current filters as an .xlsx table', async () 
   const [name, table] = downloadFile.mock.calls[0];
   expect(name).toBe('danh-sach-de-tai-van-bang-1-hk1-2026-2027.xlsx');
   expect(table.header).toContain('Trạng thái');
-  expect(table.rows).toHaveLength(8);
+  expect(table.rows).toHaveLength(6);
   expect(table.rows.every((r) => r[6] === 'Đang thực hiện')).toBe(true);
   expect(
     screen.getByText(
-      /Đã tải tệp Excel danh sách đề tài \(8 đề tài theo bộ lọc hiện tại/,
+      /Đã tải tệp Excel danh sách đề tài \(6 đề tài theo bộ lọc hiện tại/,
     ),
   ).toBeInTheDocument();
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -285,4 +285,266 @@ it('refuses to export an empty filtered list and reports download failures', asy
     await within(dialog).findByText('Trình duyệt chặn tải tệp.'),
   ).toBeInTheDocument();
   expect(screen.getByRole('dialog')).toBeInTheDocument();
+});
+
+// Dòng của bảng chứa mã đề tài.
+const rowOf = (code: string) =>
+  screen
+    .getAllByRole('row')
+    .find((r) => within(r).queryByText(new RegExp(`^${code} ·`)) !== null)!;
+const hasCode = (code: string) =>
+  screen
+    .queryAllByRole('row')
+    .some((r) => within(r).queryByText(new RegExp(`^${code} ·`)) !== null);
+const expand = async (code: string) => {
+  fireEvent.click(
+    within(rowOf(code)).getByRole('button', { name: /Chi tiết/ }),
+  );
+  return screen.findByLabelText(`Chi tiết kết quả ${code}`);
+};
+
+it('hides rejected proposals after the registration deadline and keeps them in the note', async () => {
+  // 26/10: đăng ký của VB1 đã đóng từ 02/10.
+  await setup(VB1);
+  expect(hasCode('VB1-12')).toBe(false);
+  expect(screen.getByText(/17 \/ 17 đề tài/)).toBeInTheDocument();
+  const filter = screen.getByRole('combobox', { name: 'Lọc theo trạng thái' });
+  expect(
+    within(filter).queryByRole('option', { name: /Bị từ chối/ }),
+  ).not.toBeInTheDocument();
+  // Đã đăng ký / Chờ GV duyệt hiển thị là Đang thực hiện.
+  expect(
+    within(filter).queryByRole('option', { name: /Chờ GV duyệt|Đã đăng ký/ }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(filter).getByRole('option', { name: 'Đang thực hiện (6)' }),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(
+      /Đã gỡ 1 đề xuất bị từ chối .* vẫn xem được trong lịch sử đề tài/,
+    ),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/Kết quả xác nhận và công bố theo cả nhóm đề tài\./),
+  ).toBeInTheDocument();
+});
+
+it('still shows rejected proposals before the registration deadline', async () => {
+  // 01/10: VB1 đã công bố, đăng ký còn đến 02/10.
+  await setup(VB1, '2026-10-01');
+  expect(hasCode('VB1-12')).toBe(true);
+  expect(screen.getByText(/18 \/ 18 đề tài/)).toBeInTheDocument();
+  expect(screen.queryByText(/Đã gỡ/)).not.toBeInTheDocument();
+  expect(
+    within(
+      screen.getByRole('combobox', { name: 'Lọc theo trạng thái' }),
+    ).getByRole('option', { name: 'Bị từ chối (1)' }),
+  ).toBeInTheDocument();
+});
+
+it('has no selection or action columns when no topic has results', async () => {
+  await setup(THS, '2026-08-10');
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('columnheader', { name: 'Thao tác' }),
+  ).not.toBeInTheDocument();
+});
+
+it('selects rows, counts eligible topics per bulk action and reports mixed outcomes', async () => {
+  await setup(VB1);
+  expect(
+    screen.queryByRole('toolbar', { name: 'Thao tác theo lô' }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(
+    screen.getByRole('checkbox', { name: 'Chọn tất cả đề tài đang hiển thị' }),
+  );
+  const bar = screen.getByRole('toolbar', { name: 'Thao tác theo lô' });
+  expect(bar).toHaveTextContent('Đã chọn 17 đề tài');
+  expect(
+    within(bar).getByRole('button', { name: 'Xác nhận (1)' }),
+  ).toBeEnabled();
+  expect(
+    within(bar).getByRole('button', { name: 'Công bố (1)' }),
+  ).toBeEnabled();
+  expect(
+    within(bar).getByRole('button', { name: 'Gửi nhắc lệch điểm (1)' }),
+  ).toBeEnabled();
+
+  fireEvent.click(within(bar).getByRole('button', { name: 'Xác nhận (1)' }));
+  const report = await screen.findByRole('region', {
+    name: 'Báo cáo thao tác theo lô',
+  });
+  expect(report).toHaveTextContent(
+    'Xác nhận kết quả: 1 thành công, 16 bị bỏ qua',
+  );
+  expect(within(report).getAllByText('Thành công')).toHaveLength(1);
+  expect(within(report).getAllByText('Bỏ qua')).toHaveLength(16);
+  expect(report).toHaveTextContent('Còn cặp điểm lệch từ 2 điểm');
+  expect(report).toHaveTextContent('Chưa đủ điểm');
+  // Đề tài vừa xác nhận chuyển Đã xác nhận; lựa chọn được bỏ.
+  expect(within(rowOf('VB1-08')).getByText('Đã xác nhận')).toBeInTheDocument();
+  expect(
+    screen.queryByRole('toolbar', { name: 'Thao tác theo lô' }),
+  ).not.toBeInTheDocument();
+});
+
+it('never reports full success when a publish batch skips a topic', async () => {
+  await setup(VB1);
+  for (const code of ['VB1-15', 'VB1-16'])
+    fireEvent.click(
+      within(rowOf(code)).getByRole('checkbox', {
+        name: `Chọn đề tài ${code}`,
+      }),
+    );
+  const bar = screen.getByRole('toolbar', { name: 'Thao tác theo lô' });
+  fireEvent.click(within(bar).getByRole('button', { name: 'Công bố (1)' }));
+  const ask = within(bar).getByRole('group', {
+    name: 'Xác nhận công bố theo lô',
+  });
+  expect(ask).toHaveTextContent('1 đề tài không hợp lệ sẽ bị bỏ qua');
+  fireEvent.click(within(ask).getByRole('button', { name: 'Công bố' }));
+  const report = await screen.findByRole('region', {
+    name: 'Báo cáo thao tác theo lô',
+  });
+  expect(report).toHaveTextContent(
+    'Công bố kết quả: 1 thành công, 1 bị bỏ qua',
+  );
+  expect(report).toHaveTextContent('Nhóm chưa chốt bản cuối');
+  expect(within(rowOf('VB1-16')).getByText('Đã hoàn tất')).toBeInTheDocument();
+  expect(within(rowOf('VB1-15')).getByText('Đã xác nhận')).toBeInTheDocument();
+});
+
+it('expands a deviating topic inline with red cells, blocked confirm and a composer', async () => {
+  await setup(VB1);
+  const toggle = within(rowOf('VB1-13')).getByRole('button', {
+    name: /Chi tiết/,
+  });
+  expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  const panel = await expand('VB1-13');
+  expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  expect(toggle).toHaveTextContent('Thu gọn');
+
+  const grid = within(panel).getByRole('table');
+  for (const h of ['HD', 'PB', 'CT', 'TK', 'Điểm KL'])
+    expect(
+      within(grid).getByRole('columnheader', { name: h }),
+    ).toBeInTheDocument();
+  // CTHĐ 5,5 lệch CBHD 8 và CBPB 7,5; hai ô lệch có lớp đỏ.
+  expect(grid.querySelectorAll('.rnd-score-dev')).toHaveLength(3);
+  expect(
+    within(panel).getByText('Cờ lệch điểm hội đồng (≥ 2 điểm)'),
+  ).toBeVisible();
+  expect(panel).toHaveTextContent('CTHĐ 5,5 – CBHD 8,0 (lệch 2,50)');
+  expect(panel).toHaveTextContent('CBHD');
+  expect(panel).toHaveTextContent('Khóa luận:');
+
+  const confirm = within(panel).getByRole('button', {
+    name: 'Xác nhận kết quả',
+  });
+  expect(confirm).toBeDisabled();
+  expect(panel).toHaveTextContent(
+    'Còn cặp điểm lệch từ 2 điểm. Giảng viên sửa phiếu hết lệch mới xác nhận được.',
+  );
+
+  fireEvent.click(within(panel).getByRole('button', { name: 'Gửi thông báo' }));
+  const composer = within(panel).getByRole('group', {
+    name: 'Soạn thông báo lệch điểm',
+  });
+  expect(composer).toHaveTextContent('Không gửi cho sinh viên');
+  expect(composer).toHaveTextContent('Gửi đến 3 giảng viên trong cặp lệch');
+  expect(
+    (within(composer).getByRole('textbox') as HTMLTextAreaElement).value,
+  ).toContain('VB1-13');
+  fireEvent.click(within(composer).getByRole('button', { name: 'Gửi' }));
+  expect(
+    await within(panel).findByText(/Đã gửi nhắc cho 3 giảng viên/),
+  ).toBeInTheDocument();
+
+  fireEvent.click(toggle);
+  expect(screen.queryByLabelText('Chi tiết kết quả VB1-13')).toBeNull();
+});
+
+it('confirms a graded group from its panel and shows missing scores for an incomplete one', async () => {
+  await setup(VB1);
+  const partial = await expand('VB1-06');
+  expect(
+    within(partial).getByRole('button', { name: 'Xác nhận kết quả' }),
+  ).toBeDisabled();
+  expect(partial).toHaveTextContent('Chưa đủ điểm. Thiếu CTHĐ, TKHĐ');
+  expect(partial).toHaveTextContent('Không có cặp điểm lệch.');
+
+  const ok = await expand('VB1-08');
+  fireEvent.click(within(ok).getByRole('button', { name: 'Xác nhận kết quả' }));
+  expect(
+    await within(rowOf('VB1-08')).findByText('Đã xác nhận'),
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByLabelText('Chi tiết kết quả VB1-08')).getByRole(
+      'button',
+      { name: 'Hủy xác nhận' },
+    ),
+  ).toBeInTheDocument();
+});
+
+it('requires a reason to unconfirm and blocks publishing without a final lock', async () => {
+  await setup(VB1);
+  const panel = await expand('VB1-15');
+  const publish = within(panel).getByRole('button', {
+    name: 'Công bố kết quả',
+  });
+  expect(publish).toBeDisabled();
+  expect(panel).toHaveTextContent(
+    'Nhóm chưa chốt bản cuối và chưa hết hạn chốt.',
+  );
+
+  fireEvent.click(within(panel).getByRole('button', { name: 'Hủy xác nhận' }));
+  const go = within(panel).getByRole('button', {
+    name: 'Hủy xác nhận kết quả',
+  });
+  expect(go).toBeDisabled();
+  fireEvent.change(within(panel).getByRole('textbox'), {
+    target: { value: 'Sai điểm phản biện' },
+  });
+  expect(go).toBeEnabled();
+  fireEvent.click(go);
+  expect(
+    await within(rowOf('VB1-15')).findByText('Đã cho điểm'),
+  ).toBeInTheDocument();
+  expect(
+    within(screen.getByLabelText('Chi tiết kết quả VB1-15')).getByRole(
+      'button',
+      { name: 'Xác nhận kết quả' },
+    ),
+  ).toBeEnabled();
+});
+
+it('asks for confirmation before publishing a locked group, then becomes read-only', async () => {
+  await setup(VB1);
+  const panel = await expand('VB1-16');
+  fireEvent.click(
+    within(panel).getByRole('button', { name: 'Công bố kết quả' }),
+  );
+  expect(
+    within(panel).getByText('Công bố kết quả cho 1 sinh viên của nhóm?'),
+  ).toBeInTheDocument();
+  fireEvent.click(within(panel).getByRole('button', { name: 'Công bố' }));
+  expect(
+    await within(rowOf('VB1-16')).findByText('Đã hoàn tất'),
+  ).toBeInTheDocument();
+  const after = screen.getByLabelText('Chi tiết kết quả VB1-16');
+  expect(after).toHaveTextContent('Kết quả đã công bố cho cả nhóm');
+  expect(
+    within(after).queryByRole('button', { name: 'Hủy xác nhận' }),
+  ).not.toBeInTheDocument();
+  expect(after).toHaveTextContent('Chốt bản cuối');
+});
+
+it('keeps the finished round read-only without selection', async () => {
+  await setup('r-vb1-hk2-2025');
+  expect(screen.queryByRole('checkbox')).not.toBeInTheDocument();
+  const panel = await expand('VB1-25-03');
+  expect(panel).toHaveTextContent('Đợt đã kết thúc nên kết quả chỉ để xem.');
+  expect(
+    within(panel).queryByRole('button', { name: 'Xác nhận kết quả' }),
+  ).not.toBeInTheDocument();
 });

@@ -1,9 +1,11 @@
+import type { TopicStatus } from '@/types/round';
 import {
   SCORE_ROLES,
   type LecturerLoad,
   type LoadLevel,
   type RoleScores,
   type ScoreRole,
+  type StudentScore,
   type Topic,
 } from '@/types/topic';
 
@@ -104,6 +106,63 @@ export function scoreDeviations(scores: RoleScores): {
   return { pairs, roles };
 }
 
+// Trạng thái đã lưu thắng trạng thái suy ra từ điểm (PDR-049): đã xác nhận,
+// đã công bố hoặc đã kết thúc thì phiếu điểm không đổi được trạng thái nữa.
+const GRADING_DERIVABLE: readonly TopicStatus[] = [
+  'Đang thực hiện',
+  'Đang cho điểm',
+  'Đã cho điểm',
+  'Có lệch điểm',
+];
+
+// Phiếu điểm của từng sinh viên trong nhóm; sinh viên chưa có dòng điểm có đủ
+// bốn ô trống. Nhóm chưa có thành viên thì lấy theo các dòng điểm hiện có.
+export function groupScoreRows(topic: Topic): StudentScore[] {
+  if (topic.group.length === 0) return topic.scores;
+  const byId = new Map(topic.scores.map((s) => [s.studentId, s]));
+  return topic.group.map(
+    (m) =>
+      byId.get(m.id) ?? {
+        studentId: m.id,
+        code: m.code,
+        name: m.name,
+        scores: { CTHĐ: null, TKHĐ: null, CBHD: null, CBPB: null },
+      },
+  );
+}
+
+// Sinh viên chưa đủ bốn phiếu và các vai trò còn thiếu của họ.
+export function missingScores(
+  topic: Topic,
+): { name: string; roles: ScoreRole[] }[] {
+  return groupScoreRows(topic)
+    .map((s) => ({
+      name: s.name,
+      roles: SCORE_ROLES.filter((r) => s.scores[r] === null),
+    }))
+    .filter((s) => s.roles.length > 0);
+}
+
+// Có ít nhất một cặp chéo lệch ≥ 2 điểm ở một sinh viên của nhóm.
+export function hasScoreDeviation(topic: Topic): boolean {
+  return topic.scores.some((s) => scoreDeviations(s.scores).pairs.length > 0);
+}
+
+// Trạng thái chấm điểm suy ra từ phiếu của mọi sinh viên trong nhóm (PDR-049):
+// chưa có điểm nào thì giữ trạng thái đã lưu; có điểm nhưng chưa đủ bốn phiếu
+// cho mọi sinh viên là Đang cho điểm; đủ bốn phiếu mà còn cặp lệch ≥ 2 là Có
+// lệch điểm; còn lại là Đã cho điểm. Backend phải tính lại khi xác nhận.
+export function gradingStatus(topic: Topic): TopicStatus {
+  if (!GRADING_DERIVABLE.includes(topic.status)) return topic.status;
+  const any = topic.scores.some((s) =>
+    SCORE_ROLES.some((r) => s.scores[r] !== null),
+  );
+  if (!any) return topic.status;
+  const complete = missingScores(topic).length === 0;
+  if (!complete) return 'Đang cho điểm';
+  return hasScoreDeviation(topic) ? 'Có lệch điểm' : 'Đã cho điểm';
+}
+
 // Dấu phẩy thập phân theo tiếng Việt.
 export function formatScore(value: number | null): string {
   return value === null ? '—' : value.toFixed(2).replace('.', ',');
@@ -152,7 +211,8 @@ export function thesisCell(topic: Topic): {
   const count = topic.submissions.length;
   if (count === 0)
     return { label: 'Chưa nộp', sub: 'Chưa có phiên bản', tone: 'none' };
-  const final = topic.status === 'Đã hoàn tất';
+  const final =
+    topic.status === 'Đã hoàn tất' || topic.finalLockedVersionNo !== null;
   return {
     label: final ? 'Chốt bản cuối' : 'Đã nộp',
     sub: `${count} phiên bản`,
@@ -215,4 +275,98 @@ export function groupLabel(topic: Topic): string {
   return topic.group.length > 0
     ? topic.group.map((m) => m.name).join(', ')
     : '—';
+}
+
+// Sau hạn đăng ký không còn đề tài Đã đăng ký hay Chờ GV duyệt trong đợt
+// (PDR-049): đều hiển thị là Đang thực hiện.
+export function displayStatus(
+  status: TopicStatus,
+  registrationOver: boolean,
+): TopicStatus {
+  return registrationOver &&
+    (status === 'Đã đăng ký' || status === 'Chờ GV duyệt')
+    ? 'Đang thực hiện'
+    : status;
+}
+
+// Giảng viên trong các cặp lệch của đề tài (CTHĐ, TKHĐ lấy từ hội đồng); mỗi
+// người một lần, thứ tự CBHD, CBPB, CTHĐ, TKHĐ.
+export function deviationRecipients(topic: Topic): string[] {
+  const roles = new Set<ScoreRole>();
+  for (const s of topic.scores)
+    for (const role of scoreDeviations(s.scores).roles) roles.add(role);
+  const names: Record<ScoreRole, string> = {
+    CBHD: topic.supervisor.name,
+    CBPB: topic.reviewer?.name ?? 'GV phản biện (chưa phân công)',
+    CTHĐ: topic.defense?.chair ?? 'Chủ tịch hội đồng (chưa gán)',
+    TKHĐ: topic.defense?.secretary ?? 'Thư ký hội đồng (chưa gán)',
+  };
+  const out: string[] = [];
+  for (const role of ['CBHD', 'CBPB', 'CTHĐ', 'TKHĐ'] as const)
+    if (roles.has(role) && !out.includes(names[role])) out.push(names[role]);
+  return out;
+}
+
+const joinRoles = (roles: ScoreRole[]) => roles.join(', ');
+
+// "Thiếu CTHĐ, TKHĐ của Nguyễn Văn A; thiếu CBPB của Trần Thị B."
+export function missingScoresText(topic: Topic): string {
+  const missing = missingScores(topic);
+  if (missing.length === 0) return '';
+  return missing
+    .map((m) => `Thiếu ${joinRoles(m.roles)} của ${m.name}`)
+    .join('; ');
+}
+
+// Lý do không xác nhận được (null = xác nhận được). Suy lại từ phiếu điểm
+// chứ không tin trạng thái đã lưu (PDR-049).
+export function confirmResultBlocker(topic: Topic): string | null {
+  switch (topic.status) {
+    case 'Đã xác nhận':
+      return 'Đã xác nhận rồi.';
+    case 'Đã hoàn tất':
+      return 'Đã công bố, không xác nhận lại được.';
+    case 'Chưa đăng ký':
+    case 'Chờ GV duyệt':
+    case 'Bị từ chối':
+    case 'Đã đăng ký':
+    case 'Không đủ điều kiện công bố':
+    case 'Không có nhóm':
+      return `Đề tài đang ở trạng thái ${topic.status}, chưa có kết quả để xác nhận.`;
+  }
+  switch (gradingStatus(topic)) {
+    case 'Đã cho điểm':
+      return null;
+    case 'Có lệch điểm':
+      return 'Còn cặp điểm lệch từ 2 điểm. Giảng viên sửa phiếu hết lệch mới xác nhận được.';
+    case 'Đang cho điểm':
+      return `Chưa đủ điểm. ${missingScoresText(topic)}.`;
+    default:
+      return 'Chưa có điểm.';
+  }
+}
+
+// Lý do không công bố được: phải Đã xác nhận và nhóm đã chốt bản cuối hoặc đã
+// hết hạn chốt (finalLockClosed).
+export function publishResultBlocker(
+  topic: Topic,
+  finalLockClosed: boolean,
+): string | null {
+  if (topic.status === 'Đã hoàn tất') return 'Đã công bố.';
+  if (topic.status !== 'Đã xác nhận') {
+    const why = confirmResultBlocker(topic);
+    return why === null
+      ? 'Chưa xác nhận kết quả. Xác nhận trước rồi mới công bố.'
+      : `Chưa xác nhận kết quả. ${why}`;
+  }
+  return topic.finalLockedVersionNo !== null || finalLockClosed
+    ? null
+    : 'Nhóm chưa chốt bản cuối và chưa hết hạn chốt.';
+}
+
+// Lý do không gửi nhắc được (null = gửi được): chỉ khi đủ điểm mà còn lệch.
+export function remindDeviationBlocker(topic: Topic): string | null {
+  return gradingStatus(topic) === 'Có lệch điểm'
+    ? null
+    : 'Không có cặp điểm lệch.';
 }
