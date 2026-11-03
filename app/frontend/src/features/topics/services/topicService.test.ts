@@ -14,6 +14,7 @@ import {
   isSettledTopicStatus,
   type MilestoneKey,
 } from '@/types/round';
+import { gradingStatus } from '@/features/topics/topicUtils';
 import { SCORE_ROLES } from '@/types/topic';
 
 const TODAY = '2026-10-26';
@@ -110,7 +111,10 @@ describe('seed data', () => {
     const withGroup = new Set([
       'Đã đăng ký',
       'Đang thực hiện',
+      'Đang cho điểm',
       'Đã cho điểm',
+      'Có lệch điểm',
+      'Đã xác nhận',
       'Đã hoàn tất',
       'Không đủ điều kiện công bố',
     ]);
@@ -187,6 +191,10 @@ describe('seed data', () => {
     expect(topics.some((t) => t.roundId === 'r-vb2-hk2-nhap')).toBe(false);
   });
 
+  // Đề tài VB1-16 minh họa nhóm đã chốt bản cuối để công bố được (PDR-049): bản
+  // Cuối kỳ nộp sớm hơn cửa sổ mốc của đợt đang diễn ra.
+  const EARLY_FINAL_DEMO = new Set(['VB1-16']);
+
   it('puts submissions inside their milestone window (late ones after it)', () => {
     const rounds = seedRounds();
     const key: Record<string, MilestoneKey> = {
@@ -198,6 +206,7 @@ describe('seed data', () => {
     for (const t of seedTopics()) {
       const round = rounds.find((r) => r.id === t.roundId)!;
       for (const s of t.submissions) {
+        if (EARLY_FINAL_DEMO.has(t.code) && s.kind === 'Cuối kỳ') continue;
         const m = round.milestones.find((x) => x.key === key[s.kind])!;
         const day = s.submittedAt.slice(0, 10);
         if (s.late)
@@ -211,14 +220,31 @@ describe('seed data', () => {
     }
   });
 
-  it('only has results for topics whose round has reached them', () => {
+  it('only has completed results in the finished round; VB1 demos the grading states', () => {
     const rounds = seedRounds();
     for (const t of seedTopics()) {
-      if (t.status !== 'Đã cho điểm' && t.status !== 'Đã hoàn tất') continue;
-      expect(rounds.find((r) => r.id === t.roundId)!.status, t.code).toBe(
-        'Đã kết thúc',
-      );
+      if (t.status === 'Đã hoàn tất')
+        expect(rounds.find((r) => r.id === t.roundId)!.status, t.code).toBe(
+          'Đã kết thúc',
+        );
+      // Trạng thái chấm điểm chỉ ở đợt đã kết thúc hoặc VB1 (dữ liệu minh họa
+      // PDR-049, mọi phiếu đã nhập trước ngày demo).
+      if (
+        [
+          'Đang cho điểm',
+          'Đã cho điểm',
+          'Có lệch điểm',
+          'Đã xác nhận',
+        ].includes(t.status)
+      )
+        expect([VB1, OLD], t.code).toContain(t.roundId);
     }
+  });
+
+  it('derives every stored grading status from the score sheets', () => {
+    for (const t of seedTopics())
+      if (['Đang cho điểm', 'Đã cho điểm', 'Có lệch điểm'].includes(t.status))
+        expect(gradingStatus(t), t.code).toBe(t.status);
   });
 });
 
@@ -316,5 +342,129 @@ describe('roundState', () => {
     await expect(s.roundState('khong-co')).rejects.toBeInstanceOf(
       RoundNotFoundError,
     );
+  });
+});
+
+describe('results (PDR-049)', () => {
+  const idOf = (code: string) => `t-${code.toLowerCase()}`;
+  // Sau hạn "Chốt bản cuối · công bố" của VB1 (15/01/2027).
+  const AFTER_LOCK = '2027-02-01';
+
+  it('confirms a whole group only when it is Đã cho điểm, and logs it', async () => {
+    const { service: s } = make();
+    const [out] = await s.confirmResults([idOf('VB1-08')]);
+    expect(out).toMatchObject({ ok: true, code: 'VB1-08' });
+    const t = await s.get(idOf('VB1-08'));
+    expect(t.status).toBe('Đã xác nhận');
+    expect(t.history[0]).toMatchObject({
+      actor: 'Giáo vụ',
+      category: 'Trạng thái',
+      action: 'Xác nhận kết quả',
+    });
+  });
+
+  it('blocks confirming deviating, incomplete, already confirmed and unknown topics', async () => {
+    const { service: s } = make();
+    const out = await s.confirmResults([
+      idOf('VB1-13'),
+      idOf('VB1-06'),
+      idOf('VB1-16'),
+      idOf('VB1-04'),
+      'khong-co',
+    ]);
+    expect(out.map((o) => o.ok)).toEqual([false, false, false, false, false]);
+    expect(out[0].message).toContain('Còn cặp điểm lệch từ 2 điểm');
+    expect(out[1].message).toContain('Chưa đủ điểm');
+    expect(out[2].message).toContain('Đã xác nhận rồi');
+    expect(out[3].message).toContain('Chưa có điểm');
+    expect(out[4].message).toContain('không tìm thấy');
+    expect((await s.get(idOf('VB1-13'))).status).toBe('Có lệch điểm');
+  });
+
+  it('re-derives the status instead of trusting the stored one', async () => {
+    const stale = seedTopics().map((t) =>
+      t.code === 'VB1-13' ? { ...t, status: 'Đã cho điểm' as const } : t,
+    );
+    const roundService = createRoundService({ today: TODAY });
+    const s = createTopicService({ today: TODAY, roundService, topics: stale });
+    const [out] = await s.confirmResults([idOf('VB1-13')]);
+    expect(out.ok).toBe(false);
+  });
+
+  it('reports each topic of a mixed batch and handles duplicates once', async () => {
+    const { service: s } = make();
+    const out = await s.confirmResults([
+      idOf('VB1-08'),
+      idOf('VB1-13'),
+      idOf('VB1-08'),
+    ]);
+    expect(out).toHaveLength(2);
+    expect(out.filter((o) => o.ok)).toHaveLength(1);
+    expect(out.find((o) => !o.ok)!.code).toBe('VB1-13');
+  });
+
+  it('requires a reason to unconfirm, then returns the group to Đã cho điểm', async () => {
+    const { service: s } = make();
+    const blank = await s.unconfirmResult(idOf('VB1-15'), '   ');
+    expect(blank).toMatchObject({ ok: false });
+    expect(blank.message).toContain('lý do');
+    expect((await s.get(idOf('VB1-15'))).status).toBe('Đã xác nhận');
+
+    const done = await s.unconfirmResult(idOf('VB1-15'), ' Sai điểm CBPB ');
+    expect(done.ok).toBe(true);
+    const t = await s.get(idOf('VB1-15'));
+    expect(t.status).toBe('Đã cho điểm');
+    expect(t.history[0]).toMatchObject({
+      action: 'Hủy xác nhận kết quả',
+      detail: 'Lý do: Sai điểm CBPB',
+    });
+    // Chỉ hủy được đề tài Đã xác nhận.
+    expect((await s.unconfirmResult(idOf('VB1-08'), 'x')).ok).toBe(false);
+  });
+
+  it('publishes only confirmed topics with a final lock or past the lock deadline', async () => {
+    const { service: s } = make();
+    const out = await s.publishResults([
+      idOf('VB1-16'),
+      idOf('VB1-15'),
+      idOf('VB1-08'),
+    ]);
+    expect(out.map((o) => [o.code, o.ok])).toEqual([
+      ['VB1-16', true],
+      ['VB1-15', false],
+      ['VB1-08', false],
+    ]);
+    expect(out[1].message).toContain('chưa chốt bản cuối');
+    expect(out[2].message).toContain('Chưa xác nhận kết quả');
+    expect((await s.get(idOf('VB1-16'))).status).toBe('Đã hoàn tất');
+    expect((await s.get(idOf('VB1-15'))).status).toBe('Đã xác nhận');
+
+    const late = await s.publishResults([idOf('VB1-15')], AFTER_LOCK);
+    expect(late[0].ok).toBe(true);
+    expect((await s.get(idOf('VB1-15'))).history[0].action).toBe(
+      'Công bố kết quả',
+    );
+    // Đã hoàn tất không công bố lại, không hủy xác nhận.
+    expect((await s.publishResults([idOf('VB1-16')]))[0].ok).toBe(false);
+    expect((await s.unconfirmResult(idOf('VB1-16'), 'x')).ok).toBe(false);
+  });
+
+  it('reminds only the lecturers of deviating groups and logs it', async () => {
+    const { service: s } = make();
+    const out = await s.remindDeviations(
+      [idOf('VB1-13'), idOf('VB1-08')],
+      'Xin xem lại phiếu.',
+    );
+    expect(out[0].ok).toBe(true);
+    expect(out[0].message).toContain('Đã gửi nhắc cho');
+    expect(out[1]).toMatchObject({ ok: false });
+    expect(out[1].message).toContain('Không có cặp điểm lệch');
+    const t = await s.get(idOf('VB1-13'));
+    expect(t.history[0]).toMatchObject({
+      category: 'Điểm',
+      action: 'Gửi nhắc lệch điểm',
+    });
+    expect(t.history[0].detail).toContain('Xin xem lại phiếu.');
+    expect(t.history[0].detail).not.toContain(t.group[0].name);
   });
 });

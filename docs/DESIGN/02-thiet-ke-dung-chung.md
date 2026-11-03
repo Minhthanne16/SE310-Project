@@ -39,11 +39,12 @@ Cỡ chữ hay dùng: 15px (nội dung, mục menu), 14 và 14.5px (bảng, nút
 
 | Ý nghĩa | Nền | Chữ |
 | --- | --- | --- |
-| Chờ xử lý, cần chú ý, Nháp | `#FDF1D8` hoặc `#FEF4E2` | `#6B3A06` hoặc `#8A4B08` |
+| Chờ xử lý, cần chú ý, Nháp, Đang cho điểm | `#FDF1D8` hoặc `#FEF4E2` | `#6B3A06` hoặc `#8A4B08` |
 | Thành công, Đã công bố, Chốt bản cuối, Đã cho điểm | `#DDF3D8` | `#2B6A1F` |
 | Thông tin, Đã đăng ký | `#E3ECFB` | `#1F4FA0` |
 | Đang thực hiện | `#EDE7FB` | `#5B3BA8` |
-| Nguy hiểm, lỗi, từ chối | nền `#FDECEA` hoặc `#FBE9E7`, viền `#E8B4AE` | `#A8281C` |
+| Đã xác nhận (kết quả, chờ công bố) | `#E6F4F1` | `#1D5E52` |
+| Nguy hiểm, lỗi, từ chối, Có lệch điểm | nền `#FDECEA` hoặc `#FBE9E7`, viền `#E8B4AE` | `#A8281C` |
 | Trung tính, chưa có | `#F2F2F1` | `#3D3D3D` hoặc `#5C5C5C` |
 
 **Màu vai trò** (chấm nhận diện trên sơ đồ): Sinh viên `#5B8DEF`, Giảng viên `#9B7BE8`, Giáo vụ `#4FB286`. Avatar chữ viết tắt: SV nền `#E3ECFB` chữ `#1F4FA0`; GV nền `#EDE7FB` chữ `#5B3BA8`; Giáo vụ nền xanh lá nhạt chữ xanh đậm.

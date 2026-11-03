@@ -113,9 +113,13 @@ function progressSteps(topic: Topic): Step[] {
       sub:
         topic.status === 'Đã hoàn tất'
           ? 'Đã hoàn tất'
-          : topic.status === 'Đã cho điểm'
-            ? 'Chờ giáo vụ xác nhận'
-            : 'Chưa có kết quả',
+          : topic.status === 'Đã xác nhận'
+            ? 'Chờ công bố'
+            : topic.status === 'Đã cho điểm'
+              ? 'Chờ giáo vụ xác nhận'
+              : topic.status === 'Có lệch điểm'
+                ? 'Còn cặp điểm lệch'
+                : 'Chưa có kết quả',
     },
   ];
 }

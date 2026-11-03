@@ -12,7 +12,7 @@ Thiết kế có loại mẫu cho thành viên hội đồng, trong khi công th
 
 - Chủ tịch và Thư ký dùng **chung cấu trúc tiêu chí của mẫu phiếu hội đồng** có hiệu lực trong đợt.
 - Với **mỗi Sinh viên**, lưu **hai phiếu điểm riêng**: một phiếu mang vai trò/điểm CTHĐ, một phiếu mang vai trò/điểm TKHĐ. Hai điểm có thể khác nhau và được tính riêng theo công thức hiện hành; không tạo một điểm chung của hội đồng.
-- Cả hai phiếu tham chiếu đúng phiên bản mẫu hội đồng dùng khi chấm. Việc Thư ký nhập điểm CTHĐ và Chủ tịch xác nhận điểm đó vẫn theo [PDR-006](PDR-006-xac-nhan-diem-chu-tich-hoi-dong.md).
+- Cả hai phiếu tham chiếu đúng phiên bản mẫu hội đồng dùng khi chấm. Thư ký nhập cả hai điểm; không có bước Chủ tịch xác nhận ([PDR-050](PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md), thay PDR-006).
 
 ## Chưa chốt
 

@@ -19,7 +19,7 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
 
 1. Thành viên của nhóm nộp đề cương PDF tối đa 20 MB; báo cáo giữa kỳ/cuối kỳ và bản khóa luận tuân theo cùng giới hạn định dạng/dung lượng (PDR-039/040).
 2. GVHD nhận xét và có thể tạo các yêu cầu chỉnh sửa. Nhóm nộp một phiên bản đề cương mới cho cả lần sửa; GVHD xác nhận hoàn tất từng yêu cầu (PDR-013).
-3. Chỉ khi mọi yêu cầu chỉnh sửa liên quan đã hoàn tất và GVHD duyệt bản đề cương hiện hành, đề tài chuyển sang `Đang thực hiện`.
+3. Chỉ khi mọi yêu cầu chỉnh sửa liên quan đã hoàn tất, GVHD mới duyệt bản đề cương hiện hành; duyệt hoàn tất chặng Đề cương, đề tài vẫn `Đang thực hiện` (đã chuyển khi hết hạn đăng ký, PDR-049).
 4. Nhóm nộp các phiên bản khóa luận; hệ thống giữ lịch sử các lần nộp. Với mốc bật “Cho nộp trễ”, bài sau hạn thường được nhận và gắn nhãn đến hết hạn trễ riêng của mốc (PDR-041). Mọi phiên bản tài liệu vẫn được giữ sau khi đợt kết thúc (PDR-042).
 5. Nhóm hoặc hệ thống chốt bản cuối. Khi quá hạn mà chưa có bản nộp, xử lý ngoại lệ theo PDR-011; không tự chốt khi không có bản.
 6. Nếu đến hạn mà nhóm chưa nộp bản khóa luận nào, kết quả chờ xử lý ngoại lệ; Giáo vụ có thể cấp hạn nộp bổ sung riêng cho nhóm **một lần**, đặt hạn và ghi lý do. Nếu hết hạn bổ sung vẫn không có bản, Giáo vụ có thể kết thúc “Không đủ điều kiện công bố” kèm lý do; hệ thống không tự đánh không đạt (PDR-011).
@@ -28,7 +28,7 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
 
 ## 3. Phân công và bảo vệ
 
-1. Từ khi đề cương đã được GVHD duyệt và đề tài chuyển `Đang thực hiện`, Giáo vụ có thể phân công Giảng viên phản biện, không cần chờ báo cáo giữa kỳ/cuối kỳ (PDR-021); đề tài cũng có thể được gán vào hội đồng. Giảng viên phản biện chỉ được nhập điểm sau khi nhóm nộp báo cáo cuối kỳ, không cần chốt bản cuối sau bảo vệ (PDR-022). Từ phiếu phản biện đầu tiên, khóa đổi người được phân công (PDR-023).
+1. Từ khi đề cương đã được GVHD duyệt, Giáo vụ có thể phân công Giảng viên phản biện, không cần chờ báo cáo giữa kỳ/cuối kỳ (PDR-021); đề tài cũng có thể được gán vào hội đồng. Giảng viên phản biện chỉ được nhập điểm sau khi nhóm nộp báo cáo cuối kỳ, không cần chốt bản cuối sau bảo vệ (PDR-022). Từ phiếu phản biện đầu tiên, khóa đổi người được phân công (PDR-023).
 2. Giáo vụ tạo hội đồng gồm chủ tịch và thư ký, sau đó nhập giờ bắt đầu/kết thúc cho từng lượt và lập lịch bảo vệ (PDR-017).
 3. Sinh viên xem lịch; các giảng viên được phân công xem dữ liệu cần thiết để thực hiện nhiệm vụ.
 4. Sau công bố và trước khi có điểm hội đồng, Giáo vụ có thể sửa giờ/phòng/hội đồng có lý do, kiểm tra lại xung đột, lưu lịch sử và thông báo người bị ảnh hưởng (PDR-018); cũng có thể hủy lịch với lý do/lịch sử/thông báo (PDR-019). Sau khi có điểm, giờ/phòng bị khóa sửa trực tiếp, chỉ ghi đính chính có lý do và giữ lịch gốc; không hủy lịch hoặc thay Chủ tịch/Thư ký bằng thao tác thường (PDR-020).
@@ -36,9 +36,9 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
 ## 4. Chấm, xác nhận và công bố kết quả
 
 1. Giảng viên hướng dẫn, phản biện, chủ tịch và thư ký có các phiếu điểm riêng cho từng Sinh viên.
-   Thư ký nhập điểm mang tên Chủ tịch; Chủ tịch xác nhận điểm đó cho từng Sinh viên trước khi Giáo vụ xác nhận kết quả. Nếu không đồng ý, Chủ tịch trả lại kèm lý do để Thư ký sửa và trình lại (PDR-006).
-2. Khi đủ bốn điểm, hệ thống tính điểm tổng kết và gắn cờ lệch điểm nếu có.
-3. Giáo vụ kiểm tra và xác nhận kết quả theo từng Sinh viên; điểm đã xác nhận chỉ được mở lại trước công bố theo PDR-005.
-4. Giáo vụ công bố kết quả từng Sinh viên khi người đó đủ điều kiện; đề tài chỉ chuyển `Đã hoàn tất` khi mọi thành viên đã công bố và điều kiện bản cuối được đáp ứng. Sinh viên xem điểm của mình sau công bố.
+   Thư ký nhập điểm cho cả Chủ tịch và Thư ký; không có bước Chủ tịch xác nhận hay trả lại (PDR-050).
+2. Có điểm đầu tiên thì đề tài `Đang cho điểm`. Khi mọi Sinh viên đủ bốn điểm, hệ thống tính điểm tổng kết và chuyển đề tài `Đã cho điểm`, hoặc `Có lệch điểm` nếu có cặp lệch; đề tài còn lệch không xác nhận được, Giáo vụ gửi thông báo nhắc các Giảng viên trong cặp lệch (PDR-049).
+3. Giáo vụ kiểm tra điểm từng Sinh viên rồi xác nhận kết quả **theo cả nhóm đề tài** (từng đề tài hoặc theo lô); đề tài `Đã xác nhận` khóa điểm, chỉ hủy xác nhận được trước công bố, có lý do (PDR-005, PDR-049).
+4. Giáo vụ công bố kết quả đề tài `Đã xác nhận` khi nhóm đã chốt bản cuối hoặc đã hết hạn chốt; công bố xong đề tài `Đã hoàn tất`. Sinh viên xem điểm của mình sau công bố.
 
 Quy tắc chuyển trạng thái và điều kiện cụ thể nằm trong [BUSINESS_RULES.md](BUSINESS_RULES.md).

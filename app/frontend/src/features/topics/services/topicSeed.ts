@@ -87,7 +87,18 @@ function specsFor(
   }));
 }
 
+// Hội đồng của các đề tài VB1 đã có điểm (chủ tịch và thư ký khác GVHD, GVPB).
+const HD_VB1 = {
+  chair: 'CB104',
+  secretary: 'CB105',
+  start: '2026-12-14T08:45:00',
+  room: 'B4.12',
+  order: 1,
+};
+
 // Đăng ký của VB1 đã đóng (02/10) nên đề tài GV gửi chưa có nhóm là Không có nhóm.
+// Đề tài còn lưu Đã đăng ký / Chờ GV duyệt được tab Đề tài hiển thị là Đang thực
+// hiện (PDR-049; backend sẽ chuyển thật khi hết hạn đăng ký).
 // Nhóm của VB1: mã sinh viên 22520001–22520004 và 22520013–22520030 thuộc đợt
 // (xem seedParticipants). Mỗi sinh viên chỉ ở một nhóm.
 const vb1: Body[] = [
@@ -143,12 +154,20 @@ const vb1: Body[] = [
     field: 'Khoa học dữ liệu',
     sup: 'CB101',
     source: GV,
-    status: 'Đang thực hiện',
+    status: 'Đang cho điểm',
     students: [S(14), S(15)],
     reviewer: 'CB102',
+    council: 'Hội đồng 1',
+    defense: HD_VB1,
     subs: [
       ['Đề cương', 30, false],
       ['Giữa kỳ', 46, false],
+    ],
+    // Mới có phiếu CBHD và CBPB của một sinh viên: chưa đủ bốn phiếu.
+    scoreAt: 48,
+    scores: [
+      [null, null, 8, 7.5],
+      [null, null, 8, null],
     ],
   },
   {
@@ -164,12 +183,20 @@ const vb1: Body[] = [
     field: 'An toàn thông tin',
     sup: 'CB101',
     source: GV,
-    status: 'Đang thực hiện',
+    status: 'Đã cho điểm',
     students: [S(17), S(18)],
     reviewer: 'CB103',
+    council: 'Hội đồng 1',
+    defense: HD_VB1,
     subs: [
       ['Đề cương', 33, false],
       ['Giữa kỳ', 47, false],
+    ],
+    // Đủ bốn phiếu của cả nhóm, không có cặp lệch: chờ Giáo vụ xác nhận.
+    scoreAt: 48,
+    scores: [
+      [8, 8.5, 8.5, 8],
+      [7.5, 8, 8, 8],
     ],
   },
   {
@@ -207,12 +234,20 @@ const vb1: Body[] = [
     field: 'Hệ thống thông tin',
     sup: 'CB102',
     source: GV,
-    status: 'Đang thực hiện',
+    status: 'Có lệch điểm',
     students: [S(22), S(23)],
     reviewer: 'CB101',
+    council: 'Hội đồng 1',
+    defense: HD_VB1,
     subs: [
       ['Đề cương', 32, false],
       ['Giữa kỳ', 49, false],
+    ],
+    // Sinh viên đầu: Chủ tịch 5,5 lệch GVHD 8,0 (2,5 điểm) và GVPB 7,5 (2,0).
+    scoreAt: 48,
+    scores: [
+      [5.5, 7, 8, 7.5],
+      [8, 8, 8.5, 8],
     ],
   },
   {
@@ -228,23 +263,36 @@ const vb1: Body[] = [
     field: 'Mạng máy tính',
     sup: 'CB102',
     source: SV,
-    status: 'Đang thực hiện',
+    status: 'Đã xác nhận',
     students: [S(25), S(26)],
     reviewer: 'CB103',
+    council: 'Hội đồng 1',
+    defense: HD_VB1,
+    // Chưa nộp Cuối kỳ nên chưa chốt bản cuối: chưa công bố được.
     subs: [['Đề cương', 35, false]],
+    scoreAt: 47,
+    scores: [
+      [8, 8, 8.5, 8],
+      [8, 8.5, 8, 8],
+    ],
   },
   {
     title: 'Nhận dạng biển số xe ở bãi đỗ',
     field: 'Trí tuệ nhân tạo',
     sup: 'CB102',
     source: GV,
-    status: 'Đang thực hiện',
+    status: 'Đã xác nhận',
     students: [S(27)],
     reviewer: 'CB101',
+    council: 'Hội đồng 1',
+    defense: HD_VB1,
     subs: [
       ['Đề cương', 34, false],
       ['Giữa kỳ', 48, false],
+      ['Cuối kỳ', 49, false],
     ],
+    scoreAt: 47,
+    scores: [[9, 8.5, 9, 8.5]],
   },
   {
     title: 'Giám sát chất lượng mạng ký túc xá',
@@ -258,7 +306,7 @@ const vb1: Body[] = [
     field: 'An toàn thông tin',
     sup: 'CB103',
     source: GV,
-    status: 'Đang thực hiện',
+    status: 'Đang cho điểm',
     students: [S(28), S(29)],
     reviewer: 'CB102',
     subs: [
@@ -494,7 +542,9 @@ function buildTopic(
   const id = `t-${code.toLowerCase()}`;
   const rep = group[0]?.name ?? '';
   const finished =
-    spec.status === 'Đã cho điểm' || spec.status === 'Đã hoàn tất';
+    spec.status === 'Đã cho điểm' ||
+    spec.status === 'Đã xác nhận' ||
+    spec.status === 'Đã hoàn tất';
   const scoreAt = spec.scoreAt ?? 124;
   const hhmm = (minutes: number) =>
     `${String(9 + Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}:00`;
@@ -574,14 +624,20 @@ function buildTopic(
     log(at(14, 2), rep, 'Nhóm', 'Chọn đại diện nhóm', `Đại diện: ${rep}.`);
   if (reviewer)
     log(
-      at(finished ? 90 : 40),
+      at(Math.min(finished ? 90 : 40, scoreAt - 5)),
       STAFF,
       'Phân công',
       'Phân công GV phản biện',
       reviewer.name,
     );
   if (spec.council)
-    log(at(100), STAFF, 'Phân công', 'Phân công hội đồng', spec.council);
+    log(
+      at(Math.min(100, scoreAt - 3)),
+      STAFF,
+      'Phân công',
+      'Phân công hội đồng',
+      spec.council,
+    );
   for (const s of submissions)
     log(
       s.submittedAt,
@@ -612,7 +668,7 @@ function buildTopic(
         }
       : null;
   const lockedFinal =
-    spec.status === 'Đã hoàn tất'
+    spec.status === 'Đã hoàn tất' || spec.status === 'Đã xác nhận'
       ? submissions.findLast((s) => s.kind === 'Cuối kỳ')
       : undefined;
   scores.forEach((s, i) => {
@@ -626,13 +682,33 @@ function buildTopic(
         `Phiếu: ${filled.join(', ')}.`,
       );
   });
-  if (spec.status === 'Đã cho điểm' || spec.status === 'Đã hoàn tất')
+  if (
+    spec.status === 'Đã cho điểm' ||
+    spec.status === 'Đã xác nhận' ||
+    spec.status === 'Đã hoàn tất'
+  )
     log(
       at(scoreAt + 1),
       'Hệ thống',
       'Trạng thái',
       'Chuyển trạng thái',
       'Đã cho điểm',
+    );
+  else if (spec.status === 'Đang cho điểm' || spec.status === 'Có lệch điểm')
+    log(
+      at(scoreAt + 1),
+      'Hệ thống',
+      'Trạng thái',
+      'Chuyển trạng thái',
+      spec.status,
+    );
+  if (spec.status === 'Đã xác nhận')
+    log(
+      at(scoreAt + 2),
+      STAFF,
+      'Trạng thái',
+      'Xác nhận kết quả',
+      'Đã xác nhận cho cả nhóm.',
     );
   if (spec.status === 'Đã hoàn tất')
     log(at(135), STAFF, 'Trạng thái', 'Công bố kết quả', 'Đã hoàn tất');

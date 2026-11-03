@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28.
+Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28. **Bị thay thế bởi PDR-049 ngày 2026-11-03: xác nhận và công bố theo cả nhóm đề tài.** Xem [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md).
 
 ## Bối cảnh
 

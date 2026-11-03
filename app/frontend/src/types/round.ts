@@ -14,7 +14,12 @@ export const TOPIC_STATUSES = [
   'Đã đăng ký',
   'Bị từ chối',
   'Đang thực hiện',
+  // Trạng thái chấm điểm suy ra từ phiếu điểm của cả nhóm (PDR-049).
+  'Đang cho điểm',
   'Đã cho điểm',
+  'Có lệch điểm',
+  // Giáo vụ đã xác nhận kết quả cả nhóm, chưa công bố; chưa tính là kết thúc.
+  'Đã xác nhận',
   'Đã hoàn tất',
   // Trạng thái kết thúc (PDR-011): Giáo vụ kết thúc đề tài mà nhóm không nộp
   // khóa luận. Đề tài đã công bố nhưng không có nhóm khi đăng ký tự đóng chuyển

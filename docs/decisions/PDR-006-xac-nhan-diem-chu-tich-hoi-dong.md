@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28.
+Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28. **Bị thay thế bởi [PDR-050](PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md) ngày 2026-11-03: bỏ bước Chủ tịch xác nhận điểm CTHĐ.**
 
 ## Bối cảnh
 

@@ -3,6 +3,12 @@ import {
   LECTURER_LOAD_MAX,
   LECTURER_LOAD_MIN,
   avatarInitials,
+  confirmResultBlocker,
+  deviationRecipients,
+  displayStatus,
+  gradingStatus,
+  publishResultBlocker,
+  remindDeviationBlocker,
   countsTowardLoad,
   dateOf,
   formatComponentScore,
@@ -137,4 +143,112 @@ it('does not count CT-TK or HD-PB differences', () => {
   ]);
   expect(scoreDeviations(sc(7.5, 7.5, 6.5, 8.5)).pairs).toHaveLength(0);
   expect(scoreDeviations(sc(7, 7, 7, 7)).pairs).toHaveLength(0);
+});
+
+// Nhóm của đề tài mẫu với điểm tùy chọn cho từng sinh viên.
+const graded = (
+  rows: ReturnType<typeof sc>[],
+  status: Topic['status'] = 'Đang thực hiện',
+): Topic => {
+  const base = find('VB1-13');
+  return {
+    ...base,
+    status,
+    scores: base.group.slice(0, rows.length).map((m, i) => ({
+      studentId: m.id,
+      code: m.code,
+      name: m.name,
+      scores: rows[i],
+    })),
+  };
+};
+const none = sc(null, null, null, null);
+const good = sc(8, 8, 8, 8);
+
+it('keeps the stored status while no score exists', () => {
+  expect(gradingStatus(graded([]))).toBe('Đang thực hiện');
+  expect(gradingStatus(graded([none, none]))).toBe('Đang thực hiện');
+});
+
+it('derives Đang cho điểm when any student still lacks one of the four scores', () => {
+  expect(gradingStatus(graded([sc(null, null, 8, null)]))).toBe(
+    'Đang cho điểm',
+  );
+  // Sinh viên thứ hai chưa có dòng điểm nào.
+  expect(gradingStatus(graded([good]))).toBe('Đang cho điểm');
+  expect(gradingStatus(graded([good, sc(8, 8, 8, null)]))).toBe(
+    'Đang cho điểm',
+  );
+});
+
+it('derives Đã cho điểm or Có lệch điểm from complete sheets at the 1,99 / 2,00 boundary', () => {
+  expect(gradingStatus(graded([good, good]))).toBe('Đã cho điểm');
+  // Lệch 1,99 chưa tính; đúng 2,00 thì lệch.
+  expect(gradingStatus(graded([good, sc(6.01, 8, 8, 8)]))).toBe('Đã cho điểm');
+  expect(gradingStatus(graded([good, sc(6, 8, 8, 8)]))).toBe('Có lệch điểm');
+  // Sửa hết lệch thì về Đã cho điểm.
+  expect(gradingStatus(graded([good, sc(7, 8, 8, 8)], 'Có lệch điểm'))).toBe(
+    'Đã cho điểm',
+  );
+});
+
+it('lets confirmed, completed and terminal stored statuses win over the scores', () => {
+  for (const status of [
+    'Đã xác nhận',
+    'Đã hoàn tất',
+    'Không đủ điều kiện công bố',
+    'Không có nhóm',
+  ] as const)
+    expect(gradingStatus(graded([sc(2, 8, 8, 8), good], status))).toBe(status);
+});
+
+it('explains why a result cannot be confirmed, published or reminded', () => {
+  expect(confirmResultBlocker(graded([good, good]))).toBeNull();
+  expect(confirmResultBlocker(graded([sc(5, 8, 8, 8), good]))).toMatch(
+    /Còn cặp điểm lệch từ 2 điểm/,
+  );
+  expect(confirmResultBlocker(graded([sc(null, null, 8, null)]))).toMatch(
+    /Chưa đủ điểm\. Thiếu CTHĐ, TKHĐ, CBPB của .*; Thiếu CTHĐ, TKHĐ, CBHD, CBPB của /,
+  );
+  expect(confirmResultBlocker(graded([], 'Đang thực hiện'))).toBe(
+    'Chưa có điểm.',
+  );
+  expect(confirmResultBlocker(graded([good, good], 'Đã xác nhận'))).toBe(
+    'Đã xác nhận rồi.',
+  );
+
+  const confirmed = graded([good, good], 'Đã xác nhận');
+  expect(publishResultBlocker(confirmed, false)).toBe(
+    'Nhóm chưa chốt bản cuối và chưa hết hạn chốt.',
+  );
+  expect(publishResultBlocker(confirmed, true)).toBeNull();
+  expect(
+    publishResultBlocker({ ...confirmed, finalLockedVersionNo: 3 }, false),
+  ).toBeNull();
+  expect(publishResultBlocker(graded([good, good]), true)).toMatch(
+    /^Chưa xác nhận kết quả/,
+  );
+
+  expect(remindDeviationBlocker(graded([good, good]))).toBe(
+    'Không có cặp điểm lệch.',
+  );
+  expect(remindDeviationBlocker(graded([sc(5, 8, 8, 8), good]))).toBeNull();
+});
+
+it('lists only the lecturers in the deviating pairs', () => {
+  const t = graded([sc(5.5, 8, 8, 8), good]);
+  const names = deviationRecipients({
+    ...t,
+    defense: { ...find('VB1-13').defense!, chair: 'TS. Chủ Tịch' },
+  });
+  // CTHĐ lệch với CBHD và CBPB; TKHĐ không lệch nên không có thư ký.
+  expect(names).toEqual([t.supervisor.name, t.reviewer!.name, 'TS. Chủ Tịch']);
+  expect(deviationRecipients(graded([good, good]))).toEqual([]);
+});
+
+it('shows Đã đăng ký and Chờ GV duyệt as Đang thực hiện once registration is over', () => {
+  expect(displayStatus('Đã đăng ký', true)).toBe('Đang thực hiện');
+  expect(displayStatus('Chờ GV duyệt', true)).toBe('Đang thực hiện');
+  expect(displayStatus('Chờ GV duyệt', false)).toBe('Chờ GV duyệt');
+  expect(displayStatus('Bị từ chối', true)).toBe('Bị từ chối');
 });

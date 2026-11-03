@@ -18,6 +18,7 @@
 | [OPEN_QUESTIONS.md](OPEN_QUESTIONS.md) | Các chi tiết chưa đủ căn cứ để hiện thực. |
 | [STRUCTURE.md](STRUCTURE.md) | Bản đồ thư mục tài liệu hiện tại. |
 | [README.md](README.md) | Con trỏ ngắn cho người mở trực tiếp thư mục `docs/`. |
+| [REPORT_SPEC.md](REPORT_SPEC.md) | Tóm tắt báo cáo cuối kỳ (bản 03-11) làm ngữ cảnh chung, kèm bảng chỗ báo cáo khác tài liệu hiện hành; chỉ là tham chiếu, không thay quyết định. |
 | `product/` | Tầm nhìn, phạm vi, vai trò và thuật ngữ nghiệp vụ. |
 | `requirements/` | Luồng cấp cao, quy tắc nghiệp vụ và ràng buộc phi chức năng. |
 | `architecture/` | Bối cảnh hệ thống và mô hình miền ở mức khái niệm. |
