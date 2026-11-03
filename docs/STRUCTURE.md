@@ -86,7 +86,8 @@ docs/
 ├── NEON.md
 ├── OPEN_QUESTIONS.md
 ├── PROJECT_SPEC.md
-└── README.md
+├── README.md
+└── REPORT_SPEC.md
 ```
 
 | Khu vực | Chức năng |
@@ -100,3 +101,4 @@ docs/
 | `DESIGN/` | Tài liệu bàn giao giao diện hiện có, được giữ tách khỏi yêu cầu nghiệp vụ để tránh nhầm chi tiết UI với quy tắc sản phẩm. |
 | `NEON.md` | Hướng dẫn kỹ thuật hiện có của repo, giữ nguyên vì được README gốc tham chiếu. |
 | `README.md` | Con trỏ ngắn về `CONTENT.md` và vị trí tài liệu thiết kế giao diện. |
+| `REPORT_SPEC.md` | Đặc tả rút gọn từ báo cáo cuối kỳ bản 03-11 và bảng chỗ khác với tài liệu hiện hành. |
