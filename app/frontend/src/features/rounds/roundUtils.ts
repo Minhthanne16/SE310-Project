@@ -224,9 +224,15 @@ export function roundStage(round: Round, today: string): RoundStage | null {
     return submissionClosed(round, today)
       ? 'Chờ công bố danh sách'
       : 'GV gửi đề tài';
-  const { total, pendingResultCount } = round.topicSummary;
-  if (total > 0 && pendingResultCount === 0) return 'Sẵn sàng kết thúc';
-  return registrationClosed(round, today) ? 'Thực hiện' : 'SV đăng ký';
+  if (!registrationClosed(round, today)) return 'SV đăng ký';
+  // Chỉ sẵn sàng kết thúc khi mốc "Chốt bản cuối · công bố" đã tới và mọi đề
+  // tài có nhóm đã công bố kết quả; trước đó là giai đoạn Thực hiện.
+  const finalize = round.milestones.find((m) => m.key === 'finalize');
+  const finalizeReached =
+    finalize !== undefined && milestoneStatus(finalize, today) !== 'Sắp tới';
+  return finalizeReached && round.topicSummary.pendingResultCount === 0
+    ? 'Sẵn sàng kết thúc'
+    : 'Thực hiện';
 }
 
 // Cùng nội dung với backend khi chặn kết thúc đợt (PDR-031); null = kết thúc

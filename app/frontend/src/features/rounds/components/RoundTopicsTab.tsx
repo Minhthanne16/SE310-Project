@@ -35,7 +35,12 @@ import {
   thesisCell,
 } from '@/features/topics/topicUtils';
 import { downloadXlsx } from '@/lib/xlsx';
-import { TOPIC_STATUSES, type Round, type TopicStatus } from '@/types/round';
+import {
+  TOPIC_STATUSES,
+  type Participant,
+  type Round,
+  type TopicStatus,
+} from '@/types/round';
 import type { LecturerLoad, Topic } from '@/types/topic';
 
 interface RoundTopicsTabProps {
@@ -79,7 +84,13 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const [exportedText, setExportedText] = useState<string | null>(null);
+  const [unassigned, setUnassigned] = useState<Participant[] | null>(null);
   const today = roundService.today;
+  // Hết hạn đăng ký (đã công bố): liệt kê sinh viên của đợt chưa có đề tài.
+  const listUnassigned =
+    round.status === 'Đang diễn ra' &&
+    round.topicsPublishedAt !== null &&
+    registrationClosed(round, today);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +117,31 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
   }, [topicService, round.id]);
 
   const all = useMemo(() => topics ?? [], [topics]);
+
+  useEffect(() => {
+    if (!listUnassigned || topics === null) {
+      setUnassigned(null);
+      return;
+    }
+    let cancelled = false;
+    const grouped = new Set(topics.flatMap((t) => t.group.map((m) => m.id)));
+    roundService
+      .listParticipants('student')
+      .then((people) => {
+        if (cancelled) return;
+        setUnassigned(
+          people.filter(
+            (p) => round.studentIds.includes(p.id) && !grouped.has(p.id),
+          ),
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setUnassigned(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [listUnassigned, topics, roundService, round.studentIds]);
   const query = normalize(search);
 
   const rows = useMemo(
@@ -341,6 +377,30 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
               Mở tab Cấu hình
             </button>
           )}
+        </div>
+      )}
+
+      {unassigned !== null && unassigned.length > 0 && (
+        <div
+          role="note"
+          aria-label="Sinh viên chưa có đề tài"
+          className="rnd-strip rnd-strip-amber"
+        >
+          <details>
+            <summary>
+              <b>Việc cần làm: {unassigned.length} sinh viên chưa có đề tài</b>{' '}
+              sau khi hết hạn đăng ký. Liên hệ để ghép nhóm hoặc đề xuất đề tài.
+            </summary>
+            <ul className="rnd-unassigned">
+              {unassigned.map((p) => (
+                <li key={p.id}>
+                  {p.code} · {p.name}
+                  {p.unit ? ` · ${p.unit}` : ''}
+                  {p.email ? ` · ${p.email}` : ''}
+                </li>
+              ))}
+            </ul>
+          </details>
         </div>
       )}
 

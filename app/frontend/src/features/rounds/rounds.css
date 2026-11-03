@@ -1931,3 +1931,10 @@ button.rnd-link {
   gap: 10px 12px;
   flex-wrap: wrap;
 }
+
+.rnd-unassigned {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  max-height: 200px;
+  overflow-y: auto;
+}

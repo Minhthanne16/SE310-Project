@@ -232,10 +232,11 @@ describe('roundStage', () => {
 
   it('is ready to finish when no topic is waiting for results', () => {
     const ready = withSummary(vb1, { pendingResultCount: 0 });
-    expect(roundStage(ready, TODAY)).toBe('Sẵn sàng kết thúc');
-    expect(roundStage(withSummary(ready, { total: 0 }), TODAY)).toBe(
-      'Thực hiện',
-    );
+    const finalize = vb1.milestones.find((m) => m.key === 'finalize')!;
+    // Chưa tới mốc "Chốt bản cuối · công bố" thì vẫn là Thực hiện.
+    expect(roundStage(ready, TODAY)).toBe('Thực hiện');
+    expect(roundStage(ready, finalize.startDate)).toBe('Sẵn sàng kết thúc');
+    expect(roundStage(vb1, finalize.startDate)).toBe('Thực hiện');
   });
 
   it('has no stage for draft and finished rounds', () => {
