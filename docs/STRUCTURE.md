@@ -59,7 +59,9 @@ docs/
 │   ├── PDR-044-gioi-han-yeu-cau-dat-lai-mat-khau.md
 │   ├── PDR-045-chi-tai-khoan-hoat-dong-da-kich-hoat-duoc-tu-dat-lai-mat-khau.md
 │   ├── PDR-046-moc-kiem-thu-mot-tram-nguoi-dung-dong-thoi.md
-│   └── PDR-047-huy-ghi-danh-de-tai-cong-bo.md
+│   ├── PDR-047-huy-ghi-danh-de-tai-cong-bo.md
+│   ├── PDR-048-cong-bo-de-tai-o-chi-tiet-dot.md
+│   └── PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md
 ├── product/
 │   ├── GLOSSARY.md
 │   ├── ROLES.md

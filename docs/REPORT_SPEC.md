@@ -2,7 +2,7 @@
 
 Tệp này tóm tắt *Báo cáo Cuối kỳ - SE310 - QLKLTN (cập nhật 03-11).docx* để cả nhóm có chung ngữ cảnh mà không phải mở bản Word. Báo cáo gốc không nằm trong repo.
 
-**Thứ bậc nguồn.** Tệp này là **tham chiếu**, không thay thế `requirements/`, `decisions/` hay `OPEN_QUESTIONS.md`. Nhiều PDR ngày 2026-10-28 mới hơn và chặt hơn báo cáo. Những chỗ báo cáo khác repo được liệt kê ở [mục 10](#10-chỗ-báo-cáo-khác-tài-liệu-hiện-hành). Chưa chốt các chỗ đó thì không code theo báo cáo (xem `OQ-019`).
+**Thứ bậc nguồn.** Tệp này là **tham chiếu**, không thay thế `requirements/`, `decisions/` hay `OPEN_QUESTIONS.md`. Nhiều PDR ngày 2026-10-28 mới hơn và chặt hơn báo cáo. Những chỗ báo cáo khác repo được liệt kê ở [mục 10](#10-chỗ-báo-cáo-khác-tài-liệu-hiện-hành). Mục 1–4 đã chốt theo báo cáo ([PDR-049](decisions/PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md)); các mục còn lại chưa chốt thì giữ PDR hiện hành (xem `OQ-020`).
 
 ## 1. Phạm vi và vai trò
 
@@ -66,6 +66,7 @@ Nhóm không nộp bản khóa luận nào sau hạn bổ sung ──► Không 
 - **Đang thực hiện** kéo dài từ hết thời gian đăng ký, qua Đề cương và Giữa kỳ, đến khi nộp báo cáo cuối kỳ. Duyệt đề cương chỉ hoàn tất chặng Đề cương, **không đổi trạng thái**.
 - **Đã hoàn tất:** công bố chính là hoàn tất; không có bước "đóng khóa luận" riêng. Bản nộp cuối cùng là bản chính thức và bị khóa.
 - **Thống kê:** dùng đủ 12 trạng thái trên (gồm Chờ GV duyệt và Bị từ chối).
+- **Danh sách đề tài của đợt** sau hạn đăng ký không hiện đề xuất `Bị từ chối` (vẫn còn trong lịch sử), theo PDR-049.
 
 ## 4. Tiến độ 6 chặng (khung Tiến độ trong Không gian đề tài)
 
@@ -193,7 +194,7 @@ Báo cáo liệt kê 17 bảng:
 
 ## 10. Chỗ báo cáo khác tài liệu hiện hành
 
-Các chỗ dưới đây phải được nhóm chốt một phía rồi cập nhật `requirements/` hoặc `decisions/` trước khi code. Cột "Repo" là quy tắc đang có hiệu lực.
+Cột "Repo" là quy tắc trước 03/11. Mục 1–4 nay theo cột báo cáo (PDR-049); mục 5–18 vẫn theo cột Repo cho tới khi chốt.
 
 | # | Chủ đề | Báo cáo 03-11 | Repo hiện hành |
 | --- | --- | --- | --- |
@@ -216,4 +217,4 @@ Các chỗ dưới đây phải được nhóm chốt một phía rồi cập nh
 | 17 | Nộp trễ | Bật hoặc tắt theo mốc; khóa luận nộp trễ được tới trước buổi bảo vệ | Hạn trễ riêng từng mốc (PDR-041) |
 | 18 | Hệ quản trị CSDL | MySQL 8.0, có stored procedure và trigger | PostgreSQL/Neon và EF Core (PDR-002) |
 
-Mục 1–4 là quyết định nghiệp vụ người dùng chốt ngày 03/11/2026 khi dựng giao diện Chi tiết đợt và Kết quả. Các mục còn lại là chỗ báo cáo chưa cập nhật theo PDR ngày 28/10.
+Mục 1–4 đã chốt ngày 03/11/2026 theo báo cáo, ghi tại [PDR-049](decisions/PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md) (đóng OQ-019); bảng giữ lại để truy vết. Mục 5–18 là chỗ báo cáo chưa cập nhật theo PDR ngày 28/10, theo dõi ở OQ-020.
