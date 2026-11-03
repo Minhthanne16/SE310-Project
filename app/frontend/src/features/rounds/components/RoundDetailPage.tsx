@@ -254,19 +254,14 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
             </>
           )}
           {round.status === 'Đang diễn ra' && (
-            <>
-              <Link className="rnd-btn" href="/giao-vu/de-tai">
-                Đề tài của đợt
-              </Link>
-              <button
-                type="button"
-                className="rnd-btn rnd-btn-primary"
-                aria-haspopup="dialog"
-                onClick={() => setDialog('finish')}
-              >
-                Kết thúc đợt
-              </button>
-            </>
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-primary"
+              aria-haspopup="dialog"
+              onClick={() => setDialog('finish')}
+            >
+              Kết thúc đợt
+            </button>
           )}
         </div>
       </div>
