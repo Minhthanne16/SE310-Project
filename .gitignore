@@ -54,3 +54,4 @@ backend/.dotnet/
 backend/.nuget/
 .neon
 .env.neon
+*.bat
