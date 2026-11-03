@@ -1819,3 +1819,115 @@ button.rnd-link {
   margin: 6px 0;
   padding-left: 20px;
 }
+
+/* Giai đoạn đợt, dải trạng thái công bố, việc cần làm, chọn loại xuất (tab Đề tài) */
+.rnd-stage-chip {
+  font-weight: 600;
+}
+
+.rnd-strip,
+.rnd-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  background: #f2f2f1;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #3d3d3d;
+}
+
+.rnd-strip p,
+.rnd-callout p {
+  flex: 1 1 320px;
+  margin: 0;
+}
+
+.rnd-strip-amber,
+.rnd-callout {
+  border-color: #f3d9a4;
+  background: #fef4e2;
+  color: #5c3a06;
+}
+
+.rnd-strip-red {
+  border-color: #f2c4be;
+  background: #fdecea;
+  color: #5c1a12;
+}
+
+.rnd-strip-green {
+  border-color: #bfe3b6;
+  background: #f1faee;
+  color: #1f4d16;
+}
+
+.rnd-topics-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.rnd-banner-ok {
+  border-color: #bfe3b6;
+  background: #f1faee;
+  color: #1f4d16;
+}
+
+.rnd-choice-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.rnd-choice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border: 1px solid #d4d4d4;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.rnd-choice:has(input:checked) {
+  border-color: #1a1a1a;
+  background: #fafaf9;
+}
+
+.rnd-choice input {
+  margin-top: 4px;
+}
+
+.rnd-choice b {
+  display: block;
+  font-size: 15px;
+}
+
+.rnd-choice span {
+  display: block;
+  font-size: 13.5px;
+  color: #5c5c5c;
+  line-height: 1.5;
+}
+
+.rnd-file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px 12px;
+  flex-wrap: wrap;
+}
+
+.rnd-file-row {
+  display: flex;
+  align-items: center;
+  gap: 10px 12px;
+  flex-wrap: wrap;
+}

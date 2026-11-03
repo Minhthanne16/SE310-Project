@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { RoundModal } from '@/features/rounds/components/RoundModal';
 import {
   earliestStart,
-  finishWarning,
+  finishBlockedMessage,
   formatDate,
   openBlockers,
   setupWarnings,
@@ -32,7 +32,8 @@ interface RoundLifecycleDialogProps {
 // Hộp xác nhận Mở đợt / Kết thúc đợt / Xóa đợt dùng chung cho danh sách và
 // chi tiết đợt (artboard GiaoVu-DanhSachDot, GiaoVu-DotKhoaLuan). Mở đợt bị
 // chặn khi chín mốc chưa đủ ngày hợp lệ (PDR-032); thiếu giảng viên, sinh viên
-// (PDR-033) và đề tài chưa công bố chỉ cảnh báo: docs/DESIGN/03.
+// (PDR-033) chỉ cảnh báo; Kết thúc đợt bị chặn khi còn đề tài chưa ở trạng
+// thái kết thúc (PDR-031): docs/DESIGN/03.
 export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
   kind,
   round,
@@ -176,8 +177,9 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
   }
 
   if (kind === 'finish') {
-    const unpublished = round.topicSummary.unpublishedCount;
+    const pending = round.topicSummary.pendingResultCount;
     const total = round.topicSummary.total;
+    const blocked = finishBlockedMessage(round) !== null;
     return (
       <RoundModal
         role="alertdialog"
@@ -193,10 +195,14 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
           không thêm hay gỡ giảng viên, {noun}. Giảng viên và {noun} vẫn xem
           được đợt, đề tài và kết quả của mình. Đợt không mở lại được.
         </p>
-        {finishWarning(round) ? (
+        {blocked ? (
           <p role="alert" className="rnd-note rnd-note-bad">
-            <b>Còn {unpublished} đề tài chưa công bố kết quả.</b> Vẫn kết thúc
-            được, nhưng nên công bố hết ở trang Kết quả trước.
+            <b>Còn {pending} đề tài chưa công bố kết quả.</b> Công bố hết ở
+            trang{' '}
+            <Link className="rnd-link" href="/giao-vu/ket-qua">
+              Kết quả
+            </Link>{' '}
+            rồi mới kết thúc được đợt. Đề tài Không có nhóm không tính.
           </p>
         ) : (
           total > 0 && (
@@ -206,7 +212,7 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
           )
         )}
         {errorBox}
-        {actions('Để sau', 'Kết thúc đợt', 'rnd-btn-primary')}
+        {actions('Để sau', 'Kết thúc đợt', 'rnd-btn-primary', blocked)}
       </RoundModal>
     );
   }

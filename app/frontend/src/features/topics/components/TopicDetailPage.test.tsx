@@ -279,7 +279,7 @@ it('shows a filtered-empty message and a separate empty history state', async ()
   cleanup();
 
   resetNavigation('/giao-vu/de-tai/x?tab=lich-su');
-  await renderDetail('t-vb1-01');
+  await renderDetail('t-ths-01');
   expect(
     await screen.findByText('Đề tài chưa có thay đổi nào.'),
   ).toBeInTheDocument();

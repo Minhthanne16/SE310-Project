@@ -53,6 +53,7 @@ it('calls the round endpoints with the expected method, URL and body', async () 
   await service.updateMilestones('r 1', milestones);
   await service.open('a');
   await service.finish('a');
+  await service.markTopicsPublished('r 1');
   await service.remove('a');
   await service.listParticipants('lecturer');
   await service.listCandidates('a', 'student');
@@ -87,6 +88,7 @@ it('calls the round endpoints with the expected method, URL and body', async () 
     ['/api/rounds/r%201/milestones', 'PUT', JSON.stringify({ milestones })],
     ['/api/rounds/a/open', 'POST', undefined],
     ['/api/rounds/a/finish', 'POST', undefined],
+    ['/api/rounds/r%201/topics/publish', 'POST', undefined],
     ['/api/rounds/a', 'DELETE', undefined],
     ['/api/rounds/people/lecturers', 'GET', undefined],
     ['/api/rounds/a/students/candidates', 'GET', undefined],
@@ -150,4 +152,29 @@ it('keeps other API errors as they are', async () => {
   const err = await service.list().catch((e: unknown) => e);
   expect(err).toBeInstanceOf(ApiError);
   expect((err as ApiError).status).toBe(403);
+});
+
+it('publishes topics through the API and maps 409 to a rule error with the server message', async () => {
+  const round = {
+    ...seedRounds()[2],
+    topicsPublishedAt: '2026-10-26T01:00:00.000Z',
+  };
+  stubFetch(200, { success: true, message: '', data: round });
+  const service = createApiRoundService();
+  expect((await service.markTopicsPublished(round.id)).topicsPublishedAt).toBe(
+    '2026-10-26T01:00:00.000Z',
+  );
+
+  const message =
+    'Đã hết thời gian sinh viên đăng ký đề tài (hết ngày 28/08/2026). Sửa mốc “Công bố đề tài · SV đăng ký” ở tab Cấu hình rồi công bố.';
+  stubFetch(409, failure(message));
+  const err = await createApiRoundService()
+    .markTopicsPublished('a')
+    .catch((e: unknown) => e);
+  expect(err).toBeInstanceOf(RoundRuleError);
+  expect((err as Error).message).toBe(message);
+  stubFetch(404, failure('Không tìm thấy đợt.'));
+  await expect(
+    createApiRoundService().markTopicsPublished('x'),
+  ).rejects.toBeInstanceOf(RoundNotFoundError);
 });

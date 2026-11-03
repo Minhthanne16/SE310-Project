@@ -1,5 +1,8 @@
 import {
   MILESTONE_DEFS,
+  TOPIC_STATUSES,
+  isSettledTopicStatus,
+  type AccountStatus,
   type Milestone,
   type Participant,
   type ParticipantKind,
@@ -26,11 +29,18 @@ export function buildMilestones(dates: DatePair[]): Milestone[] {
   }));
 }
 
+// Tài khoản mẫu đa số đang hoạt động; vài người chưa đăng nhập lần đầu.
+const NOT_LOGGED_IN = new Set(['CB106', '22520012', '22520030', '22520031']);
+const accountOf = (code: string): AccountStatus =>
+  NOT_LOGGED_IN.has(code) ? 'Chưa đăng nhập' : 'Đang hoạt động';
+
 const lecturer = (code: string, name: string, unit: string): Participant => ({
   id: code,
   code,
   name,
   unit,
+  email: `${code.toLowerCase()}@truong.edu.vn`,
+  accountStatus: accountOf(code),
 });
 
 const student = (code: string, name: string, unit: string): Participant => ({
@@ -38,6 +48,8 @@ const student = (code: string, name: string, unit: string): Participant => ({
   code,
   name,
   unit,
+  email: `${code}@student.truong.edu.vn`,
+  accountStatus: accountOf(code),
 });
 
 export function seedParticipants(): Record<ParticipantKind, Participant[]> {
@@ -82,13 +94,15 @@ export function seedParticipants(): Record<ParticipantKind, Participant[]> {
       student('22520028', 'Dương Bảo Ngọc', 'HTTT2022'),
       student('22520029', 'Mai Văn Phúc', 'KHMT2022'),
       student('22520030', 'Cao Thị Hồng', 'KTPM2022'),
+      // 31: sinh viên đợt VB1 HK2 2025–2026 có đề tài Không đủ điều kiện công bố.
+      student('22520031', 'Nguyễn Minh Tú', 'KTPM2021'),
     ],
   };
 }
 
 function topics(
   counts: Partial<Record<TopicStatus, number>>,
-  unpublishedCount: number,
+  finished = false,
 ): TopicSummary {
   const byStatus: Record<TopicStatus, number> = {
     'Chưa đăng ký': 0,
@@ -98,15 +112,25 @@ function topics(
     'Đang thực hiện': 0,
     'Đã cho điểm': 0,
     'Đã hoàn tất': 0,
+    'Không đủ điều kiện công bố': 0,
+    'Không có nhóm': 0,
     ...counts,
   };
   const total = Object.values(byStatus).reduce((sum, n) => sum + n, 0);
-  return { total, unpublishedCount, byStatus };
+  // Đợt đã kết thúc không còn đề tài chờ kết quả (PDR-031) dù dữ liệu mẫu cũ
+  // còn một đề tài Đã cho điểm để minh họa phiếu chưa chốt bản cuối.
+  const pendingResultCount = finished
+    ? 0
+    : TOPIC_STATUSES.filter((s) => !isSettledTopicStatus(s)).reduce(
+        (sum, s) => sum + byStatus[s],
+        0,
+      );
+  return { total, pendingResultCount, byStatus };
 }
 
 // topicSummary khớp kho đề tài mẫu (features/topics/services/topicSeed.ts),
-// có test giữ đồng bộ; unpublishedCount = tổng số đề tài khi đợt còn ở giai
-// đoạn "Đang gửi đề tài", 0 khi đã công bố danh sách.
+// có test giữ đồng bộ; pendingResultCount = số đề tài chưa ở trạng thái kết
+// thúc (0 với đợt đã kết thúc).
 // Bốn đợt mẫu của canvas (vb1, vb2, ths, vb1o) cộng một đợt Nháp.
 export function seedRounds(): Round[] {
   const withAudience = (ms: Milestone[]): Milestone[] =>
@@ -129,6 +153,8 @@ export function seedRounds(): Round[] {
       status: 'Đang diễn ra',
       lecturerLoadMin: 0,
       lecturerLoadMax: 0,
+      // Công bố đầu mốc "Công bố đề tài · SV đăng ký".
+      topicsPublishedAt: '2026-09-21T08:00:00.000Z',
       milestones: withAudience(
         buildMilestones([
           ['2026-09-07', '2026-09-18'],
@@ -158,16 +184,14 @@ export function seedRounds(): Round[] {
         '22520004',
         ...Array.from({ length: 17 }, (_, i) => `225200${13 + i}`),
       ],
-      topicSummary: topics(
-        {
-          'Chưa đăng ký': 5,
-          'Chờ GV duyệt': 1,
-          'Đã đăng ký': 3,
-          'Bị từ chối': 1,
-          'Đang thực hiện': 8,
-        },
-        0,
-      ),
+      // Đăng ký đã đóng (02/10): đề tài GV gửi chưa có nhóm là Không có nhóm.
+      topicSummary: topics({
+        'Không có nhóm': 5,
+        'Chờ GV duyệt': 1,
+        'Đã đăng ký': 3,
+        'Bị từ chối': 1,
+        'Đang thực hiện': 8,
+      }),
     },
     {
       id: 'r-vb2-hk1',
@@ -177,6 +201,7 @@ export function seedRounds(): Round[] {
       status: 'Đang diễn ra',
       lecturerLoadMin: 0,
       lecturerLoadMax: 0,
+      topicsPublishedAt: '2026-09-28T08:00:00.000Z',
       milestones: withAudience(
         buildMilestones([
           ['2026-09-14', '2026-09-25'],
@@ -193,7 +218,7 @@ export function seedRounds(): Round[] {
       lecturerIds: ['CB102', 'CB104'],
       studentIds: ['22520005', '22520006', '22520007'],
       lockedStudentIds: ['22520005', '22520006', '22520007'],
-      topicSummary: topics({ 'Đã đăng ký': 2, 'Chờ GV duyệt': 1 }, 0),
+      topicSummary: topics({ 'Đã đăng ký': 2, 'Chờ GV duyệt': 1 }),
     },
     {
       id: 'r-ths-1-2026',
@@ -203,6 +228,8 @@ export function seedRounds(): Round[] {
       status: 'Đang diễn ra',
       lecturerLoadMin: 0,
       lecturerLoadMax: 0,
+      // Chưa công bố dù đăng ký đã hết hạn (28/08): chặn công bố, cần lùi mốc.
+      topicsPublishedAt: null,
       milestones: withAudience(
         buildMilestones([
           ['2026-08-03', '2026-08-14'],
@@ -219,10 +246,11 @@ export function seedRounds(): Round[] {
       lecturerIds: ['CB101', 'CB105', 'CB106'],
       studentIds: ['22520008', '22520009'],
       lockedStudentIds: ['22520008', '22520009'],
-      topicSummary: topics(
-        { 'Chưa đăng ký': 4, 'Chờ GV duyệt': 1, 'Bị từ chối': 1 },
-        6,
-      ),
+      topicSummary: topics({
+        'Chưa đăng ký': 4,
+        'Chờ GV duyệt': 1,
+        'Bị từ chối': 1,
+      }),
     },
     {
       id: 'r-vb2-hk2-nhap',
@@ -232,6 +260,7 @@ export function seedRounds(): Round[] {
       status: 'Nháp',
       lecturerLoadMin: 0,
       lecturerLoadMax: 0,
+      topicsPublishedAt: null,
       // Mới có hai mốc đầu có ngày: mở đợt sẽ hiện cảnh báo việc chưa xong.
       milestones: buildMilestones([
         ['2027-02-01', '2027-02-12'],
@@ -240,7 +269,7 @@ export function seedRounds(): Round[] {
       lecturerIds: ['CB103', 'CB104'],
       studentIds: [],
       lockedStudentIds: [],
-      topicSummary: topics({}, 0),
+      topicSummary: topics({}),
     },
     {
       id: 'r-vb1-hk2-2025',
@@ -250,6 +279,7 @@ export function seedRounds(): Round[] {
       status: 'Đã kết thúc',
       lecturerLoadMin: 0,
       lecturerLoadMax: 0,
+      topicsPublishedAt: '2026-02-16T08:00:00.000Z',
       milestones: withAudience(
         buildMilestones([
           ['2026-02-02', '2026-02-13'],
@@ -264,9 +294,17 @@ export function seedRounds(): Round[] {
         ]),
       ),
       lecturerIds: ['CB101', 'CB102', 'CB103', 'CB104'],
-      studentIds: ['22520010', '22520011', '22520012'],
-      lockedStudentIds: ['22520010', '22520011', '22520012'],
-      topicSummary: topics({ 'Đã cho điểm': 1, 'Đã hoàn tất': 2 }, 0),
+      studentIds: ['22520010', '22520011', '22520012', '22520031'],
+      lockedStudentIds: ['22520010', '22520011', '22520012', '22520031'],
+      topicSummary: topics(
+        {
+          'Đã cho điểm': 1,
+          'Đã hoàn tất': 2,
+          'Không đủ điều kiện công bố': 1,
+          'Không có nhóm': 1,
+        },
+        true,
+      ),
     },
   ];
 }

@@ -414,6 +414,10 @@
   background: #fbe9e7;
   color: #a8281c;
 }
+.tpc-chip-nogroup {
+  background: #ececec;
+  color: #5a5a5a;
+}
 .tpc-chip-registered {
   background: #e3ecfb;
   color: #1f4fa0;
@@ -1097,4 +1101,15 @@
   background: #fdecea;
   color: #a8281c;
   font-size: 14px;
+}
+
+.tpc-publish-line {
+  margin: 0;
+  font-size: 14.5px;
+  color: #3d3d3d;
+}
+
+.tpc-publish-line a {
+  font-weight: 600;
+  text-decoration: underline;
 }

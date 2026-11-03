@@ -11,7 +11,12 @@ import {
 import { RoundModal } from '@/features/rounds/components/RoundModal';
 import { studentNoun } from '@/features/rounds/roundUtils';
 import type { RoundService } from '@/features/rounds/services/roundService';
-import type { Participant, ParticipantKind, Round } from '@/types/round';
+import type {
+  AccountStatus,
+  Participant,
+  ParticipantKind,
+  Round,
+} from '@/types/round';
 
 interface RoundParticipantsTabProps {
   kind: ParticipantKind;
@@ -25,6 +30,12 @@ const NOTES: Record<ParticipantKind, string> = {
     'Giảng viên được thêm từ tài khoản đã tạo ở trang Người dùng. Chỉ giảng viên có tên ở đây mới gửi đề tài, được sinh viên chọn hướng dẫn và được phân công phản biện, hội đồng trong đợt. Một giảng viên có thể tham gia nhiều đợt cùng lúc. Giảng viên gỡ được khỏi đợt (quy tắc khóa gỡ vì đã có dữ liệu chỉ áp dụng cho sinh viên).',
   student:
     'Sinh viên được thêm từ tài khoản đã tạo ở trang Người dùng. Sinh viên chỉ thấy đợt mình được ghi danh và chỉ thuộc một đợt đang diễn ra. Chỉ gỡ khỏi đợt được sinh viên chưa có dữ liệu trong đợt; sinh viên đã có dữ liệu thì không gỡ được.',
+};
+
+const ACCOUNT_PILL: Record<AccountStatus, string> = {
+  'Đang hoạt động': 'rnd-pill-ok',
+  'Chưa đăng nhập': 'rnd-pill-warn',
+  'Vô hiệu hóa': 'rnd-pill-neutral',
 };
 
 // Tab Giảng viên / Sinh viên của chi tiết đợt: danh sách, tìm kiếm, thêm (chọn
@@ -73,6 +84,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
         !keyword ||
         p.code.toLowerCase().includes(keyword) ||
         p.name.toLowerCase().includes(keyword) ||
+        p.email.toLowerCase().includes(keyword) ||
         p.unit.toLowerCase().includes(keyword),
     );
   const readOnly = round.status === 'Đã kết thúc';
@@ -167,6 +179,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
               <tr>
                 <th scope="col">{heading}</th>
                 <th scope="col">{unitLabel}</th>
+                <th scope="col">Tài khoản</th>
                 <th scope="col">Trạng thái</th>
                 {!readOnly && <th scope="col">Thao tác</th>}
               </tr>
@@ -180,9 +193,17 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                       <span className="rnd-person">
                         <b>{p.name}</b>
                         <span>{p.code}</span>
+                        <span className="rnd-meta">{p.email}</span>
                       </span>
                     </td>
                     <td>{p.unit}</td>
+                    <td>
+                      <span
+                        className={`rnd-pill ${ACCOUNT_PILL[p.accountStatus]}`}
+                      >
+                        {p.accountStatus}
+                      </span>
+                    </td>
                     <td>
                       <span
                         className={`rnd-pill ${

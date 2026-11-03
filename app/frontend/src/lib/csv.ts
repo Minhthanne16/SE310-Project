@@ -1,8 +1,12 @@
 // Chặn CSV formula injection (PDR-004): ô bắt đầu bằng = + - @ hoặc tab/CR
 // bị Excel/Sheets hiểu là công thức, nên thêm dấu ' phía trước.
+export function neutralizeFormula(value: string | null | undefined): string {
+  const text = value ?? '';
+  return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+}
+
 export function escapeCsvCell(value: string | null | undefined): string {
-  let text = value ?? '';
-  if (/^[=+\-@\t\r]/.test(text)) text = `'${text}`;
+  const text = neutralizeFormula(value);
   return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

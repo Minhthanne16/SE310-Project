@@ -16,8 +16,25 @@ export const TOPIC_STATUSES = [
   'Đang thực hiện',
   'Đã cho điểm',
   'Đã hoàn tất',
+  // Trạng thái kết thúc (PDR-011): Giáo vụ kết thúc đề tài mà nhóm không nộp
+  // khóa luận. Đề tài đã công bố nhưng không có nhóm khi đăng ký tự đóng chuyển
+  // sang "Không có nhóm".
+  'Không đủ điều kiện công bố',
+  'Không có nhóm',
 ] as const;
 export type TopicStatus = (typeof TOPIC_STATUSES)[number];
+
+// Đề tài ở các trạng thái này không còn chờ công bố kết quả, nên không chặn
+// kết thúc đợt (PDR-031). "Bị từ chối" là đề xuất sinh viên không được nhận.
+export const SETTLED_TOPIC_STATUSES: readonly TopicStatus[] = [
+  'Đã hoàn tất',
+  'Không đủ điều kiện công bố',
+  'Không có nhóm',
+  'Bị từ chối',
+];
+
+export const isSettledTopicStatus = (status: TopicStatus): boolean =>
+  SETTLED_TOPIC_STATUSES.includes(status);
 
 export type MilestoneKey =
   | 'topicSubmission'
@@ -79,17 +96,28 @@ export type MilestoneErrors = Partial<Record<MilestoneKey, string>>;
 
 export type ParticipantKind = 'lecturer' | 'student';
 
+export const ACCOUNT_STATUSES = [
+  'Đang hoạt động',
+  'Chưa đăng nhập',
+  'Vô hiệu hóa',
+] as const;
+export type AccountStatus = (typeof ACCOUNT_STATUSES)[number];
+
 export interface Participant {
   id: string;
   code: string;
   name: string;
   // Lớp (sinh viên) hoặc bộ môn (giảng viên).
   unit: string;
+  email: string;
+  accountStatus: AccountStatus;
 }
 
 export interface TopicSummary {
   total: number;
-  unpublishedCount: number;
+  // Số đề tài chưa ở trạng thái kết thúc (isSettledTopicStatus): còn chờ công
+  // bố kết quả. Chặn kết thúc đợt khi > 0 (PDR-031).
+  pendingResultCount: number;
   byStatus: Record<TopicStatus, number>;
 }
 
@@ -103,6 +131,9 @@ export interface Round {
   // Số đề tài mỗi giảng viên nhận hướng dẫn, chỉ để cảnh báo. 0 = chưa đặt mức.
   lecturerLoadMin: number;
   lecturerLoadMax: number;
+  // Thời điểm công bố danh sách đề tài cho sinh viên (ISO 8601); null = chưa
+  // công bố. Công bố không hoàn tác được.
+  topicsPublishedAt: string | null;
   milestones: Milestone[];
   lecturerIds: string[];
   studentIds: string[];
@@ -174,11 +205,22 @@ export interface NotificationPage {
 }
 
 // Các tab có thể là đích của một việc cần làm ở Trang chủ.
-export type RoundTaskTab = 'tien-do' | 'cau-hinh' | 'giang-vien' | 'sinh-vien';
+export type RoundTaskTab =
+  'tien-do' | 'cau-hinh' | 'giang-vien' | 'sinh-vien' | 'de-tai';
 
 // Sáu tab của chi tiết đợt (artboard GiaoVu-DotKhoaLuan): thêm Đề tài và
 // Đánh giá để giáo vụ xem đề tài và tóm tắt phiếu/phản biện/hội đồng của đợt.
-export type RoundTab = RoundTaskTab | 'de-tai' | 'danh-gia';
+export type RoundTab = RoundTaskTab | 'danh-gia';
+
+// Giai đoạn của đợt Đang diễn ra, suy ra từ ngày và việc công bố danh sách.
+export const ROUND_STAGES = [
+  'GV gửi đề tài',
+  'Chờ công bố danh sách',
+  'SV đăng ký',
+  'Thực hiện',
+  'Sẵn sàng kết thúc',
+] as const;
+export type RoundStage = (typeof ROUND_STAGES)[number];
 
 export interface RoundTask {
   id: string;

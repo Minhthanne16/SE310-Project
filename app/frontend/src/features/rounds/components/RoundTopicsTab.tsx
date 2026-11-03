@@ -2,39 +2,84 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Search } from 'lucide-react';
+import { Download, Search } from 'lucide-react';
 import '@/features/rounds/rounds.css';
+import {
+  formatDate,
+  publishBlocker,
+  registrationClosed,
+  registrationEnd,
+  submissionClosed,
+  submissionEnd,
+} from '@/features/rounds/roundUtils';
+import {
+  roundService as defaultRoundService,
+  type RoundService,
+} from '@/features/rounds/services/roundService';
+import { ExportTopicsDialog } from '@/features/topics/components/ExportTopicsDialog';
+import { PublishTopicsDialog } from '@/features/topics/components/PublishTopicsDialog';
 import { TopicStatusChip } from '@/features/topics/components/TopicChips';
 import {
   topicService as defaultTopicService,
   type TopicService,
 } from '@/features/topics/services/topicService';
 import {
+  buildRegistrationTable,
+  buildTopicListTable,
+  exportFileName,
+  type TopicExportKind,
+} from '@/features/topics/topicExport';
+import {
   groupLabel,
   shortName,
   thesisCell,
 } from '@/features/topics/topicUtils';
+import { downloadXlsx } from '@/lib/xlsx';
 import { TOPIC_STATUSES, type Round, type TopicStatus } from '@/types/round';
-import type { Topic } from '@/types/topic';
+import type { LecturerLoad, Topic } from '@/types/topic';
 
 interface RoundTopicsTabProps {
   round: Round;
+  roundService?: RoundService;
   topicService?: TopicService;
+  // Đợt mới sau khi công bố danh sách (để trang cha cập nhật tiêu đề, tab).
+  onRoundChange?: (round: Round) => void;
+  // Chuyển sang tab Cấu hình (lùi mốc đăng ký khi không công bố được).
+  onGoToConfig?: () => void;
+  // Tải tệp .xlsx về máy; tiêm được để kiểm thử.
+  downloadFile?: typeof downloadXlsx;
 }
 
 const normalize = (value: string) => value.trim().toLowerCase();
 
+const errorMessage = (err: unknown, fallback: string) =>
+  err instanceof Error && err.message ? err.message : fallback;
+
 // Tab Đề tài của chi tiết đợt (artboard GiaoVu-DotKhoaLuan): giáo vụ xem đề tài
-// của đợt ngay tại đây; công bố danh sách, xuất tệp, phân công phản biện và hội
-// đồng vẫn làm ở trang Đề tài.
+// của đợt, đóng & công bố danh sách cho sinh viên và xuất Excel ngay tại đây.
+// Phân công phản biện và hội đồng làm ở trang Đề tài.
 export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
   round,
+  roundService = defaultRoundService,
   topicService = defaultTopicService,
+  onRoundChange,
+  onGoToConfig,
+  downloadFile = downloadXlsx,
 }) => {
   const [topics, setTopics] = useState<Topic[] | null>(null);
+  const [loads, setLoads] = useState<Record<string, LecturerLoad>>({});
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<TopicStatus | 'Tất cả'>('Tất cả');
+  const [publishing, setPublishing] = useState(false);
+  const [publishBusy, setPublishBusy] = useState(false);
+  const [publishError, setPublishError] = useState<string | null>(null);
+  const [justPublished, setJustPublished] = useState(false);
+  const [exporting, setExporting] = useState(false);
+  const [exportBusy, setExportBusy] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [exportedText, setExportedText] = useState<string | null>(null);
+  const today = roundService.today;
 
   useEffect(() => {
     let cancelled = false;
@@ -43,7 +88,9 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
     topicService
       .list({ roundId: round.id })
       .then((result) => {
-        if (!cancelled) setTopics(result.items);
+        if (cancelled) return;
+        setTopics(result.items);
+        setLoads(result.loads);
       })
       .catch((err: unknown) => {
         if (!cancelled)
@@ -85,6 +132,53 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
     [all],
   );
 
+  const closePublish = () => {
+    setPublishing(false);
+    setPublishError(null);
+  };
+
+  const publish = async () => {
+    if (publishBusy) return;
+    setPublishBusy(true);
+    setPublishError(null);
+    try {
+      const updated = await roundService.markTopicsPublished(round.id);
+      setPublishing(false);
+      setJustPublished(true);
+      onRoundChange?.(updated);
+    } catch (err: unknown) {
+      setPublishError(errorMessage(err, 'Không công bố được danh sách.'));
+    } finally {
+      setPublishBusy(false);
+    }
+  };
+
+  const exportList = async (kind: TopicExportKind) => {
+    if (exportBusy) return;
+    setExportBusy(true);
+    setExportError(null);
+    try {
+      let table;
+      let text: string;
+      if (kind === 'topics') {
+        table = buildTopicListTable(rows);
+        text = `Đã tải tệp Excel danh sách đề tài (${rows.length} đề tài theo bộ lọc hiện tại, kèm trạng thái).`;
+      } else {
+        const people = await roundService.listParticipants('student');
+        const students = people.filter((p) => round.studentIds.includes(p.id));
+        table = buildRegistrationTable(students, all);
+        text = `Đã tải tệp Excel danh sách đăng ký của đợt (${students.length} sinh viên, kèm trạng thái đăng ký).`;
+      }
+      await downloadFile(exportFileName(kind, round.name), table);
+      setExporting(false);
+      setExportedText(text);
+    } catch (err: unknown) {
+      setExportError(errorMessage(err, 'Không xuất được tệp Excel.'));
+    } finally {
+      setExportBusy(false);
+    }
+  };
+
   if (loadError)
     return (
       <section className="status-state" role="alert">
@@ -102,6 +196,62 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
 
   const clearable = all.length > 0 && (status !== 'Tất cả' || query !== '');
   const empty = rows.length === 0;
+  const live = round.status === 'Đang diễn ra';
+  const published = round.topicsPublishedAt !== null;
+  const belowMin = Object.values(loads).filter(
+    (l) => l.level === 'below',
+  ).length;
+  // Công bố bị chặn vì chưa có đề tài hoặc đợt không Đang diễn ra: nút tắt.
+  // Hết hạn đăng ký thì nút vẫn mở để hộp thoại giải thích và dẫn tới Cấu hình.
+  const noTopics = all.length === 0;
+  const publishDisabled = published || noTopics;
+  const subEnd = formatDate(submissionEnd(round));
+  const regEnd = formatDate(registrationEnd(round));
+
+  let strip: {
+    tone: 'grey' | 'amber' | 'red' | 'green';
+    head: string;
+    text: string;
+    config?: boolean;
+  } | null = null;
+  if (live) {
+    if (published) {
+      const closed = registrationClosed(round, today);
+      strip =
+        justPublished || !closed
+          ? {
+              tone: 'green',
+              head: 'Đã công bố danh sách đề tài.',
+              text: `Sinh viên trong đợt đã nhận thông báo và đăng ký được đến 23:59 ngày ${regEnd}; hết hạn, đăng ký tự đóng.`,
+            }
+          : {
+              tone: 'green',
+              head: `Đã công bố danh sách ngày ${formatDate(
+                (round.topicsPublishedAt ?? '').slice(0, 10),
+              )}.`,
+              text: `Đăng ký đã tự đóng lúc 23:59 ngày ${regEnd}; đề tài chưa có nhóm chuyển sang Không có nhóm và không tính khi kết thúc đợt.`,
+            };
+    } else if (registrationClosed(round, today)) {
+      strip = {
+        tone: 'red',
+        head: 'Chưa công bố và hạn đăng ký đã qua',
+        text: `(23:59 ngày ${regEnd}). Lùi mốc “Công bố đề tài · SV đăng ký” ở tab Cấu hình rồi mới công bố.`,
+        config: true,
+      };
+    } else if (submissionClosed(round, today)) {
+      strip = {
+        tone: 'amber',
+        head: 'Đã hết hạn giảng viên gửi đề tài',
+        text: `(23:59 ngày ${subEnd}). Xem lại danh sách rồi đóng và công bố để sinh viên đăng ký đến 23:59 ngày ${regEnd}.`,
+      };
+    } else {
+      strip = {
+        tone: 'grey',
+        head: 'Giảng viên đang gửi đề tài',
+        text: `đến 23:59 ngày ${subEnd}. Giáo vụ tự kiểm tra danh sách; có thể đóng và công bố sớm khi đã đủ đề tài.`,
+      };
+    }
+  }
 
   return (
     <div className="rnd-panel" aria-label="Đề tài của đợt">
@@ -137,7 +287,68 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
         >
           Mở trang Đề tài
         </Link>
+        <div className="rnd-topics-actions">
+          <button
+            type="button"
+            className="rnd-btn rnd-btn-lg"
+            aria-haspopup="dialog"
+            disabled={noTopics}
+            title={noTopics ? 'Đợt chưa có đề tài để xuất.' : undefined}
+            onClick={() => {
+              setExportError(null);
+              setExportedText(null);
+              setExporting(true);
+            }}
+          >
+            <Download size={16} aria-hidden="true" />
+            Xuất danh sách
+          </button>
+          {live && (
+            <button
+              type="button"
+              className="rnd-btn rnd-btn-lg rnd-btn-primary"
+              aria-haspopup="dialog"
+              disabled={publishDisabled}
+              title={
+                published
+                  ? undefined
+                  : noTopics
+                    ? 'Chưa có đề tài để công bố.'
+                    : (publishBlocker(round, today) ?? undefined)
+              }
+              onClick={() => {
+                setPublishError(null);
+                setPublishing(true);
+              }}
+            >
+              {published ? 'Đã công bố danh sách' : 'Đóng & công bố danh sách'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {strip && (
+        <div
+          role="note"
+          aria-label="Tình trạng công bố danh sách"
+          className={`rnd-strip rnd-strip-${strip.tone}`}
+        >
+          <p>
+            <b>{strip.head}</b> {strip.text}
+          </p>
+          {strip.config && onGoToConfig && (
+            <button type="button" className="rnd-btn" onClick={onGoToConfig}>
+              Mở tab Cấu hình
+            </button>
+          )}
+        </div>
+      )}
+
+      {exportedText && (
+        <div role="status" className="rnd-banner rnd-banner-ok">
+          {exportedText}
+        </div>
+      )}
 
       <span className="rnd-hint" role="status">
         {rows.length} / {all.length} đề tài
@@ -228,9 +439,36 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
 
       <p className="rnd-foot">
         {round.status === 'Đã kết thúc'
-          ? 'Đợt đã kết thúc nên danh sách chỉ để xem.'
-          : 'Công bố danh sách, xuất tệp và phân công phản biện, hội đồng làm ở trang Đề tài.'}
+          ? 'Đợt đã kết thúc nên danh sách chỉ để xem; vẫn xuất được tệp Excel.'
+          : 'Đóng & công bố danh sách và xuất Excel làm ngay tại tab này. Phân công phản biện, hội đồng làm ở trang Đề tài.'}
       </p>
+
+      {publishing && (
+        <PublishTopicsDialog
+          round={round}
+          today={today}
+          belowMin={belowMin}
+          busy={publishBusy}
+          error={publishError}
+          onCancel={closePublish}
+          onConfirm={() => void publish()}
+          onGoToConfig={() => {
+            closePublish();
+            onGoToConfig?.();
+          }}
+        />
+      )}
+
+      {exporting && (
+        <ExportTopicsDialog
+          roundName={round.name}
+          filteredCount={rows.length}
+          busy={exportBusy}
+          error={exportError}
+          onCancel={() => setExporting(false)}
+          onConfirm={(kind) => void exportList(kind)}
+        />
+      )}
     </div>
   );
 };

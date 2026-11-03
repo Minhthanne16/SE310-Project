@@ -10,6 +10,8 @@ const STATUS_CLASS: Record<TopicStatus, string> = {
   'Đang thực hiện': 'tpc-chip-active',
   'Đã cho điểm': 'tpc-chip-graded',
   'Đã hoàn tất': 'tpc-chip-done',
+  'Không đủ điều kiện công bố': 'tpc-chip-rejected',
+  'Không có nhóm': 'tpc-chip-nogroup',
 };
 
 export const TopicStatusChip: React.FC<{ status: TopicStatus }> = ({

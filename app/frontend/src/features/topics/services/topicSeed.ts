@@ -10,7 +10,6 @@ import {
   type TopicDefense,
   type TopicHistoryEntry,
   type TopicPerson,
-  type TopicPhase,
   type TopicSource,
   type TopicStatus,
   type TopicSubmission,
@@ -18,17 +17,6 @@ import {
 
 // Giáo vụ đang đăng nhập trong demo (cùng tên với thông báo mẫu của đợt).
 const STAFF = 'Phạm Minh Châu';
-
-// Giai đoạn ban đầu của từng đợt. Chỉ đợt Thạc sĩ còn "Đang gửi đề tài" (đã
-// hết hạn gửi nhưng chưa công bố, nên đề tài GV gửi đều Chưa đăng ký, chưa có
-// nhóm); các đợt khác đã công bố. Đợt Nháp không có đề tài. Mọi sự kiện mẫu
-// nằm trong cửa sổ mốc của đợt và không muộn hơn DEMO_TODAY (2026-10-26).
-export const SEED_PHASES: Record<string, TopicPhase> = {
-  'r-vb1-hk1': 'Đã công bố danh sách',
-  'r-vb2-hk1': 'Đã công bố danh sách',
-  'r-ths-1-2026': 'Đang gửi đề tài',
-  'r-vb1-hk2-2025': 'Đã công bố danh sách',
-};
 
 type Scores4 = [number | null, number | null, number | null, number | null];
 // [loại bài nộp, số ngày kể từ mốc đầu của đợt, nộp trễ]
@@ -99,6 +87,7 @@ function specsFor(
   }));
 }
 
+// Đăng ký của VB1 đã đóng (02/10) nên đề tài GV gửi chưa có nhóm là Không có nhóm.
 // Nhóm của VB1: mã sinh viên 22520001–22520004 và 22520013–22520030 thuộc đợt
 // (xem seedParticipants). Mỗi sinh viên chỉ ở một nhóm.
 const vb1: Body[] = [
@@ -107,14 +96,14 @@ const vb1: Body[] = [
     field: 'Phát triển phần mềm',
     sup: 'CB101',
     source: GV,
-    status: 'Chưa đăng ký',
+    status: 'Không có nhóm',
   },
   {
     title: 'Ứng dụng nhắc lịch học cho sinh viên',
     field: 'Phát triển phần mềm',
     sup: 'CB101',
     source: GV,
-    status: 'Chưa đăng ký',
+    status: 'Không có nhóm',
   },
   {
     title: 'Nền tảng đặt sân thể thao trực tuyến',
@@ -188,14 +177,14 @@ const vb1: Body[] = [
     field: 'Hệ thống thông tin',
     sup: 'CB102',
     source: GV,
-    status: 'Chưa đăng ký',
+    status: 'Không có nhóm',
   },
   {
     title: 'Kho dữ liệu cho báo cáo đào tạo',
     field: 'Hệ thống thông tin',
     sup: 'CB102',
     source: GV,
-    status: 'Chưa đăng ký',
+    status: 'Không có nhóm',
   },
   {
     title: 'Phân tích cảm xúc đánh giá môn học',
@@ -262,7 +251,7 @@ const vb1: Body[] = [
     field: 'Mạng máy tính',
     sup: 'CB103',
     source: GV,
-    status: 'Chưa đăng ký',
+    status: 'Không có nhóm',
   },
   {
     title: 'Hệ thống phát hiện xâm nhập mạng nội bộ',
@@ -285,7 +274,8 @@ const vb1: Body[] = [
   },
 ];
 
-// Đã hết hạn gửi đề tài nhưng chưa công bố: đề tài GV gửi chưa có nhóm.
+// Đã hết hạn gửi đề tài và cả hạn đăng ký nhưng chưa công bố: đề tài GV gửi
+// chưa có nhóm và vẫn Chưa đăng ký (danh sách chưa hiện cho sinh viên).
 const ths: Body[] = [
   {
     title: 'Học tăng cường cho điều phối giao thông',
@@ -424,6 +414,27 @@ const old: Body[] = [
     },
     subs: OLD_SUBS,
     scores: [[9, 8.5, 9, 9]],
+  },
+  {
+    // Nhóm không nộp bản khóa luận: Giáo vụ kết thúc đề tài (PDR-011).
+    title: 'Ứng dụng quản lý lịch hẹn khám bệnh',
+    field: 'Phát triển phần mềm',
+    sup: 'CB104',
+    source: GV,
+    status: 'Không đủ điều kiện công bố',
+    students: [S(31)],
+    reviewer: 'CB102',
+    subs: [
+      ['Đề cương', 30, false],
+      ['Giữa kỳ', 60, false],
+    ],
+  },
+  {
+    title: 'Hệ thống thống kê điểm danh sinh viên',
+    field: 'Hệ thống thông tin',
+    sup: 'CB104',
+    source: GV,
+    status: 'Không có nhóm',
   },
 ];
 
@@ -625,6 +636,23 @@ function buildTopic(
     );
   if (spec.status === 'Đã hoàn tất')
     log(at(135), STAFF, 'Trạng thái', 'Công bố kết quả', 'Đã hoàn tất');
+  // Đăng ký tự đóng cuối ngày kết thúc mốc đăng ký (offset 25 ngày kể từ mốc đầu).
+  if (spec.status === 'Không có nhóm')
+    log(
+      at(25, 899),
+      'Hệ thống',
+      'Trạng thái',
+      'Chuyển trạng thái',
+      'Không có nhóm: hết hạn đăng ký mà chưa có nhóm.',
+    );
+  if (spec.status === 'Không đủ điều kiện công bố')
+    log(
+      at(135),
+      STAFF,
+      'Trạng thái',
+      'Kết thúc đề tài',
+      'Không đủ điều kiện công bố: nhóm không nộp bản khóa luận.',
+    );
 
   const history = events
     .sort((a, b) => b.at.localeCompare(a.at))
@@ -655,8 +683,9 @@ function buildTopic(
   };
 }
 
-// Đề tài mẫu: VB1 có đủ bảy trạng thái và một GV vượt mức; các đợt khác ít
-// hơn; đợt Nháp không có đề tài. Số theo trạng thái phải khớp topicSummary
+// Đề tài mẫu: VB1 có nhiều trạng thái và một GV vượt mức; đợt đã kết thúc có
+// cả Không đủ điều kiện công bố và Không có nhóm; các đợt khác ít hơn; đợt
+// Nháp không có đề tài. Số theo trạng thái phải khớp topicSummary
 // trong roundSeed.ts (có test giữ đồng bộ). Đề tài Chưa đăng ký chưa có sự
 // kiện nào cần truy vết nên lịch sử rỗng (03: trạng thái "Lịch sử trống").
 export function seedTopics(): Topic[] {

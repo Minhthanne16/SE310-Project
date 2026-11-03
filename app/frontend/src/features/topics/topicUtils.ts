@@ -1,4 +1,3 @@
-import { buildCsv } from '@/lib/csv';
 import {
   SCORE_ROLES,
   type LecturerLoad,
@@ -124,6 +123,7 @@ export function thesisProgress(topic: Topic): string {
     case 'Chưa đăng ký':
     case 'Chờ GV duyệt':
     case 'Bị từ chối':
+    case 'Không có nhóm':
       return '—';
     case 'Đã đăng ký':
       return 'Chờ nộp đề cương';
@@ -215,31 +215,4 @@ export function groupLabel(topic: Topic): string {
   return topic.group.length > 0
     ? topic.group.map((m) => m.name).join(', ')
     : '—';
-}
-
-export const TOPIC_CSV_HEADER = [
-  'Mã',
-  'Tên đề tài',
-  'Lĩnh vực',
-  'GVHD',
-  'Nhóm',
-  'Nguồn',
-  'Trạng thái',
-  'Khóa luận',
-];
-
-export function buildTopicsCsv(topics: Topic[]): string {
-  return buildCsv(
-    TOPIC_CSV_HEADER,
-    topics.map((t) => [
-      t.code,
-      t.title,
-      t.field,
-      t.supervisor.name,
-      t.group.map((m) => `${m.code} ${m.name}`).join('; '),
-      t.source,
-      t.status,
-      thesisProgress(t),
-    ]),
-  );
 }

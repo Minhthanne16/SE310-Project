@@ -4,13 +4,16 @@ import {
   createRoundService,
 } from '@/features/rounds/services/roundService';
 import { DEMO_TODAY, seedRounds } from '@/features/rounds/services/roundSeed';
-import { SEED_PHASES, seedTopics } from '@/features/topics/services/topicSeed';
+import { seedTopics } from '@/features/topics/services/topicSeed';
 import {
   TopicNotFoundError,
-  TopicRuleError,
   createTopicService,
 } from '@/features/topics/services/topicService';
-import { TOPIC_STATUSES, type MilestoneKey } from '@/types/round';
+import {
+  TOPIC_STATUSES,
+  isSettledTopicStatus,
+  type MilestoneKey,
+} from '@/types/round';
 import { SCORE_ROLES } from '@/types/topic';
 
 const TODAY = '2026-10-26';
@@ -56,8 +59,11 @@ describe('seed data', () => {
           round.topicSummary.byStatus[status],
           `${round.id} ${status}`,
         ).toBe(mine.filter((t) => t.status === status).length);
-      expect(round.topicSummary.unpublishedCount, round.id).toBe(
-        SEED_PHASES[round.id] === 'Đang gửi đề tài' ? mine.length : 0,
+      // Đợt đã kết thúc không còn đề tài chờ kết quả (PDR-031).
+      expect(round.topicSummary.pendingResultCount, round.id).toBe(
+        round.status === 'Đã kết thúc'
+          ? 0
+          : mine.filter((t) => !isSettledTopicStatus(t.status)).length,
       );
     }
   });
@@ -106,9 +112,11 @@ describe('seed data', () => {
       'Đang thực hiện',
       'Đã cho điểm',
       'Đã hoàn tất',
+      'Không đủ điều kiện công bố',
     ]);
     for (const t of seedTopics()) {
-      if (t.group.length === 0) expect(t.status, t.code).toBe('Chưa đăng ký');
+      if (t.group.length === 0)
+        expect(['Chưa đăng ký', 'Không có nhóm'], t.code).toContain(t.status);
       else if (t.source === 'GV công bố')
         expect(withGroup.has(t.status), t.code).toBe(true);
       // Đề xuất SV luôn có nhóm: Chờ GV duyệt, Bị từ chối hoặc đã chấp nhận.
@@ -118,17 +126,54 @@ describe('seed data', () => {
 
   it('keeps GV topics Chưa đăng ký with no group in any unpublished round', () => {
     const topics = seedTopics();
-    const unpublished = Object.entries(SEED_PHASES).filter(
-      ([, phase]) => phase === 'Đang gửi đề tài',
+    const unpublished = seedRounds().filter(
+      (r) => r.status === 'Đang diễn ra' && r.topicsPublishedAt === null,
     );
     expect(unpublished.length).toBeGreaterThan(0);
-    for (const [roundId] of unpublished)
+    for (const round of unpublished)
       for (const t of topics.filter(
-        (x) => x.roundId === roundId && x.source === 'GV công bố',
+        (x) => x.roundId === round.id && x.source === 'GV công bố',
       )) {
         expect(t.status, t.code).toBe('Chưa đăng ký');
         expect(t.group, t.code).toEqual([]);
       }
+  });
+
+  it('turns GV topics without a group into Không có nhóm once registration has closed', () => {
+    const topics = seedTopics();
+    const closed = seedRounds().filter(
+      (r) =>
+        r.topicsPublishedAt !== null &&
+        r.milestones.find((m) => m.key === 'topicRegistration')!.endDate <
+          DEMO_TODAY,
+    );
+    expect(closed.length).toBeGreaterThan(0);
+    for (const round of closed)
+      for (const t of topics.filter(
+        (x) =>
+          x.roundId === round.id &&
+          x.source === 'GV công bố' &&
+          x.group.length === 0,
+      ))
+        expect(t.status, t.code).toBe('Không có nhóm');
+  });
+
+  it('has a Không đủ điều kiện công bố and a Không có nhóm topic in the finished round', () => {
+    const mine = seedTopics().filter((t) => t.roundId === OLD);
+    expect(
+      mine.filter((t) => t.status === 'Không đủ điều kiện công bố'),
+    ).toHaveLength(1);
+    expect(mine.filter((t) => t.status === 'Không có nhóm')).toHaveLength(1);
+    // Không đủ điều kiện công bố: nhóm chưa từng nộp bản khóa luận.
+    const ineligible = mine.find(
+      (t) => t.status === 'Không đủ điều kiện công bố',
+    )!;
+    expect(ineligible.group.length).toBeGreaterThan(0);
+    expect(
+      ineligible.submissions.some(
+        (x) => x.kind === 'Bản khóa luận' || x.kind === 'Cuối kỳ',
+      ),
+    ).toBe(false);
   });
 
   it('has no event after the demo date and keeps the Nháp round without topics', () => {
@@ -252,90 +297,24 @@ describe('get', () => {
     expect(times).toEqual(times.toSorted().toReversed());
     for (const row of t.scores)
       for (const role of SCORE_ROLES) expect(row.scores[role]).not.toBeNull();
-    expect((await s.get('t-vb1-01')).history).toEqual([]);
+    // Chưa đăng ký (chưa công bố): chưa có sự kiện nào cần truy vết.
+    expect((await s.get('t-ths-01')).history).toEqual([]);
+    const noGroup = await s.get('t-vb1-01');
+    expect(noGroup.status).toBe('Không có nhóm');
+    expect(noGroup.history).toHaveLength(1);
   });
 });
 
-describe('publish', () => {
-  it('is blocked until the submission deadline has passed', async () => {
-    const early = make('2026-08-14').service; // đúng ngày hết hạn: chưa hết hạn
-    expect(await early.roundState(THS)).toMatchObject({
-      deadlinePassed: false,
-      canPublish: false,
-      publishBlockedReason: 'Chưa hết hạn gửi đề tài.',
-    });
-    await expect(early.publish(THS)).rejects.toBeInstanceOf(TopicRuleError);
-
-    const late = make('2026-08-15').service;
-    expect(await late.roundState(THS)).toMatchObject({
-      deadlinePassed: true,
-      canPublish: true,
-      phase: 'Đang gửi đề tài',
-    });
-  });
-
-  it('leaves Thạc sĩ publishable and VB1 already published at the demo date', async () => {
+describe('roundState', () => {
+  it('returns the round name and status, and throws for an unknown round', async () => {
     const { service: s } = make();
-    expect(await s.roundState(THS)).toMatchObject({
-      canPublish: true,
-      phase: 'Đang gửi đề tài',
+    expect(await s.roundState(THS)).toEqual({
+      roundId: THS,
+      roundName: 'Thạc sĩ · Đợt 1/2026',
       roundStatus: 'Đang diễn ra',
     });
-    expect(await s.roundState(VB1)).toMatchObject({
-      canPublish: false,
-      phase: 'Đã công bố danh sách',
-      publishBlockedReason: 'Danh sách đã được công bố.',
-    });
-    await expect(s.publish(VB1)).rejects.toThrow('đã được công bố');
-  });
-
-  it('publishes once, cannot be undone and updates the round summary', async () => {
-    const { service: s, roundService } = make();
-    expect((await roundService.get(THS)).topicSummary.unpublishedCount).toBe(6);
-    const state = await s.publish(THS);
-    expect(state.phase).toBe('Đã công bố danh sách');
-    expect(state.canPublish).toBe(false);
-    expect((await s.list({ roundId: THS })).round.phase).toBe(
-      'Đã công bố danh sách',
+    await expect(s.roundState('khong-co')).rejects.toBeInstanceOf(
+      RoundNotFoundError,
     );
-    expect((await roundService.get(THS)).topicSummary.unpublishedCount).toBe(0);
-    await expect(s.publish(THS)).rejects.toThrow('đã được công bố');
-    // Đợt khác không bị ảnh hưởng.
-    expect((await s.roundState(OLD)).phase).toBe('Đã công bố danh sách');
-  });
-
-  it('refuses rounds that are not running or have no topics', async () => {
-    const { service: s, roundService } = make();
-    await expect(s.publish('r-vb2-hk2-nhap')).rejects.toBeInstanceOf(
-      TopicRuleError,
-    );
-    const empty = createTopicService({
-      today: TODAY,
-      roundService,
-      topics: [],
-    });
-    expect((await empty.roundState(THS)).publishBlockedReason).toBe(
-      'Chưa có đề tài để công bố.',
-    );
-  });
-});
-
-describe('exportCsv', () => {
-  it('exports the filtered list', async () => {
-    const result = await make().service.exportCsv({
-      roundId: VB1,
-      supervisorId: 'CB103',
-    });
-    expect(result.count).toBe(2);
-    expect(result.csv.split('\r\n')).toHaveLength(4);
-    expect(result.csv).toContain('VB1-17');
-    expect(result.csv).not.toContain('VB1-01');
-  });
-
-  it('reports zero rows for an empty list', async () => {
-    const result = await make().service.exportCsv({
-      roundId: 'r-vb2-hk2-nhap',
-    });
-    expect(result.count).toBe(0);
   });
 });
