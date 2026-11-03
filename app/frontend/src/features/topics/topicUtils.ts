@@ -326,10 +326,12 @@ export function confirmResultBlocker(topic: Topic): string | null {
       return 'Đã xác nhận rồi.';
     case 'Đã hoàn tất':
       return 'Đã công bố, không xác nhận lại được.';
-    case 'Chưa đăng ký':
     case 'Chờ GV duyệt':
-    case 'Bị từ chối':
     case 'Đã đăng ký':
+      // Sau hạn đăng ký hai trạng thái này hiển thị là Đang thực hiện.
+      return 'Chưa có điểm.';
+    case 'Chưa đăng ký':
+    case 'Bị từ chối':
     case 'Không đủ điều kiện công bố':
     case 'Không có nhóm':
       return `Đề tài đang ở trạng thái ${topic.status}, chưa có kết quả để xác nhận.`;
