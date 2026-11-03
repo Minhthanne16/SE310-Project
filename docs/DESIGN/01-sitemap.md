@@ -169,7 +169,10 @@ Ký hiệu tầng 3: **trang riêng** (một màn trên canvas) · *tab / khối
   - Chi tiết đợt _(trang riêng)_
   - Tab Tiến độ (Gantt) _(tab / khối)_
   - Tab Cấu hình mốc, Cho nộp trễ _(tab / khối)_
-  - Tab Giảng viên · Sinh viên _(tab / khối)_
+  - Tab Giảng viên · Sinh viên (nhập tệp xlsx/csv, hiện email và trạng thái tài khoản) _(tab / khối)_
+  - Tab Đề tài (`?tab=de-tai`), chip giai đoạn của đợt _(tab / khối)_
+  - Đóng & công bố danh sách đề tài (không hoàn tác) _(popup / trạng thái)_
+  - Xuất danh sách (Excel hai danh sách) _(popup / trạng thái)_
   - Xóa đợt Nháp _(popup / trạng thái)_
 
 ### Phiếu đánh giá
@@ -192,8 +195,7 @@ Ký hiệu tầng 3: **trang riêng** (một màn trên canvas) · *tab / khối
   - Lọc đợt, GVHD, trạng thái _(tab / khối)_
   - Chi tiết đề tài _(trang riêng)_
   - Tab Tổng quan · Báo cáo · Điểm · Lịch sử _(tab / khối)_
-  - Đóng & công bố danh sách _(popup / trạng thái)_
-  - Xuất danh sách _(popup / trạng thái)_
+  - Dòng trạng thái công bố, liên kết sang Chi tiết đợt tab Đề tài _(khối)_
 
 **Nhóm menu: Đánh giá**
 
