@@ -36,7 +36,7 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
 ## 4. Chấm, xác nhận và công bố kết quả
 
 1. Giảng viên hướng dẫn, phản biện, chủ tịch và thư ký có các phiếu điểm riêng cho từng Sinh viên.
-   Thư ký nhập điểm mang tên Chủ tịch; Chủ tịch xác nhận điểm đó cho từng Sinh viên trước khi Giáo vụ xác nhận kết quả. Nếu không đồng ý, Chủ tịch trả lại kèm lý do để Thư ký sửa và trình lại (PDR-006).
+   Thư ký nhập điểm cho cả Chủ tịch và Thư ký; không có bước Chủ tịch xác nhận hay trả lại (PDR-050).
 2. Có điểm đầu tiên thì đề tài `Đang cho điểm`. Khi mọi Sinh viên đủ bốn điểm, hệ thống tính điểm tổng kết và chuyển đề tài `Đã cho điểm`, hoặc `Có lệch điểm` nếu có cặp lệch; đề tài còn lệch không xác nhận được, Giáo vụ gửi thông báo nhắc các Giảng viên trong cặp lệch (PDR-049).
 3. Giáo vụ kiểm tra điểm từng Sinh viên rồi xác nhận kết quả **theo cả nhóm đề tài** (từng đề tài hoặc theo lô); đề tài `Đã xác nhận` khóa điểm, chỉ hủy xác nhận được trước công bố, có lý do (PDR-005, PDR-049).
 4. Giáo vụ công bố kết quả đề tài `Đã xác nhận` khi nhóm đã chốt bản cuối hoặc đã hết hạn chốt; công bố xong đề tài `Đã hoàn tất`. Sinh viên xem điểm của mình sau công bố.

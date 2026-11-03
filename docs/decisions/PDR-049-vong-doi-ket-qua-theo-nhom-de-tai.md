@@ -22,7 +22,7 @@ Báo cáo cuối kỳ bản 03-11 ([REPORT_SPEC.md](../REPORT_SPEC.md)) và canv
 
 ## Không đổi
 
-- Bốn cặp chéo và ngưỡng 2,00 của PDR-007; công thức và làm tròn PDR-008; bước Chủ tịch xác nhận điểm CTHĐ của PDR-006 vẫn là điều kiện trước khi Giáo vụ xác nhận.
+- Bốn cặp chéo và ngưỡng 2,00 của PDR-007; công thức và làm tròn PDR-008; bước Chủ tịch xác nhận điểm CTHĐ của PDR-006 đã bỏ theo [PDR-050](PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md).
 - Các khác biệt khác giữa báo cáo và tài liệu (REPORT_SPEC §10, mục 5–18) chưa được quyết định ở PDR này.
 
 ## Hệ quả

@@ -202,7 +202,7 @@ Cột "Repo" là quy tắc trước 03/11. Mục 1–4 nay theo cột báo cáo 
 | 2 | Trạng thái mới | Thêm `Không có nhóm`, `Đang cho điểm`, `Có lệch điểm`, `Đã xác nhận` | Chuỗi cũ `Đã đăng ký → Đang thực hiện → Đã cho điểm → Đã hoàn tất` (`PROJECT_SPEC`) |
 | 3 | Lệch điểm | Chặn xác nhận tới khi hết lệch; giáo vụ nhắc GV trong cặp lệch | Chỉ cảnh báo, hiện khi xác nhận (PDR-007) |
 | 4 | Đơn vị xác nhận và công bố | Theo cả nhóm đề tài, từng đề tài hoặc theo lô | Theo từng SV; lô báo lý do từng người (PDR-009, PDR-010) |
-| 5 | Chủ tịch xác nhận điểm CTHĐ | Thư ký nhập điểm cả hai, không có bước chủ tịch xác nhận | Chủ tịch xác nhận hoặc trả lại có lý do (PDR-006) |
+| 5 | Chủ tịch xác nhận điểm CTHĐ | Thư ký nhập điểm cả hai, không có bước chủ tịch xác nhận | Chủ tịch xác nhận hoặc trả lại có lý do (PDR-006). **Đã chốt theo báo cáo: [PDR-050](decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md)** |
 | 6 | Mở lại kết quả | "Hủy xác nhận" có lý do, về `Đã cho điểm` | Mở lại trước công bố có lý do (PDR-005); tương đương, cần thống nhất tên gọi |
 | 7 | Điều kiện phân công phản biện | Đủ 3 điều kiện: đề cương duyệt, đã nộp giữa kỳ, đã nộp cuối kỳ | Từ khi đề cương được duyệt (PDR-021); PB nhập điểm sau khi nộp cuối kỳ (PDR-022) |
 | 8 | Trùng phòng, trùng GV giữa hai hội đồng | Chỉ cảnh báo khi lưu, còn cảnh báo thì không công bố | Chặn khi lưu (PDR-014, PDR-015) |

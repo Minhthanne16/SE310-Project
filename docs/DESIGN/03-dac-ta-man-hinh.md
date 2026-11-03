@@ -456,7 +456,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 **Quy tắc nghiệp vụ**
 
-- Hội đồng hai người: chủ tịch và thư ký. Thư ký nhập điểm hội đồng; Chủ tịch xem và xác nhận điểm CTHĐ của từng Sinh viên trước khi Giáo vụ xác nhận kết quả. Chủ tịch có thể trả lại kèm lý do để Thư ký sửa và trình lại. Cần bổ sung trạng thái Chờ xác nhận/Đã trả lại/Đã xác nhận vào màn này theo [PDR-006](../decisions/PDR-006-xac-nhan-diem-chu-tich-hoi-dong.md).
+- Hội đồng hai người: chủ tịch và thư ký. Thư ký nhập điểm cho cả hai; Chủ tịch chỉ xem, không có bước xác nhận/trả lại (xem [PDR-050](../decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md), thay PDR-006).
 - Điểm CTHĐ bị trả lại không có hạn sửa riêng; mốc cho điểm chỉ nhắc, không tự khóa phiếu. Việc cần xử lý còn hiển thị đến khi Chủ tịch xác nhận.
 - Cảnh báo khi bất kỳ cặp chéo nào giữa điểm CTHĐ/TKHĐ và CBHD/CBPB lệch từ 2 trở lên, theo [PDR-007](../decisions/PDR-007-canh-bao-lech-diem-bon-cap-cheo.md).
 
@@ -777,7 +777,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Prop `gvRole`: Hướng dẫn, Phản biện, Thư ký hội đồng, Chủ tịch hội đồng; duyệt đề cương theo danh sách yêu cầu; nhận xét giữa kỳ có nút lưu.
 - Nhóm nộp một phiên bản đề cương mới cho cả lần sửa, liên kết các yêu cầu đang mở; GVHD đóng từng yêu cầu riêng và chỉ duyệt khi không còn yêu cầu mở. Hạn nộp lại theo mốc Đề cương chung, không theo hạn riêng từng yêu cầu (xem [PDR-013](../decisions/PDR-013-yeu-cau-chinh-sua-de-cuong.md)).
 - Chấm điểm: lỗi bỏ trống hạng mục; trạng thái "kết quả đã xác nhận, không sửa được".
-- Với `gvRole` Chủ tịch hội đồng, hiện điểm CTHĐ Thư ký đã nhập và thao tác xác nhận hoặc trả lại kèm lý do cho từng Sinh viên; Thư ký sửa điểm bị trả lại rồi trình lại, nếu điểm bị sửa thì yêu cầu xác nhận lại theo PDR-006.
+- Với `gvRole` Chủ tịch hội đồng, hiện điểm CTHĐ và TKHĐ Thư ký đã nhập ở chế độ chỉ xem (PDR-050).
 - Tab Điểm số: GV thấy điểm đã lưu của các vai trò khác.
 
 **Quy tắc nghiệp vụ**
