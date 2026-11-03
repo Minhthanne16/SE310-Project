@@ -498,13 +498,14 @@ it('reminds to review and publish on the progress tab and jumps to the topics ta
   expect(screen.queryByText(/Việc cần làm:/)).not.toBeInTheDocument();
 });
 
-it('switches to the topics tab from the header button instead of leaving the page', async () => {
+it('has no header shortcut to the topics tab (removed on main)', async () => {
   await renderDetail('r-vb1-hk1');
+  expect(
+    screen.queryByRole('button', { name: 'Đề tài của đợt' }),
+  ).not.toBeInTheDocument();
   expect(
     screen.queryByRole('link', { name: 'Đề tài của đợt' }),
   ).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'Đề tài của đợt' }));
-  await waitFor(() => tabSelected('Đề tài'));
 });
 
 it('describes the topic list as unpublished until it is published', async () => {
