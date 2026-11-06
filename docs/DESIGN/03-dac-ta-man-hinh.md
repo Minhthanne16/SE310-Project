@@ -155,7 +155,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Prop `audience`: sv, gv, giaovu (nội dung khác nhau theo vai trò).
-- Ghi chú triển khai frontend: chuông hiện ở thanh trên của cả ba vai trò, chạy trên dữ liệu demo trong bộ nhớ (`navigation/services/notificationService.ts`), chờ endpoint đề xuất `GET /api/notifications/me`, `POST /api/notifications/read`.
+- Ghi chú triển khai: chuông hiện ở thanh trên của cả ba vai trò, dùng API thật `GET /api/notifications/me`, `POST /api/notifications/read` theo [PDR-051](../decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md). Hiện chỉ sự kiện Mở đợt phát sinh thông báo; các sự kiện khác và thông báo gửi thủ công thuộc P08-S01.
 
 ## Hồ sơ cá nhân
 - **Vai trò:** Chung (3 file theo vai trò)
@@ -179,7 +179,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Ba file HoSo, HoSo-GV, HoSo-GiaoVu cùng mã, chỉ khác vai trò mặc định; dựng thành một màn nhận vai trò từ phiên đăng nhập.
-- Ghi chú triển khai frontend (`/ho-so`): theo yêu cầu mới, **họ tên không tự sửa được** (do Giáo vụ quản lý, hiển thị cùng mã, email, vai trò, đơn vị); người dùng chỉ sửa ngày sinh, SĐT, email phụ, ảnh đại diện. Điểm này khác dòng "Sửa họ tên, ..." ở trên. Backend chưa có API hồ sơ nên sửa hồ sơ, ảnh đại diện, hoạt động đăng nhập chạy trên kho demo trong bộ nhớ; đổi mật khẩu là stub (501). Endpoint đề xuất: `GET /api/profile`, `PUT /api/profile`, `PUT /api/profile/avatar`, `POST /api/auth/change-password`. Giới hạn ảnh JPG/PNG/WebP, tối đa 2 MB là tạm thời, chờ OQ-006.
+- Ghi chú triển khai (`/ho-so`): dùng API thật theo [PDR-051](../decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md); họ tên tự sửa được theo PDR-036, giới hạn ảnh theo PDR-043. Hoạt động đăng nhập hiện chỉ có lần gần nhất.
 - Cập nhật giao diện theo artboard HoSo/HoSo-GV/HoSo-GiaoVu: một component cho cả ba vai trò; thông báo lưu hồ sơ và đổi mật khẩu là banner trong trang (không còn toast); lỗi ảnh (sai định dạng, quá 2 MB) chặn lưu; cột phải chỉ có phần dữ liệu hiện có (hoạt động đăng nhập, quyền hạn của Giáo vụ). Chưa có card "Khóa luận" (SV), "Đợt" (GV), dòng Khoa/Đơn vị và "Lần đầu đăng nhập" vì chưa có dữ liệu/API.
 
 ## Trang 404

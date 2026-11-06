@@ -22,5 +22,6 @@ public static class UserAuditActions
     public const string Disabled = "Disabled";
     public const string Reactivated = "Reactivated";
     public const string PasswordReset = "PasswordReset";
+    public const string PasswordChanged = "PasswordChanged";
     public const string Deleted = "Deleted";
 }

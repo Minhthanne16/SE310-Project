@@ -48,6 +48,21 @@ public sealed class AddParticipantsValidator : AbstractValidator<AddParticipants
 
 internal static class RoundMapping
 {
+    // Mở đợt gửi thông báo tới người tham gia hiện có (DESIGN · Danh sách đợt). Thông báo tự động, không có người gửi.
+    public static IReadOnlyList<Notification> OpenedNotifications(ThesisRound round, DateTime now)
+    {
+        var batchId = Guid.NewGuid();
+        return round.Participants.Select(p => new Notification
+        {
+            BatchId = batchId,
+            RecipientUserId = p.UserId,
+            Kind = NotificationKinds.Schedule,
+            Text = $"Đợt khóa luận “{round.Name}” đã mở.",
+            Href = p.Kind == ParticipantKind.Lecturer ? "/gv" : "/sv",
+            CreatedAt = now
+        }).ToList();
+    }
+
     // Đợt Nháp chỉ Giáo vụ thấy (docs/DESIGN/03); GV/SV thấy đợt đã mở mà mình có tên.
     public static bool CanView(ThesisRound round, Guid? viewerId) =>
         viewerId is not { } id || (round.Status != RoundStatus.Draft && round.Participants.Any(p => p.UserId == id));
@@ -293,6 +308,7 @@ public sealed class OpenRoundHandler(IRoundRepository repository, TimeProvider c
         round.Status = RoundStatus.Running;
         round.OpenedAt = now;
         round.UpdatedAt = now;
+        repository.AddNotifications(RoundMapping.OpenedNotifications(round, now));
         await repository.SaveAsync(cancellationToken);
         return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã mở đợt");
     }

@@ -36,6 +36,8 @@ public class RoundRepository(ApplicationDbContext context) : IRoundRepository
         await SaveAsync(cancellationToken);
     }
 
+    public void AddNotifications(IEnumerable<Notification> notifications) => context.Notifications.AddRange(notifications);
+
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {
         try

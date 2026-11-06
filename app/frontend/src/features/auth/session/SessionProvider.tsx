@@ -27,6 +27,8 @@ interface SessionContextValue {
   authService: AuthService;
   refresh: () => Promise<void>;
   logout: () => Promise<void>;
+  // Cập nhật thông tin hiển thị sau khi người dùng tự sửa hồ sơ, không tải lại phiên.
+  patchUser: (changes: Partial<CurrentUser>) => void;
 }
 
 const SessionContext = createContext<SessionContextValue | null>(null);
@@ -66,13 +68,21 @@ export const SessionProvider: React.FC<SessionProviderProps> = ({
     setSession({ status: 'unauthenticated' });
   }, [authService]);
 
+  const patchUser = useCallback((changes: Partial<CurrentUser>) => {
+    setSession((current) =>
+      current.status === 'authenticated'
+        ? { ...current, user: { ...current.user, ...changes } }
+        : current,
+    );
+  }, []);
+
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
   const value = useMemo(
-    () => ({ session, authService, refresh, logout }),
-    [session, authService, refresh, logout],
+    () => ({ session, authService, refresh, logout, patchUser }),
+    [session, authService, refresh, logout, patchUser],
   );
 
   return (

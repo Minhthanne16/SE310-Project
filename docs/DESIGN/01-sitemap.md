@@ -42,7 +42,7 @@ Ký hiệu tầng 3: **trang riêng** (một màn trên canvas) · *tab / khối
 - Route gợi ý: `/ho-so`
 - Artboard: `HoSo · HoSo-GV · HoSo-GiaoVu`
   - Sửa ngày sinh, SĐT, email phụ, ảnh _(tab / khối)_
-  - Đổi mật khẩu _(popup / trạng thái)_ (đã dựng giao diện; backend chưa có API đổi mật khẩu thông thường, đề xuất `POST /api/auth/change-password { currentPassword, newPassword }`)
+  - Đổi mật khẩu _(popup / trạng thái)_ (`POST /api/auth/change-password`, xem [PDR-051](../decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md))
   - Hoạt động đăng nhập _(tab / khối)_
 
 ### Chuông thông báo

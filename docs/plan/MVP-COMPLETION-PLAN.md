@@ -30,7 +30,7 @@ Ngoài tiêu chí nghiệp vụ, mọi lát cắt MVP phải có migration đư�
 | Nhóm | Có thể dùng làm nền | Chưa đạt MVP / cần hoàn tất |
 | --- | --- | --- |
 | Xác thực và nhập người dùng | Đăng nhập JWT-cookie, đổi mật khẩu lần đầu, import CSV preview/import và seed local đã có. | Quản trị vòng đời tài khoản, quên/đặt lại mật khẩu có giới hạn, audit; kiểm chứng toàn bộ UI với API thật. |
-| Hồ sơ cá nhân | UI và validation đã có; source đang có một lát `GET /api/profile` chưa hoàn tất. | Hoàn thành migration, đọc/sửa hồ sơ, đổi mật khẩu, audit, upload avatar MinIO và thay toàn bộ demo/stub. Lát source dở dang phải được review trước khi xây tiếp. |
+| Hồ sơ cá nhân | Đọc/sửa hồ sơ, đổi mật khẩu, audit, avatar MinIO và chuông dùng API thật ([PDR-051](../decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md)). | Áp dụng migration `AddProfileContactAndNotifications` có kiểm soát ở từng môi trường; lịch sử nhiều lần đăng nhập chưa có. |
 | Đợt, đề tài, đăng ký, tài liệu, hội đồng, điểm, kết quả | Có nhiều màn frontend/demo và một phần mẫu phiếu đánh giá. | Chưa có mô hình dữ liệu/API nghiệp vụ end-to-end; không được nối trực tiếp UI demo vào nghiệm thu. |
 | Hạ tầng dùng chung | PostgreSQL local/Neon hướng dẫn, email và Docker Compose đã có. | Cấu hình storage, migration có kiểm soát, môi trường test cô lập, secret, sao lưu/khôi phục theo phạm vi được chốt. |
 
@@ -105,10 +105,10 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G1.3 — Hoàn tất hồ sơ và avatar trên MinIO
 
-- [ ] Review lát `Profiles` đang dở dang, viết migration cho trường hồ sơ đã chọn; không chỉnh migration đã áp dụng.
-- [ ] Cung cấp `GET/PUT /api/profile`, đổi mật khẩu thường và endpoint/avatar flow theo contract đã chốt; self-service họ tên theo PDR-036 và audit khi Giáo vụ sửa tên người khác.
-- [ ] Tích hợp MinIO qua backend: validate magic bytes, JPG/PNG/WebP tối đa 2 MB, object key không đoán được, authorization khi đọc, dọn object mồ côi theo transaction/error strategy.
-- [ ] Thay profile demo và stub 501 bằng API thật; hiển thị loading/error/empty có thể dùng bàn phím.
+- [x] Review lát `Profiles` đang dở dang, viết migration cho trường hồ sơ đã chọn; không chỉnh migration đã áp dụng.
+- [x] Cung cấp `GET/PUT /api/profile`, đổi mật khẩu thường và endpoint/avatar flow theo contract đã chốt; self-service họ tên theo PDR-036 và audit khi Giáo vụ sửa tên người khác.
+- [x] Tích hợp MinIO qua backend: validate magic bytes, JPG/PNG/WebP tối đa 2 MB, object key không đoán được, authorization khi đọc, dọn object mồ côi theo transaction/error strategy.
+- [x] Thay profile demo và stub 501 bằng API thật; hiển thị loading/error/empty có thể dùng bàn phím.
 
 **Nghiệm thu:** Dữ liệu tồn tại sau refresh; user thường không thể xem/sửa hồ sơ người khác qua API; ảnh giả ảnh/quá 2 MB không thay ảnh cũ; đổi mật khẩu thu hồi phiên cũ.
 

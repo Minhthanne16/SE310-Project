@@ -23,6 +23,18 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
   const menuId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  // Ảnh không tải được (kho lưu trữ lỗi) thì quay về chữ viết tắt.
+  const [brokenAvatar, setBrokenAvatar] = useState<string | null>(null);
+  const avatarContent =
+    user.avatarUrl && user.avatarUrl !== brokenAvatar ? (
+      <img
+        src={user.avatarUrl}
+        alt=""
+        onError={() => setBrokenAvatar(user.avatarUrl ?? null)}
+      />
+    ) : (
+      initials(user.fullName)
+    );
 
   useEffect(() => {
     if (!open) return;
@@ -57,7 +69,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
               className={`avatar avatar-lg avatar-${user.role}`}
               aria-hidden="true"
             >
-              {initials(user.fullName)}
+              {avatarContent}
             </span>
             <span className="account-menu-head-text">
               <strong>{user.fullName}</strong>
@@ -99,7 +111,7 @@ export const AccountMenu: React.FC<AccountMenuProps> = ({
         onClick={() => setOpen((v) => !v)}
       >
         <span className={`avatar avatar-${user.role}`} aria-hidden="true">
-          {initials(user.fullName)}
+          {avatarContent}
         </span>
         <span className="account-card-text">
           <strong>{user.fullName}</strong>

@@ -31,7 +31,7 @@ Nhiệm vụ backend yêu cầu "API đăng nhập cục bộ (JWT/Session) và 
 | `GET /api/auth/me` | Đã đăng nhập (kể cả token chờ đổi mật khẩu) | 200 `ApiResponse<CurrentUserDto>` | 401 |
 | `POST /api/auth/logout` | Ẩn danh | 200 `ApiResponse<bool>`, cookie hết hạn | — |
 
-`CurrentUserDto` gồm `{ id, userCode, fullName, email, role, mustChangePassword }`, với `role` thuộc `Student | Lecturer | AcademicAffairs`. Phản hồi 401/403 của toàn API dùng `ApiResponse` với `success=false`.
+`CurrentUserDto` gồm `{ id, userCode, fullName, email, role, mustChangePassword, avatarUrl }`, với `role` thuộc `Student | Lecturer | AcademicAffairs`. Phản hồi 401/403 của toàn API dùng `ApiResponse` với `success=false`. Đổi mật khẩu thông thường `POST /api/auth/change-password` xem [PDR-051](PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md).
 
 ## Cách phân quyền endpoint mới
 

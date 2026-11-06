@@ -47,6 +47,17 @@ public sealed class AuthController(ISender sender) : ControllerBase
         return Ok(ApiResponse<CurrentUserDto>.Ok(result.Data.User, result.Message));
     }
 
+    [HttpPost("change-password")]
+    [Authorize]
+    public async Task<ActionResult<ApiResponse<CurrentUserDto>>> ChangePassword(ChangePasswordDto dto, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new ChangePasswordCommand(CurrentUserId, dto), cancellationToken);
+        if (!result.Success) return BadRequest(ApiResponse<CurrentUserDto>.Fail(result.Message));
+
+        AuthCookie.Append(HttpContext, result.Data!.AccessToken);
+        return Ok(ApiResponse<CurrentUserDto>.Ok(result.Data.User, result.Message));
+    }
+
     [HttpGet("me")]
     [Authorize(Policy = AuthPolicies.AllowPendingPasswordChange)]
     public async Task<ActionResult<ApiResponse<CurrentUserDto>>> Me(CancellationToken cancellationToken)

@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Backend.Application.Auth;
 using Backend.Application.Common.Email;
+using Backend.Application.Common.Storage;
 using Backend.Domain.Entities;
 using Backend.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -323,6 +324,7 @@ public sealed class AuthApiTests : IClassFixture<AuthApiTests.AuthApiFactory>
         public const string Code = "246810";
         public TestUserStore Users { get; } = new();
         internal CapturingEmailSender Emails { get; } = new();
+        public InMemoryAvatarStorage Avatars { get; } = new();
 
         public string AddUser(UserRole role, string password, bool mustChange, string? code = null) =>
             Users.Add(role, password, mustChange, code);
@@ -338,6 +340,8 @@ public sealed class AuthApiTests : IClassFixture<AuthApiTests.AuthApiFactory>
             {
                 services.RemoveAll<IUserRepository>();
                 services.AddSingleton<IUserRepository>(Users.Repository);
+                services.RemoveAll<IAvatarStorage>();
+                services.AddSingleton<IAvatarStorage>(Avatars);
                 services.RemoveAll<IEmailSender>();
                 services.AddSingleton<IEmailSender>(Emails);
                 services.RemoveAll<IActivationCodeGenerator>();
@@ -366,6 +370,34 @@ public sealed class AuthApiTests : IClassFixture<AuthApiTests.AuthApiFactory>
         {
             lock (_byEmail) return _byEmail[email];
         }
+    }
+}
+
+public sealed class InMemoryAvatarStorage : IAvatarStorage
+{
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte[]> _objects = new();
+    public bool FailNextSave { get; set; }
+
+    public bool Contains(string objectKey) => _objects.ContainsKey(objectKey);
+
+    public Task SaveAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken = default)
+    {
+        if (FailNextSave)
+        {
+            FailNextSave = false;
+            throw new StorageUnavailableException("Storage is down.");
+        }
+        _objects[objectKey] = content;
+        return Task.CompletedTask;
+    }
+
+    public Task<byte[]?> ReadAsync(string objectKey, CancellationToken cancellationToken = default) =>
+        Task.FromResult(_objects.GetValueOrDefault(objectKey));
+
+    public Task DeleteAsync(string objectKey, CancellationToken cancellationToken = default)
+    {
+        _objects.TryRemove(objectKey, out _);
+        return Task.CompletedTask;
     }
 }
 
