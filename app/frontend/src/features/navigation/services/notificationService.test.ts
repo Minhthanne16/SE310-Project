@@ -62,9 +62,9 @@ it('groups by local day and formats the time like the bell design', () => {
   expect(notificationTime(ago(10_000), now)).toBe('Vừa xong');
   expect(notificationTime(ago(15 * 60_000), now)).toBe('15 phút trước');
   expect(notificationTime(ago(2 * 3_600_000), now)).toBe('2 giờ trước');
-  expect(notificationTime(new Date(2026, 10, 5, 20, 15).toISOString(), now)).toBe(
-    'Hôm qua, 20:15',
-  );
+  expect(
+    notificationTime(new Date(2026, 10, 5, 20, 15).toISOString(), now),
+  ).toBe('Hôm qua, 20:15');
   expect(notificationTime(new Date(2026, 9, 12, 8).toISOString(), now)).toBe(
     '12/10',
   );

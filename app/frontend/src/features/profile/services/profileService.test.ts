@@ -20,7 +20,12 @@ const dto = {
   lastLogins: ['2026-11-06T01:00:00.000Z'],
 };
 
-const stubFetch = (data: unknown = dto, ok = true, status = 200, extra = {}) => {
+const stubFetch = (
+  data: unknown = dto,
+  ok = true,
+  status = 200,
+  extra = {},
+) => {
   const fetchMock = vi.fn().mockResolvedValue({
     ok,
     status,

@@ -40,7 +40,9 @@ const fakeAuth = (): AuthService => ({
   logout: vi.fn(),
 });
 
-const renderPage = async (service: ProfileService = createFakeProfileService()) => {
+const renderPage = async (
+  service: ProfileService = createFakeProfileService(),
+) => {
   render(
     <SessionProvider authService={fakeAuth()}>
       <ProfilePage profileService={service} />

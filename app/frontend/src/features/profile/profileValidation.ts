@@ -2,10 +2,7 @@ import { EMAIL_PATTERN } from '@/lib/validation';
 import type { ProfileInput } from '@/types/profile';
 
 export type ProfileField =
-  | 'fullName'
-  | 'dateOfBirth'
-  | 'phone'
-  | 'secondaryEmail';
+  'fullName' | 'dateOfBirth' | 'phone' | 'secondaryEmail';
 export type ProfileFieldErrors = Partial<Record<ProfileField, string>>;
 
 // Giới hạn ảnh theo PDR-043. Backend kiểm tra lại, gồm cả nội dung thật của tệp.
@@ -39,8 +36,7 @@ export function validateProfileInput(
   const errors: ProfileFieldErrors = {};
   const fullName = input.fullName.trim();
   if (!fullName) errors.fullName = 'Nhập họ tên.';
-  else if (fullName.length > 200)
-    errors.fullName = 'Họ tên tối đa 200 ký tự.';
+  else if (fullName.length > 200) errors.fullName = 'Họ tên tối đa 200 ký tự.';
 
   if (input.dateOfBirth && input.dateOfBirth > todayIso())
     errors.dateOfBirth = 'Ngày sinh không được ở tương lai.';
