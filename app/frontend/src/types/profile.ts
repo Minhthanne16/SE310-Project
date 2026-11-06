@@ -1,7 +1,6 @@
-// Hồ sơ cá nhân. Backend chưa có API hồ sơ; các trường này khớp thực thể User
-// (ngày sinh, lớp, bộ môn, học hàm, lần đăng nhập cuối) cộng các trường người
-// dùng tự sửa mà thiết kế yêu cầu (SĐT, email phụ, ảnh đại diện).
+// Hồ sơ cá nhân, hợp đồng GET/PUT /api/profile.
 export interface UserProfile {
+  fullName: string;
   // yyyy-MM-dd hoặc null.
   dateOfBirth: string | null;
   phone: string;
@@ -16,6 +15,7 @@ export interface UserProfile {
 }
 
 export interface ProfileInput {
+  fullName: string;
   dateOfBirth: string;
   phone: string;
   secondaryEmail: string;

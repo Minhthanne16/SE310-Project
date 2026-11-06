@@ -1,8 +1,10 @@
 using Backend.Application.Common.Email;
 using Backend.Application.Common.Security;
+using Backend.Application.Common.Storage;
 using Backend.Domain.Interfaces;
 using Backend.Infrastructure.Data;
 using Backend.Infrastructure.Repositories.Evaluations;
+using Backend.Infrastructure.Repositories.Notifications;
 using Backend.Infrastructure.Repositories.Products;
 using Backend.Infrastructure.Repositories.Rounds;
 using Backend.Infrastructure.Repositories.Users;
@@ -32,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IEvaluationTemplateRepository, EvaluationTemplateRepository>();
         services.AddScoped<IRoundRepository, RoundRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
         services.Configure<EmailOptions>(configuration.GetSection("Email"));
@@ -42,13 +45,19 @@ public static class DependencyInjection
             services.AddSingleton<IConnectionMultiplexer>(_ => ConnectionMultiplexer.Connect(redisConnection));
 
         var storage = configuration.GetSection("Storage").Get<StorageOptions>();
-        if (storage is { Endpoint.Length: > 0, AccessKey.Length: > 0, SecretKey.Length: > 0 })
+        if (storage is { Endpoint.Length: > 0, AccessKey.Length: > 0, SecretKey.Length: > 0, Bucket.Length: > 0 })
         {
             services.AddSingleton<IMinioClient>(_ => new MinioClient()
                 .WithEndpoint(storage.Endpoint)
                 .WithCredentials(storage.AccessKey, storage.SecretKey)
                 .WithSSL(storage.UseSsl)
                 .Build());
+            services.AddSingleton(storage);
+            services.AddSingleton<IAvatarStorage, MinioAvatarStorage>();
+        }
+        else
+        {
+            services.AddSingleton<IAvatarStorage, UnavailableAvatarStorage>();
         }
 
         return services;

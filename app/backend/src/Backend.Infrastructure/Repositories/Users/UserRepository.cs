@@ -30,11 +30,20 @@ public class UserRepository : IUserRepository
         return await _context.Users.AsNoTracking().OrderBy(u => u.UserCode).ToListAsync(cancellationToken);
     }
 
-    public Task<IReadOnlySet<Guid>> GetUserIdsWithRelatedDataAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlySet<Guid>> GetUserIdsWithRelatedDataAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
     {
-        // Chưa có bảng nghiệp vụ nào tham chiếu tới Users (đợt, đề tài, phiếu điểm...
-        // chưa được xây). Khi thêm bảng đó, bổ sung truy vấn tại đây.
-        return Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
+        // Đề tài, phiếu điểm... chưa được xây; khi thêm bảng đó, bổ sung truy vấn tại đây.
+        var recipients = await _context.Notifications
+            .Where(n => userIds.Contains(n.RecipientUserId))
+            .Select(n => n.RecipientUserId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var senders = await _context.Notifications
+            .Where(n => n.SenderUserId != null && userIds.Contains(n.SenderUserId.Value))
+            .Select(n => n.SenderUserId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        return recipients.Concat(senders).ToHashSet();
     }
 
     public async Task<IReadOnlySet<string>> GetExistingUserCodesAsync(IReadOnlyCollection<string> userCodes, CancellationToken cancellationToken = default)

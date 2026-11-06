@@ -20,6 +20,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<RoundMilestone> RoundMilestones => Set<RoundMilestone>();
     public DbSet<RoundParticipant> RoundParticipants => Set<RoundParticipant>();
     public DbSet<UserAuditEntry> UserAuditEntries => Set<UserAuditEntry>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -124,6 +125,20 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId);
             // Không xóa được người dùng đang thuộc đợt.
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Kind).IsRequired().HasMaxLength(16);
+            entity.Property(e => e.Text).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.Href).IsRequired().HasMaxLength(512);
+            entity.HasIndex(e => new { e.RecipientUserId, e.CreatedAt });
+            entity.HasIndex(e => e.BatchId);
+            entity.HasIndex(e => e.SenderUserId);
+            // Tài khoản đã có thông báo là "đã có dữ liệu": chỉ vô hiệu hóa, không xóa (BUSINESS_RULES).
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.RecipientUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Sender).WithMany().HasForeignKey(e => e.SenderUserId).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<UserAuditEntry>(entity =>

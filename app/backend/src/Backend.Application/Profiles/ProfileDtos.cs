@@ -16,3 +16,13 @@ public sealed class ProfileDto
     public string? AcademicTitle { get; set; }
     public IReadOnlyList<DateTime> LastLogins { get; set; } = [];
 }
+
+// Chỉ các trường chủ tài khoản tự sửa (PDR-036, DESIGN Hồ sơ). Mã, email, vai trò, đơn vị
+// không nằm ở đây nên giá trị gửi thừa bị bỏ qua.
+public sealed class UpdateProfileDto
+{
+    public string? FullName { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
+    public string? Phone { get; set; }
+    public string? SecondaryEmail { get; set; }
+}

@@ -36,6 +36,7 @@ const formatDateTime = (iso: string): string =>
   new Date(iso).toLocaleString('vi-VN');
 
 const inputFromProfile = (profile: UserProfile): ProfileInput => ({
+  fullName: profile.fullName,
   dateOfBirth: profile.dateOfBirth ?? '',
   phone: profile.phone,
   secondaryEmail: profile.secondaryEmail,
@@ -136,7 +137,7 @@ const ProfileContent: React.FC<{
   user: CurrentUser;
   profileService: ProfileService;
 }> = ({ user, profileService }) => {
-  const { authService, logout } = useSession();
+  const { authService, logout, patchUser } = useSession();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
@@ -163,7 +164,7 @@ const ProfileContent: React.FC<{
   useEffect(() => {
     let cancelled = false;
     profileService
-      .getProfile(user)
+      .getProfile()
       .then((p) => !cancelled && setProfile(p))
       .catch(
         (err: unknown) =>
@@ -177,7 +178,7 @@ const ProfileContent: React.FC<{
     return () => {
       cancelled = true;
     };
-  }, [profileService, user]);
+  }, [profileService, user.id]);
 
   // Vào form sửa thì focus ô đầu; thoát thì trả focus về nút "Sửa hồ sơ"
   // (nút chỉ được dựng lại sau khi editing đổi nên phải làm trong effect).
@@ -300,15 +301,30 @@ const ProfileContent: React.FC<{
     savingRef.current = true;
     setSaving(true);
     setFormError(null);
+    // Thanh bên đọc họ tên và ảnh từ phiên nên phải cập nhật cùng lúc với trang.
+    const apply = (next: UserProfile) => {
+      setProfile(next);
+      patchUser({ fullName: next.fullName, avatarUrl: next.avatarUrl });
+    };
+    const message = (err: unknown, fallback: string) =>
+      err instanceof Error && err.message ? err.message : fallback;
     try {
-      setProfile(await profileService.updateProfile(user.id, values));
+      apply(await profileService.updateProfile(values));
+    } catch (err: unknown) {
+      setFormError(message(err, 'Lưu hồ sơ thất bại. Thử lại sau.'));
+      savingRef.current = false;
+      setSaving(false);
+      return;
+    }
+    try {
+      if (values.avatarFile)
+        apply(await profileService.uploadAvatar(values.avatarFile));
+      else if (values.removeAvatar) apply(await profileService.removeAvatar());
       setSaved(true);
       stopEditing();
     } catch (err: unknown) {
       setFormError(
-        err instanceof Error && err.message
-          ? err.message
-          : 'Lưu hồ sơ thất bại. Thử lại sau.',
+        `Đã lưu thông tin cá nhân nhưng chưa cập nhật được ảnh: ${message(err, 'Thử lại sau.')}`,
       );
     } finally {
       savingRef.current = false;
@@ -331,7 +347,7 @@ const ProfileContent: React.FC<{
     }
   };
 
-  const displayName = user.fullName;
+  const displayName = profile.fullName;
   const removed = editing && values?.removeAvatar;
   const shownAvatar = removed
     ? null
@@ -410,12 +426,18 @@ const ProfileContent: React.FC<{
 
             <form onSubmit={handleSubmit} noValidate>
               <dl className="prf-list">
-                <Row label="Họ tên">{displayName}</Row>
                 {editing && values ? (
                   <>
                     <EditRow
-                      field="dateOfBirth"
+                      field="fullName"
                       inputRef={firstFieldRef}
+                      label="Họ tên"
+                      value={values.fullName}
+                      error={errors.fullName}
+                      onChange={setField}
+                    />
+                    <EditRow
+                      field="dateOfBirth"
                       label="Ngày sinh"
                       type="date"
                       max={todayIso()}
@@ -446,6 +468,7 @@ const ProfileContent: React.FC<{
                   </>
                 ) : (
                   <>
+                    <Row label="Họ tên">{displayName}</Row>
                     <Row label="Ngày sinh">
                       {formatDate(profile.dateOfBirth)}
                     </Row>
@@ -660,8 +683,8 @@ const ProfileContent: React.FC<{
 };
 
 // Hồ sơ cá nhân dùng chung, nhận vai trò từ phiên đăng nhập (một màn thay cho
-// ba artboard HoSo, HoSo-GV, HoSo-GiaoVu). Họ tên, mã, email, vai trò và đơn
-// vị chỉ xem; ngày sinh, SĐT, email phụ, ảnh do người dùng tự sửa.
+// ba artboard HoSo, HoSo-GV, HoSo-GiaoVu). Mã, email, vai trò và đơn vị chỉ
+// xem; họ tên (PDR-036), ngày sinh, SĐT, email phụ, ảnh do người dùng tự sửa.
 export const ProfilePage: React.FC<ProfilePageProps> = ({
   profileService = defaultProfileService,
 }) => {

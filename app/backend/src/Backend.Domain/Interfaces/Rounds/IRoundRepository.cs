@@ -15,6 +15,8 @@ public interface IRoundRepository
     // Ném DuplicateRoundNameException khi vi phạm tên đợt duy nhất.
     Task AddAsync(ThesisRound round, CancellationToken cancellationToken = default);
     // Lưu thay đổi của đợt đã nạp bằng GetByIdAsync (một lần lưu). Ném DuplicateRoundNameException khi trùng tên.
+    // Ghi cùng lần SaveAsync tiếp theo để thông báo và thay đổi của đợt nằm chung một transaction.
+    void AddNotifications(IEnumerable<Notification> notifications);
     Task SaveAsync(CancellationToken cancellationToken = default);
     // Xóa đợt cùng mốc và người tham gia.
     Task DeleteAsync(ThesisRound round, CancellationToken cancellationToken = default);

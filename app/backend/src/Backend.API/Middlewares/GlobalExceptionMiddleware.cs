@@ -1,4 +1,5 @@
 using Backend.Application.Common;
+using Backend.Application.Common.Storage;
 using Backend.Domain.Interfaces;
 using FluentValidation;
 
@@ -22,6 +23,12 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
             context.Response.StatusCode = StatusCodes.Status409Conflict;
             await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(
                 "Một số mã người dùng hoặc email vừa được tạo bởi thao tác khác. Hãy xem trước lại tệp."));
+        }
+        catch (StorageUnavailableException ex)
+        {
+            logger.LogError(ex, "Object storage unavailable");
+            context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+            await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail("Chưa xử lý được ảnh đại diện vì kho lưu trữ tệp không sẵn sàng. Thử lại sau."));
         }
         catch (Exception ex)
         {

@@ -45,9 +45,9 @@
 **Tham chiếu:** [DESIGN — Hồ sơ/Trang chủ/Chuông](../DESIGN/03-dac-ta-man-hinh.md), [ROLES](../product/ROLES.md), [PDR-036](../decisions/PDR-036-chu-tai-khoan-va-giao-vu-sua-ho-ten.md), [PDR-043](../decisions/PDR-043-gioi-han-anh-dai-dien.md).
 
 **Công việc:**
-- [ ] Cho cả ba vai trò tự sửa họ tên theo PDR-036; Giáo vụ sửa được họ tên tài khoản khác, mọi thay đổi có lịch sử. Triển khai đọc/sửa hồ sơ và đổi mật khẩu thường, kiểm tra backend từng trường.
-- [ ] Hoàn thiện app shell, điều hướng theo phiên, trạng thái loading/error/empty; dựng điểm gắn chuông/thông báo dùng lại ở Phase 08.
-- [ ] Triển khai ảnh đại diện JPG/PNG/WebP tối đa 2 MB theo PDR-043; bỏ dữ liệu hồ sơ demo và stub 501.
+- [x] Cho cả ba vai trò tự sửa họ tên theo PDR-036; Giáo vụ sửa được họ tên tài khoản khác, mọi thay đổi có lịch sử. Triển khai đọc/sửa hồ sơ và đổi mật khẩu thường, kiểm tra backend từng trường. *(2026-11-06: hợp đồng tại [PDR-051](../decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md).)*
+- [x] Hoàn thiện app shell, điều hướng theo phiên, trạng thái loading/error/empty; dựng điểm gắn chuông/thông báo dùng lại ở Phase 08. *(2026-11-06: chuông dùng `/api/notifications`, hiện có sự kiện Mở đợt; phần còn lại ở P08-S01.)*
+- [x] Triển khai ảnh đại diện JPG/PNG/WebP tối đa 2 MB theo PDR-043; bỏ dữ liệu hồ sơ demo và stub 501.
 
 **Acceptance criteria:**
 - [ ] SV/GV/Giáo vụ chỉ xem/sửa đúng trường được quyết định; tải lại trang vẫn giữ dữ liệu; đổi mật khẩu thu hồi token cũ.

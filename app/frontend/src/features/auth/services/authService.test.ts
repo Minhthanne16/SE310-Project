@@ -150,11 +150,31 @@ it('reports a network failure with status 0', async () => {
   );
 });
 
-it('never reuses the first-login endpoint for a regular password change', async () => {
-  const fetchMock = stubFetch({ ok: true, body: { success: true } });
+it('changes a regular password through its own endpoint, not the first-login one', async () => {
+  const fetchMock = stubFetch({
+    ok: true,
+    body: { success: true, message: '', data: user(false) },
+  });
+
+  await authService.changePassword('matkhau123', 'matkhau456');
+
+  const [url, init] = fetchMock.mock.calls[0];
+  expect(url).toBe('/api/auth/change-password');
+  expect(init.method).toBe('POST');
+  expect(JSON.parse(init.body)).toEqual({
+    currentPassword: 'matkhau123',
+    newPassword: 'matkhau456',
+  });
+});
+
+it('surfaces the server message when the current password is wrong', async () => {
+  stubFetch({
+    ok: false,
+    status: 400,
+    body: { success: false, message: 'Mật khẩu hiện tại không đúng.' },
+  });
 
   await expect(
-    authService.changePassword('matkhau123', 'matkhau456'),
-  ).rejects.toThrow('Backend chưa có API đổi mật khẩu thông thường.');
-  expect(fetchMock).not.toHaveBeenCalled();
+    authService.changePassword('sai12345', 'matkhau456'),
+  ).rejects.toThrow('Mật khẩu hiện tại không đúng.');
 });

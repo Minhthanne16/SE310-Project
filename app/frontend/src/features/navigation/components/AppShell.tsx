@@ -12,7 +12,6 @@ import {
 } from '@/features/auth/session/SessionProvider';
 import { findNavItem } from '@/features/navigation/menuConfig';
 import { initials } from '@/features/navigation/initials';
-import { audienceOf } from '@/features/navigation/services/notificationService';
 import type { UserRole } from '@/types/auth';
 import { NotificationBell } from './NotificationBell';
 import { Sidebar } from './Sidebar';
@@ -139,7 +138,7 @@ const ShellContent: React.FC<Omit<AppShellProps, 'authService'>> = ({
             <div className="app-topbar-slot" ref={setSlotElement} />
           </div>
           <div className="app-topbar-right">
-            <NotificationBell audience={audienceOf(user.role)} />
+            <NotificationBell />
           </div>
         </header>
         <TopbarSlotContext.Provider value={slot}>

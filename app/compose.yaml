@@ -45,7 +45,9 @@ services:
   # Docker tạo named volume thuộc root; init này chỉ sửa ownership rồi thoát để
   # API vẫn chạy bằng user app không đặc quyền.
   data-protection-init:
-    image: app-api
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     user: "0:0"
     entrypoint: ["/bin/sh", "-c"]
     command: ["mkdir -p /keys && chown -R 1654:1654 /keys"]
@@ -63,7 +65,7 @@ services:
       Storage__Endpoint: minio:9000
       Storage__AccessKey: ${MINIO_ROOT_USER}
       Storage__SecretKey: ${MINIO_ROOT_PASSWORD}
-      Storage__Bucket: products
+      Storage__Bucket: qlkltn
       Authentication__Jwt__SigningKey: ${JWT_SIGNING_KEY:?set JWT_SIGNING_KEY (at least 32 bytes)}
       Authentication__Jwt__Issuer: se310-api
       Authentication__Jwt__Audience: se310-web
@@ -86,6 +88,8 @@ services:
       db:
         condition: service_healthy
       mailpit:
+        condition: service_started
+      minio:
         condition: service_started
       data-protection-init:
         condition: service_completed_successfully

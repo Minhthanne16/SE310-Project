@@ -7,6 +7,8 @@ export interface CurrentUser {
   email: string;
   role: UserRole;
   mustChangePassword: boolean;
+  // Đường dẫn cùng origin tới ảnh của chính người dùng; null khi chưa có ảnh.
+  avatarUrl?: string | null;
 }
 
 export interface ActivationCodeSent {

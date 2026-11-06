@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using Backend.Application.Common;
 using Backend.Application.Common.Email;
 using Backend.Application.Common.Security;
+using Backend.Application.Profiles;
+using Backend.Application.Users;
 using Backend.Domain.Entities;
 using Backend.Domain.Interfaces;
 using FluentValidation;
@@ -12,6 +14,7 @@ namespace Backend.Application.Auth;
 
 public record LoginCommand(LoginDto Credentials) : IRequest<ApiResponse<AuthenticatedSession>>;
 public record ChangeInitialPasswordCommand(Guid UserId, ChangeInitialPasswordDto Passwords) : IRequest<ApiResponse<AuthenticatedSession>>;
+public record ChangePasswordCommand(Guid UserId, ChangePasswordDto Passwords) : IRequest<ApiResponse<AuthenticatedSession>>;
 public record GetCurrentUserQuery(Guid UserId) : IRequest<ApiResponse<CurrentUserDto>>;
 public record SendActivationCodeCommand(Guid UserId) : IRequest<SendActivationCodeResult>;
 
@@ -43,6 +46,21 @@ public sealed class ChangeInitialPasswordValidator : AbstractValidator<ChangeIni
     }
 }
 
+public sealed class ChangePasswordValidator : AbstractValidator<ChangePasswordCommand>
+{
+    public ChangePasswordValidator()
+    {
+        RuleFor(x => x.Passwords.CurrentPassword).NotEmpty().WithMessage("Nhập mật khẩu hiện tại.");
+        RuleFor(x => x.Passwords.NewPassword)
+            .NotEmpty().WithMessage("Nhập mật khẩu mới.")
+            .MinimumLength(8).WithMessage("Mật khẩu mới tối thiểu 8 ký tự.")
+            .MaximumLength(64).WithMessage("Mật khẩu mới tối đa 64 ký tự.")
+            .Matches("[a-zA-Z]").WithMessage("Mật khẩu mới phải có chữ.")
+            .Matches("[0-9]").WithMessage("Mật khẩu mới phải có số.")
+            .NotEqual(x => x.Passwords.CurrentPassword).WithMessage("Mật khẩu mới phải khác mật khẩu hiện tại.");
+    }
+}
+
 internal static class UserMapping
 {
     public static CurrentUserDto ToCurrentUserDto(this User user) => new()
@@ -52,7 +70,8 @@ internal static class UserMapping
         FullName = user.FullName,
         Email = user.Email,
         Role = user.Role.ToString(),
-        MustChangePassword = user.MustChangePassword
+        MustChangePassword = user.MustChangePassword,
+        AvatarUrl = AvatarPolicy.UrlFor(user.AvatarObjectKey)
     };
 }
 
@@ -185,6 +204,31 @@ public sealed class ChangeInitialPasswordHandler(IUserRepository users, IPasswor
         user.SecurityStamp = Guid.NewGuid().ToString("N");
         user.UpdatedAt = now;
         await users.UpdateAsync(user, cancellationToken);
+
+        return ApiResponse<AuthenticatedSession>.Ok(new AuthenticatedSession(user.ToCurrentUserDto(), tokens.Issue(user)), "Đã đổi mật khẩu");
+    }
+}
+
+// Đổi mật khẩu thông thường ở Hồ sơ: xoay SecurityStamp để mọi token cũ hết hiệu lực,
+// phiên hiện tại nhận cookie mới (PDR-002). Tài khoản chờ kích hoạt dùng luồng OTP riêng.
+public sealed class ChangePasswordHandler(IUserRepository users, IPasswordHasher hasher, IAccessTokenIssuer tokens, TimeProvider clock)
+    : IRequestHandler<ChangePasswordCommand, ApiResponse<AuthenticatedSession>>
+{
+    public async Task<ApiResponse<AuthenticatedSession>> Handle(ChangePasswordCommand request, CancellationToken cancellationToken)
+    {
+        var user = await users.GetByIdAsync(request.UserId, cancellationToken);
+        if (user is null || !user.IsActive)
+            return ApiResponse<AuthenticatedSession>.Fail("Tài khoản không tồn tại hoặc đã bị vô hiệu hóa");
+        if (!hasher.Verify(request.Passwords.CurrentPassword!, user.PasswordHash))
+            return ApiResponse<AuthenticatedSession>.Fail("Mật khẩu hiện tại không đúng.");
+        if (request.Passwords.NewPassword == user.UserCode)
+            return ApiResponse<AuthenticatedSession>.Fail("Mật khẩu mới phải khác mã người dùng.");
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        user.PasswordHash = hasher.Hash(request.Passwords.NewPassword!);
+        user.SecurityStamp = Guid.NewGuid().ToString("N");
+        user.UpdatedAt = now;
+        await users.UpdateAsync(user, user.Audit(user.Id, UserAuditActions.PasswordChanged, now), cancellationToken);
 
         return ApiResponse<AuthenticatedSession>.Ok(new AuthenticatedSession(user.ToCurrentUserDto(), tokens.Issue(user)), "Đã đổi mật khẩu");
     }
