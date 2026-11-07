@@ -102,7 +102,8 @@ public sealed class UserManagementTests
     {
         var result = await Create(new CreateUserDto
         {
-            UserCode = "X01", FullName = "Người Mới", Email = "moi@truong.edu.vn", Role = role, ClassName = className
+            UserCode = "X01", FullName = "Người Mới", Email = "moi@truong.edu.vn", Role = role, ClassName = className,
+            Password = role == "Student" ? null : "matkhau123"
         });
 
         Assert.Equal(UserCommandStatus.Rejected, result.Status);
@@ -289,5 +290,37 @@ public sealed class UserManagementTests
         var history = await _sender.Send(new GetUserAuditQuery(Guid.NewGuid()));
         Assert.True(history.Success);
         Assert.Empty(history.Data!);
+    }
+
+    [Fact]
+    public async Task StaffAccountsUseThePasswordSetByAcademicAffairsAndNeedNoActivation()
+    {
+        var result = await Create(new CreateUserDto
+        {
+            UserCode = "GV0101", FullName = "Phạm Văn Tuấn", Email = "tuan@truong.edu.vn", Role = "Lecturer",
+            Department = "CNPM", Password = "MatKhauGv1"
+        });
+
+        Assert.Equal(UserCommandStatus.Created, result.Status);
+        Assert.False(result.Response.Data!.MustChangePassword);
+        var user = _users.All().Single(u => u.UserCode == "GV0101");
+        Assert.Equal("hash:MatKhauGv1", user.PasswordHash);
+        Assert.DoesNotContain(_users.Audits, a => a.Details?.Contains("MatKhauGv1") == true);
+    }
+
+    [Theory]
+    [InlineData("AcademicAffairs", null, "Nhập mật khẩu cho giảng viên/giáo vụ.")]
+    [InlineData("Lecturer", "ngan1", "Mật khẩu tối thiểu 8 ký tự.")]
+    [InlineData("AcademicAffairs", "chiconchu", "Mật khẩu phải có cả chữ và số.")]
+    [InlineData("Lecturer", "gv0102ab", "Mật khẩu phải khác mã người dùng.")]
+    [InlineData("Student", "matkhau123", "Không đặt mật khẩu cho sinh viên; mật khẩu ban đầu là MSSV.")]
+    public async Task PasswordRulesDependOnTheRole(string role, string? password, string expected)
+    {
+        var ex = await Assert.ThrowsAsync<ValidationException>(() => Create(new CreateUserDto
+        {
+            UserCode = "gv0102ab", FullName = "Người Mới", Email = "moi@truong.edu.vn", Role = role,
+            ClassName = "KTPM2022", Department = "CNPM", Password = password
+        }));
+        Assert.Contains(expected, ex.Errors.Select(e => e.ErrorMessage));
     }
 }

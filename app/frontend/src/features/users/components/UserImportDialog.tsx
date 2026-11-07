@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ApiError } from '@/api/request';
 import { Download, FileText, FileUp, X } from 'lucide-react';
 import { buildCsv, downloadCsv } from '@/lib/csv';
+import { xlsxToCsvFile } from '@/lib/xlsx';
 import { downloadErrorReport } from '@/features/users/csvReport';
 import type { UserService } from '@/features/users/services/userService';
 import type { UserImportReport } from '@/types/user';
@@ -17,6 +18,28 @@ interface UserImportDialogProps {
 }
 
 type Step = 'choose' | 'preview' | 'done';
+// Giáo vụ chọn định dạng trước khi chọn tệp; Excel được đổi sang CSV ở trình duyệt
+// rồi gửi qua cùng API nhập CSV (PDR-055), nên quy tắc và báo cáo giống hệt.
+type ImportFormat = 'xlsx' | 'csv';
+
+const FORMAT: Record<
+  ImportFormat,
+  { label: string; ext: string; accept: string; inputLabel: string }
+> = {
+  xlsx: {
+    label: 'Excel (.xlsx)',
+    ext: '.xlsx',
+    accept:
+      '.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    inputLabel: 'Tệp Excel',
+  },
+  csv: {
+    label: 'CSV (.csv)',
+    ext: '.csv',
+    accept: '.csv,text/csv',
+    inputLabel: 'Tệp CSV',
+  },
+};
 
 // Giới hạn theo PDR-004 (cũng được backend kiểm tra lại).
 const MAX_BYTES = 2 * 1024 * 1024;
@@ -70,6 +93,12 @@ const COLUMNS: Array<{
     label: 'Tùy chọn',
     desc: 'Học hàm, học vị của giảng viên (TS., ThS.…)',
   },
+  {
+    key: 'password',
+    need: 'role',
+    label: 'GV, Giáo vụ',
+    desc: 'Mật khẩu đăng nhập, bắt buộc với giảng viên và giáo vụ (8–64 ký tự, có chữ và số, khác mã); để trống với sinh viên. Xóa tệp sau khi nhập.',
+  },
 ];
 
 const STEP_LABEL: Record<Step, string> = {
@@ -97,6 +126,7 @@ function downloadTemplate() {
           'KTPM2022.1',
           '',
           '',
+          '',
         ],
       ],
     ),
@@ -108,7 +138,7 @@ interface Problem {
   hint?: string;
 }
 
-// Nhập CSV hai bước: chọn tệp (tự kiểm tra ngay) → xem trước (từng dòng, không
+// Nhập Excel/CSV hai bước: chọn định dạng và tệp (tự kiểm tra ngay) → xem trước (từng dòng, không
 // ghi) → nhập các dòng hợp lệ, bỏ qua dòng lỗi và cho tải báo cáo lỗi.
 export const UserImportDialog: React.FC<UserImportDialogProps> = ({
   userService,
@@ -116,7 +146,10 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
   onImported,
 }) => {
   const [step, setStep] = useState<Step>('choose');
+  const [format, setFormat] = useState<ImportFormat>('csv');
+  // Tệp CSV gửi lên máy chủ (Excel đã đổi sang CSV) và tên tệp người dùng chọn.
   const [file, setFile] = useState<File | null>(null);
+  const [sourceName, setSourceName] = useState('');
   const [report, setReport] = useState<UserImportReport | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
   const [busy, setBusy] = useState(false);
@@ -166,11 +199,18 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
     setFile(null);
     setProblem(null);
     if (!picked) return;
-    if (!picked.name.toLowerCase().endsWith('.csv')) {
-      setProblem({
-        title: `Tệp "${picked.name}" không phải tệp CSV nên không đọc được.`,
-        hint: 'Trong Excel, chọn Lưu dưới dạng, kiểu CSV UTF-8 (.csv), rồi chọn lại tệp vừa lưu.',
-      });
+    if (!picked.name.toLowerCase().endsWith(FORMAT[format].ext)) {
+      setProblem(
+        format === 'csv'
+          ? {
+              title: `Tệp "${picked.name}" không phải tệp CSV nên không đọc được.`,
+              hint: 'Chọn định dạng Excel (.xlsx) ở trên để nhập thẳng tệp Excel, hoặc lưu tệp dạng CSV UTF-8 (.csv) rồi chọn lại.',
+            }
+          : {
+              title: `Tệp "${picked.name}" không phải tệp Excel .xlsx.`,
+              hint: 'Chọn định dạng CSV (.csv) ở trên nếu tệp là CSV, hoặc lưu tệp dạng Sổ làm việc Excel (.xlsx) rồi chọn lại.',
+            },
+      );
       return;
     }
     if (picked.size > MAX_BYTES) {
@@ -180,8 +220,18 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
       });
       return;
     }
-    setFile(picked);
-    void preview(picked);
+    setSourceName(picked.name);
+    if (format === 'csv') {
+      setFile(picked);
+      void preview(picked);
+      return;
+    }
+    void run(async () => {
+      const converted = await xlsxToCsvFile(picked);
+      setFile(converted);
+      setReport(await userService.importPreview(converted));
+      setStep('preview');
+    });
   };
 
   const commit = () =>
@@ -205,7 +255,7 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
       setReport(result);
       setStep('done');
       // Không dòng nào được nhập thì không báo thành công.
-      if (result.importedRows > 0) onImported(result, file.name);
+      if (result.importedRows > 0) onImported(result, sourceName || file.name);
     });
 
   const backToChoose = () => {
@@ -233,7 +283,7 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
       >
         <div className="usr-dialog-head">
           <div className="usr-dialog-title">
-            <h2 id="import-title">Nhập người dùng từ CSV</h2>
+            <h2 id="import-title">Nhập người dùng từ Excel hoặc CSV</h2>
             <span style={{ fontWeight: 600 }}>{STEP_LABEL[step]}</span>
           </div>
           <button
@@ -259,6 +309,24 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
 
         {step === 'choose' && (
           <>
+            <div role="group" aria-label="Định dạng tệp" className="usr-format">
+              <span className="usr-format-label">Định dạng tệp</span>
+              {(['xlsx', 'csv'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  aria-pressed={format === f}
+                  className="usr-role-btn"
+                  disabled={busy}
+                  onClick={() => {
+                    setFormat(f);
+                    setProblem(null);
+                  }}
+                >
+                  {FORMAT[f].label}
+                </button>
+              ))}
+            </div>
             <div
               className={`usr-drop${problem?.hint ? ' is-bad' : ''}${dragging ? ' is-over' : ''}`}
               onDragOver={(e) => {
@@ -274,17 +342,21 @@ export const UserImportDialog: React.FC<UserImportDialogProps> = ({
               }}
             >
               <FileUp size={32} strokeWidth={1.8} aria-hidden="true" />
-              <span className="usr-drop-title">Kéo thả file .csv vào đây</span>
+              <span className="usr-drop-title">
+                Kéo thả file {FORMAT[format].ext} vào đây
+              </span>
               <span className="usr-drop-hint">
-                UTF-8, dòng đầu là tên cột, tối đa 2.000 dòng mỗi lần
+                {format === 'csv'
+                  ? 'UTF-8, dòng đầu là tên cột, tối đa 2.000 dòng mỗi lần'
+                  : 'Đọc trang tính đầu tiên, dòng đầu là tên cột, tối đa 2.000 dòng mỗi lần'}
               </span>
               <input
                 ref={fileInputRef}
                 id="import-file"
                 type="file"
                 className="usr-visually-hidden"
-                accept=".csv,text/csv"
-                aria-label="Tệp CSV"
+                accept={FORMAT[format].accept}
+                aria-label={FORMAT[format].inputLabel}
                 tabIndex={-1}
                 onChange={(e) => {
                   pickFile(e.target.files?.[0]);

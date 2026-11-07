@@ -63,6 +63,7 @@ const emptyInput = (role: UserRole = 'Student'): UserInput => ({
   className: '',
   department: '',
   academicTitle: '',
+  password: '',
 });
 
 const inputFromUser = (user: ManagedUser): UserInput => ({
@@ -74,6 +75,7 @@ const inputFromUser = (user: ManagedUser): UserInput => ({
   className: user.className ?? '',
   department: user.department ?? '',
   academicTitle: user.academicTitle ?? '',
+  password: '',
 });
 
 interface TextFieldProps {
@@ -121,6 +123,8 @@ const TextField: React.FC<TextFieldProps> = ({
         placeholder={placeholder}
         readOnly={readOnly}
         autoFocus={autoFocus}
+        // Không để trình duyệt điền sẵn mật khẩu của chính Giáo vụ.
+        autoComplete={type === 'password' ? 'new-password' : undefined}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         onChange={(e) => onChange(field, e.target.value)}
@@ -202,7 +206,7 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
         users.filter((u) => u.id !== user?.id),
         { checkCode: !editing },
       ),
-      ...validateUserInput(values),
+      ...validateUserInput(values, { creating: !editing }),
     };
     setErrors(found);
     if (Object.keys(found).length > 0) {
@@ -262,7 +266,7 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
             <p>
               {user
                 ? `${user.fullName} · ${ROLE_LABEL[user.role]}`
-                : 'Tạo từng tài khoản. Để tạo nhiều tài khoản cùng lúc, dùng Nhập CSV.'}
+                : 'Tạo từng tài khoản. Để tạo nhiều tài khoản cùng lúc, dùng Nhập Excel/CSV.'}
             </p>
           </div>
           <button
@@ -401,6 +405,19 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
                 />
               </>
             )}
+            {!editing && role !== 'Student' && (
+              <TextField
+                field="password"
+                label="Mật khẩu"
+                type="password"
+                value={values.password}
+                error={errors.password}
+                hint="8–64 ký tự, có chữ và số, khác mã. Người dùng đăng nhập ngay bằng mật khẩu này, không cần mã xác thực email."
+                required
+                wide
+                onChange={setField}
+              />
+            )}
           </div>
 
           <div className="usr-note usr-note-soft">
@@ -408,7 +425,9 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
             <span>
               {editing
                 ? 'Khi người dùng quên mật khẩu và không nhận được email, giáo vụ bấm Đặt lại mật khẩu: đặt về mã người dùng hoặc nhập mật khẩu mới.'
-                : 'Hệ thống tự tạo mã định danh và lưu mật khẩu ban đầu (bằng mã người dùng) dưới dạng mã hóa. Người dùng phải đổi mật khẩu ở lần đăng nhập đầu.'}
+                : role === 'Student'
+                  ? 'Hệ thống tự tạo mã định danh và lưu mật khẩu ban đầu (bằng MSSV) dưới dạng mã hóa. Sinh viên đổi mật khẩu kèm mã xác thực gửi qua email ở lần đăng nhập đầu.'
+                  : 'Giảng viên, giáo vụ đăng nhập ngay bằng mật khẩu bạn đặt, không cần mã xác thực email. Gửi mật khẩu cho người dùng qua kênh an toàn; họ tự đổi ở Hồ sơ.'}
             </span>
           </div>
 

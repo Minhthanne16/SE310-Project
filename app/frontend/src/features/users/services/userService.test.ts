@@ -60,6 +60,7 @@ const input = (overrides: Partial<UserInput> = {}): UserInput => ({
   className: 'KTPM2022',
   department: '',
   academicTitle: '',
+  password: 'bo-qua-voi-sinh-vien',
   ...overrides,
 });
 
@@ -84,7 +85,20 @@ it('creates a user with normalized fields and nulls for empty ones', async () =>
       className: 'KTPM2022',
       department: null,
       academicTitle: null,
+      password: null,
     },
+  });
+});
+
+it('sends the password set by staff only for lecturers and staff accounts', async () => {
+  const fetchMock = stubFetch(201, { success: true, message: '', data: user });
+  await createUserService().create(
+    input({ role: 'Lecturer', department: 'CNPM', password: ' MatKhau1 ' }),
+  );
+  // Mật khẩu gửi nguyên văn, không cắt khoảng trắng.
+  expect(sent(fetchMock).body).toMatchObject({
+    role: 'Lecturer',
+    password: ' MatKhau1 ',
   });
 });
 

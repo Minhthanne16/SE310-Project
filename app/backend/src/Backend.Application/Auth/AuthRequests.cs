@@ -41,8 +41,10 @@ public sealed class ChangeInitialPasswordValidator : AbstractValidator<ChangeIni
             .Matches("[a-zA-Z]").WithMessage("Mật khẩu mới phải có chữ.")
             .Matches("[0-9]").WithMessage("Mật khẩu mới phải có số.")
             .NotEqual(x => x.Passwords.CurrentPassword).WithMessage("Mật khẩu mới phải khác mật khẩu hiện tại.");
+        // Chỉ sinh viên gửi mã (PDR-055); handler kiểm tra mã theo vai trò.
         RuleFor(x => x.Passwords.ActivationCode)
-            .Matches("^[0-9]{6}$").WithMessage("Mã xác thực gồm 6 chữ số.");
+            .Matches("^[0-9]{6}$").WithMessage("Mã xác thực gồm 6 chữ số.")
+            .When(x => !string.IsNullOrEmpty(x.Passwords.ActivationCode));
     }
 }
 
@@ -118,8 +120,8 @@ public sealed class SendActivationCodeHandler(
     public async Task<SendActivationCodeResult> Handle(SendActivationCodeCommand request, CancellationToken cancellationToken)
     {
         var user = await users.GetByIdAsync(request.UserId, cancellationToken);
-        if (user is not { IsActive: true, MustChangePassword: true })
-            return Fail(SendActivationCodeStatus.NotRequired, "Tài khoản không cần kích hoạt");
+        if (user is not { IsActive: true, MustChangePassword: true } || !PasswordPolicy.UsesActivationCode(user.Role))
+            return Fail(SendActivationCodeStatus.NotRequired, "Tài khoản không cần kích hoạt bằng mã xác thực");
 
         var now = clock.GetUtcNow().UtcDateTime;
         if (user.ActivationCodeSentAt is { } sentAt && now < sentAt + ActivationCodePolicy.ResendCooldown)
@@ -185,17 +187,21 @@ public sealed class ChangeInitialPasswordHandler(IUserRepository users, IPasswor
             return ApiResponse<AuthenticatedSession>.Fail("Mật khẩu mới phải khác mật khẩu ban đầu (mã người dùng)");
 
         var now = clock.GetUtcNow().UtcDateTime;
-        if (user.ActivationCodeHash is null || user.ActivationCodeExpiresAt is not { } expiresAt || now > expiresAt)
-            return ApiResponse<AuthenticatedSession>.Fail("Mã xác thực đã hết hạn hoặc chưa được gửi. Hãy bấm Gửi lại mã.");
-        if (!hasher.Verify(request.Passwords.ActivationCode, user.ActivationCodeHash))
+        // OTP email chỉ áp dụng cho sinh viên; giảng viên, giáo vụ đổi mật khẩu lần đầu không cần mã (PDR-055).
+        if (PasswordPolicy.UsesActivationCode(user.Role))
         {
-            user.ActivationCodeFailedAttempts++;
-            var exhausted = user.ActivationCodeFailedAttempts >= ActivationCodePolicy.MaxFailedAttempts;
-            if (exhausted) user.ClearActivationCode();
-            await users.UpdateAsync(user, cancellationToken);
-            return ApiResponse<AuthenticatedSession>.Fail(exhausted
-                ? "Nhập sai mã quá số lần cho phép. Hãy bấm Gửi lại mã để nhận mã mới."
-                : "Mã xác thực không đúng");
+            if (user.ActivationCodeHash is null || user.ActivationCodeExpiresAt is not { } expiresAt || now > expiresAt)
+                return ApiResponse<AuthenticatedSession>.Fail("Mã xác thực đã hết hạn hoặc chưa được gửi. Hãy bấm Gửi lại mã.");
+            if (!hasher.Verify(request.Passwords.ActivationCode, user.ActivationCodeHash))
+            {
+                user.ActivationCodeFailedAttempts++;
+                var exhausted = user.ActivationCodeFailedAttempts >= ActivationCodePolicy.MaxFailedAttempts;
+                if (exhausted) user.ClearActivationCode();
+                await users.UpdateAsync(user, cancellationToken);
+                return ApiResponse<AuthenticatedSession>.Fail(exhausted
+                    ? "Nhập sai mã quá số lần cho phép. Hãy bấm Gửi lại mã để nhận mã mới."
+                    : "Mã xác thực không đúng");
+            }
         }
 
         user.PasswordHash = hasher.Hash(request.Passwords.NewPassword);

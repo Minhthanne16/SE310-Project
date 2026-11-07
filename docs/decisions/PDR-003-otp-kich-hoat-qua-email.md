@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận
+Đã chấp nhận. Từ 2026-11-07 chỉ áp dụng cho **sinh viên**: giảng viên, giáo vụ dùng mật khẩu Giáo vụ đặt và không cần OTP ([PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)).
 
 ## Ngày
 
@@ -28,7 +28,7 @@ Thẻ công việc backend yêu cầu "mã hóa mật khẩu BCrypt/Argon2 và t
 | `POST /api/auth/activation-code` | Token chờ đổi mật khẩu | 200 `ApiResponse<{ expiresAt, resendAvailableAt }>` | 400 tài khoản không cần kích hoạt, 429 gửi lại quá sớm, 503 không gửi được email |
 | `POST /api/auth/change-initial-password` `{ currentPassword, newPassword, activationCode }` | Token chờ đổi mật khẩu | 200 như PDR-002 | 400 khi mã sai, hết hạn hoặc chưa gửi, hoặc vi phạm quy tắc mật khẩu |
 
-`activationCode` phải đúng 6 chữ số. Sai mật khẩu hiện tại không bị tính vào số lần nhập sai mã.
+`activationCode` phải đúng 6 chữ số với sinh viên; giảng viên, giáo vụ gửi rỗng và `activation-code` trả 400 "không cần kích hoạt" ([PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)). Sai mật khẩu hiện tại không bị tính vào số lần nhập sai mã.
 
 ## Hệ quả
 

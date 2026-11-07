@@ -1295,3 +1295,18 @@
   cursor: pointer;
   text-decoration: underline;
 }
+
+/* Chọn định dạng tệp nhập (Excel hoặc CSV), PDR-055 */
+.usr-format {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.usr-format-label {
+  flex-basis: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}

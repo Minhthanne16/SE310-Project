@@ -51,6 +51,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [activationCode, setActivationCode] = useState('');
+  // Chỉ sinh viên kích hoạt bằng mã email; giảng viên, giáo vụ đổi mật khẩu lần đầu
+  // không cần mã (PDR-055). Không biết vai trò thì giữ bước mã cho an toàn.
+  const [needsCode, setNeedsCode] = useState(true);
   const [codeNotice, setCodeNotice] = useState<string | null>(null);
   const [resendAt, setResendAt] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -143,8 +146,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         setNewPassword('');
         setConfirmPassword('');
         setActivationCode('');
+        const pending = await authService.getCurrentUser().catch(() => null);
+        const studentFlow = !pending || pending.role === 'Student';
+        setNeedsCode(studentFlow);
         setStep('changePassword');
-        void sendCode();
+        if (studentFlow) void sendCode();
         return;
       }
       const user = await authService.getCurrentUser();
@@ -163,7 +169,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
   const rules = getNewPasswordRules(newPassword, confirmPassword, password);
   const rulesPassed = rules.every((r) => r.passed);
-  const codeValid = /^[0-9]{6}$/.test(activationCode);
+  const codeValid = !needsCode || /^[0-9]{6}$/.test(activationCode);
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,7 +181,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       await authService.changeInitialPassword(
         password,
         newPassword,
-        activationCode,
+        needsCode ? activationCode : '',
       );
       const user = await authService.getCurrentUser();
       if (!user) {
@@ -315,9 +321,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 <span className="login-badge">Lần đăng nhập đầu tiên</span>
                 <h2>Đổi mật khẩu để tiếp tục</h2>
                 <p>
-                  Tài khoản {email} đang dùng mật khẩu ban đầu. Nhập mã xác thực
-                  đã gửi tới email và đặt mật khẩu mới để vào hệ thống. Bước này
-                  không bỏ qua được.
+                  {needsCode
+                    ? `Tài khoản ${email} đang dùng mật khẩu ban đầu. Nhập mã xác thực đã gửi tới email và đặt mật khẩu mới để vào hệ thống. Bước này không bỏ qua được.`
+                    : `Tài khoản ${email} đang dùng mật khẩu ban đầu. Đặt mật khẩu mới để vào hệ thống. Bước này không bỏ qua được.`}
                 </p>
               </div>
 
@@ -328,54 +334,62 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 </div>
               )}
 
-              <div className="login-field">
-                <div className="login-field-row">
-                  <label htmlFor="activation-code">Mã xác thực</label>
-                  <button
-                    type="button"
-                    className="login-link-button"
-                    onClick={sendCode}
-                    disabled={resendSeconds > 0}
-                    aria-label="Gửi lại mã"
-                  >
-                    {resendSeconds > 0
-                      ? `Gửi lại mã (${resendSeconds}s)`
-                      : 'Gửi lại mã'}
-                  </button>
-                </div>
-                <input
-                  id="activation-code"
-                  inputMode="numeric"
-                  autoComplete="one-time-code"
-                  maxLength={6}
-                  placeholder="6 chữ số"
-                  value={activationCode}
-                  aria-invalid={
-                    activationCode.length > 0 && !codeValid ? true : undefined
-                  }
-                  aria-describedby={describedBy(
-                    'activation-format',
-                    codeNotice && 'activation-notice',
-                    error && 'change-error',
-                  )}
-                  onChange={(e) => {
-                    setActivationCode(e.target.value.replace(/[^0-9]/g, ''));
-                    setError(null);
-                  }}
-                />
-                <p id="activation-format" className="login-hint">
-                  Mã gồm đúng 6 chữ số.
-                </p>
-                {codeNotice && (
-                  <p
-                    id="activation-notice"
-                    role="status"
-                    className="login-hint"
-                  >
-                    {codeNotice}
-                  </p>
-                )}
-              </div>
+              {needsCode && (
+                <>
+                  <div className="login-field">
+                    <div className="login-field-row">
+                      <label htmlFor="activation-code">Mã xác thực</label>
+                      <button
+                        type="button"
+                        className="login-link-button"
+                        onClick={sendCode}
+                        disabled={resendSeconds > 0}
+                        aria-label="Gửi lại mã"
+                      >
+                        {resendSeconds > 0
+                          ? `Gửi lại mã (${resendSeconds}s)`
+                          : 'Gửi lại mã'}
+                      </button>
+                    </div>
+                    <input
+                      id="activation-code"
+                      inputMode="numeric"
+                      autoComplete="one-time-code"
+                      maxLength={6}
+                      placeholder="6 chữ số"
+                      value={activationCode}
+                      aria-invalid={
+                        activationCode.length > 0 && !codeValid
+                          ? true
+                          : undefined
+                      }
+                      aria-describedby={describedBy(
+                        'activation-format',
+                        codeNotice && 'activation-notice',
+                        error && 'change-error',
+                      )}
+                      onChange={(e) => {
+                        setActivationCode(
+                          e.target.value.replace(/[^0-9]/g, ''),
+                        );
+                        setError(null);
+                      }}
+                    />
+                    <p id="activation-format" className="login-hint">
+                      Mã gồm đúng 6 chữ số.
+                    </p>
+                    {codeNotice && (
+                      <p
+                        id="activation-notice"
+                        role="status"
+                        className="login-hint"
+                      >
+                        {codeNotice}
+                      </p>
+                    )}
+                  </div>
+                </>
+              )}
 
               <div className="login-field">
                 <label htmlFor="new-password">Mật khẩu mới</label>

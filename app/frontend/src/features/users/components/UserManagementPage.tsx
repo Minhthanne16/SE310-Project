@@ -258,7 +258,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
             onClick={openImport}
           >
             <FileUp size={16} aria-hidden="true" />
-            Nhập CSV
+            Nhập Excel/CSV
           </button>
           <button
             type="button"

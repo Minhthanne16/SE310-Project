@@ -80,6 +80,23 @@ public sealed class CreateUserValidator : AbstractValidator<CreateUserCommand>
         RuleFor(x => x.User.Role)
             .Must(r => UserFields.TryParseRole(r, out _)).WithMessage("Vai trò phải là Student, Lecturer hoặc AcademicAffairs.");
         RuleFor(x => x.User).SetValidator(new UserProfileValidator());
+
+        // PDR-055: Giáo vụ đặt mật khẩu cho giảng viên, giáo vụ; sinh viên dùng MSSV và kích hoạt OTP.
+        When(x => UserFields.TryParseRole(x.User.Role, out var role) && !PasswordPolicy.UsesActivationCode(role), () =>
+        {
+            RuleFor(x => x.User.Password ?? string.Empty).Cascade(CascadeMode.Stop)
+                .NotEmpty().WithMessage("Nhập mật khẩu cho giảng viên/giáo vụ.")
+                .MinimumLength(PasswordPolicy.MinLength).WithMessage($"Mật khẩu tối thiểu {PasswordPolicy.MinLength} ký tự.")
+                .MaximumLength(PasswordPolicy.MaxLength).WithMessage($"Mật khẩu tối đa {PasswordPolicy.MaxLength} ký tự.")
+                .Must(PasswordPolicy.HasLetterAndDigit).WithMessage("Mật khẩu phải có cả chữ và số.")
+                .Must((x, pw) => !PasswordPolicy.SameAsUserCode(pw, x.User.UserCode ?? string.Empty))
+                .WithMessage("Mật khẩu phải khác mã người dùng.")
+                .OverridePropertyName("password");
+        });
+        When(x => UserFields.TryParseRole(x.User.Role, out var role) && PasswordPolicy.UsesActivationCode(role), () =>
+            RuleFor(x => x.User.Password).Empty()
+                .WithMessage("Không đặt mật khẩu cho sinh viên; mật khẩu ban đầu là MSSV.")
+                .OverridePropertyName("password"));
     }
 }
 
@@ -227,9 +244,10 @@ public sealed class CreateUserHandler(IUserRepository users, IPasswordHasher has
             ClassName = role == UserRole.Student ? UserFields.Clean(input.ClassName) : null,
             Department = role == UserRole.Lecturer ? UserFields.Clean(input.Department) : null,
             AcademicTitle = role == UserRole.Lecturer ? UserFields.Clean(input.AcademicTitle) : null,
-            // Như tài khoản nhập CSV (PDR-004): mật khẩu ban đầu là mã, bắt đổi khi đăng nhập lần đầu.
+            // Sinh viên: mật khẩu ban đầu là mã, kích hoạt bằng OTP (PDR-004). Giảng viên, giáo vụ: dùng
+            // ngay mật khẩu Giáo vụ đặt, không cần kích hoạt (PDR-055).
             IsActive = true,
-            MustChangePassword = true,
+            MustChangePassword = PasswordPolicy.UsesActivationCode(role),
             CreatedAt = clock.GetUtcNow().UtcDateTime
         };
 
@@ -240,7 +258,9 @@ public sealed class CreateUserHandler(IUserRepository users, IPasswordHasher has
         if (await users.GetByEmailAsync(user.Email, cancellationToken) is not null)
             return UserCommandResult<UserDto>.Duplicate(UserFields.Email);
 
-        user.PasswordHash = hasher.HashInitialPassword(user.UserCode);
+        user.PasswordHash = PasswordPolicy.UsesActivationCode(role)
+            ? hasher.HashInitialPassword(user.UserCode)
+            : hasher.Hash(input.Password!);
         try
         {
             await users.AddAsync(user, user.Audit(request.ActorId, UserAuditActions.Created, user.CreatedAt,
