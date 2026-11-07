@@ -26,7 +26,8 @@ public record UpdateRoundCommand(Guid Id, RoundInfoDto Round) : IRequest<RoundRe
 public record UpdateRoundMilestonesCommand(Guid Id, RoundMilestonesInputDto Input) : IRequest<RoundResult<RoundDto>>;
 public record OpenRoundCommand(Guid Id) : IRequest<RoundResult<RoundDto>>;
 public record FinishRoundCommand(Guid Id) : IRequest<RoundResult<RoundDto>>;
-public record PublishRoundTopicsCommand(Guid Id) : IRequest<RoundResult<RoundDto>>;
+// ActorId: Giáo vụ công bố, ghi vào lịch sử từng đề tài (null = Hệ thống).
+public record PublishRoundTopicsCommand(Guid Id, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
 public record DeleteRoundCommand(Guid Id) : IRequest<RoundResult<bool>>;
 // Kind là "lecturers" hoặc "students" (đoạn cuối của URL).
 public record GetPeopleQuery(string Kind) : IRequest<ApiResponse<IReadOnlyList<ParticipantDto>>>;
@@ -52,6 +53,8 @@ public static class RoundRules
     public const string MilestonesIncompleteMessage = "Chưa mở được đợt: các mốc thời gian chưa đầy đủ hoặc chưa hợp lệ.";
     public const string OnlyRunningPublishMessage = "Chỉ công bố được danh sách đề tài của đợt đang diễn ra.";
     public const string AlreadyPublishedMessage = "Danh sách đề tài của đợt đã được công bố.";
+    public static string PendingTopicsMessage(int count) =>
+        $"Còn {count} đề tài chưa công bố kết quả. Công bố hết ở trang Kết quả rồi mới kết thúc được đợt. Đề tài Không có nhóm không tính.";
     // Đồng bộ với frontend (roundUtils.registrationEndedMessage).
     public static string RegistrationEndedMessage(DateOnly end) =>
         $"Đã hết thời gian sinh viên đăng ký đề tài (hết ngày {end:dd/MM/yyyy}). Sửa mốc “Công bố đề tài · SV đăng ký” ở tab Cấu hình rồi công bố.";
@@ -59,8 +62,8 @@ public static class RoundRules
 
     public static readonly string[] TopicStatuses =
         [
-            "Chưa đăng ký", "Chờ GV duyệt", "Đã đăng ký", "Bị từ chối", "Đang thực hiện", "Đã cho điểm", "Đã hoàn tất",
-            "Không đủ điều kiện công bố", "Không có nhóm"
+            "Chưa đăng ký", "Chờ GV duyệt", "Đã đăng ký", "Bị từ chối", "Đang thực hiện", "Đang cho điểm", "Đã cho điểm",
+            "Có lệch điểm", "Đã xác nhận", "Đã hoàn tất", "Không đủ điều kiện công bố", "Không có nhóm"
         ];
 
     private static readonly Dictionary<MilestoneKey, string> MilestoneNames = new()

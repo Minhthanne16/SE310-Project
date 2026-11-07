@@ -1,13 +1,14 @@
-import { nameKey } from '@/features/rounds/roundValidation';
 import {
   roundService as defaultRoundService,
   type RoundService,
 } from '@/features/rounds/services/roundService';
 import { DEMO_TODAY } from '@/features/rounds/services/roundSeed';
 import { finalLockClosed } from '@/features/rounds/roundUtils';
+import { createApiTopicService } from '@/features/topics/services/topicApiService';
 import { seedTopics } from '@/features/topics/services/topicSeed';
 import {
   confirmResultBlocker,
+  filterTopics,
   deviationRecipients,
   lecturerLoads,
   publishResultBlocker,
@@ -96,29 +97,7 @@ export function createTopicService(
     return { roundId, roundName: round.name, roundStatus: round.status };
   };
 
-  const matches = (t: Topic, f: TopicFilters): boolean => {
-    const keyword = nameKey(f.search ?? '');
-    return (
-      t.roundId === f.roundId &&
-      (!f.supervisorId || t.supervisor.id === f.supervisorId) &&
-      (!f.status || f.status === 'Tất cả' || t.status === f.status) &&
-      (!keyword ||
-        nameKey(t.title).includes(keyword) ||
-        nameKey(t.code).includes(keyword) ||
-        nameKey(t.supervisor.name).includes(keyword) ||
-        (t.reviewer !== null && nameKey(t.reviewer.name).includes(keyword)) ||
-        t.group.some(
-          (m) =>
-            nameKey(m.name).includes(keyword) ||
-            nameKey(m.code).includes(keyword),
-        ))
-    );
-  };
-
-  const filtered = (f: TopicFilters) =>
-    topics
-      .filter((t) => matches(t, f))
-      .sort((a, b) => a.code.localeCompare(b.code));
+  const filtered = (f: TopicFilters) => filterTopics(topics, f);
 
   const stamp = (at: string) => `${at}T09:00:00`;
 
@@ -295,4 +274,8 @@ export function createTopicService(
   };
 }
 
-export const topicService: TopicService = createTopicService();
+// Đề tài thật đi cùng đợt thật: cùng cờ NEXT_PUBLIC_ROUNDS_API với roundService.
+export const topicService: TopicService =
+  process.env.NEXT_PUBLIC_ROUNDS_API === 'true'
+    ? createApiTopicService()
+    : createTopicService();

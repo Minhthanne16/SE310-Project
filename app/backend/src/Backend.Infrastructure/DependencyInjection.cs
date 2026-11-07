@@ -7,6 +7,7 @@ using Backend.Infrastructure.Repositories.Evaluations;
 using Backend.Infrastructure.Repositories.Notifications;
 using Backend.Infrastructure.Repositories.Products;
 using Backend.Infrastructure.Repositories.Rounds;
+using Backend.Infrastructure.Repositories.Topics;
 using Backend.Infrastructure.Repositories.Users;
 using Backend.Infrastructure.Integrations.Authentication;
 using Backend.Infrastructure.Integrations.Email;
@@ -35,6 +36,8 @@ public static class DependencyInjection
         services.AddScoped<IPasswordResetRepository, PasswordResetRepository>();
         services.AddScoped<IEvaluationTemplateRepository, EvaluationTemplateRepository>();
         services.AddScoped<IRoundRepository, RoundRepository>();
+        services.AddScoped<ITopicRepository, TopicRepository>();
+        services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();

@@ -66,7 +66,7 @@ public sealed class RoundsController(ISender sender) : ControllerBase
     [HttpPost("{id:guid}/topics/publish")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<RoundDto>>> PublishTopics(Guid id, CancellationToken cancellationToken) =>
-        ToAction(await sender.Send(new PublishRoundTopicsCommand(id), cancellationToken));
+        ToAction(await sender.Send(new PublishRoundTopicsCommand(id, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
 
     // Trả 200 kèm ApiResponse<bool> (không phải 204) vì frontend luôn đọc thân JSON.
     [HttpDelete("{id:guid}")]
