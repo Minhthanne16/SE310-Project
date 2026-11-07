@@ -144,15 +144,15 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G3.1 — Đề tài do Giảng viên quản lý và Giáo vụ công bố
 
-- [ ] Xây entity/API/UI cho tạo/sửa/xóa/công bố đề tài và lịch sử.
-- [ ] Áp dụng quyền GVHD/Giáo vụ, trạng thái trước/sau công bố và cảnh báo tải đề tài không chặn lưu.
+- [x] Xây entity/API/UI cho tạo/sửa/xóa/công bố đề tài và lịch sử.
+- [x] Áp dụng quyền GVHD/Giáo vụ, trạng thái trước/sau công bố và cảnh báo tải đề tài không chặn lưu.
 
-**Nghiệm thu:** Đề tài đã có nhóm không thể bị xóa/sửa trái quy tắc; SV chỉ xem sau công bố.
+**Nghiệm thu:** Đề tài đã có nhóm không thể bị xóa/sửa trái quy tắc; SV chỉ xem sau công bố. *(2026-11-07: [PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md).)*
 
 #### G3.2 — Nhóm và ghi danh đề tài công bố
 
-- [ ] Bảo đảm nhóm 1–2 SV, đúng đợt, đúng đại diện và một SV/một nhóm/đợt.
-- [ ] Dùng ràng buộc DB + transaction cho tranh chấp hai nhóm nhận một đề tài và idempotency.
+- [x] Bảo đảm nhóm 1–2 SV, đúng đợt, đúng đại diện và một SV/một nhóm/đợt. *(backend, PDR-054)*
+- [x] Dùng ràng buộc DB + transaction cho tranh chấp hai nhóm nhận một đề tài và idempotency. *(backend, PDR-054)*
 - [ ] Thực hiện hủy theo PDR-047, giữ nhóm/đại diện/lịch sử để ghi danh lại.
 
 **Nghiệm thu:** Một trong hai yêu cầu đồng thời thắng; hủy ở mốc không hợp lệ bị chặn và thao tác lặp không làm sai trạng thái.

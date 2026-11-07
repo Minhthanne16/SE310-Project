@@ -58,6 +58,7 @@ const BACK_HREF = '/giao-vu/de-tai';
 
 const CATEGORY_CLASS: Record<HistoryCategory, string> = {
   'Trạng thái': 'tpc-cat-status',
+  'Nội dung': '',
   Nhóm: 'tpc-cat-group',
   'Bài nộp': '',
   'Phân công': 'tpc-cat-assign',

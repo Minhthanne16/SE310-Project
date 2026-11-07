@@ -40,7 +40,7 @@ public sealed class RoundTopicSummaryDto
 {
     public int Total { get; set; }
     // Số đề tài chưa ở trạng thái kết thúc (Đã hoàn tất, Không đủ điều kiện công bố, Không có nhóm,
-    // Bị từ chối đều không tính; PDR-031). Luôn 0 cho tới khi có mô-đun đề tài; khi đó phải tính từ dữ liệu.
+    // Bị từ chối đều không tính; PDR-031). Tính từ đề tài thật theo trạng thái hiển thị (PDR-049, PDR-053).
     public int PendingResultCount { get; set; }
     public Dictionary<string, int> ByStatus { get; set; } = [];
 }

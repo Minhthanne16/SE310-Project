@@ -236,6 +236,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Chưa công bố danh sách thì không Đề xuất.
+- Ghi chú triển khai (2026-11-07, `/sv/dang-ky`): dùng `GET /api/topics/published` ([PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); dựng ba tình trạng đợt (chưa có đợt, chưa có danh sách, danh sách). Bảng có tìm kiếm, mỗi dòng mở xem mô tả/yêu cầu. Ghi danh (P03-S02), đề xuất (P03-S03) và tình trạng nhóm của sinh viên chưa làm; trang ghi rõ "đang được xây dựng".
 
 ## Chi tiết đề tài và ghi danh
 - **Vai trò:** Sinh viên
@@ -256,6 +257,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Lỗi cần có: đề tài vừa có nhóm khác nhận, MSSV không hợp lệ, đợt đã đóng.
+- Ghi chú triển khai (2026-11-07): backend ghi danh/hủy/tình trạng nhóm đã có theo [PDR-054](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md) (người bấm ghi danh là đại diện; thành viên thứ hai nhập mã vào nhóm ngay và nhận thông báo; nhóm cũ chỉ đại diện ghi danh lại). Màn `/sv/dang-ky/[id]` chưa dựng; nối vào hợp đồng PDR-054.
 
 ## Đề xuất đề tài (overlay)
 - **Vai trò:** Sinh viên
@@ -366,6 +368,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Đến khi giáo vụ công bố danh sách: thêm, sửa, xóa tự do.
 - Sau công bố: không thêm, không xóa; chỉ sửa mô tả và yêu cầu của đề tài chưa có nhóm; khóa Lĩnh vực.
 - Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận; mức tối thiểu và tối đa của đợt chỉ cảnh báo, không chặn (giáo vụ thấy cờ "GV vượt mức").
+- Ghi chú triển khai (2026-11-07, `/gv/de-tai`): dùng API thật `/api/topics/mine`, `POST|PUT|DELETE /api/topics` theo [PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md). Ô lọc Đợt chọn đợt GV tham gia (mặc định đợt Đang diễn ra). Form là hộp thoại: Tên đề tài, Lĩnh vực (gợi ý sẵn, nhập tự do), Mô tả, Yêu cầu; sau công bố tên và lĩnh vực bị khóa. Gửi được từ ngày bắt đầu mốc "GV gửi đề tài"; dòng giai đoạn và dải cảnh báo mức đề tài hiện trên bảng. Chưa có: lịch sử đề tài của GV (màn Lịch sử đề tài).
 
 ## Đề xuất từ sinh viên
 - **Vai trò:** Giảng viên
@@ -628,6 +631,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Công bố xong thì GV không thêm hoặc xóa đề tài.
 - Trạng thái đề tài thêm hai giá trị: `Không đủ điều kiện công bố` (kết thúc riêng, PDR-011) và `Không có nhóm` (đề tài đã công bố nhưng hết hạn đăng ký mà chưa có nhóm; kết thúc, không chặn kết thúc đợt).
 
+- Ghi chú triển khai (2026-11-07): khi `NEXT_PUBLIC_ROUNDS_API=true`, màn này, Chi tiết đề tài và tab Đề tài của Chi tiết đợt dùng `GET /api/topics?roundId=` và `GET /api/topics/{id}` ([PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); nhóm, phản biện, hội đồng, bài nộp, điểm còn trống tới các phase sau; lịch sử có thêm nhóm "Nội dung". Ghi chú cũ dưới đây mô tả kho demo.
 - Ghi chú triển khai frontend (`/giao-vu/de-tai`): chạy trên kho demo trong bộ nhớ (`app/frontend/src/features/topics/`, mất khi tải lại trang; "hôm nay" cố định ở 2026-10-26), chờ endpoint đề xuất `GET /api/topics?roundId=…`, `GET /api/topics/{id}`. Việc công bố nay lưu ở `Round.topicsPublishedAt` (xem Chi tiết đợt); `TopicService` không còn `publish`, `exportCsv`, giai đoạn đề tài hay `canPublish`. Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận (không tính Chờ GV duyệt, Bị từ chối). **Mức tối thiểu và tối đa đề tài mỗi GV lấy theo từng đợt (Cấu hình), chỉ để cảnh báo, không chặn.** Bảng 6 cột (Đề tài, GV hướng dẫn, GV phản biện, Hội đồng, Khóa luận, Trạng thái), 8 dòng/trang, tìm kiếm cả tên/mã sinh viên và giảng viên.
 
 ## Chi tiết đề tài (giáo vụ)

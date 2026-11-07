@@ -9,15 +9,17 @@ Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xu�
 **Tham chiếu:** [BUSINESS_RULES — Đợt, đề tài và nhóm](../requirements/BUSINESS_RULES.md), [DESIGN — GV Đề tài/Giáo vụ Đề tài](../DESIGN/03-dac-ta-man-hinh.md).
 
 **Công việc:**
-- [ ] Đặc tả trường đề tài, thời điểm thêm/sửa/xóa, điều kiện công bố danh sách và cảnh báo mức đề tài GV.
-- [ ] Triển khai API/UI theo quyền GVHD và Giáo vụ; xuất danh sách từ dữ liệu thật; giữ trạng thái và lịch sử.
-- [ ] Chặn thay đổi bị cấm sau công bố; mức tối thiểu/tối đa chỉ cảnh báo theo BUSINESS_RULES.
+- [x] Đặc tả trường đề tài, thời điểm thêm/sửa/xóa, điều kiện công bố danh sách và cảnh báo mức đề tài GV.
+- [x] Triển khai API/UI theo quyền GVHD và Giáo vụ; xuất danh sách từ dữ liệu thật; giữ trạng thái và lịch sử.
+- [x] Chặn thay đổi bị cấm sau công bố; mức tối thiểu/tối đa chỉ cảnh báo theo BUSINESS_RULES.
 
 **Acceptance criteria:**
-- [ ] Trước/sau công bố cho phép đúng thao tác; danh sách SV chỉ hiện khi đã công bố; cảnh báo vượt mức không cản lưu.
-- [ ] Đề tài đã có nhóm không bị xóa/sửa trái quy tắc.
+- [x] Trước/sau công bố cho phép đúng thao tác; danh sách SV chỉ hiện khi đã công bố; cảnh báo vượt mức không cản lưu.
+- [x] Đề tài đã có nhóm không bị xóa/sửa trái quy tắc.
 
 **Verification:** Test ma trận quyền–trạng thái–trường sửa và một luồng GV gửi → Giáo vụ công bố → SV xem.
+
+*(2026-11-07: hợp đồng và lựa chọn triển khai tại [PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md); test handler (SQLite) và API cho ma trận quyền–trạng thái–trường sửa; luồng GV gửi → Giáo vụ công bố → SV xem chạy trên trình duyệt với PostgreSQL local. "Đề tài đã có nhóm" mới kiểm bằng trạng thái lưu, nhóm thật thuộc P03-S02.)*
 
 **Dependencies:** `CP02`.
 
@@ -26,17 +28,19 @@ Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xu�
 **Tham chiếu:** [BUSINESS_RULES](../requirements/BUSINESS_RULES.md), [WORKFLOWS — Mở đợt và đăng ký](../requirements/WORKFLOWS.md), [DESIGN — Chi tiết đề tài](../DESIGN/03-dac-ta-man-hinh.md), [PDR-047](../decisions/PDR-047-huy-ghi-danh-de-tai-cong-bo.md), R15.
 
 **Công việc:**
-- [ ] Xác thực thành viên thuộc đợt, chưa có nhóm, đúng 1–2 người, có một đại diện; chỉ người được phép gửi yêu cầu.
-- [ ] Thiết kế ràng buộc database/transaction cho cạnh tranh ghi danh và thao tác lặp; lưu lịch sử từng thành viên.
+- [x] Xác thực thành viên thuộc đợt, chưa có nhóm, đúng 1–2 người, có một đại diện; chỉ người được phép gửi yêu cầu.
+- [x] Thiết kế ràng buộc database/transaction cho cạnh tranh ghi danh và thao tác lặp; lưu lịch sử từng thành viên.
 - [ ] Dựng tìm kiếm, chi tiết, xác nhận ghi danh và lỗi đề tài vừa được nhóm khác nhận.
 - [ ] Triển khai hủy ghi danh theo PDR-047: bất kỳ thành viên nào thao tác khi đợt còn mở đăng ký và nhóm chưa nộp đề cương; giữ nguyên nhóm và lịch sử, đề tài quay lại `Chưa đăng ký`.
 
 **Acceptance criteria:**
-- [ ] Hai nhóm ghi danh đồng thời: đúng một nhóm thành công; nhóm thua nhận lỗi rõ và có thể làm mới danh sách.
+- [x] Hai nhóm ghi danh đồng thời: đúng một nhóm thành công; nhóm thua nhận lỗi rõ và có thể làm mới danh sách.
 - [ ] Một SV không thuộc hai nhóm trong cùng đợt; sau tải lại không thay đổi đại diện hay thành viên.
 - [ ] Thành viên không phải đại diện cũng hủy được cho cả nhóm trong thời hạn hợp lệ; sau hủy nhóm/đại diện không đổi, đề tài trống trở lại, lần ghi danh cũ tra cứu được đúng quyền; hủy lặp không làm sai trạng thái.
 
 **Verification:** Test tích hợp đồng thời và ranh giới 1/2/3 thành viên, quyền SV khác đợt, thao tác lặp.
+
+*(2026-11-07: backend xong theo [PDR-054](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md), có test handler/API và E2E đồng thời trên PostgreSQL local. Còn: giao diện sinh viên (mục dựng tìm kiếm/chi tiết/xác nhận) và điều kiện "chưa nộp đề cương" khi hủy, chờ mô-đun nộp bài P04; hai tiêu chí còn lại chưa tick vì cần kiểm tra trên giao diện.)*
 
 **Dependencies:** `P03-S01`, `P02-S03`; PDR-047 đã chốt thao tác hủy ghi danh.
 

@@ -4,6 +4,8 @@ using Backend.Domain.Interfaces;
 using FluentValidation;
 using MediatR;
 
+using Backend.Application.Topics;
+
 namespace Backend.Application.Rounds;
 
 public sealed class GetPeopleValidator : AbstractValidator<GetPeopleQuery>
@@ -67,7 +69,7 @@ internal static class RoundMapping
     public static bool CanView(ThesisRound round, Guid? viewerId) =>
         viewerId is not { } id || (round.Status != RoundStatus.Draft && round.Participants.Any(p => p.UserId == id));
 
-    public static RoundDto ToDto(ThesisRound round) => new()
+    public static RoundDto ToDto(ThesisRound round, DateOnly today) => new()
     {
         Id = round.Id,
         Name = round.Name,
@@ -90,12 +92,24 @@ internal static class RoundMapping
         }).ToList(),
         LecturerIds = IdsOf(round, ParticipantKind.Lecturer),
         StudentIds = IdsOf(round, ParticipantKind.Student),
-        LockedStudentIds = [],
-        TopicSummary = new RoundTopicSummaryDto
-        {
-            ByStatus = RoundRules.TopicStatuses.ToDictionary(s => s, _ => 0)
-        }
+        // PDR-030: sinh viên đã có nhóm trong đợt không gỡ được.
+        LockedStudentIds = round.GroupMembers.Select(m => m.StudentId).Distinct().ToList(),
+        TopicSummary = TopicSummary(round, today)
     };
+
+    // Đếm theo trạng thái hiển thị (PDR-049); đề tài chưa ở trạng thái kết thúc chặn kết thúc đợt (PDR-031).
+    public static RoundTopicSummaryDto TopicSummary(ThesisRound round, DateOnly today)
+    {
+        var statuses = round.Topics.Select(t => TopicRules.Effective(t, round, today)).ToList();
+        var byStatus = RoundRules.TopicStatuses.ToDictionary(s => s, _ => 0);
+        foreach (var status in statuses) byStatus[TopicRules.Label(status)] = byStatus.GetValueOrDefault(TopicRules.Label(status)) + 1;
+        return new RoundTopicSummaryDto
+        {
+            Total = statuses.Count,
+            PendingResultCount = statuses.Count(s => !TopicRules.IsSettled(s)),
+            ByStatus = byStatus
+        };
+    }
 
     public static List<Guid> IdsOf(ThesisRound round, ParticipantKind kind) =>
         round.Participants.Where(p => p.Kind == kind).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
@@ -142,7 +156,7 @@ internal static class RoundMapping
     }
 }
 
-public sealed class GetRoundsHandler(IRoundRepository repository)
+public sealed class GetRoundsHandler(IRoundRepository repository, TimeProvider clock)
     : IRequestHandler<GetRoundsQuery, ApiResponse<IReadOnlyList<RoundDto>>>
 {
     public async Task<ApiResponse<IReadOnlyList<RoundDto>>> Handle(GetRoundsQuery request, CancellationToken cancellationToken)
@@ -151,11 +165,11 @@ public sealed class GetRoundsHandler(IRoundRepository repository)
         var search = string.IsNullOrWhiteSpace(request.Search) ? null : request.Search.Trim().ToLowerInvariant();
         var rounds = await repository.ListAsync(status, request.Program?.Trim(), search, cancellationToken);
         return ApiResponse<IReadOnlyList<RoundDto>>.Ok(rounds
-            .Where(r => RoundMapping.CanView(r, request.ViewerId)).Select(RoundMapping.ToDto).ToList());
+            .Where(r => RoundMapping.CanView(r, request.ViewerId)).Select(r => RoundMapping.ToDto(r, RoundRules.TodayVietnam(clock))).ToList());
     }
 }
 
-public sealed class GetRoundHandler(IRoundRepository repository)
+public sealed class GetRoundHandler(IRoundRepository repository, TimeProvider clock)
     : IRequestHandler<GetRoundQuery, RoundResult<RoundDto>>
 {
     public async Task<RoundResult<RoundDto>> Handle(GetRoundQuery request, CancellationToken cancellationToken)
@@ -163,11 +177,11 @@ public sealed class GetRoundHandler(IRoundRepository repository)
         var round = await repository.GetByIdAsync(request.Id, cancellationToken);
         return round is null || !RoundMapping.CanView(round, request.ViewerId)
             ? RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage)
-            : RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round));
+            : RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)));
     }
 }
 
-public sealed class CreateRoundHandler(IRoundRepository repository)
+public sealed class CreateRoundHandler(IRoundRepository repository, TimeProvider clock)
     : IRequestHandler<CreateRoundCommand, RoundResult<RoundDto>>
 {
     public async Task<RoundResult<RoundDto>> Handle(CreateRoundCommand request, CancellationToken cancellationToken)
@@ -194,7 +208,7 @@ public sealed class CreateRoundHandler(IRoundRepository repository)
         {
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.DuplicateNameMessage);
         }
-        return new(RoundResultStatus.Created, ApiResponse<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã tạo đợt"));
+        return new(RoundResultStatus.Created, ApiResponse<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã tạo đợt"));
     }
 }
 
@@ -229,7 +243,7 @@ public sealed class UpdateRoundHandler(IRoundRepository repository, TimeProvider
         {
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.DuplicateNameMessage);
         }
-        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã lưu thông tin đợt");
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã lưu thông tin đợt");
     }
 }
 
@@ -268,7 +282,7 @@ public sealed class UpdateRoundMilestonesHandler(IRoundRepository repository, Ti
         }
         round.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         await repository.SaveAsync(cancellationToken);
-        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã lưu cấu hình mốc");
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã lưu cấu hình mốc");
     }
 }
 
@@ -310,7 +324,7 @@ public sealed class OpenRoundHandler(IRoundRepository repository, TimeProvider c
         round.UpdatedAt = now;
         repository.AddNotifications(RoundMapping.OpenedNotifications(round, now));
         await repository.SaveAsync(cancellationToken);
-        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã mở đợt");
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã mở đợt");
     }
 }
 
@@ -325,14 +339,16 @@ public sealed class FinishRoundHandler(IRoundRepository repository, TimeProvider
         if (round.Status != RoundStatus.Running)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.OnlyRunningFinishMessage);
 
-        // PDR-031 (chỉ kết thúc khi mọi đề tài đã kết thúc; Không có nhóm không tính) chưa kiểm tra được vì
-        // chưa có bảng đề tài (pendingResultCount luôn 0); khi có mô-đun đề tài phải chặn tại đây.
+        // PDR-031/048: chỉ kết thúc khi mọi đề tài đã ở trạng thái kết thúc; Không có nhóm không tính.
+        var pending = RoundMapping.TopicSummary(round, RoundRules.TodayVietnam(clock)).PendingResultCount;
+        if (pending > 0)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.PendingTopicsMessage(pending));
         var now = clock.GetUtcNow().UtcDateTime;
         round.Status = RoundStatus.Finished;
         round.FinishedAt = now;
         round.UpdatedAt = now;
         await repository.SaveAsync(cancellationToken);
-        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã kết thúc đợt");
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã kết thúc đợt");
     }
 }
 
@@ -355,13 +371,17 @@ public sealed class PublishRoundTopicsHandler(IRoundRepository repository, TimeP
         if (registrationEnd is { } end && end < RoundRules.TodayVietnam(clock))
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.RegistrationEndedMessage(end));
 
-        // TODO(mô-đun đề tài): chặn khi đợt chưa có đề tài nào (cần ít nhất 1 đề tài) và khi công bố
-        // phải chuyển đề tài sang trạng thái sinh viên đăng ký được.
+        if (round.Topics.Count == 0)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, TopicRules.NoTopicsToPublishMessage);
+
+        // Đề tài GV gửi đã ở Chưa đăng ký nên sinh viên ghi danh được ngay; chỉ ghi lịch sử công bố.
         var now = clock.GetUtcNow().UtcDateTime;
         round.TopicsPublishedAt = now;
         round.UpdatedAt = now;
+        foreach (var topic in round.Topics)
+            topic.History.Add(TopicMapping.History(topic, request.ActorId, TopicHistoryCategories.Status, "Công bố danh sách đề tài", now));
         await repository.SaveAsync(cancellationToken);
-        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), "Đã công bố danh sách đề tài");
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã công bố danh sách đề tài");
     }
 }
 
@@ -502,7 +522,7 @@ public sealed class CheckParticipantsHandler(IRoundRepository repository)
     }
 }
 
-public sealed class AddParticipantsHandler(IRoundRepository repository)
+public sealed class AddParticipantsHandler(IRoundRepository repository, TimeProvider clock)
     : IRequestHandler<AddParticipantsCommand, RoundResult<AddParticipantsResultDto>>
 {
     public async Task<RoundResult<AddParticipantsResultDto>> Handle(AddParticipantsCommand request, CancellationToken cancellationToken)
@@ -522,14 +542,14 @@ public sealed class AddParticipantsHandler(IRoundRepository repository)
 
         return RoundResult<AddParticipantsResultDto>.Ok(new AddParticipantsResultDto
         {
-            Round = RoundMapping.ToDto(round),
+            Round = RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)),
             Results = entries.Select(e => e.Check).ToList(),
             Added = added.Count
         }, added.Count > 0 ? $"Đã thêm {added.Count} {RoundRules.KindLabel(kind)}" : "Không có mã hợp lệ để thêm");
     }
 }
 
-public sealed class RemoveParticipantHandler(IRoundRepository repository)
+public sealed class RemoveParticipantHandler(IRoundRepository repository, TimeProvider clock)
     : IRequestHandler<RemoveParticipantCommand, RoundResult<RoundDto>>
 {
     public async Task<RoundResult<RoundDto>> Handle(RemoveParticipantCommand request, CancellationToken cancellationToken)
@@ -545,9 +565,14 @@ public sealed class RemoveParticipantHandler(IRoundRepository repository)
         if (participant is null)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, $"Không có {RoundRules.KindLabel(kind)} này trong đợt.");
 
-        // PDR-030: sinh viên đã có dữ liệu trong đợt (đề tài, điểm...) không được gỡ. Chưa có dữ liệu
-        // nghiệp vụ nào trong hệ thống nên chưa khóa ai; khi có mô-đun đề tài phải chặn tại đây.
+        // PDR-030: người đã có dữ liệu nghiệp vụ trong đợt không được gỡ: GV có đề tài, SV đã có nhóm.
+        if (kind == ParticipantKind.Lecturer && round.Topics.Any(t => t.SupervisorId == request.UserId))
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
+                "Giảng viên đã có đề tài trong đợt nên không gỡ được khỏi đợt.");
+        if (kind == ParticipantKind.Student && round.GroupMembers.Any(m => m.StudentId == request.UserId))
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
+                "Sinh viên đã có nhóm trong đợt nên không gỡ được khỏi đợt.");
         await repository.RemoveParticipantAsync(participant, cancellationToken);
-        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round), $"Đã gỡ {RoundRules.KindLabel(kind)} khỏi đợt");
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), $"Đã gỡ {RoundRules.KindLabel(kind)} khỏi đợt");
     }
 }
