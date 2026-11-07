@@ -199,6 +199,33 @@ public sealed class UserImportTests
         Assert.StartsWith("Tệp vượt quá", report.Message);
     }
 
+    [Fact]
+    public async Task ImportRecordsACreatedHistoryEntryPerAccountFromTheImportingStaff()
+    {
+        var staff = Guid.NewGuid();
+        await _sender.Send(new ImportUsersCommand(Encoding.UTF8.GetBytes(string.Join('\n', Header,
+            "22520001,Nguyễn Văn An,an@truong.edu.vn,Student,,KTPM2022,,",
+            "GV0001,Trần Thị Bình,binh@truong.edu.vn,Lecturer,,,CNPM,TS",
+            "22520002,,loi@truong.edu.vn,Student,,KTPM2022,,")), "ds.csv", Commit: true, ActorId: staff));
+
+        var created = _users.All();
+        Assert.Equal(2, _users.Audits.Count);
+        Assert.All(_users.Audits, a =>
+        {
+            Assert.Equal(UserAuditActions.Created, a.Action);
+            Assert.Equal(staff, a.ActorUserId);
+            Assert.Contains("\"source\":\"csv\"", a.Details);
+            Assert.Contains(created, u => u.Id == a.TargetUserId && u.UserCode == a.TargetUserCode);
+        });
+    }
+
+    [Fact]
+    public async Task PreviewRecordsNoHistory()
+    {
+        await Preview("22520001,Nguyễn Văn An,an@truong.edu.vn,Student,,KTPM2022,,");
+        Assert.Empty(_users.Audits);
+    }
+
     private Task<ApiResponse<UserImportReportDto>> Preview(params string[] rows) => Send(rows, commit: false);
     private Task<ApiResponse<UserImportReportDto>> Import(params string[] rows) => Send(rows, commit: true);
 

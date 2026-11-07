@@ -84,7 +84,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Chỉ gửi liên kết cho tài khoản đang hoạt động và đã kích hoạt; tài khoản vô hiệu hóa/chưa kích hoạt cũng thấy phản hồi trung tính và được hướng dẫn liên hệ Giáo vụ theo [PDR-045](../decisions/PDR-045-chi-tai-khoan-hoat-dong-da-kich-hoat-duoc-tu-dat-lai-mat-khau.md).
 - Phản hồi màn hình và API không phân biệt email có/không có tài khoản theo [PDR-037](../decisions/PDR-037-phan-hoi-trung-tinh-khi-quen-mat-khau.md); giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn theo [PDR-044](../decisions/PDR-044-gioi-han-yeu-cau-dat-lai-mat-khau.md) vẫn dùng phản hồi trung tính khi bị giới hạn.
 - Không dùng được email: giáo vụ đặt lại mật khẩu (xem Người dùng).
-- Ghi chú triển khai frontend: mới có bản "đang xây dựng" trong layout của artboard; 7 trạng thái của artboard (gửi liên kết, đặt mật khẩu mới, hết hạn, đã dùng, đã đổi) chưa làm vì backend chưa có API quên mật khẩu.
+- Ghi chú triển khai (2026-11-07): dùng API thật theo [PDR-052](../decisions/PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md). Liên kết dạng `/quen-mat-khau#token=…`; trang đọc token rồi xóa khỏi thanh địa chỉ. Có đủ các màn Nhập email · Đã gửi liên kết (nút gửi lại đếm 60 giây) · Đặt mật khẩu mới · Liên kết hết hạn · Liên kết đã được dùng · Đã đổi mật khẩu; thêm màn "Liên kết không còn hiệu lực" cho token sai hoặc tài khoản đã thay đổi sau khi phát. Màn nhập email luôn có ghi chú liên hệ Giáo vụ khi không nhận được thư (PDR-045), giống nhau cho mọi email.
 
 ## Trang chủ
 - **Vai trò:** Chung (3 vai trò)
@@ -606,6 +606,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Người dùng vẫn tự đổi mật khẩu ở Hồ sơ.
 - Ghi chú giao diện (theo artboard): trạng thái chờ đổi mật khẩu hiển thị là "Chưa đăng nhập"; nhập CSV tự kiểm tra khi chọn tệp rồi hiện bước 2/2, đóng hộp thoại khi nhập xong; thông báo thao tác là dải trong trang (không toast); có "Lưu và thêm tiếp"; Giáo vụ không tự xóa/vô hiệu hóa mình. Chưa có API thông báo nên không có câu "đã gửi thông báo cho người dùng" sau khi đặt lại mật khẩu. Nhập theo PDR-004 là CSV (artboard ghi Excel).
 - Ghi chú triển khai frontend (`/giao-vu/nguoi-dung`): mọi thao tác dùng API thật `/api/users` (hợp đồng tại [PDR-004](../decisions/PDR-004-nhap-tai-khoan-csv.md#hợp-đồng-api-quản-lý-tài-khoản)); không còn kho demo. Danh sách tải một lần, lọc/tìm/phân trang ở client. Lỗi trùng mã/email đến từ phản hồi 409 của máy chủ. Backend tự chặn Giáo vụ xóa hoặc vô hiệu hóa chính mình; nút trên giao diện chỉ là lớp ngoài. Đặt lại mật khẩu làm phiên đang mở của người đó hết hiệu lực và bắt đổi mật khẩu kèm OTP ở lần đăng nhập kế tiếp.
+- Lịch sử thao tác (2026-11-07, chưa có artboard): mục "Lịch sử thao tác" thu gọn trong ngăn Sửa, chỉ tải khi mở; hiện tên thao tác, người thực hiện, thời điểm và giá trị trước/sau từng trường. Tài khoản tạo bằng nhập CSV ghi "Tạo tài khoản bằng nhập CSV" (xem [PDR-052](../decisions/PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md)).
 
 ## Quản lý đề tài
 - **Vai trò:** Giáo vụ

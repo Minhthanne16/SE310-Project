@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Ban, KeyRound, Lock, RotateCcw, Trash2, X } from 'lucide-react';
 import { ROLE_LABEL } from '@/features/auth/roles';
+import { UserAuditHistory } from '@/features/users/components/UserAuditHistory';
 import {
   DuplicateUserError,
   type UserService,
@@ -410,6 +411,10 @@ export const UserFormDrawer: React.FC<UserFormDrawerProps> = ({
                 : 'Hệ thống tự tạo mã định danh và lưu mật khẩu ban đầu (bằng mã người dùng) dưới dạng mã hóa. Người dùng phải đổi mật khẩu ở lần đăng nhập đầu.'}
             </span>
           </div>
+
+          {user && (
+            <UserAuditHistory userId={user.id} userService={userService} />
+          )}
 
           <div className="usr-drawer-foot">
             {user && (

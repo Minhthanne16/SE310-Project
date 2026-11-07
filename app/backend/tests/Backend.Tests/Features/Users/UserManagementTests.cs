@@ -261,4 +261,33 @@ public sealed class UserManagementTests
         Assert.True(user.MustChangePassword);
         Assert.DoesNotContain(_users.Audits, a => a.Details?.Contains("matkhau123") == true);
     }
+
+    [Fact]
+    public async Task HistoryListsEntriesNewestFirstWithTheActorName()
+    {
+        var created = (await Create(NewStudent())).Response.Data!;
+        var edit = EditOf(created);
+        edit.FullName = "Nguyễn Văn Ân";
+        await _sender.Send(new UpdateUserCommand(_staff.Id, created.Id, edit));
+        await _sender.Send(new SetUserStatusCommand(_staff.Id, created.Id, false));
+
+        var history = await _sender.Send(new GetUserAuditQuery(created.Id));
+
+        Assert.True(history.Success);
+        Assert.Equal(
+            [UserAuditActions.Disabled, UserAuditActions.Updated, UserAuditActions.Created],
+            history.Data!.Select(e => e.Action));
+        Assert.All(history.Data!, e => Assert.Equal(_staff.FullName, e.ActorName));
+        var update = history.Data![1].Details!.Value;
+        Assert.Equal("Nguyễn Văn An", update.GetProperty("fullName").GetProperty("from").GetString());
+        Assert.Equal("Nguyễn Văn Ân", update.GetProperty("fullName").GetProperty("to").GetString());
+    }
+
+    [Fact]
+    public async Task HistoryOfAnAccountWithoutEntriesIsEmpty()
+    {
+        var history = await _sender.Send(new GetUserAuditQuery(Guid.NewGuid()));
+        Assert.True(history.Success);
+        Assert.Empty(history.Data!);
+    }
 }

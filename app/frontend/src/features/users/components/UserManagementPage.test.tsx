@@ -311,6 +311,52 @@ const importReport: UserImportReport = {
   ],
 };
 
+it('loads the account history only when it is opened and can retry', async () => {
+  const service = createFakeUserService();
+  const getAudit = vi
+    .fn()
+    .mockRejectedValueOnce(new ApiError('Máy chủ bận.', 503))
+    .mockResolvedValueOnce([
+      {
+        id: 'e2',
+        action: 'Updated',
+        actorUserId: 'staff',
+        actorName: 'Phạm Minh Châu',
+        details: { fullName: { from: 'Nguyễn Văn Ann', to: 'Nguyễn Văn An' } },
+        createdAt: '2026-11-07T08:30:00Z',
+      },
+      {
+        id: 'e1',
+        action: 'Created',
+        actorUserId: 'staff',
+        actorName: 'Phạm Minh Châu',
+        details: { role: 'Student', source: 'csv' },
+        createdAt: '2026-11-07T08:00:00Z',
+      },
+    ]);
+  await renderPage({ ...service, getAudit });
+  edit('Nguyễn Văn An');
+  expect(getAudit).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByText('Lịch sử thao tác'));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Máy chủ bận.');
+  fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
+
+  expect(await screen.findByText('Sửa thông tin')).toBeInTheDocument();
+  expect(
+    screen.getByText('Họ tên: Nguyễn Văn Ann → Nguyễn Văn An'),
+  ).toBeInTheDocument();
+  expect(screen.getByText('Tạo tài khoản bằng nhập CSV')).toBeInTheDocument();
+  expect(screen.getAllByText('Bởi Phạm Minh Châu')).toHaveLength(2);
+  expect(getAudit).toHaveBeenCalledTimes(2);
+});
+
+it('does not show history while adding a user', async () => {
+  await renderPage();
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm người dùng' }));
+  expect(screen.queryByText('Lịch sử thao tác')).not.toBeInTheDocument();
+});
+
 it('previews a CSV with per-row errors, then imports the valid rows', async () => {
   const service = createFakeUserService();
   const importPreview = vi.fn().mockResolvedValue(importReport);

@@ -97,11 +97,11 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G1.2 — Quản trị tài khoản và khôi phục truy cập
 
-- [ ] Hoàn chỉnh API/UI danh sách, tạo, sửa, vô hiệu hóa/kích hoạt, xóa khi không có tham chiếu và reset bởi Giáo vụ.
-- [ ] Thực hiện quên mật khẩu trung tính, token một lần 30 phút, rate-limit PDR-044 và điều kiện nhận thư PDR-045.
-- [ ] Audit các thao tác quản trị; token/mật khẩu không được xuất hiện trong log, response hay file xuất.
+- [x] Hoàn chỉnh API/UI danh sách, tạo, sửa, vô hiệu hóa/kích hoạt, xóa khi không có tham chiếu và reset bởi Giáo vụ.
+- [x] Thực hiện quên mật khẩu trung tính, token một lần 30 phút, rate-limit PDR-044 và điều kiện nhận thư PDR-045.
+- [x] Audit các thao tác quản trị; token/mật khẩu không được xuất hiện trong log, response hay file xuất.
 
-**Nghiệm thu:** Tài khoản có tham chiếu không bị xóa vật lý; phiên cũ bị thu hồi sau reset/đổi mật khẩu; giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn có test biên.
+**Nghiệm thu:** Tài khoản có tham chiếu không bị xóa vật lý; phiên cũ bị thu hồi sau reset/đổi mật khẩu; giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn có test biên. *(2026-11-07: hợp đồng PDR-004/PDR-052.)*
 
 #### G1.3 — Hoàn tất hồ sơ và avatar trên MinIO
 

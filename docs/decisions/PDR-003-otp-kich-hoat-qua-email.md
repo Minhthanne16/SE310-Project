@@ -19,7 +19,7 @@ Thẻ công việc backend yêu cầu "mã hóa mật khẩu BCrypt/Argon2 và t
 3. **Thông số:** OTP gồm 6 chữ số, sinh bằng bộ sinh số ngẫu nhiên mật mã. Mã có hiệu lực 10 phút và chỉ dùng một lần; nhập sai 5 lần thì mã bị hủy; mỗi lần gửi lại phải cách nhau ít nhất 60 giây. Chỉ lưu bản băm BCrypt của mã, không ghi mã ra log.
 4. **Gửi lỗi:** nếu SMTP lỗi, mã vừa tạo bị hủy và API trả 503, người dùng có thể gửi lại ngay.
 5. **Môi trường gửi mail:** khi dev bằng Compose, mail mặc định đi vào Mailpit local (`http://localhost:8025`), không gửi ra Internet. Muốn gửi thật thì đặt `SMTP_*` trong `.env` theo Gmail App Password (`smtp.gmail.com:587`, STARTTLS). Không commit App Password.
-6. **Ngoài phạm vi:** luồng Quên mật khẩu vẫn dùng liên kết 30 phút theo thiết kế, chưa hiện thực.
+6. **Ngoài phạm vi:** luồng Quên mật khẩu vẫn dùng liên kết 30 phút theo thiết kế (hiện thực ngày 2026-11-07, xem [PDR-052](PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md)).
 
 ## Hợp đồng API
 

@@ -18,9 +18,10 @@ public static class UserImportPolicy
 }
 
 // Commit=false: chỉ kiểm tra và xem trước. Commit=true: kiểm tra lại rồi tạo các dòng hợp lệ.
-public record ImportUsersCommand(byte[] Content, string FileName, bool Commit) : IRequest<ApiResponse<UserImportReportDto>>;
+// ActorId là Giáo vụ nhập tệp, ghi vào lịch sử từng tài khoản được tạo.
+public record ImportUsersCommand(byte[] Content, string FileName, bool Commit, Guid ActorId = default) : IRequest<ApiResponse<UserImportReportDto>>;
 
-public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordHasher hasher)
+public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordHasher hasher, TimeProvider clock)
     : IRequestHandler<ImportUsersCommand, ApiResponse<UserImportReportDto>>
 {
     private static readonly string[] RequiredColumns = ["user_code", "full_name", "email", "role"];
@@ -104,6 +105,7 @@ public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordH
         {
             var hashes = new string[validRows.Count];
             Parallel.For(0, validRows.Count, i => hashes[i] = hasher.HashInitialPassword(validRows[i].Dto.UserCode));
+            var now = clock.GetUtcNow().UtcDateTime;
             var newUsers = validRows.Select((r, i) => new User
             {
                 UserCode = r.Dto.UserCode,
@@ -116,9 +118,13 @@ public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordH
                 AcademicTitle = r.Dto.AcademicTitle,
                 PasswordHash = hashes[i],
                 MustChangePassword = true,
-                IsActive = true
+                IsActive = true,
+                CreatedAt = now
             }).ToList();
-            await users.AddRangeAsync(newUsers, cancellationToken);
+            var audits = newUsers
+                .Select(u => u.Audit(request.ActorId, UserAuditActions.Created, now, new { role = u.Role.ToString(), source = "csv" }))
+                .ToList();
+            await users.AddRangeAsync(newUsers, audits, cancellationToken);
         }
 
         report.ImportedRows = validRows.Count;

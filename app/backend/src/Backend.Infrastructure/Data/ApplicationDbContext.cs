@@ -20,6 +20,8 @@ public class ApplicationDbContext : DbContext
     public DbSet<RoundMilestone> RoundMilestones => Set<RoundMilestone>();
     public DbSet<RoundParticipant> RoundParticipants => Set<RoundParticipant>();
     public DbSet<UserAuditEntry> UserAuditEntries => Set<UserAuditEntry>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -139,6 +141,26 @@ public class ApplicationDbContext : DbContext
             // Tài khoản đã có thông báo là "đã có dữ liệu": chỉ vô hiệu hóa, không xóa (BUSINESS_RULES).
             entity.HasOne<User>().WithMany().HasForeignKey(e => e.RecipientUserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(e => e.Sender).WithMany().HasForeignKey(e => e.SenderUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TokenHash).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.SecurityStamp).IsRequired().HasMaxLength(64);
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PasswordResetRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EmailHash).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.Source).IsRequired().HasMaxLength(64);
+            entity.HasIndex(e => new { e.EmailHash, e.CreatedAt });
+            entity.HasIndex(e => new { e.Source, e.CreatedAt });
+            entity.HasIndex(e => e.CreatedAt);
         });
 
         modelBuilder.Entity<UserAuditEntry>(entity =>

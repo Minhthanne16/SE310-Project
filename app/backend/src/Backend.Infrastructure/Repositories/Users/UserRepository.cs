@@ -64,9 +64,10 @@ public class UserRepository : IUserRepository
             .ToListAsync(cancellationToken)).ToHashSet();
     }
 
-    public async Task AddRangeAsync(IReadOnlyCollection<User> users, CancellationToken cancellationToken = default)
+    public async Task AddRangeAsync(IReadOnlyCollection<User> users, IReadOnlyCollection<UserAuditEntry> audits, CancellationToken cancellationToken = default)
     {
         await _context.Users.AddRangeAsync(users, cancellationToken);
+        await _context.UserAuditEntries.AddRangeAsync(audits, cancellationToken);
         try
         {
             await _context.SaveChangesAsync(cancellationToken);
@@ -104,6 +105,23 @@ public class UserRepository : IUserRepository
         _context.Users.Remove(user);
         _context.UserAuditEntries.Add(audit);
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<UserAuditEntry>> GetAuditAsync(Guid targetUserId, CancellationToken cancellationToken = default)
+    {
+        return await _context.UserAuditEntries.AsNoTracking()
+            .Where(a => a.TargetUserId == targetUserId)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, string>> GetFullNamesAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        if (userIds.Count == 0) return new Dictionary<Guid, string>();
+        var ids = userIds.Distinct().ToList();
+        return await _context.Users.AsNoTracking()
+            .Where(u => ids.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.FullName, cancellationToken);
     }
 
     private async Task SaveCheckingDuplicatesAsync(CancellationToken cancellationToken)

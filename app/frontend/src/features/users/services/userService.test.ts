@@ -165,6 +165,26 @@ it('resets to the user code by sending null, or to a chosen password', async () 
   expect(sent(fetchMock).body).toEqual({ newPassword: 'matkhau123' });
 });
 
+it('reads the history of one account', async () => {
+  const entries = [
+    {
+      id: 'a1',
+      action: 'Created',
+      actorUserId: 'staff',
+      actorName: 'Lê Văn Cường',
+      details: { role: 'Student', source: 'csv' },
+      createdAt: '2026-11-07T08:00:00Z',
+    },
+  ];
+  const fetchMock = ok(entries);
+  await expect(createUserService().getAudit(user.id)).resolves.toEqual(entries);
+  expect(sent(fetchMock)).toEqual({
+    url: `/api/users/${user.id}/audit`,
+    method: 'GET',
+    body: undefined,
+  });
+});
+
 it('posts import files as multipart form data without a JSON header', async () => {
   const csv = () => new File(['user_code\n'], 'nguoi-dung.csv');
   for (const [call, url] of [

@@ -340,6 +340,8 @@ public sealed class AuthApiTests : IClassFixture<AuthApiTests.AuthApiFactory>
             {
                 services.RemoveAll<IUserRepository>();
                 services.AddSingleton<IUserRepository>(Users.Repository);
+                services.RemoveAll<IPasswordResetRepository>();
+                services.AddSingleton<IPasswordResetRepository>(new InMemoryPasswordResetRepository(Users.Repository));
                 services.RemoveAll<IAvatarStorage>();
                 services.AddSingleton<IAvatarStorage>(Avatars);
                 services.RemoveAll<IEmailSender>();
