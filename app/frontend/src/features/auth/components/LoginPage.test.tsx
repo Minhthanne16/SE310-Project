@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { ApiError } from '@/api/request';
 import type { AuthService } from '@/features/auth/services/authService';
@@ -175,6 +181,43 @@ it('toggles password visibility', () => {
   expect(screen.getByRole('button', { name: 'Ẩn mật khẩu' })).toHaveAttribute(
     'aria-pressed',
     'true',
+  );
+});
+
+it('lets a lecturer change the initial password without an email code', async () => {
+  const lecturer: CurrentUser = {
+    ...student,
+    id: '2',
+    userCode: 'GV0001',
+    role: 'Lecturer',
+    mustChangePassword: true,
+  };
+  const auth = fakeAuth('mustChangePassword', lecturer);
+  render(<LoginPage authService={auth} onAuthenticated={vi.fn()} />);
+  fillLogin('binh@truong.edu.vn', 'GV0001');
+  fireEvent.click(screen.getByRole('button', { name: 'Đăng nhập' }));
+
+  const submit = await screen.findByRole('button', {
+    name: 'Đổi mật khẩu và tiếp tục',
+  });
+  expect(screen.queryByLabelText('Mã xác thực')).not.toBeInTheDocument();
+  expect(auth.sendActivationCode).not.toHaveBeenCalled();
+
+  fireEvent.change(screen.getByLabelText('Mật khẩu mới'), {
+    target: { value: 'MatKhauMoi1' },
+  });
+  fireEvent.change(screen.getByLabelText('Nhập lại mật khẩu mới'), {
+    target: { value: 'MatKhauMoi1' },
+  });
+  expect(submit).toBeEnabled();
+  fireEvent.click(submit);
+
+  await waitFor(() =>
+    expect(auth.changeInitialPassword).toHaveBeenCalledWith(
+      'GV0001',
+      'MatKhauMoi1',
+      '',
+    ),
   );
 });
 

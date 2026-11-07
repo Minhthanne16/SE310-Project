@@ -100,6 +100,8 @@ export function createUserService(): UserService {
             userCode: input.userCode,
             role: input.role,
             ...profileBody(input),
+            // Sinh viên dùng MSSV làm mật khẩu ban đầu và kích hoạt bằng OTP (PDR-055).
+            password: input.role === 'Student' ? null : input.password,
           }),
         ),
       );

@@ -255,7 +255,7 @@ public sealed class AuthWorkflowTests
     [InlineData("abcdefgh", Code)]   // không có số
     [InlineData("12345678", Code)]   // không có chữ
     [InlineData("22520001", Code)]   // trùng mật khẩu hiện tại
-    [InlineData("matkhau123", "")]   // thiếu mã xác thực
+    // Mã rỗng hợp lệ ở bước kiểm tra đầu vào (GV/Giáo vụ không cần mã, PDR-055); sinh viên bị chặn ở handler.
     [InlineData("matkhau123", "12a456")]
     [InlineData("matkhau123", "12345")]
     public async Task ChangeInitialPasswordValidatesInput(string newPassword, string code)
@@ -273,6 +273,32 @@ public sealed class AuthWorkflowTests
         var result = await _sender.Send(new GetCurrentUserQuery(user.Id));
 
         Assert.False(result.Success);
+    }
+
+    [Fact]
+    public async Task StaffChangeTheInitialPasswordWithoutAnEmailCode()
+    {
+        // Ví dụ Giáo vụ đặt lại mật khẩu về mã: giảng viên đổi mật khẩu lần đầu không cần OTP (PDR-055).
+        var lecturer = _users.Add("GV0001", "binh@truong.edu.vn", "GV0001", UserRole.Lecturer, mustChange: true);
+
+        var send = await _sender.Send(new SendActivationCodeCommand(lecturer.Id));
+        var changed = await ChangePassword(lecturer, "GV0001", "MatKhauMoi1", "");
+
+        Assert.Equal(SendActivationCodeStatus.NotRequired, send.Status);
+        Assert.True(changed.Success);
+        Assert.False(lecturer.MustChangePassword);
+        Assert.Empty(_emails.Sent);
+    }
+
+    [Fact]
+    public async Task StudentsStillNeedTheEmailCode()
+    {
+        var student = NewStudentWithInitialPassword();
+
+        var result = await ChangePassword(student, "22520001", "MatKhauMoi1", "");
+
+        Assert.False(result.Success);
+        Assert.True(student.MustChangePassword);
     }
 
     private User NewStudentWithInitialPassword() =>

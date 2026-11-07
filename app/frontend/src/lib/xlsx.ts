@@ -153,3 +153,68 @@ export async function readCodesFromFile(file: File): Promise<string[]> {
   });
   return codesFromColumn(values);
 }
+
+// Giá trị một ô Excel thành chuỗi như người dùng thấy, để backend kiểm tra như CSV.
+// Ngày (kiểu Date của Excel) ghi yyyy-MM-dd theo ngày trong ô; số giữ nguyên chữ số
+// (MSSV dạng số không thành 2.252e+7); công thức lấy kết quả.
+export function cellToText(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  if (value instanceof Date) {
+    const p = (n: number) => String(n).padStart(2, '0');
+    return `${value.getUTCFullYear()}-${p(value.getUTCMonth() + 1)}-${p(value.getUTCDate())}`;
+  }
+  if (typeof value === 'number')
+    return Number.isInteger(value)
+      ? value.toLocaleString('en-US', { useGrouping: false })
+      : String(value);
+  if (typeof value === 'string' || typeof value === 'boolean')
+    return String(value);
+  if (typeof value === 'object') {
+    const v = value as {
+      result?: unknown;
+      text?: unknown;
+      richText?: Array<{ text: string }>;
+    };
+    if ('result' in v) return cellToText(v.result);
+    if (Array.isArray(v.richText))
+      return v.richText.map((r) => r.text).join('');
+    if (typeof v.text === 'string') return v.text;
+  }
+  return String(value);
+}
+
+// Ghi CSV đúng giá trị, KHÔNG thêm dấu ' chống công thức: tệp này chỉ gửi lên máy
+// chủ để nhập (mật khẩu như "-abc12345" phải giữ nguyên), không mở bằng Excel.
+export function rowsToCsv(rows: string[][]): string {
+  const cell = (text: string) =>
+    /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+  return rows.map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n';
+}
+
+// Đọc trang tính đầu tiên của tệp .xlsx thành CSV UTF-8 (cùng số dòng, dòng trống giữ
+// chỗ) để dùng chung API nhập CSV và số dòng báo lỗi khớp số dòng trong Excel.
+export async function xlsxToCsvFile(file: File): Promise<File> {
+  const ExcelJS = (await import('exceljs')).default;
+  const workbook = new ExcelJS.Workbook();
+  try {
+    await workbook.xlsx.load(await readBuffer(file));
+  } catch {
+    throw new Error(
+      `Không đọc được tệp Excel "${file.name}". Hãy lưu lại dạng .xlsx rồi thử lại.`,
+    );
+  }
+  const sheet = workbook.worksheets[0];
+  if (!sheet || sheet.rowCount === 0)
+    throw new Error(`Tệp Excel "${file.name}" không có dữ liệu.`);
+  const width = sheet.columnCount;
+  const rows: string[][] = [];
+  for (let r = 1; r <= sheet.rowCount; r++) {
+    const row = sheet.getRow(r);
+    const cells: string[] = [];
+    for (let c = 1; c <= width; c++)
+      cells.push(cellToText(row.getCell(c).value).trim());
+    rows.push(cells);
+  }
+  const name = file.name.replace(/\.xlsx$/i, '') + '.csv';
+  return new File([rowsToCsv(rows)], name, { type: 'text/csv' });
+}

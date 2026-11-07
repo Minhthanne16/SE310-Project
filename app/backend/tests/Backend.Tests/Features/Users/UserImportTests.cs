@@ -13,7 +13,7 @@ namespace Backend.Tests;
 
 public sealed class UserImportTests
 {
-    private const string Header = "user_code,full_name,email,role,date_of_birth,class_name,department,academic_title";
+    private const string Header = "user_code,full_name,email,role,date_of_birth,class_name,department,academic_title,password";
     private readonly InMemoryUserRepository _users = new();
     private readonly ISender _sender;
 
@@ -32,8 +32,8 @@ public sealed class UserImportTests
     {
         var report = await Preview(
             "22520001,Nguyễn Văn An,An.NV@Truong.edu.vn,Student,2004-05-01,KTPM2022,,",
-            "GV0001,Trần Thị Bình,binh@truong.edu.vn,Giảng viên,15/03/1985,,Công nghệ phần mềm,TS",
-            "GVU0001,Lê Văn Cường,cuong@truong.edu.vn,giaovu,,,,");
+            "GV0001,Trần Thị Bình,binh@truong.edu.vn,Giảng viên,15/03/1985,,Công nghệ phần mềm,TS,matkhau123",
+            "GVU0001,Lê Văn Cường,cuong@truong.edu.vn,giaovu,,,,,matkhau456");
 
         Assert.True(report.Success);
         Assert.Equal(3, report.Data!.TotalRows);
@@ -103,7 +103,7 @@ public sealed class UserImportTests
         var report = await Import(
             "22520001,Nguyễn Văn An,An@Truong.edu.vn,Student,2004-05-01,KTPM2022,,",
             "22520002,,ba@truong.edu.vn,Student,,KTPM2022,,",
-            "GV0001,Trần Thị Bình,binh@truong.edu.vn,Lecturer,,,Công nghệ phần mềm,TS");
+            "GV0001,Trần Thị Bình,binh@truong.edu.vn,Lecturer,,,Công nghệ phần mềm,TS,gvmatkhau1");
 
         Assert.True(report.Success);
         Assert.Equal(2, report.Data!.ImportedRows);
@@ -120,6 +120,9 @@ public sealed class UserImportTests
         Assert.Equal("hash:22520001", student.PasswordHash);
         Assert.Equal("Công nghệ phần mềm", users[1].Department);
         Assert.Equal("TS", users[1].AcademicTitle);
+        // Giảng viên dùng mật khẩu Giáo vụ đặt trong tệp, không cần kích hoạt bằng OTP (PDR-055).
+        Assert.False(users[1].MustChangePassword);
+        Assert.Equal("hash:gvmatkhau1", users[1].PasswordHash);
     }
 
     [Fact]
@@ -205,7 +208,7 @@ public sealed class UserImportTests
         var staff = Guid.NewGuid();
         await _sender.Send(new ImportUsersCommand(Encoding.UTF8.GetBytes(string.Join('\n', Header,
             "22520001,Nguyễn Văn An,an@truong.edu.vn,Student,,KTPM2022,,",
-            "GV0001,Trần Thị Bình,binh@truong.edu.vn,Lecturer,,,CNPM,TS",
+            "GV0001,Trần Thị Bình,binh@truong.edu.vn,Lecturer,,,CNPM,TS,matkhau123",
             "22520002,,loi@truong.edu.vn,Student,,KTPM2022,,")), "ds.csv", Commit: true, ActorId: staff));
 
         var created = _users.All();
@@ -224,6 +227,28 @@ public sealed class UserImportTests
     {
         await Preview("22520001,Nguyễn Văn An,an@truong.edu.vn,Student,,KTPM2022,,");
         Assert.Empty(_users.Audits);
+    }
+
+    [Theory]
+    [InlineData("GV0001,Trần Thị Bình,binh@truong.edu.vn,Lecturer,,,CNPM,TS,", "Giảng viên và giáo vụ phải có mật khẩu (password)")]
+    [InlineData("GVU0001,Lê Văn Cường,cuong@truong.edu.vn,giaovu,,,,,ngan1", "Mật khẩu tối thiểu 8 ký tự, có cả chữ và số")]
+    [InlineData("gv12345a,Lê Văn Cường,cuong@truong.edu.vn,giaovu,,,,,gv12345a", "Mật khẩu phải khác mã người dùng")]
+    [InlineData("22520001,Nguyễn Văn An,an@truong.edu.vn,Student,,KTPM2022,,,matkhau123", "Sinh viên không đặt mật khẩu trong tệp")]
+    public async Task PasswordsAreRequiredForStaffAndNotAllowedForStudents(string row, string expected)
+    {
+        var report = await Preview(row);
+
+        Assert.Contains(report.Data!.Rows[0].Errors, e => e.StartsWith(expected));
+    }
+
+    [Fact]
+    public async Task TheReportNeverEchoesPasswords()
+    {
+        var report = await Import("GV0001,Trần Thị Bình,binh@truong.edu.vn,Lecturer,,,CNPM,TS,BiMat2026x");
+
+        Assert.Equal(1, report.Data!.ImportedRows);
+        Assert.DoesNotContain("BiMat2026x", System.Text.Json.JsonSerializer.Serialize(report));
+        Assert.DoesNotContain(_users.Audits, a => a.Details?.Contains("BiMat2026x") == true);
     }
 
     private Task<ApiResponse<UserImportReportDto>> Preview(params string[] rows) => Send(rows, commit: false);

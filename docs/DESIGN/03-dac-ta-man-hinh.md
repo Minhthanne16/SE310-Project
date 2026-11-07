@@ -61,6 +61,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Mật khẩu mới theo `passwordRules` đã có trong repo.
 - Mã xác thực có hiệu lực 10 phút, dùng một lần, sai 5 lần thì bị hủy (xem [PDR-003](../decisions/PDR-003-otp-kich-hoat-qua-email.md)).
 - Ghi chú triển khai frontend: panel trái chỉ hiện tên khoa (chưa có "Đợt hiện tại" vì chưa có API và đây là trang công khai). Giữ bước mã OTP khi đổi mật khẩu lần đầu (PDR-003) và lỗi theo từng ô, khác artboard.
+- Ghi chú (2026-11-07, [PDR-055](../decisions/PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)): bước mã xác thực chỉ hiện với sinh viên; giảng viên, giáo vụ phải đổi mật khẩu lần đầu (ví dụ sau khi Giáo vụ đặt lại về mã) chỉ nhập mật khẩu mới.
 
 ## Quên mật khẩu
 - **Vai trò:** Chung
@@ -610,6 +611,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Ghi chú giao diện (theo artboard): trạng thái chờ đổi mật khẩu hiển thị là "Chưa đăng nhập"; nhập CSV tự kiểm tra khi chọn tệp rồi hiện bước 2/2, đóng hộp thoại khi nhập xong; thông báo thao tác là dải trong trang (không toast); có "Lưu và thêm tiếp"; Giáo vụ không tự xóa/vô hiệu hóa mình. Chưa có API thông báo nên không có câu "đã gửi thông báo cho người dùng" sau khi đặt lại mật khẩu. Nhập theo PDR-004 là CSV (artboard ghi Excel).
 - Ghi chú triển khai frontend (`/giao-vu/nguoi-dung`): mọi thao tác dùng API thật `/api/users` (hợp đồng tại [PDR-004](../decisions/PDR-004-nhap-tai-khoan-csv.md#hợp-đồng-api-quản-lý-tài-khoản)); không còn kho demo. Danh sách tải một lần, lọc/tìm/phân trang ở client. Lỗi trùng mã/email đến từ phản hồi 409 của máy chủ. Backend tự chặn Giáo vụ xóa hoặc vô hiệu hóa chính mình; nút trên giao diện chỉ là lớp ngoài. Đặt lại mật khẩu làm phiên đang mở của người đó hết hiệu lực và bắt đổi mật khẩu kèm OTP ở lần đăng nhập kế tiếp.
 - Lịch sử thao tác (2026-11-07, chưa có artboard): mục "Lịch sử thao tác" thu gọn trong ngăn Sửa, chỉ tải khi mở; hiện tên thao tác, người thực hiện, thời điểm và giá trị trước/sau từng trường. Tài khoản tạo bằng nhập CSV ghi "Tạo tài khoản bằng nhập CSV" (xem [PDR-052](../decisions/PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md)).
+- Mật khẩu và nhập Excel (2026-11-07, [PDR-055](../decisions/PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)): khi thêm giảng viên/giáo vụ, form có ô Mật khẩu bắt buộc (tài khoản dùng ngay, không OTP); sinh viên không có ô này. Nút "Nhập Excel/CSV" mở hộp thoại cho chọn định dạng Excel (.xlsx) hoặc CSV (.csv) trước khi chọn tệp; danh sách cột có thêm `password` (GV, Giáo vụ).
 
 ## Quản lý đề tài
 - **Vai trò:** Giáo vụ

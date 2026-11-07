@@ -31,6 +31,8 @@ public class CreateUserDto : IUserProfileInput
     public string? ClassName { get; set; }
     public string? Department { get; set; }
     public string? AcademicTitle { get; set; }
+    // Bắt buộc với giảng viên, giáo vụ (dùng ngay, không OTP); sinh viên để trống (mật khẩu ban đầu là MSSV). PDR-055.
+    public string? Password { get; set; }
 }
 
 // Mã người dùng và vai trò không đổi sau khi tạo (BUSINESS_RULES), nên không có ở đây.

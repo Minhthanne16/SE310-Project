@@ -42,6 +42,8 @@ export interface UserInput {
   className: string;
   department: string;
   academicTitle: string;
+  // Chỉ dùng khi tạo giảng viên/giáo vụ (PDR-055); sinh viên để trống.
+  password: string;
 }
 
 // Khớp UserImportReportDto / UserImportRowDto của backend (PDR-004).
