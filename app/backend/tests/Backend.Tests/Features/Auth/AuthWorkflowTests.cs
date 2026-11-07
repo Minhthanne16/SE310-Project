@@ -328,13 +328,14 @@ internal sealed class InMemoryUserRepository : IUserRepository
         lock (_users) return Task.FromResult<IReadOnlySet<string>>(_users.Values.Select(u => u.Email).Where(normalizedEmails.Contains).ToHashSet());
     }
 
-    public Task AddRangeAsync(IReadOnlyCollection<User> users, CancellationToken cancellationToken = default)
+    public Task AddRangeAsync(IReadOnlyCollection<User> users, IReadOnlyCollection<UserAuditEntry> audits, CancellationToken cancellationToken = default)
     {
         lock (_users)
         {
             if (users.Any(n => _users.Values.Any(u => u.UserCode == n.UserCode || u.Email == n.Email)))
                 throw new DuplicateUserException();
             foreach (var user in users) _users.Add(user.Id, user);
+            Audits.AddRange(audits);
         }
         return Task.CompletedTask;
     }
@@ -391,6 +392,21 @@ internal sealed class InMemoryUserRepository : IUserRepository
             Audits.Add(audit);
         }
         return Task.CompletedTask;
+    }
+
+    public Task<IReadOnlyList<UserAuditEntry>> GetAuditAsync(Guid targetUserId, CancellationToken cancellationToken = default)
+    {
+        // Đảo thứ tự ghi trước khi sắp xếp ổn định để các mục cùng thời điểm vẫn mới nhất trước.
+        lock (_users)
+            return Task.FromResult<IReadOnlyList<UserAuditEntry>>(Audits.Where(a => a.TargetUserId == targetUserId)
+                .Reverse().OrderByDescending(a => a.CreatedAt).ToList());
+    }
+
+    public Task<IReadOnlyDictionary<Guid, string>> GetFullNamesAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        lock (_users)
+            return Task.FromResult<IReadOnlyDictionary<Guid, string>>(userIds.Distinct()
+                .Where(_users.ContainsKey).ToDictionary(id => id, id => _users[id].FullName));
     }
 }
 

@@ -139,6 +139,26 @@ public sealed class UserManagementApiTests : IClassFixture<AuthApiTests.AuthApiF
     private sealed record NewUserBody(string userCode, string fullName, string email, string role,
         string? dateOfBirth, string? className, string? department, string? academicTitle);
 
+    [Fact]
+    public async Task StaffReadsTheHistoryOfAnAccount()
+    {
+        var cookie = await StaffCookie();
+        var created = await Send(HttpMethod.Post, "/api/users", cookie, NewUser());
+        var id = (await ReadJson(created)).GetProperty("data").GetProperty("id").GetString();
+        await Send(HttpMethod.Patch, $"/api/users/{id}/status", cookie, new { isActive = false });
+
+        var response = await Send(HttpMethod.Get, $"/api/users/{id}/audit", cookie);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var entries = (await ReadJson(response)).GetProperty("data").EnumerateArray().ToList();
+        Assert.Equal(["Disabled", "Created"], entries.Select(e => e.GetProperty("action").GetString()));
+        Assert.All(entries, e => Assert.False(string.IsNullOrEmpty(e.GetProperty("actorName").GetString())));
+        Assert.Equal("Student", entries[1].GetProperty("details").GetProperty("role").GetString());
+
+        var student = await LoginCookie(_factory.AddUser(UserRole.Student, "matkhau123", mustChange: false), "matkhau123");
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Get, $"/api/users/{id}/audit", student)).StatusCode);
+    }
+
     private static NewUserBody NewUser()
     {
         var id = Guid.NewGuid().ToString("N")[..10];

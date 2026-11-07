@@ -195,6 +195,11 @@ export function createFakeUserService(): UserService {
       replace({ ...find(id), mustChangePassword: true });
     },
 
+    // Lịch sử không giả lập; test cần dữ liệu thì tự cung cấp getAudit.
+    async getAudit() {
+      return [];
+    },
+
     importPreview: notStubbed,
     importCommit: notStubbed,
   };

@@ -23,5 +23,7 @@ public static class UserAuditActions
     public const string Reactivated = "Reactivated";
     public const string PasswordReset = "PasswordReset";
     public const string PasswordChanged = "PasswordChanged";
+    // Chủ tài khoản tự đặt lại bằng liên kết quên mật khẩu (PDR-037).
+    public const string PasswordResetByLink = "PasswordResetByLink";
     public const string Deleted = "Deleted";
 }

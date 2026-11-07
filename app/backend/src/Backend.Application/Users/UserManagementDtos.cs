@@ -1,3 +1,5 @@
+using System.Text.Json;
+
 namespace Backend.Application.Users;
 
 // Một dòng trong màn Quản lý người dùng của Giáo vụ.
@@ -64,4 +66,18 @@ public class DuplicateUserFieldDto
 {
     // userCode | email
     public string Field { get; set; } = string.Empty;
+}
+
+// Một mục lịch sử thao tác trên tài khoản (màn Sửa người dùng).
+public class UserAuditEntryDto
+{
+    public Guid Id { get; set; }
+    // Created | Updated | Disabled | Reactivated | PasswordReset | PasswordChanged | PasswordResetByLink | Deleted
+    public string Action { get; set; } = string.Empty;
+    public Guid ActorUserId { get; set; }
+    // null khi tài khoản thực hiện đã bị xóa.
+    public string? ActorName { get; set; }
+    // Nguyên JSON đã lưu, ví dụ {"fullName":{"from":"A","to":"B"}}; không chứa mật khẩu.
+    public JsonElement? Details { get; set; }
+    public DateTime CreatedAt { get; set; }
 }

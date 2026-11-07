@@ -19,6 +19,7 @@ public record UpdateUserCommand(Guid ActorId, Guid UserId, UpdateUserDto User) :
 public record SetUserStatusCommand(Guid ActorId, Guid UserId, bool IsActive) : IRequest<UserCommandResult<UserDto>>;
 public record DeleteUserCommand(Guid ActorId, Guid UserId) : IRequest<UserCommandResult<DeleteUserResultDto>>;
 public record ResetUserPasswordCommand(Guid ActorId, Guid UserId, string? NewPassword) : IRequest<UserCommandResult<UserDto>>;
+public record GetUserAuditQuery(Guid UserId) : IRequest<ApiResponse<IReadOnlyList<UserAuditEntryDto>>>;
 
 public enum UserCommandStatus { Ok, Created, NotFound, Duplicate, Rejected }
 
@@ -186,6 +187,26 @@ public sealed class ListUsersHandler(IUserRepository users)
         var all = await users.ListAsync(cancellationToken);
         var withData = await users.GetUserIdsWithRelatedDataAsync(all.Select(u => u.Id).ToList(), cancellationToken);
         return ApiResponse<IReadOnlyList<UserDto>>.Ok(all.Select(u => u.ToUserDto(withData.Contains(u.Id))).ToList());
+    }
+}
+
+// Lịch sử vẫn đọc được theo id sau khi tài khoản bị xóa; tài khoản không có mục nào trả danh sách rỗng.
+public sealed class GetUserAuditHandler(IUserRepository users)
+    : IRequestHandler<GetUserAuditQuery, ApiResponse<IReadOnlyList<UserAuditEntryDto>>>
+{
+    public async Task<ApiResponse<IReadOnlyList<UserAuditEntryDto>>> Handle(GetUserAuditQuery request, CancellationToken cancellationToken)
+    {
+        var entries = await users.GetAuditAsync(request.UserId, cancellationToken);
+        var names = await users.GetFullNamesAsync(entries.Select(e => e.ActorUserId).ToList(), cancellationToken);
+        return ApiResponse<IReadOnlyList<UserAuditEntryDto>>.Ok(entries.Select(e => new UserAuditEntryDto
+        {
+            Id = e.Id,
+            Action = e.Action,
+            ActorUserId = e.ActorUserId,
+            ActorName = names.GetValueOrDefault(e.ActorUserId),
+            Details = e.Details is null ? null : JsonDocument.Parse(e.Details).RootElement.Clone(),
+            CreatedAt = e.CreatedAt
+        }).ToList());
     }
 }
 

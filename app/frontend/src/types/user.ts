@@ -65,3 +65,17 @@ export interface UserImportReport {
   importedRows: number;
   rows: UserImportRow[];
 }
+
+// Một mục lịch sử thao tác trên tài khoản (GET /api/users/{id}/audit).
+export interface UserAuditEntry {
+  id: string;
+  // Created | Updated | Disabled | Reactivated | PasswordReset | PasswordChanged
+  // | PasswordResetByLink | Deleted; giá trị lạ vẫn hiển thị nguyên tên.
+  action: string;
+  actorUserId: string;
+  // null khi tài khoản thực hiện đã bị xóa.
+  actorName: string | null;
+  // Ví dụ { fullName: { from, to } }, { role, source: 'csv' }, { mode: 'userCode' }.
+  details: Record<string, unknown> | null;
+  createdAt: string;
+}

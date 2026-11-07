@@ -9,7 +9,7 @@ namespace Backend.API.Controllers.Auth;
 
 [ApiController]
 [Route("api/[controller]")]
-public sealed class AuthController(ISender sender) : ControllerBase
+public sealed class AuthController(ISender sender, IConfiguration configuration) : ControllerBase
 {
     [HttpPost("login")]
     [AllowAnonymous]
@@ -56,6 +56,30 @@ public sealed class AuthController(ISender sender) : ControllerBase
 
         AuthCookie.Append(HttpContext, result.Data!.AccessToken);
         return Ok(ApiResponse<CurrentUserDto>.Ok(result.Data.User, result.Message));
+    }
+
+    // Phản hồi trung tính cho mọi email đúng định dạng (PDR-037/044/045); chỉ lỗi định dạng trả 400.
+    [HttpPost("forgot-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<bool>>> ForgotPassword(ForgotPasswordDto dto, CancellationToken cancellationToken)
+    {
+        // Nguồn là IP kết nối; chỉ lấy từ X-Forwarded-For khi proxy được cấu hình tin cậy (Program.cs).
+        var source = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var resetPage = $"{(configuration["FrontendOrigin"] ?? "http://localhost:3000").TrimEnd('/')}/quen-mat-khau";
+        return Ok(await sender.Send(new RequestPasswordResetCommand(dto.Email, source, resetPage), cancellationToken));
+    }
+
+    [HttpPost("reset-password/check")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<PasswordResetStatusDto>>> CheckPasswordResetToken(PasswordResetTokenDto dto, CancellationToken cancellationToken) =>
+        Ok(await sender.Send(new CheckPasswordResetTokenQuery(dto.Token), cancellationToken));
+
+    [HttpPost("reset-password")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<PasswordResetStatusDto>>> ResetPassword(ResetPasswordWithTokenDto dto, CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new ResetPasswordWithTokenCommand(dto), cancellationToken);
+        return result.Success ? Ok(result) : BadRequest(result);
     }
 
     [HttpGet("me")]

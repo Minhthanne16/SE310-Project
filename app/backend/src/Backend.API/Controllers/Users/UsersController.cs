@@ -40,6 +40,10 @@ public sealed class UsersController(ISender sender) : ControllerBase
     public async Task<ActionResult<ApiResponse<UserDto>>> ResetPassword(Guid id, ResetUserPasswordDto dto, CancellationToken cancellationToken) =>
         ToActionResult(await sender.Send(new ResetUserPasswordCommand(CurrentUserId, id, dto.NewPassword), cancellationToken));
 
+    [HttpGet("{id:guid}/audit")]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<UserAuditEntryDto>>>> Audit(Guid id, CancellationToken cancellationToken) =>
+        Ok(await sender.Send(new GetUserAuditQuery(id), cancellationToken));
+
     [HttpPost("import/preview")]
     [RequestSizeLimit(MaxRequestBytes)]
     [RequestFormLimits(MultipartBodyLengthLimit = MaxRequestBytes)]
@@ -61,7 +65,7 @@ public sealed class UsersController(ISender sender) : ControllerBase
 
         using var buffer = new MemoryStream((int)file.Length);
         await file.CopyToAsync(buffer, cancellationToken);
-        var result = await sender.Send(new ImportUsersCommand(buffer.ToArray(), file.FileName, commit), cancellationToken);
+        var result = await sender.Send(new ImportUsersCommand(buffer.ToArray(), file.FileName, commit, CurrentUserId), cancellationToken);
         return result.Success ? Ok(result) : BadRequest(result);
     }
 

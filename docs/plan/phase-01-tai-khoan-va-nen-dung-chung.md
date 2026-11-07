@@ -27,14 +27,14 @@
 
 **Công việc:**
 - [x] Thiết kế, đối chiếu rồi triển khai API/UI danh sách, thêm/sửa, vô hiệu hóa/kích hoạt lại, xóa nếu chưa có dữ liệu, đặt lại mật khẩu; kiểm tra không xóa chính mình. *(2026-10-31: `/api/users` theo PDR-004, có test handler/API và kiểm thử UI→proxy→API trên DB local. Kiểm tra "đã có dữ liệu" mới là điểm mở rộng vì chưa có bảng nghiệp vụ tham chiếu tài khoản.)*
-- [ ] Triển khai luồng quên mật khẩu 30 phút, dùng một lần, email đúng định dạng luôn nhận phản hồi trung tính theo PDR-037; chỉ tài khoản hoạt động đã kích hoạt nhận/sử dụng liên kết theo PDR-045. Áp dụng giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn theo PDR-044 mà không làm lộ email có tài khoản.
-- [ ] Ghi lịch sử thao tác quản trị, bảo vệ dữ liệu cá nhân, không lộ token/mật khẩu trong log hoặc báo cáo CSV. *(Lịch sử thao tác quản lý tài khoản đã lưu ở `UserAuditEntries`, không chứa mật khẩu; tài khoản tạo bằng nhập CSV chưa ghi lịch sử, chưa có màn xem lịch sử.)*
+- [x] Triển khai luồng quên mật khẩu 30 phút, dùng một lần, email đúng định dạng luôn nhận phản hồi trung tính theo PDR-037; chỉ tài khoản hoạt động đã kích hoạt nhận/sử dụng liên kết theo PDR-045. Áp dụng giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn theo PDR-044 mà không làm lộ email có tài khoản. *(2026-11-07: hợp đồng tại [PDR-052](../decisions/PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md); test handler/API cho bốn trạng thái tài khoản, ranh giới 60 giây, 5/6 theo email, 20/21 theo nguồn, đồng thời; kiểm thử UI→proxy→API trên DB local. Nguồn chỉ tin `X-Forwarded-For` từ proxy khai báo.)*
+- [x] Ghi lịch sử thao tác quản trị, bảo vệ dữ liệu cá nhân, không lộ token/mật khẩu trong log hoặc báo cáo CSV. *(Lịch sử ở `UserAuditEntries`, gồm cả tài khoản nhập CSV; Giáo vụ xem trong ngăn Sửa qua `GET /api/users/{id}/audit`. Token chỉ lưu bản băm; email yêu cầu quên mật khẩu chỉ lưu bản băm.)*
 
 **Acceptance criteria:**
-- [ ] Giáo vụ xử lý được tài khoản từ UI qua API thật; mã và vai trò không đổi; tài khoản có tham chiếu chỉ bị vô hiệu hóa; token cũ hết hiệu lực.
-- [ ] Email có/không có tài khoản cho cùng mã trạng thái, cấu trúc và nội dung phản hồi; email sai định dạng được báo lỗi định dạng; liên kết reset hết hạn/đã dùng bị từ chối; sau reset phiên cũ hết hiệu lực.
-- [ ] Yêu cầu bị giới hạn vẫn nhận phản hồi trung tính và không gửi thêm thư; kiểm thử ranh giới 60 giây, lần 5/6 theo email, lần 20/21 theo nguồn và thao tác đồng thời.
-- [ ] Email không có tài khoản, tài khoản vô hiệu hóa hoặc chưa kích hoạt không phát sinh thư nhưng phản hồi như tài khoản hợp lệ; liên kết đã phát không dùng được nếu tài khoản bị vô hiệu hóa sau đó.
+- [x] Giáo vụ xử lý được tài khoản từ UI qua API thật; mã và vai trò không đổi; tài khoản có tham chiếu chỉ bị vô hiệu hóa; token cũ hết hiệu lực.
+- [x] Email có/không có tài khoản cho cùng mã trạng thái, cấu trúc và nội dung phản hồi; email sai định dạng được báo lỗi định dạng; liên kết reset hết hạn/đã dùng bị từ chối; sau reset phiên cũ hết hiệu lực.
+- [x] Yêu cầu bị giới hạn vẫn nhận phản hồi trung tính và không gửi thêm thư; kiểm thử ranh giới 60 giây, lần 5/6 theo email, lần 20/21 theo nguồn và thao tác đồng thời.
+- [x] Email không có tài khoản, tài khoản vô hiệu hóa hoặc chưa kích hoạt không phát sinh thư nhưng phản hồi như tài khoản hợp lệ; liên kết đã phát không dùng được nếu tài khoản bị vô hiệu hóa sau đó.
 
 **Verification:** Test quyền, xóa có/không tham chiếu, đặt lại và đăng nhập lại; kiểm tra lỗi 401/403 và dữ liệu trả về.
 

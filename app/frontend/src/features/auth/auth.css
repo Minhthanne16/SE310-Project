@@ -1,4 +1,4 @@
-/* Quên mật khẩu: cột phải theo artboard QuenMatKhau (tiền tố auth-) */
+/* Quên mật khẩu: cột phải theo artboard QuenMatKhau (tiền tố auth-); auth-building là khối thông báo của từng màn */
 .auth-column {
   width: 100%;
   max-width: 400px;
@@ -66,4 +66,20 @@
   font-size: 14px;
   line-height: 1.55;
   color: #3d3d3d;
+}
+
+.auth-building > svg {
+  color: #1f5fbf;
+}
+
+.auth-building .login-submit {
+  margin-top: 12px;
+}
+
+.auth-building .login-link-button {
+  align-self: flex-start;
+}
+
+.auth-building .auth-note {
+  margin-top: 12px;
 }
