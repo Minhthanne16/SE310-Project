@@ -8,10 +8,8 @@ import {
 import { afterEach, expect, it, vi } from 'vitest';
 import { SessionProvider } from '@/features/auth/session/SessionProvider';
 import type { AuthService } from '@/features/auth/services/authService';
-import {
-  createProfileService,
-  type ProfileService,
-} from '@/features/profile/services/profileService';
+import { createFakeProfileService } from '@/features/profile/services/fakeProfileService';
+import type { ProfileService } from '@/features/profile/services/profileService';
 import type { CurrentUser } from '@/types/auth';
 import { ProfilePage } from './ProfilePage';
 
@@ -42,7 +40,9 @@ const fakeAuth = (): AuthService => ({
   logout: vi.fn(),
 });
 
-const renderPage = async (service: ProfileService = createProfileService()) => {
+const renderPage = async (
+  service: ProfileService = createFakeProfileService(),
+) => {
   render(
     <SessionProvider authService={fakeAuth()}>
       <ProfilePage profileService={service} />
@@ -145,7 +145,7 @@ it('previews a valid avatar, keeps it after a rejected pick, saves and removes i
 });
 
 it('keeps the form open and shows the error when saving fails', async () => {
-  const service = createProfileService();
+  const service = createFakeProfileService();
   vi.spyOn(service, 'updateProfile').mockRejectedValue(
     new Error('Máy chủ từ chối.'),
   );
@@ -159,8 +159,58 @@ it('keeps the form open and shows the error when saving fails', async () => {
   expect(screen.getByLabelText('Ngày sinh')).toBeInTheDocument();
 });
 
+it('keeps the saved fields and reports the error when only the avatar fails', async () => {
+  stubBlobUrls();
+  const service = createFakeProfileService();
+  vi.spyOn(service, 'uploadAvatar').mockRejectedValue(
+    new Error('Ảnh không đúng định dạng. Chỉ nhận JPG, PNG hoặc WebP.'),
+  );
+  await renderPage(service);
+  await ready();
+  edit();
+  fireEvent.change(screen.getByLabelText('Họ tên'), {
+    target: { value: 'Tên Mới' },
+  });
+  fireEvent.change(screen.getByLabelText('Ảnh đại diện'), {
+    target: { files: [file('a.png', 'image/png')] },
+  });
+  save();
+  expect(await screen.findByRole('alert')).toHaveTextContent(
+    'Đã lưu thông tin cá nhân nhưng chưa cập nhật được ảnh: Ảnh không đúng định dạng.',
+  );
+  expect(screen.getByRole('heading', { name: 'Tên Mới' })).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'Lưu thay đổi' })).toBeVisible();
+});
+
+it('uploads the chosen avatar and removes it on request', async () => {
+  stubBlobUrls();
+  const service = createFakeProfileService();
+  const upload = vi.spyOn(service, 'uploadAvatar');
+  const remove = vi.spyOn(service, 'removeAvatar');
+  await renderPage(service);
+  await ready();
+  edit();
+  const chosen = file('a.png', 'image/png');
+  fireEvent.change(screen.getByLabelText('Ảnh đại diện'), {
+    target: { files: [chosen] },
+  });
+  save();
+  await waitSaved();
+  expect(upload).toHaveBeenCalledWith(chosen);
+  expect(screen.getAllByRole('img')[0]).toHaveAttribute(
+    'src',
+    '/api/profile/avatar?v=a.png',
+  );
+
+  edit();
+  fireEvent.click(screen.getByRole('button', { name: 'Gỡ ảnh' }));
+  save();
+  await waitSaved();
+  expect(remove).toHaveBeenCalledOnce();
+});
+
 it('shows the message when the profile cannot be loaded', async () => {
-  const service = createProfileService();
+  const service = createFakeProfileService();
   vi.spyOn(service, 'getProfile').mockRejectedValue(new Error('Hồ sơ lỗi.'));
   await renderPage(service);
   expect(await screen.findByText('Hồ sơ lỗi.')).toBeInTheDocument();

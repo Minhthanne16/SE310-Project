@@ -153,7 +153,8 @@ export function createFakeUserService(): UserService {
         academicTitle:
           input.role === 'Lecturer' ? blank(input.academicTitle) : null,
         isActive: true,
-        mustChangePassword: true,
+        // Giảng viên/giáo vụ dùng ngay mật khẩu được đặt (PDR-055).
+        mustChangePassword: input.role === 'Student',
         hasData: false,
       };
       users = [...users, user];
@@ -193,6 +194,11 @@ export function createFakeUserService(): UserService {
 
     async resetPassword(id) {
       replace({ ...find(id), mustChangePassword: true });
+    },
+
+    // Lịch sử không giả lập; test cần dữ liệu thì tự cung cấp getAudit.
+    async getAudit() {
+      return [];
     },
 
     importPreview: notStubbed,

@@ -1,6 +1,13 @@
 'use client';
 
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import Link from 'next/link';
 import {
   Award,
@@ -17,15 +24,15 @@ import {
 } from 'lucide-react';
 import '@/features/navigation/navigation.css';
 import {
+  notificationGroup,
   notificationService as defaultService,
+  notificationTime,
   type BellNotification,
-  type NotificationAudience,
   type NotificationKind,
   type NotificationService,
 } from '@/features/navigation/services/notificationService';
 
 interface NotificationBellProps {
-  audience: NotificationAudience;
   service?: NotificationService;
 }
 
@@ -41,7 +48,7 @@ const ICONS: Record<NotificationKind, LucideIcon> = {
   post: Megaphone,
 };
 
-const GROUPS: { id: BellNotification['group']; label: string }[] = [
+const GROUPS: { id: 'today' | 'earlier'; label: string }[] = [
   { id: 'today', label: 'HÔM NAY' },
   { id: 'earlier', label: 'TRƯỚC ĐÓ' },
 ];
@@ -49,34 +56,45 @@ const GROUPS: { id: BellNotification['group']; label: string }[] = [
 type Tab = 'all' | 'unread';
 
 // Chuông ở thanh trên (artboard ThongBaoMenu): thông báo tự động và thông báo
-// được gửi, đánh dấu đã đọc, lọc Chưa đọc.
+// được gửi, đánh dấu đã đọc, lọc Chưa đọc. Dữ liệu lấy từ API theo phiên đăng nhập.
 export const NotificationBell: React.FC<NotificationBellProps> = ({
-  audience,
   service = defaultService,
 }) => {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<Tab>('all');
   const [items, setItems] = useState<BellNotification[]>([]);
+  const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  const [markFailed, setMarkFailed] = useState(false);
   const popupId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
 
-  useEffect(() => {
-    let cancelled = false;
+  // Chỉ phản hồi của lần tải mới nhất được áp dụng.
+  const latestLoad = useRef(0);
+  const load = useCallback(() => {
+    const id = ++latestLoad.current;
     setFailed(false);
+    setLoading(true);
     service
-      .list(audience)
+      .list()
       .then((list) => {
-        if (!cancelled) setItems(list);
+        if (id === latestLoad.current) setItems(list);
       })
       .catch(() => {
-        if (!cancelled) setFailed(true);
+        if (id === latestLoad.current) setFailed(true);
+      })
+      .finally(() => {
+        if (id === latestLoad.current) setLoading(false);
       });
+  }, [service]);
+
+  useEffect(() => {
+    load();
     return () => {
-      cancelled = true;
+      latestLoad.current++;
     };
-  }, [service, audience]);
+  }, [load]);
 
   useEffect(() => {
     if (!open) return;
@@ -104,7 +122,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
   );
   const groups = GROUPS.map((g) => ({
     ...g,
-    items: shown.filter((n) => n.group === g.id),
+    items: shown.filter((n) => notificationGroup(n.createdAt) === g.id),
   })).filter((g) => g.items.length > 0);
 
   const markRead = (ids: string[]) => {
@@ -113,7 +131,20 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
     setItems((list) =>
       list.map((n) => (pending.includes(n.id) ? { ...n, unread: false } : n)),
     );
-    void service.markRead(pending).catch(() => undefined);
+    setMarkFailed(false);
+    // Lưu không được thì trả lại trạng thái chưa đọc, không báo đã đọc khi chưa lưu.
+    service.markRead(pending).catch(() => {
+      setItems((list) =>
+        list.map((n) => (pending.includes(n.id) ? { ...n, unread: true } : n)),
+      );
+      setMarkFailed(true);
+    });
+  };
+
+  const toggle = () => {
+    // Mở ra thì tải lại để thấy thông báo mới phát sinh trong phiên làm việc.
+    if (!open) load();
+    setOpen(!open);
   };
 
   return (
@@ -126,7 +157,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
         aria-expanded={open}
         aria-controls={open ? popupId : undefined}
         aria-label={unread > 0 ? `Thông báo, ${unread} chưa đọc` : 'Thông báo'}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         <Bell size={20} strokeWidth={1.8} aria-hidden="true" />
         {unread > 0 && (
@@ -170,22 +201,37 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
               Chưa đọc ({unread})
             </button>
           </div>
-          <p className="bell-demo-note">
-            Dữ liệu minh họa: thông báo thật sẽ có khi hệ thống kết nối.
-          </p>
-          <div className="bell-list">
+          {markFailed && (
+            <p className="bell-error" role="alert">
+              Chưa đánh dấu đã đọc được. Thử lại sau.
+            </p>
+          )}
+          <div className="bell-list" aria-busy={loading}>
             {failed ? (
-              <p className="bell-empty" role="alert">
-                Không tải được thông báo.
-              </p>
+              <div className="bell-empty" role="alert">
+                <p>Không tải được thông báo.</p>
+                <button type="button" className="bell-retry" onClick={load}>
+                  Thử lại
+                </button>
+              </div>
             ) : groups.length === 0 ? (
-              <p className="bell-empty">Bạn đã đọc hết thông báo.</p>
+              loading ? (
+                <p className="bell-empty" role="status">
+                  Đang tải thông báo...
+                </p>
+              ) : (
+                <p className="bell-empty">
+                  {tab === 'unread'
+                    ? 'Bạn đã đọc hết thông báo.'
+                    : 'Chưa có thông báo nào.'}
+                </p>
+              )
             ) : (
               groups.map((g) => (
                 <div key={g.id}>
                   <div className="bell-group">{g.label}</div>
                   {g.items.map((n) => {
-                    const Icon = ICONS[n.kind];
+                    const Icon = ICONS[n.kind] ?? Megaphone;
                     return (
                       <Link
                         key={n.id}
@@ -205,7 +251,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
                         <span className="bell-item-text">
                           <span className="bell-item-title">{n.text}</span>
                           <span className="bell-item-meta">
-                            {n.from} · {n.time}
+                            {n.from} · {notificationTime(n.createdAt)}
                           </span>
                         </span>
                         {n.unread && (

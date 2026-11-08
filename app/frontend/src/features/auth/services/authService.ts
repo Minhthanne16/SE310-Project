@@ -20,9 +20,6 @@ export interface AuthService {
   logout(): Promise<void>;
 }
 
-export const CHANGE_PASSWORD_UNAVAILABLE =
-  'Backend chưa có API đổi mật khẩu thông thường.';
-
 // Phiên đăng nhập là JWT trong cookie HttpOnly do backend đặt; frontend không
 // đọc hay lưu token, trình duyệt tự gửi cookie qua proxy /api cùng origin.
 export const authService: AuthService = {
@@ -57,12 +54,13 @@ export const authService: AuthService = {
     });
   },
 
-  // Chưa có endpoint. Hợp đồng đề xuất cho backend:
-  // POST /api/auth/change-password { currentPassword, newPassword }
-  // → 200 ApiResponse<CurrentUserDto> + cookie mới; 400 sai mật khẩu hiện tại
-  // hoặc vi phạm quy tắc; 401 hết phiên. Không dùng change-initial-password.
-  async changePassword() {
-    throw new ApiError(CHANGE_PASSWORD_UNAVAILABLE, 501);
+  // Backend xoay SecurityStamp nên token cũ hết hiệu lực; phiên hiện tại nhận
+  // cookie mới qua Set-Cookie.
+  async changePassword(currentPassword, newPassword) {
+    await apiRequest<CurrentUser>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    });
   },
 
   async logout() {

@@ -38,7 +38,7 @@ app/
 .github/workflows/             CI và publish GHCR theo lệnh thủ công
 ```
 
-CRUD sản phẩm chạy qua MediatR và EF Core PostgreSQL. Đã có API đăng nhập cục bộ (`/api/auth/login`, `me`, `activation-code`, `change-initial-password`, `logout`): JWT nằm trong cookie HttpOnly, phân quyền theo ba vai trò `Student`, `Lecturer`, `AcademicAffairs`, mật khẩu băm bằng BCrypt. Lần đăng nhập đầu yêu cầu OTP 6 số gửi qua email. Giáo vụ tạo tài khoản hàng loạt từ CSV qua `/api/users/import/preview` và `/api/users/import`, và quản lý tài khoản (danh sách, thêm, sửa, vô hiệu hóa/kích hoạt lại, xóa, đặt lại mật khẩu, có lịch sử thao tác) qua `/api/users` ([PDR-004](docs/decisions/PDR-004-nhap-tai-khoan-csv.md)). Xem [PDR-002](docs/decisions/PDR-002-xac-thuc-va-lo-trinh-ma-nguon.md) và [PDR-003](docs/decisions/PDR-003-otp-kich-hoat-qua-email.md). Redis, MinIO và Google đã có package, cấu hình và adapter cơ bản; repo **chưa có** refresh token, Quên mật khẩu hoặc upload file.
+CRUD sản phẩm chạy qua MediatR và EF Core PostgreSQL. Đã có API đăng nhập cục bộ (`/api/auth/login`, `me`, `activation-code`, `change-initial-password`, `logout`): JWT nằm trong cookie HttpOnly, phân quyền theo ba vai trò `Student`, `Lecturer`, `AcademicAffairs`, mật khẩu băm bằng BCrypt. Sinh viên đăng nhập lần đầu bằng MSSV rồi đổi mật khẩu kèm OTP 6 số gửi qua email; giảng viên, giáo vụ dùng mật khẩu Giáo vụ đặt khi tạo tài khoản, không cần OTP ([PDR-055](docs/decisions/PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)). Giáo vụ tạo tài khoản hàng loạt từ tệp Excel (.xlsx) hoặc CSV qua `/api/users/import/preview` và `/api/users/import`, và quản lý tài khoản (danh sách, thêm, sửa, vô hiệu hóa/kích hoạt lại, xóa, đặt lại mật khẩu, có lịch sử thao tác xem tại ngăn Sửa) qua `/api/users` ([PDR-004](docs/decisions/PDR-004-nhap-tai-khoan-csv.md)). Quên mật khẩu (`/api/auth/forgot-password`, `reset-password/check`, `reset-password`) gửi liên kết 30 phút dùng một lần, phản hồi trung tính và giới hạn tần suất ([PDR-052](docs/decisions/PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md)); khi đặt API sau reverse proxy ghi đè `X-Forwarded-For`, khai IP proxy ở `ForwardedHeaders__TrustedProxies`. Xem [PDR-002](docs/decisions/PDR-002-xac-thuc-va-lo-trinh-ma-nguon.md) và [PDR-003](docs/decisions/PDR-003-otp-kich-hoat-qua-email.md). Redis, MinIO và Google đã có package, cấu hình và adapter cơ bản; hồ sơ, đổi mật khẩu thường, ảnh đại diện trên MinIO và chuông thông báo dùng API thật ([PDR-051](docs/decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md)); Đề tài của đợt: GV gửi/sửa/xóa đề tài, Giáo vụ công bố danh sách, SV xem danh sách đã công bố qua `/api/topics` ([PDR-053](docs/decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); API ghi danh nhóm và hủy ghi danh đã có ([PDR-054](docs/decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md)), giao diện ghi danh và đề xuất đề tài chưa có. repo **chưa có** refresh token hoặc upload tài liệu nộp.
 
 ### Gửi email (OTP)
 
@@ -97,5 +97,13 @@ npm test
 npm run build
 npm audit --audit-level=high
 ```
+
+Test ghi danh đề tài (P03-S02) gồm test đồng thời trên PostgreSQL thật. Một lệnh từ thư mục gốc dựng PostgreSQL tạm trong Docker, chạy test backend + frontend của phần đề tài/ghi danh rồi xóa container (thêm `-All` để chạy toàn bộ test):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File app/scripts/test-ghi-danh.ps1
+```
+
+Không có biến `QLKLTN_TEST_POSTGRES` thì `dotnet test` bỏ qua 5 test đồng thời (`RegistrationConcurrencyTests`); không trỏ biến này vào database dùng chung.
 
 CI dùng `npm ci`, NuGet lockfile, build/test cả hai phần và Gitleaks. Workflow GHCR chỉ chạy khi được kích hoạt thủ công (`workflow_dispatch`).

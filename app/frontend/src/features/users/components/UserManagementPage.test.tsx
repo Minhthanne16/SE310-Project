@@ -311,6 +311,52 @@ const importReport: UserImportReport = {
   ],
 };
 
+it('loads the account history only when it is opened and can retry', async () => {
+  const service = createFakeUserService();
+  const getAudit = vi
+    .fn()
+    .mockRejectedValueOnce(new ApiError('Máy chủ bận.', 503))
+    .mockResolvedValueOnce([
+      {
+        id: 'e2',
+        action: 'Updated',
+        actorUserId: 'staff',
+        actorName: 'Phạm Minh Châu',
+        details: { fullName: { from: 'Nguyễn Văn Ann', to: 'Nguyễn Văn An' } },
+        createdAt: '2026-11-07T08:30:00Z',
+      },
+      {
+        id: 'e1',
+        action: 'Created',
+        actorUserId: 'staff',
+        actorName: 'Phạm Minh Châu',
+        details: { role: 'Student', source: 'csv' },
+        createdAt: '2026-11-07T08:00:00Z',
+      },
+    ]);
+  await renderPage({ ...service, getAudit });
+  edit('Nguyễn Văn An');
+  expect(getAudit).not.toHaveBeenCalled();
+
+  fireEvent.click(screen.getByText('Lịch sử thao tác'));
+  expect(await screen.findByRole('alert')).toHaveTextContent('Máy chủ bận.');
+  fireEvent.click(screen.getByRole('button', { name: 'Thử lại' }));
+
+  expect(await screen.findByText('Sửa thông tin')).toBeInTheDocument();
+  expect(
+    screen.getByText('Họ tên: Nguyễn Văn Ann → Nguyễn Văn An'),
+  ).toBeInTheDocument();
+  expect(screen.getByText('Tạo tài khoản bằng nhập CSV')).toBeInTheDocument();
+  expect(screen.getAllByText('Bởi Phạm Minh Châu')).toHaveLength(2);
+  expect(getAudit).toHaveBeenCalledTimes(2);
+});
+
+it('does not show history while adding a user', async () => {
+  await renderPage();
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm người dùng' }));
+  expect(screen.queryByText('Lịch sử thao tác')).not.toBeInTheDocument();
+});
+
 it('previews a CSV with per-row errors, then imports the valid rows', async () => {
   const service = createFakeUserService();
   const importPreview = vi.fn().mockResolvedValue(importReport);
@@ -319,8 +365,10 @@ it('previews a CSV with per-row errors, then imports the valid rows', async () =
     .mockResolvedValue({ ...importReport, importedRows: 1 });
   await renderPage({ ...service, importPreview, importCommit });
 
-  fireEvent.click(screen.getByRole('button', { name: 'Nhập CSV' }));
-  const dialog = screen.getByRole('dialog', { name: 'Nhập người dùng từ CSV' });
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập Excel/CSV' }));
+  const dialog = screen.getByRole('dialog', {
+    name: 'Nhập người dùng từ Excel hoặc CSV',
+  });
   expect(within(dialog).getByText('Bước 1/2 · Chọn file')).toBeVisible();
 
   // Sai định dạng: không phải .csv.
@@ -355,7 +403,9 @@ it('previews a CSV with per-row errors, then imports the valid rows', async () =
   );
   await waitFor(() =>
     expect(
-      screen.queryByRole('dialog', { name: 'Nhập người dùng từ CSV' }),
+      screen.queryByRole('dialog', {
+        name: 'Nhập người dùng từ Excel hoặc CSV',
+      }),
     ).not.toBeInTheDocument(),
   );
   expect(importCommit).toHaveBeenCalledWith(file);
@@ -369,8 +419,10 @@ it('previews a CSV with per-row errors, then imports the valid rows', async () =
 
 const pickCsv = async (service: Partial<UserService>) => {
   await renderPage({ ...createFakeUserService(), ...service });
-  fireEvent.click(screen.getByRole('button', { name: 'Nhập CSV' }));
-  const dialog = screen.getByRole('dialog', { name: 'Nhập người dùng từ CSV' });
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập Excel/CSV' }));
+  const dialog = screen.getByRole('dialog', {
+    name: 'Nhập người dùng từ Excel hoặc CSV',
+  });
   const file = new File(['user_code'], 'a.csv', { type: 'text/csv' });
   fireEvent.change(within(dialog).getByLabelText('Tệp CSV'), {
     target: { files: [file] },
@@ -378,10 +430,105 @@ const pickCsv = async (service: Partial<UserService>) => {
   return { dialog, file };
 };
 
+it('imports an Excel file through the same preview and import steps', async () => {
+  const ExcelJS = (await import('exceljs')).default;
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('DS');
+  sheet.addRow([
+    'user_code',
+    'full_name',
+    'email',
+    'role',
+    'department',
+    'password',
+  ]);
+  sheet.addRow([
+    'GV0101',
+    'Phạm Văn Tuấn',
+    'tuan@truong.edu.vn',
+    'Lecturer',
+    'CNPM',
+    'MatKhau1',
+  ]);
+  const xlsx = new File(
+    [(await workbook.xlsx.writeBuffer()) as ArrayBuffer],
+    'giang-vien.xlsx',
+  );
+  const service = createFakeUserService();
+  const importPreview = vi.fn().mockResolvedValue(importReport);
+  const importCommit = vi
+    .fn()
+    .mockResolvedValue({ ...importReport, importedRows: 1 });
+  await renderPage({ ...service, importPreview, importCommit });
+
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập Excel/CSV' }));
+  const dialog = screen.getByRole('dialog', {
+    name: 'Nhập người dùng từ Excel hoặc CSV',
+  });
+  // CSV đang chọn thì tệp .xlsx bị báo sai định dạng và gợi ý chọn Excel.
+  fireEvent.change(within(dialog).getByLabelText('Tệp CSV'), {
+    target: { files: [xlsx] },
+  });
+  expect(within(dialog).getByRole('alert')).toHaveTextContent(
+    'Chọn định dạng Excel (.xlsx) ở trên',
+  );
+
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Excel (.xlsx)' }),
+  );
+  expect(
+    within(dialog).getByRole('button', { name: 'Excel (.xlsx)' }),
+  ).toHaveAttribute('aria-pressed', 'true');
+  fireEvent.change(within(dialog).getByLabelText('Tệp Excel'), {
+    target: { files: [xlsx] },
+  });
+
+  expect(
+    await within(dialog).findByText('Bước 2/2 · Kiểm tra trước khi nhập'),
+  ).toBeVisible();
+  const sent = importPreview.mock.calls[0][0] as File;
+  expect(sent.name).toBe('giang-vien.csv');
+  const text = await new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsText(sent);
+  });
+  expect(text).toContain(
+    'GV0101,Phạm Văn Tuấn,tuan@truong.edu.vn,Lecturer,CNPM,MatKhau1',
+  );
+
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Nhập 1 người dùng' }),
+  );
+  expect(await screen.findByText(/từ giang-vien\.xlsx/)).toBeInTheDocument();
+  expect(importCommit).toHaveBeenCalledWith(sent);
+});
+
+it('asks for a password when adding a lecturer or staff account', async () => {
+  await renderPage();
+  fireEvent.click(screen.getByRole('button', { name: 'Thêm người dùng' }));
+  expect(screen.queryByLabelText(/^Mật khẩu/)).not.toBeInTheDocument();
+
+  const drawer = screen.getByRole('dialog', { name: 'Thêm người dùng' });
+  fireEvent.click(within(drawer).getByRole('button', { name: 'Giảng viên' }));
+  type('Mã người dùng *', 'GV0101');
+  type('Họ và tên *', 'Phạm Văn Tuấn');
+  type('Email *', 'tuan@truong.edu.vn');
+  type('Bộ môn *', 'CNPM');
+  fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+  expect(await screen.findByText('Nhập mật khẩu.')).toBeInTheDocument();
+
+  type('Mật khẩu *', 'MatKhau1');
+  fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
+  expect(await screen.findByText('Phạm Văn Tuấn')).toBeInTheDocument();
+});
+
 it('focuses the "Chọn file" button when the import dialog opens', async () => {
   await renderPage();
-  fireEvent.click(screen.getByRole('button', { name: 'Nhập CSV' }));
-  const dialog = screen.getByRole('dialog', { name: 'Nhập người dùng từ CSV' });
+  fireEvent.click(screen.getByRole('button', { name: 'Nhập Excel/CSV' }));
+  const dialog = screen.getByRole('dialog', {
+    name: 'Nhập người dùng từ Excel hoặc CSV',
+  });
   expect(
     within(dialog).getByRole('button', { name: 'Chọn file' }),
   ).toHaveFocus();

@@ -61,6 +61,9 @@ public class ThesisRound : BaseEntity
     public DateTime? TopicsPublishedAt { get; set; }
     public List<RoundMilestone> Milestones { get; set; } = [];
     public List<RoundParticipant> Participants { get; set; } = [];
+    public List<ThesisTopic> Topics { get; set; } = [];
+    // Thành viên nhóm của đợt: sinh viên đã có nhóm không gỡ được khỏi đợt (PDR-030).
+    public List<GroupMember> GroupMembers { get; set; } = [];
 
     public static string NormalizeName(string name) => name.Trim().ToLowerInvariant();
 

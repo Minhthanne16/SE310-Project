@@ -60,6 +60,7 @@ const input = (overrides: Partial<UserInput> = {}): UserInput => ({
   className: 'KTPM2022',
   department: '',
   academicTitle: '',
+  password: 'bo-qua-voi-sinh-vien',
   ...overrides,
 });
 
@@ -84,7 +85,20 @@ it('creates a user with normalized fields and nulls for empty ones', async () =>
       className: 'KTPM2022',
       department: null,
       academicTitle: null,
+      password: null,
     },
+  });
+});
+
+it('sends the password set by staff only for lecturers and staff accounts', async () => {
+  const fetchMock = stubFetch(201, { success: true, message: '', data: user });
+  await createUserService().create(
+    input({ role: 'Lecturer', department: 'CNPM', password: ' MatKhau1 ' }),
+  );
+  // Mật khẩu gửi nguyên văn, không cắt khoảng trắng.
+  expect(sent(fetchMock).body).toMatchObject({
+    role: 'Lecturer',
+    password: ' MatKhau1 ',
   });
 });
 
@@ -163,6 +177,26 @@ it('resets to the user code by sending null, or to a chosen password', async () 
   fetchMock = ok(user);
   await createUserService().resetPassword(user.id, 'matkhau123');
   expect(sent(fetchMock).body).toEqual({ newPassword: 'matkhau123' });
+});
+
+it('reads the history of one account', async () => {
+  const entries = [
+    {
+      id: 'a1',
+      action: 'Created',
+      actorUserId: 'staff',
+      actorName: 'Lê Văn Cường',
+      details: { role: 'Student', source: 'csv' },
+      createdAt: '2026-11-07T08:00:00Z',
+    },
+  ];
+  const fetchMock = ok(entries);
+  await expect(createUserService().getAudit(user.id)).resolves.toEqual(entries);
+  expect(sent(fetchMock)).toEqual({
+    url: `/api/users/${user.id}/audit`,
+    method: 'GET',
+    body: undefined,
+  });
 });
 
 it('posts import files as multipart form data without a JSON header', async () => {

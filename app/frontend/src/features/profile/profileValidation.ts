@@ -1,10 +1,11 @@
 import { EMAIL_PATTERN } from '@/lib/validation';
 import type { ProfileInput } from '@/types/profile';
 
-export type ProfileField = 'dateOfBirth' | 'phone' | 'secondaryEmail';
+export type ProfileField =
+  'fullName' | 'dateOfBirth' | 'phone' | 'secondaryEmail';
 export type ProfileFieldErrors = Partial<Record<ProfileField, string>>;
 
-// Giới hạn ảnh tạm thời, chờ OQ-006 (dung lượng, định dạng tệp) được chốt.
+// Giới hạn ảnh theo PDR-043. Backend kiểm tra lại, gồm cả nội dung thật của tệp.
 export const AVATAR_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 export const AVATAR_MAX_BYTES = 2 * 1024 * 1024;
 
@@ -33,6 +34,10 @@ export function validateProfileInput(
   accountEmail: string,
 ): ProfileFieldErrors {
   const errors: ProfileFieldErrors = {};
+  const fullName = input.fullName.trim();
+  if (!fullName) errors.fullName = 'Nhập họ tên.';
+  else if (fullName.length > 200) errors.fullName = 'Họ tên tối đa 200 ký tự.';
+
   if (input.dateOfBirth && input.dateOfBirth > todayIso())
     errors.dateOfBirth = 'Ngày sinh không được ở tương lai.';
 

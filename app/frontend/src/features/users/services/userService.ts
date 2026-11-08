@@ -1,6 +1,11 @@
 import { ApiError, apiRequest } from '@/api/request';
 import { normalizeUserInput } from '@/features/users/userValidation';
-import type { ManagedUser, UserImportReport, UserInput } from '@/types/user';
+import type {
+  ManagedUser,
+  UserAuditEntry,
+  UserImportReport,
+  UserInput,
+} from '@/types/user';
 
 export type DuplicateField = 'userCode' | 'email';
 
@@ -30,6 +35,8 @@ export interface UserService {
   remove(id: string): Promise<'deleted' | 'disabled'>;
   // newPassword bỏ trống nghĩa là đặt về mã người dùng.
   resetPassword(id: string, newPassword?: string): Promise<void>;
+  // Lịch sử thao tác trên tài khoản, mới nhất trước.
+  getAudit(id: string): Promise<UserAuditEntry[]>;
   importPreview(file: File): Promise<UserImportReport>;
   importCommit(file: File): Promise<UserImportReport>;
 }
@@ -93,6 +100,8 @@ export function createUserService(): UserService {
             userCode: input.userCode,
             role: input.role,
             ...profileBody(input),
+            // Sinh viên dùng MSSV làm mật khẩu ban đầu và kích hoạt bằng OTP (PDR-055).
+            password: input.role === 'Student' ? null : input.password,
           }),
         ),
       );
@@ -131,6 +140,13 @@ export function createUserService(): UserService {
       await apiRequest<ManagedUser>(
         `/users/${encodeURIComponent(id)}/reset-password`,
         json('POST', { newPassword: newPassword ?? null }),
+      );
+    },
+
+    // GET /api/users/{id}/audit → UserAuditEntryDto[].
+    getAudit(id) {
+      return apiRequest<UserAuditEntry[]>(
+        `/users/${encodeURIComponent(id)}/audit`,
       );
     },
 

@@ -5,6 +5,8 @@ import {
   parseCsvFirstColumn,
   safeCell,
   safeSheetName,
+  cellToText,
+  xlsxToCsvFile,
   slugify,
 } from '@/lib/xlsx';
 
@@ -96,4 +98,73 @@ describe('xlsx round trip', () => {
       'Chỉ nhận tệp .xlsx hoặc .csv.',
     );
   });
+});
+
+// jsdom chưa có File.text().
+const readAsText = (file: File) =>
+  new Promise<string>((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.readAsText(file);
+  });
+
+describe('xlsxToCsvFile', () => {
+  it('turns the first sheet into CSV keeping row numbers, codes, dates and passwords', async () => {
+    const ExcelJS = (await import('exceljs')).default;
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Người dùng');
+    sheet.addRow([
+      'user_code',
+      'full_name',
+      'role',
+      'date_of_birth',
+      'password',
+    ]);
+    sheet.addRow([
+      22520001,
+      'Nguyễn Văn An',
+      'Student',
+      new Date(Date.UTC(2004, 2, 12)),
+      null,
+    ]);
+    sheet.addRow([]);
+    sheet.addRow(['GV0001', 'Trần, Thị "Bình"', 'Lecturer', null, '-MatKhau1']);
+    sheet.addRow([
+      'GV0002',
+      { richText: [{ text: 'Lê ' }, { text: 'Cường' }] },
+      'Lecturer',
+      null,
+      { formula: '"Mk"&"12345"', result: 'Mk12345' },
+    ]);
+    const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
+
+    const csv = await xlsxToCsvFile(new File([buffer], 'Danh sach.xlsx'));
+
+    expect(csv.name).toBe('Danh sach.csv');
+    expect(await readAsText(csv)).toBe(
+      [
+        'user_code,full_name,role,date_of_birth,password',
+        '22520001,Nguyễn Văn An,Student,2004-03-12,',
+        ',,,,',
+        'GV0001,"Trần, Thị ""Bình""",Lecturer,,-MatKhau1',
+        'GV0002,Lê Cường,Lecturer,,Mk12345',
+      ].join('\r\n') + '\r\n',
+    );
+  });
+
+  it('rejects a file that is not a real Excel workbook', async () => {
+    await expect(
+      xlsxToCsvFile(new File(['khong phai excel'], 'ds.xlsx')),
+    ).rejects.toThrow('Không đọc được tệp Excel "ds.xlsx"');
+  });
+});
+
+it('formats cell values like the user sees them', () => {
+  expect(cellToText(12345678901)).toBe('12345678901');
+  expect(cellToText(7.5)).toBe('7.5');
+  expect(cellToText(true)).toBe('true');
+  expect(cellToText(undefined)).toBe('');
+  expect(cellToText({ text: 'liên kết', hyperlink: 'http://x' })).toBe(
+    'liên kết',
+  );
 });

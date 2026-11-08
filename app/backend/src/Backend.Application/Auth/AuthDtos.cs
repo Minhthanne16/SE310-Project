@@ -13,6 +13,12 @@ public class ChangeInitialPasswordDto
     public string ActivationCode { get; set; } = string.Empty;
 }
 
+public class ChangePasswordDto
+{
+    public string? CurrentPassword { get; set; }
+    public string? NewPassword { get; set; }
+}
+
 public class ActivationCodeSentDto
 {
     public DateTime ExpiresAt { get; set; }
@@ -28,4 +34,5 @@ public class CurrentUserDto
     // Student | Lecturer | AcademicAffairs
     public string Role { get; set; } = string.Empty;
     public bool MustChangePassword { get; set; }
+    public string? AvatarUrl { get; set; }
 }

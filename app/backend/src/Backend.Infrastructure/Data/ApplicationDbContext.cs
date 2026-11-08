@@ -20,6 +20,14 @@ public class ApplicationDbContext : DbContext
     public DbSet<RoundMilestone> RoundMilestones => Set<RoundMilestone>();
     public DbSet<RoundParticipant> RoundParticipants => Set<RoundParticipant>();
     public DbSet<UserAuditEntry> UserAuditEntries => Set<UserAuditEntry>();
+    public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<ThesisTopic> ThesisTopics => Set<ThesisTopic>();
+    public DbSet<TopicHistoryEntry> TopicHistoryEntries => Set<TopicHistoryEntry>();
+    public DbSet<ThesisGroup> ThesisGroups => Set<ThesisGroup>();
+    public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
+    public DbSet<TopicRegistration> TopicRegistrations => Set<TopicRegistration>();
+    public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -124,6 +132,102 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId);
             // Không xóa được người dùng đang thuộc đợt.
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Kind).IsRequired().HasMaxLength(16);
+            entity.Property(e => e.Text).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.Href).IsRequired().HasMaxLength(512);
+            entity.HasIndex(e => new { e.RecipientUserId, e.CreatedAt });
+            entity.HasIndex(e => e.BatchId);
+            entity.HasIndex(e => e.SenderUserId);
+            // Tài khoản đã có thông báo là "đã có dữ liệu": chỉ vô hiệu hóa, không xóa (BUSINESS_RULES).
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.RecipientUserId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Sender).WithMany().HasForeignKey(e => e.SenderUserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ThesisTopic>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Ignore(e => e.Code);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(300);
+            entity.Property(e => e.Field).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(4000);
+            entity.Property(e => e.Requirements).HasMaxLength(2000);
+            entity.Property(e => e.Source).HasConversion<string>().HasMaxLength(32);
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(32);
+            entity.HasIndex(e => new { e.RoundId, e.Number }).IsUnique();
+            entity.HasIndex(e => e.SupervisorId);
+            // Một nhóm chỉ giữ một đề tài (giá trị null không tính trùng).
+            entity.HasIndex(e => e.GroupId).IsUnique();
+            entity.HasOne<ThesisGroup>().WithMany().HasForeignKey(e => e.GroupId).OnDelete(DeleteBehavior.SetNull);
+            entity.HasOne<ThesisRound>().WithMany(r => r.Topics).HasForeignKey(e => e.RoundId).OnDelete(DeleteBehavior.Cascade);
+            // Tài khoản có đề tài chỉ được vô hiệu hóa, không xóa (BUSINESS_RULES); chặn thêm ở database.
+            entity.HasOne(e => e.Supervisor).WithMany().HasForeignKey(e => e.SupervisorId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(e => e.History).WithOne().HasForeignKey(h => h.TopicId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ThesisGroup>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.HasIndex(e => e.RoundId);
+            entity.HasOne<ThesisRound>().WithMany().HasForeignKey(e => e.RoundId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.RepresentativeId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(e => e.Members).WithOne().HasForeignKey(m => m.GroupId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<GroupMember>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            // Mỗi sinh viên chỉ thuộc một nhóm trong cùng đợt (BUSINESS_RULES), kể cả khi tạo đồng thời.
+            entity.HasIndex(e => new { e.RoundId, e.StudentId }).IsUnique();
+            entity.HasOne(e => e.Student).WithMany().HasForeignKey(e => e.StudentId).OnDelete(DeleteBehavior.Restrict);
+            // Xóa đợt xóa luôn thành viên nhóm (PostgreSQL kiểm NO ACTION trước khi cascade từ nhóm chạy xong).
+            entity.HasOne<ThesisRound>().WithMany(r => r.GroupMembers).HasForeignKey(e => e.RoundId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TopicRegistration>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.GroupId, e.CreatedAt });
+            entity.HasIndex(e => e.TopicId);
+            entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<ThesisGroup>().WithMany().HasForeignKey(e => e.GroupId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TopicHistoryEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            // Id sinh ở ứng dụng: mục mới thêm qua navigation History được chèn (không hiểu nhầm là UPDATE).
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Category).IsRequired().HasMaxLength(32);
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Detail).HasMaxLength(8000);
+            entity.HasIndex(e => new { e.TopicId, e.CreatedAt });
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TokenHash).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.SecurityStamp).IsRequired().HasMaxLength(64);
+            entity.HasIndex(e => e.TokenHash).IsUnique();
+            entity.HasIndex(e => e.UserId);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PasswordResetRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.EmailHash).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.Source).IsRequired().HasMaxLength(64);
+            entity.HasIndex(e => new { e.EmailHash, e.CreatedAt });
+            entity.HasIndex(e => new { e.Source, e.CreatedAt });
+            entity.HasIndex(e => e.CreatedAt);
         });
 
         modelBuilder.Entity<UserAuditEntry>(entity =>

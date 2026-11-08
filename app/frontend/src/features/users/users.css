@@ -1219,3 +1219,94 @@
     padding: 20px 16px;
   }
 }
+
+/* Lịch sử thao tác trong ngăn Sửa người dùng */
+.usr-history {
+  border: 1px solid #e7e5e4;
+  border-radius: 10px;
+  padding: 0 14px;
+  font-size: 13.5px;
+  color: #3d3d3d;
+}
+
+.usr-history summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 0;
+  font-weight: 600;
+  color: #1a1a1a;
+  cursor: pointer;
+}
+
+.usr-history summary:focus-visible {
+  outline: 2px solid #1f5fbf;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.usr-history-status {
+  margin: 0 0 12px;
+  color: #737373;
+}
+
+.usr-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.usr-history-list > li {
+  padding-left: 12px;
+  border-left: 2px solid #e7e5e4;
+}
+
+.usr-history-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+
+.usr-history-head time,
+.usr-history-actor {
+  color: #737373;
+  font-size: 12.5px;
+}
+
+.usr-history-list ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  overflow-wrap: anywhere;
+}
+
+.usr-link-btn {
+  border: 0;
+  padding: 0;
+  background: none;
+  color: #1f5fbf;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* Chọn định dạng tệp nhập (Excel hoặc CSV), PDR-055 */
+.usr-format {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.usr-format-label {
+  flex-basis: 100%;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1a1a1a;
+}

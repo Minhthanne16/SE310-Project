@@ -30,7 +30,7 @@ Ngoài tiêu chí nghiệp vụ, mọi lát cắt MVP phải có migration đư�
 | Nhóm | Có thể dùng làm nền | Chưa đạt MVP / cần hoàn tất |
 | --- | --- | --- |
 | Xác thực và nhập người dùng | Đăng nhập JWT-cookie, đổi mật khẩu lần đầu, import CSV preview/import và seed local đã có. | Quản trị vòng đời tài khoản, quên/đặt lại mật khẩu có giới hạn, audit; kiểm chứng toàn bộ UI với API thật. |
-| Hồ sơ cá nhân | UI và validation đã có; source đang có một lát `GET /api/profile` chưa hoàn tất. | Hoàn thành migration, đọc/sửa hồ sơ, đổi mật khẩu, audit, upload avatar MinIO và thay toàn bộ demo/stub. Lát source dở dang phải được review trước khi xây tiếp. |
+| Hồ sơ cá nhân | Đọc/sửa hồ sơ, đổi mật khẩu, audit, avatar MinIO và chuông dùng API thật ([PDR-051](../decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md)). | Áp dụng migration `AddProfileContactAndNotifications` có kiểm soát ở từng môi trường; lịch sử nhiều lần đăng nhập chưa có. |
 | Đợt, đề tài, đăng ký, tài liệu, hội đồng, điểm, kết quả | Có nhiều màn frontend/demo và một phần mẫu phiếu đánh giá. | Chưa có mô hình dữ liệu/API nghiệp vụ end-to-end; không được nối trực tiếp UI demo vào nghiệm thu. |
 | Hạ tầng dùng chung | PostgreSQL local/Neon hướng dẫn, email và Docker Compose đã có. | Cấu hình storage, migration có kiểm soát, môi trường test cô lập, secret, sao lưu/khôi phục theo phạm vi được chốt. |
 
@@ -97,18 +97,18 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G1.2 — Quản trị tài khoản và khôi phục truy cập
 
-- [ ] Hoàn chỉnh API/UI danh sách, tạo, sửa, vô hiệu hóa/kích hoạt, xóa khi không có tham chiếu và reset bởi Giáo vụ.
-- [ ] Thực hiện quên mật khẩu trung tính, token một lần 30 phút, rate-limit PDR-044 và điều kiện nhận thư PDR-045.
-- [ ] Audit các thao tác quản trị; token/mật khẩu không được xuất hiện trong log, response hay file xuất.
+- [x] Hoàn chỉnh API/UI danh sách, tạo, sửa, vô hiệu hóa/kích hoạt, xóa khi không có tham chiếu và reset bởi Giáo vụ.
+- [x] Thực hiện quên mật khẩu trung tính, token một lần 30 phút, rate-limit PDR-044 và điều kiện nhận thư PDR-045.
+- [x] Audit các thao tác quản trị; token/mật khẩu không được xuất hiện trong log, response hay file xuất.
 
-**Nghiệm thu:** Tài khoản có tham chiếu không bị xóa vật lý; phiên cũ bị thu hồi sau reset/đổi mật khẩu; giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn có test biên.
+**Nghiệm thu:** Tài khoản có tham chiếu không bị xóa vật lý; phiên cũ bị thu hồi sau reset/đổi mật khẩu; giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn có test biên. *(2026-11-07: hợp đồng PDR-004/PDR-052.)*
 
 #### G1.3 — Hoàn tất hồ sơ và avatar trên MinIO
 
-- [ ] Review lát `Profiles` đang dở dang, viết migration cho trường hồ sơ đã chọn; không chỉnh migration đã áp dụng.
-- [ ] Cung cấp `GET/PUT /api/profile`, đổi mật khẩu thường và endpoint/avatar flow theo contract đã chốt; self-service họ tên theo PDR-036 và audit khi Giáo vụ sửa tên người khác.
-- [ ] Tích hợp MinIO qua backend: validate magic bytes, JPG/PNG/WebP tối đa 2 MB, object key không đoán được, authorization khi đọc, dọn object mồ côi theo transaction/error strategy.
-- [ ] Thay profile demo và stub 501 bằng API thật; hiển thị loading/error/empty có thể dùng bàn phím.
+- [x] Review lát `Profiles` đang dở dang, viết migration cho trường hồ sơ đã chọn; không chỉnh migration đã áp dụng.
+- [x] Cung cấp `GET/PUT /api/profile`, đổi mật khẩu thường và endpoint/avatar flow theo contract đã chốt; self-service họ tên theo PDR-036 và audit khi Giáo vụ sửa tên người khác.
+- [x] Tích hợp MinIO qua backend: validate magic bytes, JPG/PNG/WebP tối đa 2 MB, object key không đoán được, authorization khi đọc, dọn object mồ côi theo transaction/error strategy.
+- [x] Thay profile demo và stub 501 bằng API thật; hiển thị loading/error/empty có thể dùng bàn phím.
 
 **Nghiệm thu:** Dữ liệu tồn tại sau refresh; user thường không thể xem/sửa hồ sơ người khác qua API; ảnh giả ảnh/quá 2 MB không thay ảnh cũ; đổi mật khẩu thu hồi phiên cũ.
 
@@ -144,15 +144,15 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G3.1 — Đề tài do Giảng viên quản lý và Giáo vụ công bố
 
-- [ ] Xây entity/API/UI cho tạo/sửa/xóa/công bố đề tài và lịch sử.
-- [ ] Áp dụng quyền GVHD/Giáo vụ, trạng thái trước/sau công bố và cảnh báo tải đề tài không chặn lưu.
+- [x] Xây entity/API/UI cho tạo/sửa/xóa/công bố đề tài và lịch sử.
+- [x] Áp dụng quyền GVHD/Giáo vụ, trạng thái trước/sau công bố và cảnh báo tải đề tài không chặn lưu.
 
-**Nghiệm thu:** Đề tài đã có nhóm không thể bị xóa/sửa trái quy tắc; SV chỉ xem sau công bố.
+**Nghiệm thu:** Đề tài đã có nhóm không thể bị xóa/sửa trái quy tắc; SV chỉ xem sau công bố. *(2026-11-07: [PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md).)*
 
 #### G3.2 — Nhóm và ghi danh đề tài công bố
 
-- [ ] Bảo đảm nhóm 1–2 SV, đúng đợt, đúng đại diện và một SV/một nhóm/đợt.
-- [ ] Dùng ràng buộc DB + transaction cho tranh chấp hai nhóm nhận một đề tài và idempotency.
+- [x] Bảo đảm nhóm 1–2 SV, đúng đợt, đúng đại diện và một SV/một nhóm/đợt. *(backend, PDR-054)*
+- [x] Dùng ràng buộc DB + transaction cho tranh chấp hai nhóm nhận một đề tài và idempotency. *(backend, PDR-054)*
 - [ ] Thực hiện hủy theo PDR-047, giữ nhóm/đại diện/lịch sử để ghi danh lại.
 
 **Nghiệm thu:** Một trong hai yêu cầu đồng thời thắng; hủy ở mốc không hợp lệ bị chặn và thao tác lặp không làm sai trạng thái.

@@ -62,7 +62,12 @@ docs/
 │   ├── PDR-047-huy-ghi-danh-de-tai-cong-bo.md
 │   ├── PDR-048-cong-bo-de-tai-o-chi-tiet-dot.md
 │   ├── PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md
-│   └── PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md
+│   ├── PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md
+│   ├── PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md
+│   ├── PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md
+│   ├── PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md
+│   ├── PDR-054-ghi-danh-nhom-de-tai-cong-bo.md
+│   └── PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md
 ├── product/
 │   ├── GLOSSARY.md
 │   ├── ROLES.md

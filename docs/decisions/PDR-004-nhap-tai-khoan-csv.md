@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận
+Đã chấp nhận. Bổ sung 2026-11-07: cột/trường mật khẩu cho giảng viên, giáo vụ và nhập bằng tệp Excel ([PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)).
 
 ## Ngày
 
@@ -18,13 +18,15 @@ Thẻ công việc backend yêu cầu "tạo email hàng loạt cho sinh viên d
 2. **Không gửi email khi tạo tài khoản.** Người dùng đăng nhập bằng email cùng mật khẩu ban đầu là mã người dùng, rồi kích hoạt bằng OTP (PDR-003).
 3. **Vai trò:** cột `role` nhận cả ba vai trò. Giá trị được chấp nhận (không phân biệt hoa thường): `Student`/`Sinh viên`/`sv`, `Lecturer`/`Giảng viên`/`gv`, `AcademicAffairs`/`Giáo vụ`/`giaovu`.
 4. **Cột:** `user_code, full_name, email, role, date_of_birth, class_name, department, academic_title` (theo thiết kế); thứ tự cột tùy ý.
+   - Cột `password` (bổ sung theo [PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)): bắt buộc với giảng viên, giáo vụ (8–64 ký tự, có chữ và số, khác mã), phải để trống với sinh viên. Báo cáo không bao giờ chứa mật khẩu.
    - Bắt buộc với mọi dòng: `user_code`, `full_name`, `email`, `role`.
    - `class_name` bắt buộc với Sinh viên; `department` bắt buộc với Giảng viên.
    - `date_of_birth` không bắt buộc, nhận dạng `yyyy-MM-dd` hoặc `dd/MM/yyyy`.
 5. **Hai bước:** xem trước chỉ kiểm tra, không ghi DB. Bước nhập gửi lại tệp, kiểm tra lại toàn bộ rồi tạo **mọi dòng hợp lệ trong một transaction**; dòng lỗi bị bỏ qua và được trả về trong báo cáo.
 6. **Lỗi theo dòng:** thiếu trường bắt buộc, sai định dạng email/ngày/mã người dùng, vai trò không hợp lệ, trùng mã/email với dòng khác trong tệp, mã/email đã tồn tại.
-7. **Tài khoản tạo ra:** `MustChangePassword = true`, `IsActive = true`, mật khẩu ban đầu là `user_code`.
+7. **Tài khoản tạo ra:** `IsActive = true`. Sinh viên: `MustChangePassword = true`, mật khẩu ban đầu là `user_code`. Giảng viên, giáo vụ: mật khẩu trong cột `password`, `MustChangePassword = false`, không cần OTP ([PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)).
 8. **Giới hạn kỹ thuật** (không phải chỉ tiêu phi chức năng; OQ-007 vẫn mở): tệp `.csv` mã hóa UTF-8, tối đa 2 MB và 2000 dòng dữ liệu. Mã người dùng chỉ gồm chữ, số, `.`, `-`, `_`, tối đa 50 ký tự.
+   - Tệp Excel (.xlsx) được đọc ở trình duyệt (trang tính đầu tiên, cùng cột) rồi gửi dạng CSV UTF-8 qua hai endpoint dưới đây, nên giới hạn và báo cáo giống CSV ([PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)).
 9. **Băm mật khẩu ban đầu:** BCrypt work factor 10 (mật khẩu tự đặt dùng 12). Mật khẩu ban đầu chính là mã người dùng, không bí mật, nên bảo vệ thật nằm ở OTP và bước bắt buộc đổi. Đo được 2000 tài khoản mất khoảng 15 giây trên máy 12 nhân.
 
 ## Hợp đồng API
@@ -49,19 +51,20 @@ Mọi endpoint chỉ dành cho vai trò `AcademicAffairs` (401 khi chưa đăng 
 | Method + route | Body | Thành công | Lỗi |
 | --- | --- | --- | --- |
 | `GET /api/users` | — | 200 `UserDto[]` (theo mã); lọc, tìm, phân trang ở client | 401, 403 |
-| `POST /api/users` | `{ userCode, fullName, email, role, dateOfBirth, className, department, academicTitle }` | 201 `UserDto` | 400 lỗi trường (`errors[]`), 409 trùng |
+| `POST /api/users` | `{ userCode, fullName, email, role, dateOfBirth, className, department, academicTitle, password }` (`password` bắt buộc với giảng viên/giáo vụ, `null` với sinh viên; PDR-055) | 201 `UserDto` | 400 lỗi trường (`errors[]`), 409 trùng |
 | `PUT /api/users/{id}` | `{ fullName, email, dateOfBirth, className, department, academicTitle }` | 200 `UserDto` | 400, 404, 409 trùng email |
 | `PATCH /api/users/{id}/status` | `{ isActive }` | 200 `UserDto` | 400 tự vô hiệu hóa chính mình, 404 |
 | `DELETE /api/users/{id}` | — | 200 `{ result: "deleted" \| "disabled" }` | 400 tự xóa chính mình, 404 |
 | `POST /api/users/{id}/reset-password` | `{ newPassword }` (`null` = về mã người dùng) | 200 `UserDto` | 400 mật khẩu không đạt quy tắc hoặc trùng mã, 404 |
+| `GET /api/users/{id}/audit` | — | 200 `UserAuditEntryDto[]` mới nhất trước ([PDR-052](PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md)) | 401, 403 |
 
 - Kiểm tra trường giống nhập CSV: mã ≤ 50 ký tự gồm chữ, số, `.`, `-`, `_`; họ tên ≤ 200; email hợp lệ, lưu chữ thường; lớp bắt buộc với Sinh viên, bộ môn bắt buộc với Giảng viên; lớp/bộ môn/học hàm ≤ 100. Trường không thuộc vai trò bị bỏ khi lưu. `role` chỉ nhận `Student`, `Lecturer`, `AcademicAffairs`.
-- Tạo thủ công giống dòng CSV hợp lệ: mật khẩu ban đầu là mã, `MustChangePassword = true`, không gửi email.
+- Tạo thủ công giống dòng CSV hợp lệ, không gửi email: sinh viên có mật khẩu ban đầu là mã và `MustChangePassword = true`; giảng viên, giáo vụ dùng mật khẩu Giáo vụ đặt, đã kích hoạt ([PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)).
 - **Mã và vai trò không đổi:** `PUT` không có hai trường này; giá trị gửi thừa bị bỏ qua.
 - **409** có `data = { field: "userCode" | "email" }` để form báo đúng ô. Mã so khớp phân biệt hoa thường; email không phân biệt (đã chuẩn hóa chữ thường).
-- **Xóa:** tài khoản có bản ghi nghiệp vụ tham chiếu (`hasData`) chỉ bị vô hiệu hóa, kết quả `disabled`; không có thì xóa hẳn, kết quả `deleted`. Hiện chưa có bảng nghiệp vụ nào tham chiếu tới tài khoản nên `hasData` luôn `false`; khi thêm bảng đề tài, phân công, phiếu điểm, thông báo… phải bổ sung kiểm tra trong `UserRepository.GetUserIdsWithRelatedDataAsync`.
+- **Xóa:** tài khoản có bản ghi nghiệp vụ tham chiếu (`hasData`) chỉ bị vô hiệu hóa, kết quả `disabled`; không có thì xóa hẳn, kết quả `deleted`. Hiện `hasData` xét bảng `Notifications` (người nhận hoặc người gửi, [PDR-051](PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md)) đề tài mà tài khoản là GVHD ([PDR-053](PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)) và nhóm sinh viên ([PDR-054](PDR-054-ghi-danh-nhom-de-tai-cong-bo.md)); khi thêm bảng đề tài, phân công, phiếu điểm… phải bổ sung kiểm tra trong `UserRepository.GetUserIdsWithRelatedDataAsync`.
 - **Thu hồi phiên:** vô hiệu hóa và đặt lại mật khẩu đổi `SecurityStamp`, nên token đã cấp hết hiệu lực ngay và không dùng lại được sau khi kích hoạt lại. Kích hoạt lại giữ mật khẩu hiện có.
 - **Đặt lại mật khẩu** (về mã hoặc mật khẩu mới theo quy tắc PDR-002, khác mã người dùng) luôn đặt `MustChangePassword = true` và xóa OTP đang chờ; lần đăng nhập kế tiếp người dùng phải kích hoạt lại bằng OTP (PDR-003).
-- **Lịch sử:** mọi thao tác tạo, sửa (giá trị trước/sau từng trường, theo PDR-036), vô hiệu hóa, kích hoạt lại, đặt lại mật khẩu (chỉ ghi cách đặt, không ghi mật khẩu) và xóa được lưu trong bảng `UserAuditEntries` cùng transaction với thay đổi, kèm người thực hiện và thời điểm. Bảng không có khóa ngoại tới `Users` để lịch sử còn sau khi xóa; lịch sử quản trị này **không** tính là "dữ liệu" chặn xóa tài khoản. Chưa có màn hình xem lịch sử này.
+- **Lịch sử:** mọi thao tác tạo (kể cả từng tài khoản tạo bằng nhập CSV, `details.source = "csv"`), sửa (giá trị trước/sau từng trường, theo PDR-036), vô hiệu hóa, kích hoạt lại, đặt lại mật khẩu (chỉ ghi cách đặt, không ghi mật khẩu) và xóa được lưu trong bảng `UserAuditEntries` cùng transaction với thay đổi, kèm người thực hiện và thời điểm. Bảng không có khóa ngoại tới `Users` để lịch sử còn sau khi xóa; lịch sử quản trị này **không** tính là "dữ liệu" chặn xóa tài khoản. Giáo vụ xem lịch sử qua `GET /api/users/{id}/audit` ở mục "Lịch sử thao tác" của ngăn Sửa ([PDR-052](PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md)).
 - Upload dùng cookie xác thực; `SameSite=Lax` chặn form POST chéo site gửi kèm cookie.
 - Nếu máy chủ ít nhân và tệp lớn, request nhập có thể chạm timeout của proxy. Khi đó cần chia tệp hoặc chuyển sang xử lý nền.

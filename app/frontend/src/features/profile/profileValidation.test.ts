@@ -5,6 +5,7 @@ import { validateAvatarFile, validateProfileInput } from './profileValidation';
 afterEach(() => vi.useRealTimers());
 
 const input = (overrides: Partial<ProfileInput> = {}): ProfileInput => ({
+  fullName: 'Lê Thị Bình',
   dateOfBirth: '',
   phone: '',
   secondaryEmail: '',

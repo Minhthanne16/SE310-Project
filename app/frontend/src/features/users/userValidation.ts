@@ -27,10 +27,32 @@ export function normalizeUserInput(input: UserInput): UserInput {
   };
 }
 
+// Mật khẩu Giáo vụ đặt cho giảng viên/giáo vụ (PDR-055, quy tắc PDR-002).
+export function passwordError(
+  password: string,
+  userCode: string,
+): string | undefined {
+  if (!password) return 'Nhập mật khẩu.';
+  if (password.length > 64) return 'Tối đa 64 ký tự.';
+  if (
+    password.length < 8 ||
+    !/[a-zA-Z]/.test(password) ||
+    !/[0-9]/.test(password)
+  )
+    return 'Tối thiểu 8 ký tự, có cả chữ và số.';
+  if (password.toLowerCase() === userCode.trim().toLowerCase())
+    return 'Mật khẩu phải khác mã người dùng.';
+  return undefined;
+}
+
 // Phản chiếu quy tắc CSV phía backend (UserImport.cs, PDR-004): mã ≤ 50 ký tự
 // gồm chữ/số/./-/_, họ tên ≤ 200, email hợp lệ ≤ 256, lớp bắt buộc với sinh
-// viên, bộ môn bắt buộc với giảng viên, lớp/bộ môn/học hàm ≤ 100.
-export function validateUserInput(raw: UserInput): UserFieldErrors {
+// viên, bộ môn bắt buộc với giảng viên, lớp/bộ môn/học hàm ≤ 100. Khi tạo
+// giảng viên/giáo vụ, mật khẩu bắt buộc (PDR-055).
+export function validateUserInput(
+  raw: UserInput,
+  options: { creating: boolean } = { creating: false },
+): UserFieldErrors {
   const input = normalizeUserInput(raw);
   const errors: UserFieldErrors = {};
 
@@ -66,6 +88,10 @@ export function validateUserInput(raw: UserInput): UserFieldErrors {
   for (const field of roleFields) {
     if (!errors[field] && input[field].length > 100)
       errors[field] = 'Tối đa 100 ký tự.';
+  }
+  if (options.creating && input.role !== 'Student') {
+    const error = passwordError(input.password, input.userCode);
+    if (error) errors.password = error;
   }
   return errors;
 }

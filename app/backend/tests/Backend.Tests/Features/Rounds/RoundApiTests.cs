@@ -115,7 +115,8 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
         Assert.Equal(0, summary.GetProperty("total").GetInt32());
         Assert.Equal(0, summary.GetProperty("pendingResultCount").GetInt32());
         Assert.Equal(0, summary.GetProperty("byStatus").GetProperty("Chưa đăng ký").GetInt32());
-        Assert.Equal(9, summary.GetProperty("byStatus").EnumerateObject().Count());
+        // Đủ 12 trạng thái đề tài của PDR-049, trùng TOPIC_STATUSES ở frontend.
+        Assert.Equal(12, summary.GetProperty("byStatus").EnumerateObject().Count());
 
         // Lỗi: 400 thiếu thông tin, 409 trùng tên, 404 thiếu đợt nguồn / đợt không có.
         var invalid = await Send(HttpMethod.Post, "/api/rounds", cookie, new { name = " ", program = "", periodLabel = "" });
@@ -255,6 +256,8 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
         var cookie = await LoginAs(UserRole.AcademicAffairs);
         // Mốc "GV gửi đề tài" đã qua (mốc 0 kết thúc trước hôm nay) vẫn không chặn; đăng ký còn hạn đến hôm nay.
         var id = await CreateRunningRound(cookie, Today);
+        // Công bố cần ít nhất một đề tài trong đợt.
+        await _factory.SeedTopic(id);
 
         var published = await Send(HttpMethod.Post, $"/api/rounds/{id}/topics/publish", cookie);
         Assert.Equal(HttpStatusCode.OK, published.StatusCode);
@@ -379,6 +382,18 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
         {
             using var db = new ApplicationDbContext(_options);
             return await RoundWorkflowTests.SeedUser(db, role, code, name, unit);
+        }
+
+        // Một đề tài Chưa đăng ký của một GV mới trong đợt (GV không cần là người tham gia để công bố).
+        public async Task SeedTopic(Guid roundId)
+        {
+            using var db = new ApplicationDbContext(_options);
+            var lecturer = await RoundWorkflowTests.SeedUser(db, UserRole.Lecturer, $"GV{Guid.NewGuid().ToString("N")[..8]}", "Giảng viên", "CNPM");
+            db.ThesisTopics.Add(new ThesisTopic
+            {
+                RoundId = roundId, Number = 1, Title = "Đề tài mẫu", Field = "CNPM", Description = "Mô tả", SupervisorId = lecturer
+            });
+            await db.SaveChangesAsync();
         }
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)

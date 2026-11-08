@@ -10,10 +10,8 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { ApiError } from '@/api/request';
 import { SessionProvider } from '@/features/auth/session/SessionProvider';
 import type { AuthService } from '@/features/auth/services/authService';
-import {
-  createProfileService,
-  type ProfileService,
-} from '@/features/profile/services/profileService';
+import { createFakeProfileService } from '@/features/profile/services/fakeProfileService';
+import type { ProfileService } from '@/features/profile/services/profileService';
 import type { CurrentUser, UserRole } from '@/types/auth';
 import { ProfilePage } from './ProfilePage';
 
@@ -47,7 +45,7 @@ const renderPage = async (
     changePassword?: AuthService['changePassword'];
   } = {},
 ) => {
-  const service = options.service ?? createProfileService();
+  const service = options.service ?? createFakeProfileService(role);
   render(
     <SessionProvider authService={fakeAuth(role, options.changePassword)}>
       <ProfilePage profileService={service} />
@@ -95,7 +93,7 @@ it('edits and saves the profile', async () => {
   const service = await renderPage();
   const update = vi.spyOn(service, 'updateProfile');
   fireEvent.click(screen.getByRole('button', { name: 'Sửa hồ sơ' }));
-  expect(screen.getByLabelText('Ngày sinh')).toHaveFocus();
+  expect(screen.getByLabelText('Họ tên')).toHaveFocus();
 
   type('Số điện thoại', '0912 345.678');
   type('Email liên hệ phụ', 'Binh@Gmail.com');
@@ -105,7 +103,6 @@ it('edits and saves the profile', async () => {
     expect(screen.getByText('0912345678')).toBeInTheDocument(),
   );
   expect(update).toHaveBeenCalledWith(
-    'id-Student',
     expect.objectContaining({ phone: '0912 345.678' }),
   );
   expect(screen.getByText('0912345678')).toBeInTheDocument();
@@ -118,12 +115,37 @@ it('edits and saves the profile', async () => {
   );
 });
 
-it('keeps the full name read-only under the account section', async () => {
+it('lets every role edit their own full name (PDR-036)', async () => {
+  for (const role of ['Student', 'Lecturer', 'AcademicAffairs'] as const) {
+    await renderPage(role);
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa hồ sơ' }));
+    type('Họ tên', '  Trần Thị Mới  ');
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Trần Thị Mới' }),
+    ).toBeInTheDocument();
+    cleanup();
+  }
+});
+
+it('requires a full name', async () => {
   await renderPage();
-  expect(screen.getByText('Họ tên')).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Sửa hồ sơ' }));
-  expect(screen.queryByLabelText('Họ tên')).not.toBeInTheDocument();
-  expect(screen.getAllByText('Nguyễn Văn An').length).toBeGreaterThan(0);
+  type('Họ tên', '   ');
+  fireEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+  expect(screen.getByText('Nhập họ tên.')).toBeInTheDocument();
+  expect(screen.getByLabelText('Họ tên')).toHaveAttribute(
+    'aria-invalid',
+    'true',
+  );
+});
+
+it('keeps code, login email and unit read-only while editing', async () => {
+  await renderPage('Student');
+  fireEvent.click(screen.getByRole('button', { name: 'Sửa hồ sơ' }));
+  expect(screen.queryByLabelText('Mã sinh viên')).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Email đăng nhập')).not.toBeInTheDocument();
+  expect(screen.queryByLabelText('Lớp')).not.toBeInTheDocument();
 });
 
 it('cancels editing without saving', async () => {

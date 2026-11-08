@@ -61,6 +61,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Mật khẩu mới theo `passwordRules` đã có trong repo.
 - Mã xác thực có hiệu lực 10 phút, dùng một lần, sai 5 lần thì bị hủy (xem [PDR-003](../decisions/PDR-003-otp-kich-hoat-qua-email.md)).
 - Ghi chú triển khai frontend: panel trái chỉ hiện tên khoa (chưa có "Đợt hiện tại" vì chưa có API và đây là trang công khai). Giữ bước mã OTP khi đổi mật khẩu lần đầu (PDR-003) và lỗi theo từng ô, khác artboard.
+- Ghi chú (2026-11-07, [PDR-055](../decisions/PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)): bước mã xác thực chỉ hiện với sinh viên; giảng viên, giáo vụ phải đổi mật khẩu lần đầu (ví dụ sau khi Giáo vụ đặt lại về mã) chỉ nhập mật khẩu mới.
 
 ## Quên mật khẩu
 - **Vai trò:** Chung
@@ -84,7 +85,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Chỉ gửi liên kết cho tài khoản đang hoạt động và đã kích hoạt; tài khoản vô hiệu hóa/chưa kích hoạt cũng thấy phản hồi trung tính và được hướng dẫn liên hệ Giáo vụ theo [PDR-045](../decisions/PDR-045-chi-tai-khoan-hoat-dong-da-kich-hoat-duoc-tu-dat-lai-mat-khau.md).
 - Phản hồi màn hình và API không phân biệt email có/không có tài khoản theo [PDR-037](../decisions/PDR-037-phan-hoi-trung-tinh-khi-quen-mat-khau.md); giới hạn 60 giây, 5/giờ/email và 20/giờ/nguồn theo [PDR-044](../decisions/PDR-044-gioi-han-yeu-cau-dat-lai-mat-khau.md) vẫn dùng phản hồi trung tính khi bị giới hạn.
 - Không dùng được email: giáo vụ đặt lại mật khẩu (xem Người dùng).
-- Ghi chú triển khai frontend: mới có bản "đang xây dựng" trong layout của artboard; 7 trạng thái của artboard (gửi liên kết, đặt mật khẩu mới, hết hạn, đã dùng, đã đổi) chưa làm vì backend chưa có API quên mật khẩu.
+- Ghi chú triển khai (2026-11-07): dùng API thật theo [PDR-052](../decisions/PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md). Liên kết dạng `/quen-mat-khau#token=…`; trang đọc token rồi xóa khỏi thanh địa chỉ. Có đủ các màn Nhập email · Đã gửi liên kết (nút gửi lại đếm 60 giây) · Đặt mật khẩu mới · Liên kết hết hạn · Liên kết đã được dùng · Đã đổi mật khẩu; thêm màn "Liên kết không còn hiệu lực" cho token sai hoặc tài khoản đã thay đổi sau khi phát. Màn nhập email luôn có ghi chú liên hệ Giáo vụ khi không nhận được thư (PDR-045), giống nhau cho mọi email.
 
 ## Trang chủ
 - **Vai trò:** Chung (3 vai trò)
@@ -155,7 +156,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Prop `audience`: sv, gv, giaovu (nội dung khác nhau theo vai trò).
-- Ghi chú triển khai frontend: chuông hiện ở thanh trên của cả ba vai trò, chạy trên dữ liệu demo trong bộ nhớ (`navigation/services/notificationService.ts`), chờ endpoint đề xuất `GET /api/notifications/me`, `POST /api/notifications/read`.
+- Ghi chú triển khai: chuông hiện ở thanh trên của cả ba vai trò, dùng API thật `GET /api/notifications/me`, `POST /api/notifications/read` theo [PDR-051](../decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md). Hiện chỉ sự kiện Mở đợt phát sinh thông báo; các sự kiện khác và thông báo gửi thủ công thuộc P08-S01.
 
 ## Hồ sơ cá nhân
 - **Vai trò:** Chung (3 file theo vai trò)
@@ -179,7 +180,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Ba file HoSo, HoSo-GV, HoSo-GiaoVu cùng mã, chỉ khác vai trò mặc định; dựng thành một màn nhận vai trò từ phiên đăng nhập.
-- Ghi chú triển khai frontend (`/ho-so`): theo yêu cầu mới, **họ tên không tự sửa được** (do Giáo vụ quản lý, hiển thị cùng mã, email, vai trò, đơn vị); người dùng chỉ sửa ngày sinh, SĐT, email phụ, ảnh đại diện. Điểm này khác dòng "Sửa họ tên, ..." ở trên. Backend chưa có API hồ sơ nên sửa hồ sơ, ảnh đại diện, hoạt động đăng nhập chạy trên kho demo trong bộ nhớ; đổi mật khẩu là stub (501). Endpoint đề xuất: `GET /api/profile`, `PUT /api/profile`, `PUT /api/profile/avatar`, `POST /api/auth/change-password`. Giới hạn ảnh JPG/PNG/WebP, tối đa 2 MB là tạm thời, chờ OQ-006.
+- Ghi chú triển khai (`/ho-so`): dùng API thật theo [PDR-051](../decisions/PDR-051-ho-so-anh-dai-dien-va-chuong-thong-bao.md); họ tên tự sửa được theo PDR-036, giới hạn ảnh theo PDR-043. Hoạt động đăng nhập hiện chỉ có lần gần nhất.
 - Cập nhật giao diện theo artboard HoSo/HoSo-GV/HoSo-GiaoVu: một component cho cả ba vai trò; thông báo lưu hồ sơ và đổi mật khẩu là banner trong trang (không còn toast); lỗi ảnh (sai định dạng, quá 2 MB) chặn lưu; cột phải chỉ có phần dữ liệu hiện có (hoạt động đăng nhập, quyền hạn của Giáo vụ). Chưa có card "Khóa luận" (SV), "Đợt" (GV), dòng Khoa/Đơn vị và "Lần đầu đăng nhập" vì chưa có dữ liệu/API.
 
 ## Trang 404
@@ -236,6 +237,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Chưa công bố danh sách thì không Đề xuất.
+- Ghi chú triển khai (2026-11-07, `/sv/dang-ky`): dùng `GET /api/topics/published` ([PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); dựng ba tình trạng đợt (chưa có đợt, chưa có danh sách, danh sách). Bảng có tìm kiếm, mỗi dòng mở xem mô tả/yêu cầu. Từ 2026-11-08 có dòng "Nhóm của bạn" và nút "Chi tiết" mở màn ghi danh (P03-S02); đề xuất (P03-S03) chưa làm, trang ghi rõ "đang được xây dựng".
 
 ## Chi tiết đề tài và ghi danh
 - **Vai trò:** Sinh viên
@@ -256,6 +258,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Lỗi cần có: đề tài vừa có nhóm khác nhận, MSSV không hợp lệ, đợt đã đóng.
+- Ghi chú triển khai (2026-11-07): backend ghi danh/hủy/tình trạng nhóm đã có theo [PDR-054](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md) (người bấm ghi danh là đại diện; thành viên thứ hai nhập mã vào nhóm ngay và nhận thông báo; nhóm cũ chỉ đại diện ghi danh lại). Màn `/sv/dang-ky/[id]` đã dựng ngày 2026-11-08 với đủ các trạng thái trên, thêm hộp "Xác nhận ghi danh", "Ghi danh bằng nhóm này" cho đại diện nhóm cũ và mục "Lịch sử ghi danh của nhóm" (chi tiết tại [PDR-054 · Giao diện sinh viên](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md#giao-diện-sinh-viên-2026-11-08)). Chưa hiện mức tối đa của GV vì API sinh viên không trả mức đề tài (PDR-053).
 
 ## Đề xuất đề tài (overlay)
 - **Vai trò:** Sinh viên
@@ -366,6 +369,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Đến khi giáo vụ công bố danh sách: thêm, sửa, xóa tự do.
 - Sau công bố: không thêm, không xóa; chỉ sửa mô tả và yêu cầu của đề tài chưa có nhóm; khóa Lĩnh vực.
 - Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận; mức tối thiểu và tối đa của đợt chỉ cảnh báo, không chặn (giáo vụ thấy cờ "GV vượt mức").
+- Ghi chú triển khai (2026-11-07, `/gv/de-tai`): dùng API thật `/api/topics/mine`, `POST|PUT|DELETE /api/topics` theo [PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md). Ô lọc Đợt chọn đợt GV tham gia (mặc định đợt Đang diễn ra). Form là hộp thoại: Tên đề tài, Lĩnh vực (gợi ý sẵn, nhập tự do), Mô tả, Yêu cầu; sau công bố tên và lĩnh vực bị khóa. Gửi được từ ngày bắt đầu mốc "GV gửi đề tài"; dòng giai đoạn và dải cảnh báo mức đề tài hiện trên bảng. Chưa có: lịch sử đề tài của GV (màn Lịch sử đề tài).
 
 ## Đề xuất từ sinh viên
 - **Vai trò:** Giảng viên
@@ -606,6 +610,8 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Người dùng vẫn tự đổi mật khẩu ở Hồ sơ.
 - Ghi chú giao diện (theo artboard): trạng thái chờ đổi mật khẩu hiển thị là "Chưa đăng nhập"; nhập CSV tự kiểm tra khi chọn tệp rồi hiện bước 2/2, đóng hộp thoại khi nhập xong; thông báo thao tác là dải trong trang (không toast); có "Lưu và thêm tiếp"; Giáo vụ không tự xóa/vô hiệu hóa mình. Chưa có API thông báo nên không có câu "đã gửi thông báo cho người dùng" sau khi đặt lại mật khẩu. Nhập theo PDR-004 là CSV (artboard ghi Excel).
 - Ghi chú triển khai frontend (`/giao-vu/nguoi-dung`): mọi thao tác dùng API thật `/api/users` (hợp đồng tại [PDR-004](../decisions/PDR-004-nhap-tai-khoan-csv.md#hợp-đồng-api-quản-lý-tài-khoản)); không còn kho demo. Danh sách tải một lần, lọc/tìm/phân trang ở client. Lỗi trùng mã/email đến từ phản hồi 409 của máy chủ. Backend tự chặn Giáo vụ xóa hoặc vô hiệu hóa chính mình; nút trên giao diện chỉ là lớp ngoài. Đặt lại mật khẩu làm phiên đang mở của người đó hết hiệu lực và bắt đổi mật khẩu kèm OTP ở lần đăng nhập kế tiếp.
+- Lịch sử thao tác (2026-11-07, chưa có artboard): mục "Lịch sử thao tác" thu gọn trong ngăn Sửa, chỉ tải khi mở; hiện tên thao tác, người thực hiện, thời điểm và giá trị trước/sau từng trường. Tài khoản tạo bằng nhập CSV ghi "Tạo tài khoản bằng nhập CSV" (xem [PDR-052](../decisions/PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md)).
+- Mật khẩu và nhập Excel (2026-11-07, [PDR-055](../decisions/PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)): khi thêm giảng viên/giáo vụ, form có ô Mật khẩu bắt buộc (tài khoản dùng ngay, không OTP); sinh viên không có ô này. Nút "Nhập Excel/CSV" mở hộp thoại cho chọn định dạng Excel (.xlsx) hoặc CSV (.csv) trước khi chọn tệp; danh sách cột có thêm `password` (GV, Giáo vụ).
 
 ## Quản lý đề tài
 - **Vai trò:** Giáo vụ
@@ -627,6 +633,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Công bố xong thì GV không thêm hoặc xóa đề tài.
 - Trạng thái đề tài thêm hai giá trị: `Không đủ điều kiện công bố` (kết thúc riêng, PDR-011) và `Không có nhóm` (đề tài đã công bố nhưng hết hạn đăng ký mà chưa có nhóm; kết thúc, không chặn kết thúc đợt).
 
+- Ghi chú triển khai (2026-11-07): khi `NEXT_PUBLIC_ROUNDS_API=true`, màn này, Chi tiết đề tài và tab Đề tài của Chi tiết đợt dùng `GET /api/topics?roundId=` và `GET /api/topics/{id}` ([PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); nhóm, phản biện, hội đồng, bài nộp, điểm còn trống tới các phase sau; lịch sử có thêm nhóm "Nội dung". Ghi chú cũ dưới đây mô tả kho demo.
 - Ghi chú triển khai frontend (`/giao-vu/de-tai`): chạy trên kho demo trong bộ nhớ (`app/frontend/src/features/topics/`, mất khi tải lại trang; "hôm nay" cố định ở 2026-10-26), chờ endpoint đề xuất `GET /api/topics?roundId=…`, `GET /api/topics/{id}`. Việc công bố nay lưu ở `Round.topicsPublishedAt` (xem Chi tiết đợt); `TopicService` không còn `publish`, `exportCsv`, giai đoạn đề tài hay `canPublish`. Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận (không tính Chờ GV duyệt, Bị từ chối). **Mức tối thiểu và tối đa đề tài mỗi GV lấy theo từng đợt (Cấu hình), chỉ để cảnh báo, không chặn.** Bảng 6 cột (Đề tài, GV hướng dẫn, GV phản biện, Hội đồng, Khóa luận, Trạng thái), 8 dòng/trang, tìm kiếm cả tên/mã sinh viên và giảng viên.
 
 ## Chi tiết đề tài (giáo vụ)

@@ -1,3 +1,4 @@
+import { nameKey } from '@/features/rounds/roundValidation';
 import type { TopicStatus } from '@/types/round';
 import {
   SCORE_ROLES,
@@ -7,6 +8,7 @@ import {
   type ScoreRole,
   type StudentScore,
   type Topic,
+  type TopicFilters,
 } from '@/types/topic';
 
 // Mặc định khi không truyền mức của đợt: 0 = CHƯA ĐẶT MỨC nên không cảnh báo
@@ -371,4 +373,28 @@ export function remindDeviationBlocker(topic: Topic): string | null {
   return gradingStatus(topic) === 'Có lệch điểm'
     ? null
     : 'Không có cặp điểm lệch.';
+}
+
+// Lọc theo đợt, GVHD, trạng thái và từ khóa (mã/tên đề tài, GV, SV), sắp theo mã.
+// Dùng chung cho kho demo và API (lọc ở client).
+export function filterTopics(topics: Topic[], f: TopicFilters): Topic[] {
+  const keyword = nameKey(f.search ?? '');
+  return topics
+    .filter(
+      (t) =>
+        t.roundId === f.roundId &&
+        (!f.supervisorId || t.supervisor.id === f.supervisorId) &&
+        (!f.status || f.status === 'Tất cả' || t.status === f.status) &&
+        (!keyword ||
+          nameKey(t.title).includes(keyword) ||
+          nameKey(t.code).includes(keyword) ||
+          nameKey(t.supervisor.name).includes(keyword) ||
+          (t.reviewer !== null && nameKey(t.reviewer.name).includes(keyword)) ||
+          t.group.some(
+            (m) =>
+              nameKey(m.name).includes(keyword) ||
+              nameKey(m.code).includes(keyword),
+          )),
+    )
+    .sort((a, b) => a.code.localeCompare(b.code));
 }

@@ -9,7 +9,7 @@ namespace Backend.Infrastructure.Repositories.Rounds;
 public class RoundRepository(ApplicationDbContext context) : IRoundRepository
 {
     private IQueryable<ThesisRound> WithChildren() =>
-        context.ThesisRounds.Include(r => r.Milestones).Include(r => r.Participants).AsSplitQuery();
+        context.ThesisRounds.Include(r => r.Milestones).Include(r => r.Participants).Include(r => r.Topics).Include(r => r.GroupMembers).AsSplitQuery();
 
     public async Task<IReadOnlyList<ThesisRound>> ListAsync(RoundStatus? status, string? program, string? normalizedSearch, CancellationToken cancellationToken = default)
     {
@@ -35,6 +35,8 @@ public class RoundRepository(ApplicationDbContext context) : IRoundRepository
         context.ThesisRounds.Add(round);
         await SaveAsync(cancellationToken);
     }
+
+    public void AddNotifications(IEnumerable<Notification> notifications) => context.Notifications.AddRange(notifications);
 
     public async Task SaveAsync(CancellationToken cancellationToken = default)
     {

@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Net.Mail;
 using System.Text;
 using System.Text.RegularExpressions;
+using Backend.Application.Auth;
 using Backend.Application.Common;
 using Backend.Application.Common.Security;
 using Backend.Domain.Entities;
@@ -18,9 +19,10 @@ public static class UserImportPolicy
 }
 
 // Commit=false: chỉ kiểm tra và xem trước. Commit=true: kiểm tra lại rồi tạo các dòng hợp lệ.
-public record ImportUsersCommand(byte[] Content, string FileName, bool Commit) : IRequest<ApiResponse<UserImportReportDto>>;
+// ActorId là Giáo vụ nhập tệp, ghi vào lịch sử từng tài khoản được tạo.
+public record ImportUsersCommand(byte[] Content, string FileName, bool Commit, Guid ActorId = default) : IRequest<ApiResponse<UserImportReportDto>>;
 
-public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordHasher hasher)
+public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordHasher hasher, TimeProvider clock)
     : IRequestHandler<ImportUsersCommand, ApiResponse<UserImportReportDto>>
 {
     private static readonly string[] RequiredColumns = ["user_code", "full_name", "email", "role"];
@@ -36,7 +38,8 @@ public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordH
     [GeneratedRegex("^[A-Za-z0-9._-]+$")]
     private static partial Regex UserCodePattern();
 
-    private sealed record ParsedRow(UserImportRowDto Dto, UserRole? Role);
+    // Password không nằm trong Dto để báo cáo (và bản tải lỗi) không bao giờ chứa mật khẩu.
+    private sealed record ParsedRow(UserImportRowDto Dto, UserRole? Role, string? Password);
 
     public async Task<ApiResponse<UserImportReportDto>> Handle(ImportUsersCommand request, CancellationToken cancellationToken)
     {
@@ -103,7 +106,10 @@ public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordH
         if (validRows.Count > 0)
         {
             var hashes = new string[validRows.Count];
-            Parallel.For(0, validRows.Count, i => hashes[i] = hasher.HashInitialPassword(validRows[i].Dto.UserCode));
+            Parallel.For(0, validRows.Count, i => hashes[i] = validRows[i].Password is { } password
+                ? hasher.Hash(password)
+                : hasher.HashInitialPassword(validRows[i].Dto.UserCode));
+            var now = clock.GetUtcNow().UtcDateTime;
             var newUsers = validRows.Select((r, i) => new User
             {
                 UserCode = r.Dto.UserCode,
@@ -115,10 +121,14 @@ public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordH
                 Department = r.Dto.Department,
                 AcademicTitle = r.Dto.AcademicTitle,
                 PasswordHash = hashes[i],
-                MustChangePassword = true,
-                IsActive = true
+                MustChangePassword = PasswordPolicy.UsesActivationCode(r.Role!.Value),
+                IsActive = true,
+                CreatedAt = now
             }).ToList();
-            await users.AddRangeAsync(newUsers, cancellationToken);
+            var audits = newUsers
+                .Select(u => u.Audit(request.ActorId, UserAuditActions.Created, now, new { role = u.Role.ToString(), source = "csv" }))
+                .ToList();
+            await users.AddRangeAsync(newUsers, audits, cancellationToken);
         }
 
         report.ImportedRows = validRows.Count;
@@ -168,6 +178,19 @@ public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordH
         foreach (var (value, label) in new[] { (dto.ClassName, "Lớp"), (dto.Department, "Bộ môn"), (dto.AcademicTitle, "Học hàm/học vị") })
             if (value is { Length: > 100 }) errors.Add($"{label} quá 100 ký tự");
 
+        // PDR-055: giảng viên, giáo vụ dùng mật khẩu Giáo vụ đặt trong tệp; sinh viên dùng MSSV + OTP.
+        var password = Get("password");
+        if (role == UserRole.Student && password.Length > 0)
+            errors.Add("Sinh viên không đặt mật khẩu trong tệp; mật khẩu ban đầu là MSSV");
+        else if (role is UserRole.Lecturer or UserRole.AcademicAffairs)
+        {
+            if (password.Length == 0) errors.Add("Giảng viên và giáo vụ phải có mật khẩu (password)");
+            else if (password.Length < PasswordPolicy.MinLength || !PasswordPolicy.HasLetterAndDigit(password))
+                errors.Add($"Mật khẩu tối thiểu {PasswordPolicy.MinLength} ký tự, có cả chữ và số");
+            else if (password.Length > PasswordPolicy.MaxLength) errors.Add($"Mật khẩu tối đa {PasswordPolicy.MaxLength} ký tự");
+            else if (PasswordPolicy.SameAsUserCode(password, dto.UserCode)) errors.Add("Mật khẩu phải khác mã người dùng");
+        }
+
         var rawDate = Get("date_of_birth");
         if (rawDate.Length > 0)
         {
@@ -177,7 +200,7 @@ public sealed partial class ImportUsersHandler(IUserRepository users, IPasswordH
                 errors.Add("Ngày sinh không hợp lệ (dùng yyyy-MM-dd hoặc dd/MM/yyyy)");
         }
 
-        return new ParsedRow(dto, role);
+        return new ParsedRow(dto, role, password.Length > 0 ? password : null);
     }
 
     private async Task MarkDuplicatesAsync(List<ParsedRow> rows, CancellationToken cancellationToken)

@@ -45,6 +45,32 @@ public sealed class RoundWorkflowTests : IDisposable
         return await scope.ServiceProvider.GetRequiredService<ISender>().Send(request);
     }
 
+    [Fact]
+    public async Task OpeningARoundNotifiesItsParticipantsOnce()
+    {
+        var student = await Seed(UserRole.Student, "SVTB1", "Sinh viên", "KTPM");
+        var lecturer = await Seed(UserRole.Lecturer, "GVTB1", "Giảng viên", "CNPM");
+        var outsider = await Seed(UserRole.Student, "SVTB2", "Người ngoài", "KTPM");
+        var round = await Create("Đợt thông báo");
+        await Send(new UpdateRoundMilestonesCommand(round.Id, Dated()));
+        await Send(new AddParticipantsCommand(round.Id, "students", ["SVTB1"]));
+        await Send(new AddParticipantsCommand(round.Id, "lecturers", ["GVTB1"]));
+        var roundId = round.Id;
+
+        await Send(new OpenRoundCommand(roundId));
+        await Send(new OpenRoundCommand(roundId)); // Lần lặp bị từ chối, không gửi thêm.
+
+        using var check = _provider.CreateScope();
+        var rows = await check.ServiceProvider.GetRequiredService<ApplicationDbContext>().Notifications.ToListAsync();
+        Assert.Equal(2, rows.Count);
+        Assert.Single(rows.Select(n => n.BatchId).Distinct());
+        Assert.All(rows, n => Assert.Null(n.SenderUserId));
+        Assert.All(rows, n => Assert.Contains("Đợt thông báo", n.Text));
+        Assert.Equal("/sv", rows.Single(n => n.RecipientUserId == student).Href);
+        Assert.Equal("/gv", rows.Single(n => n.RecipientUserId == lecturer).Href);
+        Assert.DoesNotContain(rows, n => n.RecipientUserId == outsider);
+    }
+
     // Người tham gia phải có trong bảng Users của SQLite.
     internal static async Task<Guid> SeedUser(ApplicationDbContext db, UserRole role, string code, string name = "Người dùng", string? unit = null)
     {
@@ -148,7 +174,7 @@ public sealed class RoundWorkflowTests : IDisposable
         Assert.Equal([null, null, true, true, true, null, null, null, null], round.Milestones.Select(m => m.AllowLate));
         Assert.Equal("Đề cương", round.Milestones[2].Name);
         Assert.Empty(round.LecturerIds);
-        Assert.Equal(9, round.TopicSummary.ByStatus.Count);
+        Assert.Equal(12, round.TopicSummary.ByStatus.Count);
         Assert.All(round.TopicSummary.ByStatus.Values, v => Assert.Equal(0, v));
     }
 

@@ -30,11 +30,30 @@ public class UserRepository : IUserRepository
         return await _context.Users.AsNoTracking().OrderBy(u => u.UserCode).ToListAsync(cancellationToken);
     }
 
-    public Task<IReadOnlySet<Guid>> GetUserIdsWithRelatedDataAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlySet<Guid>> GetUserIdsWithRelatedDataAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
     {
-        // Chưa có bảng nghiệp vụ nào tham chiếu tới Users (đợt, đề tài, phiếu điểm...
-        // chưa được xây). Khi thêm bảng đó, bổ sung truy vấn tại đây.
-        return Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
+        // Thông báo, đề tài (GVHD) và nhóm. Phiếu điểm, bài nộp... chưa được xây; khi thêm bảng đó, bổ sung truy vấn tại đây.
+        var recipients = await _context.Notifications
+            .Where(n => userIds.Contains(n.RecipientUserId))
+            .Select(n => n.RecipientUserId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var senders = await _context.Notifications
+            .Where(n => n.SenderUserId != null && userIds.Contains(n.SenderUserId.Value))
+            .Select(n => n.SenderUserId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var supervisors = await _context.ThesisTopics
+            .Where(t => userIds.Contains(t.SupervisorId))
+            .Select(t => t.SupervisorId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var members = await _context.GroupMembers
+            .Where(m => userIds.Contains(m.StudentId))
+            .Select(m => m.StudentId)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        return recipients.Concat(senders).Concat(supervisors).Concat(members).ToHashSet();
     }
 
     public async Task<IReadOnlySet<string>> GetExistingUserCodesAsync(IReadOnlyCollection<string> userCodes, CancellationToken cancellationToken = default)
@@ -55,9 +74,10 @@ public class UserRepository : IUserRepository
             .ToListAsync(cancellationToken)).ToHashSet();
     }
 
-    public async Task AddRangeAsync(IReadOnlyCollection<User> users, CancellationToken cancellationToken = default)
+    public async Task AddRangeAsync(IReadOnlyCollection<User> users, IReadOnlyCollection<UserAuditEntry> audits, CancellationToken cancellationToken = default)
     {
         await _context.Users.AddRangeAsync(users, cancellationToken);
+        await _context.UserAuditEntries.AddRangeAsync(audits, cancellationToken);
         try
         {
             await _context.SaveChangesAsync(cancellationToken);
@@ -95,6 +115,23 @@ public class UserRepository : IUserRepository
         _context.Users.Remove(user);
         _context.UserAuditEntries.Add(audit);
         await _context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<UserAuditEntry>> GetAuditAsync(Guid targetUserId, CancellationToken cancellationToken = default)
+    {
+        return await _context.UserAuditEntries.AsNoTracking()
+            .Where(a => a.TargetUserId == targetUserId)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<IReadOnlyDictionary<Guid, string>> GetFullNamesAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
+    {
+        if (userIds.Count == 0) return new Dictionary<Guid, string>();
+        var ids = userIds.Distinct().ToList();
+        return await _context.Users.AsNoTracking()
+            .Where(u => ids.Contains(u.Id))
+            .ToDictionaryAsync(u => u.Id, u => u.FullName, cancellationToken);
     }
 
     private async Task SaveCheckingDuplicatesAsync(CancellationToken cancellationToken)

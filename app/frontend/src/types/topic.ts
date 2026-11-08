@@ -1,6 +1,6 @@
 // Đề tài khóa luận (docs/DESIGN/03: Quản lý đề tài, Chi tiết đề tài của giáo
-// vụ). Backend chưa có API đề tài nên các kiểu dưới đây do frontend đề xuất và
-// chạy trên kho demo (features/topics/services/topicService.ts).
+// vụ, Đề tài của tôi). API thật /api/topics (PDR-053) trả TopicDto, được chuyển
+// sang Topic ở topicApiService.ts; kho demo dùng thẳng Topic.
 import type { RoundStatus, TopicStatus } from '@/types/round';
 
 export { TOPIC_STATUSES, type TopicStatus } from '@/types/round';
@@ -22,6 +22,8 @@ export type ScoreRole = (typeof SCORE_ROLES)[number];
 
 export const HISTORY_CATEGORIES = [
   'Trạng thái',
+  // Sửa tên, lĩnh vực, mô tả, yêu cầu của đề tài (PDR-053).
+  'Nội dung',
   'Nhóm',
   'Bài nộp',
   'Phân công',
@@ -147,4 +149,115 @@ export interface TopicList {
   // Tổng đề tài của đợt (không lọc), để phân biệt "chưa có đề tài" với "lọc không có kết quả".
   roundTotal: number;
   loads: Record<string, LecturerLoad>;
+}
+
+// --- Hợp đồng /api/topics (PDR-053) ---
+
+// all: sửa mọi trường; content: chỉ mô tả và yêu cầu (sau công bố); none.
+export type TopicEditScope = 'all' | 'content' | 'none';
+
+export interface TopicDto {
+  id: string;
+  roundId: string;
+  code: string;
+  title: string;
+  field: string;
+  description: string;
+  requirements: string | null;
+  supervisor: TopicPerson;
+  source: TopicSource;
+  status: TopicStatus;
+  createdAt: string;
+  updatedAt: string | null;
+  canEdit: TopicEditScope;
+  canDelete: boolean;
+  // Nhóm đang nhận đề tài, đại diện trước (PDR-054); rỗng khi chưa có nhóm.
+  group: TopicMember[];
+}
+
+export interface TopicHistoryDto {
+  id: string;
+  at: string;
+  actor: string;
+  category: HistoryCategory;
+  action: string;
+  detail: string | null;
+}
+
+export interface TopicDetailDto extends TopicDto {
+  history: TopicHistoryDto[];
+}
+
+export interface TopicRoundInfo {
+  roundId: string;
+  roundName: string;
+  roundStatus: RoundStatus;
+  topicsPublishedAt: string | null;
+  // yyyy-MM-dd hoặc rỗng.
+  submissionStart: string;
+  submissionEnd: string;
+  registrationEnd: string;
+  canSubmit: boolean;
+  submitBlockedReason: string | null;
+}
+
+export interface LecturerLoadDto {
+  lecturerId: string;
+  count: number;
+  min: number;
+  max: number;
+  level: LoadLevel;
+}
+
+export interface LecturerTopicList {
+  round: TopicRoundInfo;
+  items: TopicDto[];
+  load: LecturerLoadDto;
+}
+
+export interface RoundTopicList {
+  round: TopicRoundInfo;
+  items: TopicDto[];
+  loads: LecturerLoadDto[];
+}
+
+export interface TopicInput {
+  title: string;
+  field: string;
+  description: string;
+  requirements: string;
+}
+
+// --- Ghi danh nhóm của sinh viên (PDR-054) ---
+
+export interface RegistrationGroup {
+  id: string;
+  representativeId: string;
+  // Đại diện đứng trước.
+  members: TopicMember[];
+}
+
+// Một lần ghi danh của nhóm; lần đã hủy vẫn được giữ (PDR-047).
+export interface RegistrationHistoryItem {
+  topicId: string;
+  topicCode: string;
+  topicTitle: string;
+  registeredAt: string;
+  registeredBy: string;
+  cancelledAt: string | null;
+  cancelledBy: string | null;
+}
+
+// GET /api/topics/my-registration?roundId= và kết quả của ghi danh/hủy.
+export interface MyRegistration {
+  round: TopicRoundInfo;
+  // Đã công bố và chưa qua 23:59 ngày kết thúc mốc "Công bố đề tài · SV đăng ký".
+  registrationOpen: boolean;
+  // null = sinh viên chưa có nhóm trong đợt.
+  group: RegistrationGroup | null;
+  // Đề tài nhóm đang giữ; null khi chưa ghi danh hoặc đã hủy.
+  topic: TopicDto | null;
+  canCancel: boolean;
+  // Mới nhất trước.
+  history: RegistrationHistoryItem[];
 }

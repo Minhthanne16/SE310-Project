@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận
+Đã chấp nhận. Từ 2026-11-07 chỉ áp dụng cho **sinh viên**: giảng viên, giáo vụ dùng mật khẩu Giáo vụ đặt và không cần OTP ([PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)).
 
 ## Ngày
 
@@ -19,7 +19,7 @@ Thẻ công việc backend yêu cầu "mã hóa mật khẩu BCrypt/Argon2 và t
 3. **Thông số:** OTP gồm 6 chữ số, sinh bằng bộ sinh số ngẫu nhiên mật mã. Mã có hiệu lực 10 phút và chỉ dùng một lần; nhập sai 5 lần thì mã bị hủy; mỗi lần gửi lại phải cách nhau ít nhất 60 giây. Chỉ lưu bản băm BCrypt của mã, không ghi mã ra log.
 4. **Gửi lỗi:** nếu SMTP lỗi, mã vừa tạo bị hủy và API trả 503, người dùng có thể gửi lại ngay.
 5. **Môi trường gửi mail:** khi dev bằng Compose, mail mặc định đi vào Mailpit local (`http://localhost:8025`), không gửi ra Internet. Muốn gửi thật thì đặt `SMTP_*` trong `.env` theo Gmail App Password (`smtp.gmail.com:587`, STARTTLS). Không commit App Password.
-6. **Ngoài phạm vi:** luồng Quên mật khẩu vẫn dùng liên kết 30 phút theo thiết kế, chưa hiện thực.
+6. **Ngoài phạm vi:** luồng Quên mật khẩu vẫn dùng liên kết 30 phút theo thiết kế (hiện thực ngày 2026-11-07, xem [PDR-052](PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md)).
 
 ## Hợp đồng API
 
@@ -28,7 +28,7 @@ Thẻ công việc backend yêu cầu "mã hóa mật khẩu BCrypt/Argon2 và t
 | `POST /api/auth/activation-code` | Token chờ đổi mật khẩu | 200 `ApiResponse<{ expiresAt, resendAvailableAt }>` | 400 tài khoản không cần kích hoạt, 429 gửi lại quá sớm, 503 không gửi được email |
 | `POST /api/auth/change-initial-password` `{ currentPassword, newPassword, activationCode }` | Token chờ đổi mật khẩu | 200 như PDR-002 | 400 khi mã sai, hết hạn hoặc chưa gửi, hoặc vi phạm quy tắc mật khẩu |
 
-`activationCode` phải đúng 6 chữ số. Sai mật khẩu hiện tại không bị tính vào số lần nhập sai mã.
+`activationCode` phải đúng 6 chữ số với sinh viên; giảng viên, giáo vụ gửi rỗng và `activation-code` trả 400 "không cần kích hoạt" ([PDR-055](PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md)). Sai mật khẩu hiện tại không bị tính vào số lần nhập sai mã.
 
 ## Hệ quả
 
