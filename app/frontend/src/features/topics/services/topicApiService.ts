@@ -14,6 +14,7 @@ import type {
   LecturerLoad,
   LecturerLoadDto,
   LecturerTopicList,
+  MyRegistration,
   RoundTopicList,
   Topic,
   TopicDetailDto,
@@ -199,12 +200,51 @@ export function createLecturerTopicService(): LecturerTopicService {
 export const lecturerTopicService: LecturerTopicService =
   createLecturerTopicService();
 
-// --- Sinh viên: danh sách đề tài đã công bố ---
+// --- Sinh viên: danh sách đề tài đã công bố và ghi danh nhóm (PDR-053, PDR-054) ---
+
+// Lỗi khi ghi danh/hủy. kind = 'member' (400: mã thành viên không hợp lệ, hiện dưới ô nhập);
+// 'rule' (403/409: đề tài vừa có nhóm khác nhận, hết hạn đăng ký, hủy lặp...). message lấy từ máy chủ.
+export class RegistrationError extends Error {
+  readonly kind: 'member' | 'rule';
+
+  constructor(message: string, kind: 'member' | 'rule') {
+    super(message);
+    this.name = 'RegistrationError';
+    this.kind = kind;
+  }
+}
+
+async function registrationCall(
+  path: string,
+  init: RequestInit,
+): Promise<MyRegistration> {
+  try {
+    return await apiRequest<MyRegistration>(path, init);
+  } catch (err: unknown) {
+    if (err instanceof ApiError) {
+      if (err.status === 404) throw new TopicNotFoundError();
+      if (err.status === 400)
+        throw new RegistrationError(err.message, 'member');
+      if (err.status === 403 || err.status === 409)
+        throw new RegistrationError(err.message, 'rule');
+    }
+    throw err;
+  }
+}
 
 export interface StudentTopicService {
   listRounds(): Promise<Round[]>;
   // 409 (TopicRuleError) khi Giáo vụ chưa công bố danh sách.
   listPublished(roundId: string): Promise<RoundTopicList>;
+  // 404 (TopicNotFoundError) cả khi sinh viên không được xem đề tài.
+  get(id: string): Promise<TopicDetailDto>;
+  // Nhóm, đề tài đang giữ và lịch sử ghi danh của sinh viên trong đợt.
+  myRegistration(roundId: string): Promise<MyRegistration>;
+  // Người gọi là đại diện; memberCode là mã sinh viên thành viên thứ hai (rỗng nếu đăng ký một mình
+  // hoặc ghi danh lại bằng nhóm cũ).
+  register(topicId: string, memberCode: string): Promise<MyRegistration>;
+  // Bất kỳ thành viên nào hủy cho cả nhóm (PDR-047).
+  cancel(topicId: string): Promise<MyRegistration>;
 }
 
 export function createStudentTopicService(): StudentTopicService {
@@ -212,6 +252,18 @@ export function createStudentTopicService(): StudentTopicService {
     listRounds: () => call<Round[]>('/rounds'),
     listPublished: (roundId) =>
       call<RoundTopicList>(`/topics/published?roundId=${enc(roundId)}`),
+    get: (id) => call<TopicDetailDto>(`/topics/${enc(id)}`),
+    myRegistration: (roundId) =>
+      call<MyRegistration>(`/topics/my-registration?roundId=${enc(roundId)}`),
+    register: (topicId, memberCode) =>
+      registrationCall(
+        `/topics/${enc(topicId)}/registration`,
+        json('POST', {
+          memberCodes: memberCode.trim() ? [memberCode.trim()] : [],
+        }),
+      ),
+    cancel: (topicId) =>
+      registrationCall(`/topics/${enc(topicId)}/registration`, json('DELETE')),
   };
 }
 

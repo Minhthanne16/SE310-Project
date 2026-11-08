@@ -6,6 +6,7 @@ import {
   createApiTopicService,
   createLecturerTopicService,
   createStudentTopicService,
+  RegistrationError,
   TopicRuleError,
 } from './topicApiService';
 
@@ -200,4 +201,80 @@ it('maps the registered group with its representative', async () => {
   });
   const list = await createApiTopicService(rounds).list({ roundId: 'r1' });
   expect(list.items[0].group).toEqual([member]);
+});
+
+const mine = {
+  round: roundInfo,
+  registrationOpen: true,
+  group: null,
+  topic: null,
+  canCancel: false,
+  history: [],
+};
+
+it('follows the PDR-054 registration contract', async () => {
+  const service = createStudentTopicService();
+
+  let fetchMock = ok(mine);
+  await service.myRegistration('r 1');
+  expect(sent(fetchMock).url).toBe('/api/topics/my-registration?roundId=r%201');
+
+  fetchMock = ok(mine);
+  await service.register('t1', '  22520002 ');
+  expect(sent(fetchMock)).toEqual({
+    url: '/api/topics/t1/registration',
+    method: 'POST',
+    body: { memberCodes: ['22520002'] },
+  });
+
+  // Đăng ký một mình hoặc ghi danh lại bằng nhóm cũ: không gửi mã nào.
+  fetchMock = ok(mine);
+  await service.register('t1', '   ');
+  expect(sent(fetchMock).body).toEqual({ memberCodes: [] });
+
+  fetchMock = ok(mine);
+  await service.cancel('t1');
+  expect(sent(fetchMock)).toMatchObject({
+    url: '/api/topics/t1/registration',
+    method: 'DELETE',
+  });
+
+  fetchMock = ok(dto());
+  await service.get('t1');
+  expect(sent(fetchMock).url).toBe('/api/topics/t1');
+});
+
+it('splits registration errors into member and rule errors', async () => {
+  const service = createStudentTopicService();
+  const fail = (status: number, message: string) =>
+    stubFetch(status, { success: false, message, data: null });
+
+  fail(400, 'Mã sinh viên 999 không tồn tại hoặc không thuộc đợt.');
+  const member = await service.register('t1', '999').catch((e: unknown) => e);
+  expect(member).toBeInstanceOf(RegistrationError);
+  expect(member).toMatchObject({
+    kind: 'member',
+    message: 'Mã sinh viên 999 không tồn tại hoặc không thuộc đợt.',
+  });
+
+  fail(
+    409,
+    'Đề tài vừa có nhóm khác nhận. Tải lại danh sách và chọn đề tài khác.',
+  );
+  await expect(service.register('t1', '')).rejects.toMatchObject({
+    kind: 'rule',
+    message:
+      'Đề tài vừa có nhóm khác nhận. Tải lại danh sách và chọn đề tài khác.',
+  });
+
+  fail(403, 'Chỉ đại diện nhóm được ghi danh cho nhóm.');
+  await expect(service.register('t1', '')).rejects.toMatchObject({
+    kind: 'rule',
+  });
+
+  fail(409, 'Nhóm không còn ghi danh đề tài này.');
+  await expect(service.cancel('t1')).rejects.toMatchObject({ kind: 'rule' });
+
+  fail(404, 'Không tìm thấy đề tài.');
+  await expect(service.cancel('t1')).rejects.toBeInstanceOf(TopicNotFoundError);
 });

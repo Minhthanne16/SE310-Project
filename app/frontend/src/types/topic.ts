@@ -227,3 +227,37 @@ export interface TopicInput {
   description: string;
   requirements: string;
 }
+
+// --- Ghi danh nhóm của sinh viên (PDR-054) ---
+
+export interface RegistrationGroup {
+  id: string;
+  representativeId: string;
+  // Đại diện đứng trước.
+  members: TopicMember[];
+}
+
+// Một lần ghi danh của nhóm; lần đã hủy vẫn được giữ (PDR-047).
+export interface RegistrationHistoryItem {
+  topicId: string;
+  topicCode: string;
+  topicTitle: string;
+  registeredAt: string;
+  registeredBy: string;
+  cancelledAt: string | null;
+  cancelledBy: string | null;
+}
+
+// GET /api/topics/my-registration?roundId= và kết quả của ghi danh/hủy.
+export interface MyRegistration {
+  round: TopicRoundInfo;
+  // Đã công bố và chưa qua 23:59 ngày kết thúc mốc "Công bố đề tài · SV đăng ký".
+  registrationOpen: boolean;
+  // null = sinh viên chưa có nhóm trong đợt.
+  group: RegistrationGroup | null;
+  // Đề tài nhóm đang giữ; null khi chưa ghi danh hoặc đã hủy.
+  topic: TopicDto | null;
+  canCancel: boolean;
+  // Mới nhất trước.
+  history: RegistrationHistoryItem[];
+}

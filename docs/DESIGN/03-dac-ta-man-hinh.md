@@ -237,7 +237,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Chưa công bố danh sách thì không Đề xuất.
-- Ghi chú triển khai (2026-11-07, `/sv/dang-ky`): dùng `GET /api/topics/published` ([PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); dựng ba tình trạng đợt (chưa có đợt, chưa có danh sách, danh sách). Bảng có tìm kiếm, mỗi dòng mở xem mô tả/yêu cầu. Ghi danh (P03-S02), đề xuất (P03-S03) và tình trạng nhóm của sinh viên chưa làm; trang ghi rõ "đang được xây dựng".
+- Ghi chú triển khai (2026-11-07, `/sv/dang-ky`): dùng `GET /api/topics/published` ([PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); dựng ba tình trạng đợt (chưa có đợt, chưa có danh sách, danh sách). Bảng có tìm kiếm, mỗi dòng mở xem mô tả/yêu cầu. Từ 2026-11-08 có dòng "Nhóm của bạn" và nút "Chi tiết" mở màn ghi danh (P03-S02); đề xuất (P03-S03) chưa làm, trang ghi rõ "đang được xây dựng".
 
 ## Chi tiết đề tài và ghi danh
 - **Vai trò:** Sinh viên
@@ -258,7 +258,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Lỗi cần có: đề tài vừa có nhóm khác nhận, MSSV không hợp lệ, đợt đã đóng.
-- Ghi chú triển khai (2026-11-07): backend ghi danh/hủy/tình trạng nhóm đã có theo [PDR-054](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md) (người bấm ghi danh là đại diện; thành viên thứ hai nhập mã vào nhóm ngay và nhận thông báo; nhóm cũ chỉ đại diện ghi danh lại). Màn `/sv/dang-ky/[id]` chưa dựng; nối vào hợp đồng PDR-054.
+- Ghi chú triển khai (2026-11-07): backend ghi danh/hủy/tình trạng nhóm đã có theo [PDR-054](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md) (người bấm ghi danh là đại diện; thành viên thứ hai nhập mã vào nhóm ngay và nhận thông báo; nhóm cũ chỉ đại diện ghi danh lại). Màn `/sv/dang-ky/[id]` đã dựng ngày 2026-11-08 với đủ các trạng thái trên, thêm hộp "Xác nhận ghi danh", "Ghi danh bằng nhóm này" cho đại diện nhóm cũ và mục "Lịch sử ghi danh của nhóm" (chi tiết tại [PDR-054 · Giao diện sinh viên](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md#giao-diện-sinh-viên-2026-11-08)). Chưa hiện mức tối đa của GV vì API sinh viên không trả mức đề tài (PDR-053).
 
 ## Đề xuất đề tài (overlay)
 - **Vai trò:** Sinh viên

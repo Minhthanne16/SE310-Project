@@ -98,4 +98,12 @@ npm run build
 npm audit --audit-level=high
 ```
 
+Test ghi danh đề tài (P03-S02) gồm test đồng thời trên PostgreSQL thật. Một lệnh từ thư mục gốc dựng PostgreSQL tạm trong Docker, chạy test backend + frontend của phần đề tài/ghi danh rồi xóa container (thêm `-All` để chạy toàn bộ test):
+
+```powershell
+powershell -ExecutionPolicy Bypass -File app/scripts/test-ghi-danh.ps1
+```
+
+Không có biến `QLKLTN_TEST_POSTGRES` thì `dotnet test` bỏ qua 5 test đồng thời (`RegistrationConcurrencyTests`); không trỏ biến này vào database dùng chung.
+
 CI dùng `npm ci`, NuGet lockfile, build/test cả hai phần và Gitleaks. Workflow GHCR chỉ chạy khi được kích hoạt thủ công (`workflow_dispatch`).
