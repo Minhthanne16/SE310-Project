@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { Search } from 'lucide-react';
+import Link from 'next/link';
+import { Search, Users } from 'lucide-react';
 import '@/features/topics/topics.css';
 import { nameKey } from '@/features/rounds/roundValidation';
 import { formatDate } from '@/features/rounds/roundUtils';
@@ -11,7 +12,7 @@ import {
   type StudentTopicService,
 } from '@/features/topics/services/topicApiService';
 import type { Round } from '@/types/round';
-import type { RoundTopicList } from '@/types/topic';
+import type { MyRegistration, RoundTopicList } from '@/types/topic';
 
 interface StudentTopicsPageProps {
   service?: StudentTopicService;
@@ -23,13 +24,56 @@ type State =
   // DESIGN · SV-DangKy-ChuaMo: chưa có đợt đăng ký / chưa có danh sách đề tài.
   | { kind: 'no-round' }
   | { kind: 'not-published'; round: Round }
-  | { kind: 'list'; data: RoundTopicList };
+  // mine = null khi không đọc được tình trạng nhóm (danh sách vẫn hiện).
+  | { kind: 'list'; data: RoundTopicList; mine: MyRegistration | null };
 
 const errorText = (err: unknown, fallback: string) =>
   err instanceof Error && err.message ? err.message : fallback;
 
-// SV-DangKy (P03-S01): sinh viên chỉ thấy danh sách khi Giáo vụ đã công bố.
-// Ghi danh nhóm (P03-S02) và đề xuất đề tài (P03-S03) làm ở bước sau.
+// SV-DangKy (P03-S01, P03-S02): sinh viên chỉ thấy danh sách khi Giáo vụ đã công bố; dòng nào
+// cũng mở được Chi tiết đề tài để ghi danh. Đề xuất đề tài (P03-S03) làm ở bước sau.
+
+const memberNames = (mine: MyRegistration) =>
+  (mine.group?.members ?? [])
+    .map((m) => (m.representative ? `${m.name} (đại diện)` : m.name))
+    .join(', ');
+
+const MyGroupLine: React.FC<{ mine: MyRegistration | null }> = ({ mine }) => {
+  if (!mine)
+    return (
+      <p className="tpc-note">
+        Không đọc được tình trạng nhóm của bạn. Tải lại trang để thử lại.
+      </p>
+    );
+  const closed = mine.registrationOpen ? '' : ' Đã hết thời gian đăng ký.';
+  if (!mine.group)
+    return (
+      <p className="tpc-mygroup" aria-label="Nhóm của bạn">
+        <span>
+          <Users size={16} aria-hidden="true" />{' '}
+          {mine.registrationOpen
+            ? 'Bạn chưa có nhóm. Mở một đề tài còn trống để ghi danh; người ghi danh là đại diện nhóm.'
+            : `Bạn chưa có nhóm.${closed}`}
+        </span>
+      </p>
+    );
+  const representative = mine.group.members.find((m) => m.representative);
+  return (
+    <p className="tpc-mygroup" aria-label="Nhóm của bạn">
+      <span>
+        <Users size={16} aria-hidden="true" />{' '}
+        {mine.topic
+          ? `Nhóm của bạn (${memberNames(mine)}) đang ghi danh ${mine.topic.code} · ${mine.topic.title}.${closed}`
+          : `Nhóm của bạn (${memberNames(mine)}) chưa giữ đề tài nào; đại diện ${representative?.name ?? ''} ghi danh lại được đề tài còn trống.${closed}`}
+      </span>
+      {mine.topic && (
+        <Link href={`/sv/dang-ky/${mine.topic.id}`} className="tpc-reg-link">
+          Xem đề tài của nhóm
+        </Link>
+      )}
+    </p>
+  );
+};
 export const StudentTopicsPage: React.FC<StudentTopicsPageProps> = ({
   service = defaultService,
 }) => {
@@ -46,8 +90,11 @@ export const StudentTopicsPage: React.FC<StudentTopicsPageProps> = ({
         if (!round) return setState({ kind: 'no-round' });
         if (!round.topicsPublishedAt)
           return setState({ kind: 'not-published', round });
-        const data = await service.listPublished(round.id);
-        if (!cancelled) setState({ kind: 'list', data });
+        const [data, mine] = await Promise.all([
+          service.listPublished(round.id),
+          service.myRegistration(round.id).catch(() => null),
+        ]);
+        if (!cancelled) setState({ kind: 'list', data, mine });
       } catch (err: unknown) {
         if (!cancelled)
           setState({
@@ -140,9 +187,10 @@ export const StudentTopicsPage: React.FC<StudentTopicsPageProps> = ({
           ? `, đăng ký đến 23:59 ngày ${formatDate(round.registrationEnd)}.`
           : '.'}
       </p>
+      <MyGroupLine mine={state.mine} />
       <p className="tpc-note">
-        Ghi danh nhóm và đề xuất đề tài đang được xây dựng; hiện bạn xem được
-        danh sách và chi tiết đề tài.
+        Đề xuất đề tài cùng giảng viên đang được xây dựng; hiện bạn ghi danh
+        được đề tài giảng viên đã công bố.
       </p>
 
       <div className="tpc-filters">
@@ -183,6 +231,9 @@ export const StudentTopicsPage: React.FC<StudentTopicsPageProps> = ({
                 <th scope="col">GV hướng dẫn</th>
                 <th scope="col">Lĩnh vực</th>
                 <th scope="col">Trạng thái</th>
+                <th scope="col">
+                  <span className="app-visually-hidden">Thao tác</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -208,6 +259,18 @@ export const StudentTopicsPage: React.FC<StudentTopicsPageProps> = ({
                   <td>{topic.field}</td>
                   <td>
                     <TopicStatusChip status={topic.status} />
+                    {state.mine?.topic?.id === topic.id && (
+                      <span className="tpc-rep">Nhóm bạn</span>
+                    )}
+                  </td>
+                  <td>
+                    <Link
+                      href={`/sv/dang-ky/${topic.id}`}
+                      className="tpc-btn tpc-btn-sm"
+                      aria-label={`Xem chi tiết ${topic.code}`}
+                    >
+                      Chi tiết
+                    </Link>
                   </td>
                 </tr>
               ))}

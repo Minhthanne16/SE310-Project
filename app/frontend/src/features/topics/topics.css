@@ -1248,3 +1248,143 @@
 .tpc-table-compact td:last-child {
   white-space: nowrap;
 }
+
+/* --- SV: Chi tiết đề tài và ghi danh (P03-S02) --- */
+
+.tpc-crumb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tpc-reg-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 16px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .tpc-reg-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.tpc-reg-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid #e6e6e4;
+  border-radius: 14px;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.55;
+  color: #3d3d3d;
+}
+
+.tpc-reg-card h2 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  color: #1a1a1a;
+}
+
+.tpc-reg-card p {
+  margin: 0;
+}
+
+.tpc-reg-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tpc-members {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tpc-members li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f7f7f6;
+}
+
+.tpc-members strong {
+  color: #1a1a1a;
+}
+
+.tpc-rep {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #e8f0fe;
+  color: #1d4ed8;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.tpc-reg-history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tpc-reg-history li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #efefed;
+}
+
+.tpc-reg-history li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.tpc-reg-link {
+  color: #1a1a1a;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.tpc-reg-link:hover {
+  text-decoration: underline;
+}
+
+.tpc-reg-link:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.tpc-reg-active {
+  color: #2b6a1f;
+  font-weight: 600;
+}
+
+.tpc-mygroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 12px 16px;
+  border: 1px solid #e6e6e4;
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+  line-height: 1.5;
+}

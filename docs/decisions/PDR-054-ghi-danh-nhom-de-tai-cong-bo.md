@@ -63,8 +63,15 @@ Ba endpoint chỉ dành cho vai trò `Student`; lỗi dùng `ApiResponse`.
 ## Chưa làm
 
 - **Điều kiện "nhóm chưa nộp đề cương" của PDR-047:** chưa kiểm được vì chưa có mô-đun nộp bài (P04). Phải chặn thêm ở `CancelRegistrationHandler` khi có.
-- **Giao diện sinh viên** (tìm/chi tiết/ghi danh/hủy, lỗi đề tài vừa có nhóm nhận): nối vào hợp đồng trên ở bước frontend. Màn `/sv/dang-ky` hiện chỉ xem danh sách.
 - **Đề xuất đề tài (P03-S03)** dùng chung bảng nhóm này khi làm.
+
+## Giao diện sinh viên (2026-11-08)
+
+- `/sv/dang-ky`: dòng "Nhóm của bạn" từ `my-registration` (chưa có nhóm / nhóm đang giữ đề tài nào / nhóm chưa giữ đề tài), cột "Chi tiết" mở `/sv/dang-ky/[id]`, nhãn "Nhóm bạn" ở dòng đề tài của nhóm. Không đọc được tình trạng nhóm thì danh sách vẫn hiện kèm ghi chú.
+- `/sv/dang-ky/[id]` dựng các trạng thái của DESIGN: Chưa đăng ký (ô MSSV thành viên thứ hai, không bắt buộc; người bấm là đại diện), Đề tài đã có nhóm, Nhóm bạn đã ghi danh, Xác nhận hủy ghi danh ("Giữ ghi danh"/"Hủy ghi danh", nêu rõ hủy cho cả nhóm), Bạn đã có nhóm (liên kết tới đề tài của nhóm), Lỗi đề tài vừa có nhóm nhận, Lỗi MSSV không hợp lệ, Lỗi đợt đã đóng. Thêm hai trạng thái từ quyết định của người dùng ở trên: nhóm cũ có đại diện thì nút "Ghi danh bằng nhóm này" không cho đổi thành viên; thành viên không phải đại diện thấy "Chỉ đại diện nhóm (…) được ghi danh cho nhóm".
+- Ghi danh có hộp "Xác nhận ghi danh". Lỗi 400 hiện dưới ô MSSV; lỗi 403/409 hiện đúng thông điệp máy chủ và màn tải lại đề tài và tình trạng nhóm (nhóm thua cuộc thấy ngay "Đề tài đã có nhóm" và nút "Về danh sách đề tài").
+- Mục "Lịch sử ghi danh của nhóm" liệt kê mọi lần ghi danh (người/thời điểm ghi danh, người/thời điểm hủy hoặc "Đang hiệu lực"); chỉ thành viên nhóm thấy, theo `my-registration`.
+- Chưa hiện "mức tối đa của GV" trên màn sinh viên: `GET /api/topics/published` trả `loads: []` cho sinh viên theo PDR-053; muốn hiện phải đổi hợp đồng đó.
 
 ## Hệ quả
 
@@ -77,3 +84,4 @@ Ba endpoint chỉ dành cho vai trò `Student`; lỗi dùng `ApiResponse`.
   - test handler trên SQLite;
   - test hợp đồng HTTP;
   - E2E trên PostgreSQL local: 4 nhóm tranh 1 đề tài, hai đại diện cùng kéo một sinh viên, hai thành viên cùng hủy, xóa đợt có nhóm.
+  - Tự động trên PostgreSQL thật (2026-11-08, `RegistrationConcurrencyTests`, chạy bằng `app/scripts/test-ghi-danh.ps1`): 8 nhóm tranh 1 đề tài, hai đại diện cùng kéo một sinh viên, bấm đúp ghi danh hai đề tài, ba lần hủy đồng thời, hủy trong lúc nhóm khác ghi danh; mỗi ca kiểm bất biến một đề tài/một nhóm/một sinh viên một nhóm. Database tạm tạo bằng migration thật.

@@ -30,17 +30,19 @@ Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xu�
 **Công việc:**
 - [x] Xác thực thành viên thuộc đợt, chưa có nhóm, đúng 1–2 người, có một đại diện; chỉ người được phép gửi yêu cầu.
 - [x] Thiết kế ràng buộc database/transaction cho cạnh tranh ghi danh và thao tác lặp; lưu lịch sử từng thành viên.
-- [ ] Dựng tìm kiếm, chi tiết, xác nhận ghi danh và lỗi đề tài vừa được nhóm khác nhận.
+- [x] Dựng tìm kiếm, chi tiết, xác nhận ghi danh và lỗi đề tài vừa được nhóm khác nhận.
 - [ ] Triển khai hủy ghi danh theo PDR-047: bất kỳ thành viên nào thao tác khi đợt còn mở đăng ký và nhóm chưa nộp đề cương; giữ nguyên nhóm và lịch sử, đề tài quay lại `Chưa đăng ký`.
 
 **Acceptance criteria:**
 - [x] Hai nhóm ghi danh đồng thời: đúng một nhóm thành công; nhóm thua nhận lỗi rõ và có thể làm mới danh sách.
-- [ ] Một SV không thuộc hai nhóm trong cùng đợt; sau tải lại không thay đổi đại diện hay thành viên.
-- [ ] Thành viên không phải đại diện cũng hủy được cho cả nhóm trong thời hạn hợp lệ; sau hủy nhóm/đại diện không đổi, đề tài trống trở lại, lần ghi danh cũ tra cứu được đúng quyền; hủy lặp không làm sai trạng thái.
+- [x] Một SV không thuộc hai nhóm trong cùng đợt; sau tải lại không thay đổi đại diện hay thành viên.
+- [x] Thành viên không phải đại diện cũng hủy được cho cả nhóm trong thời hạn hợp lệ; sau hủy nhóm/đại diện không đổi, đề tài trống trở lại, lần ghi danh cũ tra cứu được đúng quyền; hủy lặp không làm sai trạng thái.
 
 **Verification:** Test tích hợp đồng thời và ranh giới 1/2/3 thành viên, quyền SV khác đợt, thao tác lặp.
 
 *(2026-11-07: backend xong theo [PDR-054](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md), có test handler/API và E2E đồng thời trên PostgreSQL local. Còn: giao diện sinh viên (mục dựng tìm kiếm/chi tiết/xác nhận) và điều kiện "chưa nộp đề cương" khi hủy, chờ mô-đun nộp bài P04; hai tiêu chí còn lại chưa tick vì cần kiểm tra trên giao diện.)*
+
+*(2026-11-08: giao diện `/sv/dang-ky` và `/sv/dang-ky/[id]` đã nối API thật (xem PDR-054 · Giao diện sinh viên). Test đồng thời tự động trên PostgreSQL thật (`RegistrationConcurrencyTests`) và luồng qua proxy Next.js trên stack cô lập đều qua; một lệnh chạy: `app/scripts/test-ghi-danh.ps1`. Mục hủy ghi danh vẫn để trống vì điều kiện "nhóm chưa nộp đề cương" chờ mô-đun nộp bài P04; mọi phần khác của mục đã xong.)*
 
 **Dependencies:** `P03-S01`, `P02-S03`; PDR-047 đã chốt thao tác hủy ghi danh.
 

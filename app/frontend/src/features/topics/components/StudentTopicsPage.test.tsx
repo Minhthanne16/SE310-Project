@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { StudentTopicService } from '@/features/topics/services/topicApiService';
 import type { Round } from '@/types/round';
-import type { RoundTopicList, TopicDto } from '@/types/topic';
+import type { MyRegistration, RoundTopicList, TopicDto } from '@/types/topic';
 import { StudentTopicsPage } from './StudentTopicsPage';
 
 afterEach(cleanup);
@@ -60,11 +60,24 @@ const published: RoundTopicList = {
   loads: [],
 };
 
+const noGroup: MyRegistration = {
+  round: published.round,
+  registrationOpen: true,
+  group: null,
+  topic: null,
+  canCancel: false,
+  history: [],
+};
+
 const fakeService = (
   overrides: Partial<StudentTopicService> = {},
 ): StudentTopicService => ({
   listRounds: vi.fn().mockResolvedValue([round()]),
   listPublished: vi.fn().mockResolvedValue(published),
+  get: vi.fn(),
+  myRegistration: vi.fn().mockResolvedValue(noGroup),
+  register: vi.fn(),
+  cancel: vi.fn(),
   ...overrides,
 });
 
@@ -130,4 +143,66 @@ it('shows a load error', async () => {
     />,
   );
   expect(await screen.findByRole('alert')).toHaveTextContent('Máy chủ bận.');
+});
+
+it('links every topic to its detail page and tells a student without a group how to register', async () => {
+  render(<StudentTopicsPage service={fakeService()} />);
+
+  expect(
+    await screen.findByRole('link', { name: 'Xem chi tiết DT-001' }),
+  ).toHaveAttribute('href', '/sv/dang-ky/t1');
+  expect(screen.getByLabelText('Nhóm của bạn')).toHaveTextContent(
+    /Bạn chưa có nhóm. Mở một đề tài còn trống để ghi danh/,
+  );
+});
+
+it("shows the student's group, its topic and marks that row", async () => {
+  const member = (id: string, code: string, name: string, rep: boolean) => ({
+    id,
+    code,
+    name,
+    className: 'KTPM2022',
+    representative: rep,
+  });
+  const service = fakeService({
+    myRegistration: vi.fn().mockResolvedValue({
+      ...noGroup,
+      group: {
+        id: 'g1',
+        representativeId: 'sv1',
+        members: [
+          member('sv1', '22520001', 'Nguyễn Văn An', true),
+          member('sv2', '22520002', 'Lê Thị Bích', false),
+        ],
+      },
+      topic: published.items[1],
+      canCancel: true,
+    }),
+  });
+  render(<StudentTopicsPage service={service} />);
+
+  const line = await screen.findByLabelText('Nhóm của bạn');
+  expect(line).toHaveTextContent(
+    'Nhóm của bạn (Nguyễn Văn An (đại diện), Lê Thị Bích) đang ghi danh DT-002 · Phân tích log.',
+  );
+  expect(
+    screen.getByRole('link', { name: 'Xem đề tài của nhóm' }),
+  ).toHaveAttribute('href', '/sv/dang-ky/t2');
+  expect(screen.getByText('Nhóm bạn')).toBeInTheDocument();
+});
+
+it('still lists topics when the group status cannot be read', async () => {
+  render(
+    <StudentTopicsPage
+      service={fakeService({
+        myRegistration: vi.fn().mockRejectedValue(new Error('lỗi')),
+      })}
+    />,
+  );
+  expect(
+    await screen.findByText('Hệ thống gợi ý khóa học'),
+  ).toBeInTheDocument();
+  expect(
+    screen.getByText(/Không đọc được tình trạng nhóm của bạn/),
+  ).toBeInTheDocument();
 });
