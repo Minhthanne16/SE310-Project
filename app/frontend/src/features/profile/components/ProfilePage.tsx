@@ -660,7 +660,9 @@ const ProfileContent: React.FC<{
           onClose={closeDialog}
           onChanged={() => {
             closeDialog();
-            toast.success('Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.');
+            toast.success(
+              'Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.',
+            );
           }}
         />
       )}

@@ -210,7 +210,6 @@
   font-weight: 600;
 }
 
-
 .prf-notice-err {
   background: var(--danger-bg);
   border: 1px solid var(--danger-line);

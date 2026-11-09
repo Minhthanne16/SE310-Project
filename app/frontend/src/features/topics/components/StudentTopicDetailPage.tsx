@@ -351,7 +351,6 @@ export const StudentTopicDetailPage: React.FC<StudentTopicDetailPageProps> = ({
         />
       </div>
 
-
       <div className="tpc-reg-grid">
         <section className="tpc-reg-card" aria-labelledby="topic-info-title">
           <h2 id="topic-info-title">Thông tin đề tài</h2>

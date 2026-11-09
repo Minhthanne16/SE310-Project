@@ -236,7 +236,6 @@ export const TopicResultPanel: React.FC<TopicResultPanelProps> = ({
         </Link>
       </p>
 
-
       {readOnly ? (
         <p className="rnd-meta">Đợt đã kết thúc nên kết quả chỉ để xem.</p>
       ) : topic.status === 'Đã hoàn tất' ? (

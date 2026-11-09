@@ -541,7 +541,6 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
         </div>
       )}
 
-
       <span className="rnd-hint" role="status">
         {rows.length} / {all.length} đề tài
       </span>

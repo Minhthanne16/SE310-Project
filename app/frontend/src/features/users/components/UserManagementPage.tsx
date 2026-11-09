@@ -291,7 +291,6 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
         </div>
       </div>
 
-
       {!loading && !loadError && (
         <div className="usr-stats">
           <div className="usr-stat">

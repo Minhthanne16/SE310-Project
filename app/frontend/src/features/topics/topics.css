@@ -137,13 +137,11 @@
   font-size: 14.5px;
 }
 
-
 .tpc-banner-err {
   background: var(--danger-bg);
   color: var(--danger-ink);
   font-weight: 500;
 }
-
 
 .tpc-filters {
   display: flex;
