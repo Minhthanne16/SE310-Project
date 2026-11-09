@@ -7,6 +7,14 @@
 - Đọc `docs/OPEN_QUESTIONS.md` trước khi code phần liên quan. Nếu còn câu hỏi mở hoặc tài liệu nghiệp vụ và `docs/DESIGN/` mâu thuẫn, dừng việc code để làm rõ/ghi nhận quyết định; không tự chọn một quy tắc.
 - Khi thay đổi làm ảnh hưởng yêu cầu, quy tắc, vai trò, mô hình miền hoặc quyết định đã chốt, cập nhật tài liệu liên quan trong cùng tác vụ trước khi xem thay đổi mã là hoàn thành.
 
+## Quy tắc giao diện (bắt buộc khi sửa frontend)
+
+- Trước khi viết hoặc sửa CSS, class, component giao diện, đọc [docs/DESIGN.md](docs/DESIGN.md) rồi mới tới `docs/DESIGN/02` và `docs/DESIGN/03`. Nguồn giá trị là khối `:root` trong `app/frontend/src/index.css`.
+- Không viết mã hex hay `rgb()` mới trong CSS, không dùng `style={{…}}` cho màu/cỡ chữ/bo góc: dùng `var(--…)` và class. Cần màu hay kích thước mới thì thêm token vào `:root` và cập nhật `docs/DESIGN.md` cùng thay đổi.
+- Tái dùng thành phần `app-*` (nút, chip, bảng, popup, ngăn kéo, trạng thái trống) thay vì tạo bộ lớp mới. Vùng bấm tối thiểu 40px, chip luôn có chữ, popup/lỗi theo ô/thông báo có `role` và `aria-*` như `docs/DESIGN.md` nêu.
+- Sau khi sửa giao diện, chạy các lệnh kiểm tra ở mục cuối `docs/DESIGN.md` (hex còn sót, cỡ chữ ngoài thang, vùng bấm nhỏ) cùng `npm run typecheck`, `npm run lint`, `npm test`.
+- Thông báo kết quả sau thao tác thêm, sửa, xóa, gửi dùng toast (`toast.success/error`); banner `role="note"` chỉ cho ghi chú cần ở lại; lỗi theo ô và lỗi trong form giữ tại chỗ (PDR-056). Không tự dựng kiểu báo thứ ba.
+
 ## Phạm vi và cấu trúc
 
 - File này áp dụng cho toàn bộ repository. Đọc `README.md` và file liên quan trước khi sửa.

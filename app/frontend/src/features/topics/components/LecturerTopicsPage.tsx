@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import '@/features/topics/topics.css';
 import { formatDate } from '@/features/rounds/roundUtils';
 import { TopicStatusChip } from '@/features/topics/components/TopicChips';
@@ -318,7 +319,6 @@ export const LecturerTopicsPage: React.FC<LecturerTopicsPageProps> = ({
   const [roundId, setRoundId] = useState('');
   const [data, setData] = useState<LecturerTopicList | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
 
   useEffect(() => {
@@ -360,7 +360,7 @@ export const LecturerTopicsPage: React.FC<LecturerTopicsPageProps> = ({
 
   const afterChange = async (message: string) => {
     setDialog(null);
-    setNotice(message);
+    toast.success(message);
     await load(roundId);
   };
 
@@ -408,7 +408,6 @@ export const LecturerTopicsPage: React.FC<LecturerTopicsPageProps> = ({
           onChange={(e) => {
             // Không xóa data: chỉ dữ liệu khớp đợt đang chọn mới hiện (current),
             // chọn lại đúng đợt cũ thì effect không chạy lại.
-            setNotice(null);
             setRoundId(e.target.value);
           }}
         >
@@ -440,7 +439,6 @@ export const LecturerTopicsPage: React.FC<LecturerTopicsPageProps> = ({
                 : undefined
             }
             onClick={() => {
-              setNotice(null);
               setDialog({ kind: 'create' });
             }}
           >
@@ -459,11 +457,6 @@ export const LecturerTopicsPage: React.FC<LecturerTopicsPageProps> = ({
           </p>
         )}
       {current && <LoadNote data={current} />}
-      {notice && (
-        <div className="tpc-banner tpc-banner-ok" role="status">
-          {notice}
-        </div>
-      )}
       {error && (
         <div className="tpc-banner tpc-banner-err" role="alert">
           {error}
@@ -522,7 +515,6 @@ export const LecturerTopicsPage: React.FC<LecturerTopicsPageProps> = ({
                           className="tpc-btn tpc-btn-sm"
                           aria-label={`Sửa ${topic.title}`}
                           onClick={() => {
-                            setNotice(null);
                             setDialog({ kind: 'edit', topic });
                           }}
                         >
@@ -536,7 +528,6 @@ export const LecturerTopicsPage: React.FC<LecturerTopicsPageProps> = ({
                           className="tpc-btn tpc-btn-sm"
                           aria-label={`Xóa ${topic.title}`}
                           onClick={() => {
-                            setNotice(null);
                             setDialog({ kind: 'delete', topic });
                           }}
                         >

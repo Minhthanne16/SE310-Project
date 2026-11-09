@@ -224,7 +224,7 @@ it('tells the loser of a race the topic was just taken, reloads it and offers to
     await screen.findByRole('button', { name: 'Xác nhận ghi danh' }),
   );
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(taken);
+  expect(await screen.findByText(taken)).toBeInTheDocument();
   await waitFor(() => expect(get).toHaveBeenCalledTimes(2));
   expect(
     await screen.findByRole('heading', { name: 'Đề tài đã có nhóm' }),
@@ -414,9 +414,9 @@ it('shows a rule error from a repeated cancel and refreshes the state', async ()
     }),
   );
 
-  expect(await screen.findByRole('alert')).toHaveTextContent(
-    'Nhóm không còn ghi danh đề tài này.',
-  );
+  expect(
+    await screen.findByText('Nhóm không còn ghi danh đề tài này.'),
+  ).toBeInTheDocument();
   await waitFor(() => expect(myRegistration).toHaveBeenCalledTimes(2));
 });
 

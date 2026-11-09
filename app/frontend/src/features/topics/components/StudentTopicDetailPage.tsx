@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { ArrowLeft, Info } from 'lucide-react';
 import '@/features/topics/topics.css';
 import '@/features/rounds/rounds.css';
@@ -34,8 +35,6 @@ type LoadState =
   | { kind: 'not-found' }
   | { kind: 'error'; message: string }
   | { kind: 'ready'; topic: TopicDetailDto; mine: MyRegistration };
-
-type Banner = { tone: 'ok' | 'err'; text: string } | null;
 
 const LIST_HREF = '/sv/dang-ky';
 
@@ -88,7 +87,6 @@ export const StudentTopicDetailPage: React.FC<StudentTopicDetailPageProps> = ({
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [memberCode, setMemberCode] = useState('');
   const [memberError, setMemberError] = useState<string | null>(null);
-  const [banner, setBanner] = useState<Banner>(null);
   const [dialog, setDialog] = useState<'register' | 'cancel' | null>(null);
   const [busy, setBusy] = useState(false);
   const confirmRef = useRef<HTMLButtonElement>(null);
@@ -115,7 +113,6 @@ export const StudentTopicDetailPage: React.FC<StudentTopicDetailPageProps> = ({
 
   const act = async (run: () => Promise<MyRegistration>, success: string) => {
     setBusy(true);
-    setBanner(null);
     setMemberError(null);
     try {
       // Máy chủ trả tình trạng nhóm mới; đọc lại đề tài để có trạng thái hiện hành.
@@ -123,7 +120,7 @@ export const StudentTopicDetailPage: React.FC<StudentTopicDetailPageProps> = ({
       const fresh = await service.get(topicId);
       setDialog(null);
       setMemberCode('');
-      setBanner({ tone: 'ok', text: success });
+      toast.success(success);
       setState({ kind: 'ready', topic: fresh, mine: next });
     } catch (err: unknown) {
       setDialog(null);
@@ -132,10 +129,9 @@ export const StudentTopicDetailPage: React.FC<StudentTopicDetailPageProps> = ({
       } else {
         // Đề tài vừa có nhóm khác nhận, hết hạn, hủy lặp...: báo đúng lời máy chủ rồi tải lại
         // để màn hình phản ánh trạng thái thật.
-        setBanner({
-          tone: 'err',
-          text: errorText(err, 'Không thực hiện được thao tác. Thử lại sau.'),
-        });
+        toast.error(
+          errorText(err, 'Không thực hiện được thao tác. Thử lại sau.'),
+        );
         await load();
       }
     } finally {
@@ -355,14 +351,6 @@ export const StudentTopicDetailPage: React.FC<StudentTopicDetailPageProps> = ({
         />
       </div>
 
-      {banner && (
-        <div
-          className={`tpc-banner ${banner.tone === 'ok' ? 'tpc-banner-ok' : 'tpc-banner-err'}`}
-          role={banner.tone === 'ok' ? 'status' : 'alert'}
-        >
-          {banner.text}
-        </div>
-      )}
 
       <div className="tpc-reg-grid">
         <section className="tpc-reg-card" aria-labelledby="topic-info-title">

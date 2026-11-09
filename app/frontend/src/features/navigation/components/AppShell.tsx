@@ -2,9 +2,10 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { AlertCircle, Menu, X } from 'lucide-react';
 import { ROLE_HOME } from '@/features/auth/roles';
+import { AppToaster } from '@/components/ui/AppToaster';
 import type { AuthService } from '@/features/auth/services/authService';
 import {
   SessionProvider,
@@ -145,7 +146,7 @@ const ShellContent: React.FC<Omit<AppShellProps, 'authService'>> = ({
           <main className="app-content">{children}</main>
         </TopbarSlotContext.Provider>
       </div>
-      <Toaster position="top-right" />
+      <AppToaster />
     </div>
   );
 };

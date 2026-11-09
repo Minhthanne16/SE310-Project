@@ -96,7 +96,8 @@ Cỡ chữ hay dùng: 15px (nội dung, mục menu), 14 và 14.5px (bảng, nút
 | Popup xác nhận | `role="dialog"` + `aria-modal`, nền mờ, hộp trắng bo 12px, nút an toàn (Giữ / Hủy bỏ) bên trái, nút nguy hiểm bên phải; nhãn nút nói rõ hành động ("Hủy ghi danh", "Giữ ghi danh") | xóa, hủy, công bố |
 | Ngăn kéo (drawer) | trượt từ phải, dùng cho form thêm/sửa người dùng, tạo hội đồng | Người dùng, Hội đồng |
 | Trạng thái trống | khung viền đứt `#D4D4D4`, tiêu đề đậm 17px + một câu giải thích + (nếu có) nút/đường dẫn đi tiếp | mọi danh sách |
-| Thông báo thao tác (toast) | dải màu theo ý nghĩa, có `role="status"` | sau khi lưu, gửi, xóa |
+| Thông báo thao tác (toast) | `react-hot-toast` góc trên phải, dải màu theo ý nghĩa (xanh thành công, đỏ lỗi cả thao tác), `role="status"`, tự tắt sau 5 giây (lỗi 8 giây) | sau khi thêm, sửa, xóa, gửi, công bố, đổi mật khẩu, tải tệp |
+| Banner trong trang | dải màu nhạt, `role="note"`, không tự tắt | ghi chú cần ở lại: giai đoạn đợt, cảnh báo mức đề tài, lý do nút bị khóa ([PDR-056](../decisions/PDR-056-thong-bao-thao-tac-bang-toast.md)) |
 | Lỗi theo ô | chữ `#A8281C` dưới ô, ô đổi viền đỏ, có `aria-describedby`; thiếu thông tin hiện lỗi sau khi bấm gửi | mọi form |
 | Chọn đợt | ô chọn có nhãn "Đợt" ở thanh trên (Đề tài của tôi, Đề xuất từ SV) | giảng viên |
 
@@ -109,6 +110,8 @@ Cỡ chữ hay dùng: 15px (nội dung, mục menu), 14 và 14.5px (bảng, nút
 
 ## Điểm cần thống nhất khi dựng
 
-1. **Bộ token.** `index.css` hiện dùng `--primary: #2563eb` và nền slate từ mẫu Products; thiết kế QLKLTN là trung tính đen/trắng với màu nhấn lime. Đề xuất: thay token theo bảng trên (một lần, ở `:root`), không sửa từng component. Màn `/login` đã dựng nên rà lại sau khi đổi.
+> Quy tắc làm việc và bảng token hiện hành nằm ở [../DESIGN.md](../DESIGN.md). Tệp này giữ giá trị gốc từ canvas.
+
+1. **Bộ token.** Đã làm (2026-11-09): `:root` trong `app/frontend/src/index.css` có đủ token theo bảng trên (tên đề xuất ở đây tương ứng `--ink`, `--line`, `--surface-2`...; trạng thái dùng cặp `--warn-*`, `--ok-*`, `--info-*`, `--doing-*`, `--confirmed-*`, `--danger-*`), phông nạp bằng `next/font`. Các biến thể màu lệch trong code cũ đã gộp về một giá trị cho mỗi ý nghĩa (nền cảnh báo `#fef4e2`, nền nguy hiểm `#fdecea`, viền nguy hiểm `#e8b4ae`, nền thành công `#ddf3d8` và `#f1faee` cho banner). Token cũ của Products giữ làm bí danh.
 2. **Biểu tượng.** Canvas dùng bộ nét 1.8; repo có `lucide-react` cùng phong cách, dùng luôn thay vì chép SVG.
-3. **Toast.** Repo có `react-hot-toast`; dùng cho thông báo thao tác.
+3. **Thông báo thao tác.** Đã chốt 2026-11-09 ([PDR-056](../decisions/PDR-056-thong-bao-thao-tac-bang-toast.md), đóng OQ-021): toast cho kết quả sau thao tác CRUD; banner chỉ cho ghi chú cần ở lại; lỗi theo ô và lỗi trong form/popup giữ tại chỗ.

@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column;
   gap: 28px;
-  max-width: 1120px;
+  max-width: var(--page-max);
   width: 100%;
 }
 
@@ -36,12 +36,12 @@
 }
 
 .prf-badge {
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #f2f2f1;
-  color: #3d3d3d;
+  background: var(--surface-2);
+  color: var(--ink-2);
 }
 
 .prf-avatar {
@@ -64,18 +64,18 @@
 }
 
 .prf-role-Student {
-  background: #e3ecfb;
-  color: #1f4fa0;
+  background: var(--info-bg);
+  color: var(--info-ink);
 }
 
 .prf-role-Lecturer {
-  background: #ede7fb;
-  color: #5b3ba8;
+  background: var(--doing-bg);
+  color: var(--doing-ink);
 }
 
 .prf-role-AcademicAffairs {
-  background: #ddf3d8;
-  color: #2b6a1f;
+  background: var(--ok-bg);
+  color: var(--ok-ink);
 }
 
 .prf-cols {
@@ -106,9 +106,9 @@
   flex-direction: column;
   gap: 18px;
   padding: 22px 24px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .prf-card-tight {
@@ -130,14 +130,14 @@
 
 .prf-card-head h2 {
   margin: 0;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 700;
 }
 
 .prf-card-head p {
   margin: 4px 0 0;
   font-size: 14px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .prf-eyebrow {
@@ -145,7 +145,7 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .prf-btn {
@@ -153,20 +153,20 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
+  min-height: var(--btn-h);
   padding: 0 14px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 9px;
-  background: #fff;
+  background: var(--surface);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--ink);
   cursor: pointer;
 }
 
 .prf-btn:hover:not(:disabled) {
-  background: #f5f5f4;
+  background: var(--canvas);
 }
 
 .prf-btn:disabled {
@@ -175,7 +175,7 @@
 }
 
 .prf-btn-lg {
-  min-height: 44px;
+  min-height: var(--btn-h-lg);
   padding: 0 16px;
   border-radius: 10px;
   font-size: 14.5px;
@@ -184,22 +184,22 @@
 .prf-btn-primary {
   border: 0;
   padding: 0 18px;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--ink);
+  color: var(--surface);
 }
 
 .prf-btn-primary:hover:not(:disabled) {
-  background: #333;
+  background: var(--ink-2);
 }
 
 .prf-btn-danger {
-  border-color: #e8b4ae;
-  color: #a8281c;
+  border-color: var(--danger-line);
+  color: var(--danger-ink);
   text-decoration: none;
 }
 
 .prf-btn-danger:hover:not(:disabled) {
-  background: #fbe9e7;
+  background: var(--danger-bg);
 }
 
 .prf-notice {
@@ -210,15 +210,11 @@
   font-weight: 600;
 }
 
-.prf-notice-ok {
-  background: #ddf3d8;
-  color: #12301a;
-}
 
 .prf-notice-err {
-  background: #fbe9e7;
-  border: 1px solid #e8b4ae;
-  color: #a8281c;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
 }
 
 .prf-list {
@@ -233,7 +229,7 @@
   align-items: center;
   gap: 4px 16px;
   padding: 12px 0;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .prf-row:first-child {
@@ -243,7 +239,7 @@
 .prf-row dt {
   flex: 0 0 180px;
   font-size: 14px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .prf-row dd {
@@ -260,7 +256,7 @@
   max-width: 320px;
   height: 44px;
   padding: 0 12px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 10px;
   font: inherit;
   font-size: 15px;
@@ -268,7 +264,7 @@
 }
 
 .prf-input[aria-invalid='true'] {
-  border: 1.5px solid #a8281c;
+  border: 1.5px solid var(--danger-ink);
 }
 
 .prf-field-error {
@@ -276,7 +272,7 @@
   margin-top: 6px;
   font-size: 13.5px;
   font-weight: 500;
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .prf-avatar-field {
@@ -289,13 +285,13 @@
 .prf-avatar-status {
   font-size: 14px;
   font-weight: 400;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .prf-avatar-hint {
   font-size: 13px;
   font-weight: 400;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .prf-avatar-msg {
@@ -305,11 +301,11 @@
 }
 
 .prf-avatar-msg-ok {
-  color: #2b6a1f;
+  color: var(--ok-ink);
 }
 
 .prf-avatar-msg-err {
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .prf-file-btn {
@@ -318,21 +314,21 @@
   align-items: center;
   min-height: 40px;
   padding: 0 14px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 9px;
-  background: #fff;
+  background: var(--surface);
   font-size: 14px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--ink);
   cursor: pointer;
 }
 
 .prf-file-btn-err {
-  border: 1.5px solid #a8281c;
+  border: 1.5px solid var(--danger-ink);
 }
 
 .prf-file-btn:focus-within {
-  outline: 2px solid #1f5fbf;
+  outline: 2px solid var(--link);
   outline-offset: 2px;
 }
 
@@ -351,14 +347,14 @@
   gap: 12px;
   flex-wrap: wrap;
   padding-top: 14px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .prf-form-foot p {
   margin: 0;
   max-width: 26rem;
   font-size: 13px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .prf-actions {
@@ -371,7 +367,7 @@
   flex-direction: column;
   gap: 4px;
   padding: 10px 0;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .prf-side-row:first-of-type {
@@ -380,7 +376,7 @@
 
 .prf-side-row span:first-child {
   font-size: 13px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .prf-side-row span:last-child {

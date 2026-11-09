@@ -232,7 +232,7 @@ it('exports the topic list for the current filters as an .xlsx table', async () 
   expect(table.rows).toHaveLength(6);
   expect(table.rows.every((r) => r[6] === 'Đang thực hiện')).toBe(true);
   expect(
-    screen.getByText(
+    await screen.findByText(
       /Đã tải tệp Excel danh sách đề tài \(6 đề tài theo bộ lọc hiện tại/,
     ),
   ).toBeInTheDocument();
@@ -457,7 +457,8 @@ it('expands a deviating topic inline with red cells, blocked confirm and a compo
   ).toContain('VB1-13');
   fireEvent.click(within(composer).getByRole('button', { name: 'Gửi' }));
   expect(
-    await within(panel).findByText(/Đã gửi nhắc cho 3 giảng viên/),
+    // Kết quả hiện bằng toast, nằm ngoài panel.
+    await screen.findByText(/Đã gửi nhắc cho 3 giảng viên/),
   ).toBeInTheDocument();
 
   fireEvent.click(toggle);
