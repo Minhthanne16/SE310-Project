@@ -1,18 +1,104 @@
 @import 'tailwindcss';
 
+/*
+ * Bộ token QLKLTN. Nguồn chuẩn: docs/DESIGN.md (chi tiết ở docs/DESIGN/02).
+ * Quy tắc: CSS mới dùng var(--…) ở đây, không viết mã hex trực tiếp.
+ */
 :root {
-  --primary: #2563eb;
-  --primary-hover: #1d4ed8;
-  --primary-light: #eff6ff;
-  --success: #16a34a;
-  --danger: #dc2626;
-  --danger-hover: #b91c1c;
-  --bg-main: #f8fafc;
+  /* Trung tính */
+  --ink: #1a1a1a;
+  --ink-2: #3d3d3d;
+  --muted: #5c5c5c;
+  --muted-2: #737373;
+  --muted-3: #a3a3a3;
+  --line: #e5e5e5;
+  --line-soft: #f0f0ef;
+  --line-input: #d4d4d4;
   --surface: #ffffff;
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
-  --border: #e2e8f0;
+  --surface-2: #f2f2f1;
+  --surface-3: #ebebea;
+  --canvas: #fafaf9;
+
+  /* Nhấn và liên kết */
+  --accent: #d4f26a;
+  --link: #1f5fbf;
+  --link-hover: #174a94;
+
+  /* Trạng thái: chờ xử lý, cần chú ý, nháp */
+  --warn-bg: #fef4e2;
+  --warn-line: #f0d9a8;
+  --warn-ink: #8a4b08;
+  --warn-ink-strong: #6b3a06;
+  /* Thành công, đã công bố */
+  --ok-bg: #ddf3d8;
+  --ok-bg-soft: #f1faee;
+  --ok-line: #bfe3b6;
+  --ok-ink: #2b6a1f;
+  /* Thông tin, đã đăng ký */
+  --info-bg: #e3ecfb;
+  --info-ink: #1f4fa0;
+  /* Đang thực hiện */
+  --doing-bg: #ede7fb;
+  --doing-ink: #5b3ba8;
+  /* Đã xác nhận */
+  --confirmed-bg: #e6f4f1;
+  --confirmed-ink: #1d5e52;
+  /* Nguy hiểm, lỗi, từ chối */
+  --danger-bg: #fdecea;
+  --danger-bg-soft: #fbeeec;
+  --danger-line: #e8b4ae;
+  --danger-ink: #a8281c;
+
+  /* Màu vai trò */
+  --role-student: #5b8def;
+  --role-lecturer: #9b7be8;
+  --role-affairs: #4fb286;
+
+  /* Bo góc */
+  --radius-control-sm: 9px;
+  --radius-control: 10px;
+  --radius-block: 12px;
+  --radius-card: 14px;
+  --radius-pill: 999px;
+
+  /* Kích thước: vùng bấm tối thiểu 40px, hàng bấm được 44px */
+  --btn-h-sm: 40px;
+  --btn-h: 44px;
+  --btn-h-lg: 46px;
+  --field-h-sm: 40px;
+  --field-h: 44px;
+  --dialog-w: 480px;
+  --dialog-w-md: 560px;
+  --dialog-w-wide: 880px;
+  --page-max: 1240px;
+
+  /* Cao độ: thẻ không có bóng; chỉ menu nổi, popup, ngăn kéo */
+  --shadow-menu: 0 10px 28px rgba(26, 26, 26, 0.1);
+  --shadow-popup: 0 20px 48px rgba(26, 26, 26, 0.18);
+  --shadow-drawer: -12px 0 32px rgba(26, 26, 26, 0.18);
+  --focus-ring: 0 0 0 3px rgba(26, 26, 26, 0.12);
+  --overlay: var(--overlay);
+
+  /* Phông (được nạp bằng next/font ở app/layout.tsx) */
+  --font-sans:
+    var(--font-be-vietnam-pro), system-ui, -apple-system, 'Segoe UI', Roboto,
+    sans-serif;
+  --font-mono:
+    var(--font-jetbrains-mono), ui-monospace, 'Cascadia Mono', Consolas,
+    monospace;
+
+  /* Bí danh cho phần Products cũ (route legacy), không dùng cho code mới */
+  --primary: var(--ink);
+  --primary-hover: var(--ink-2);
+  --primary-light: var(--surface-2);
+  --success: var(--ok-ink);
+  --danger: var(--danger-ink);
+  --danger-hover: var(--danger-ink);
+  --bg-main: var(--canvas);
+  --text-primary: var(--ink);
+  --text-secondary: var(--muted);
+  --text-muted: var(--muted-2);
+  --border: var(--line);
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
@@ -20,9 +106,6 @@
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg:
     0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --font-sans:
-    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen,
-    Ubuntu, Cantarell, sans-serif;
 }
 
 * {
@@ -141,7 +224,7 @@ textarea:focus {
 }
 
 .error-banner {
-  background-color: #fef2f2;
+  background-color: var(--danger-bg-soft);
   border: 1px solid #fecaca;
   color: #991b1b;
   border-radius: var(--radius-md);
@@ -161,7 +244,7 @@ textarea:focus {
 }
 
 .btn-danger-ghost:hover {
-  background-color: #fee2e2;
+  background-color: var(--danger-bg-soft);
 }
 
 .btn-icon {
@@ -176,7 +259,7 @@ textarea:focus {
 
 /* Đăng nhập */
 .login-page {
-  --login-accent: #d4f26a;
+  --login-accent: var(--accent);
   min-height: 100vh;
   display: flex;
   flex-wrap: wrap;
@@ -185,8 +268,8 @@ textarea:focus {
 
 .login-brand {
   flex: 1 1 440px;
-  background: #1a1a1a;
-  color: #e5e5e5;
+  background: var(--ink);
+  color: var(--line);
   padding: 48px 56px;
   display: flex;
   flex-direction: column;
@@ -200,7 +283,7 @@ textarea:focus {
   gap: 12px;
   font-size: 17px;
   font-weight: 700;
-  color: #fff;
+  color: var(--surface);
 }
 
 .login-brand-logo span {
@@ -208,7 +291,7 @@ textarea:focus {
   height: 40px;
   border-radius: 10px;
   background: var(--login-accent);
-  color: #1a1a1a;
+  color: var(--ink);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -227,7 +310,7 @@ textarea:focus {
   font-size: 46px;
   line-height: 1.1;
   font-weight: 700;
-  color: #fff;
+  color: var(--surface);
 }
 
 .login-brand-copy em {
@@ -238,12 +321,12 @@ textarea:focus {
 .login-brand-copy p {
   font-size: 17px;
   line-height: 1.6;
-  color: #bdbdbd;
+  color: var(--muted-3);
 }
 
 .login-brand-footer {
   font-size: 14px;
-  color: #a3a3a3;
+  color: var(--muted-3);
 }
 
 .login-main {
@@ -276,7 +359,7 @@ textarea:focus {
 .login-heading p {
   font-size: 15px;
   line-height: 1.55;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .login-badge {
@@ -285,8 +368,8 @@ textarea:focus {
   font-weight: 600;
   padding: 4px 10px;
   border-radius: 999px;
-  background: #fef4e2;
-  color: #8a4b08;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
 }
 
 .login-error {
@@ -295,9 +378,9 @@ textarea:focus {
   align-items: flex-start;
   padding: 12px 14px;
   border-radius: 10px;
-  background: #fbe9e7;
-  border: 1px solid #e8b4ae;
-  color: #a8281c;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-line);
+  color: var(--danger-ink);
   font-size: 14px;
   line-height: 1.5;
   font-weight: 500;
@@ -329,93 +412,93 @@ textarea:focus {
 .login-switch button {
   font-size: 14px;
   font-weight: 600;
-  color: #1f5fbf;
+  color: var(--link);
   text-decoration: none;
 }
 
 .login-field-row a:hover,
 .login-switch button:hover {
-  color: #174a94;
+  color: var(--link-hover);
 }
 
 .login-link-button {
   font-size: 14px;
   font-weight: 600;
-  color: #1f5fbf;
+  color: var(--link);
   min-height: 40px;
 }
 
 .login-link-button:hover:not(:disabled) {
-  color: #174a94;
+  color: var(--link-hover);
 }
 
 .login-link-button:disabled {
-  color: #737373;
+  color: var(--muted-2);
   cursor: not-allowed;
 }
 
 .login-hint {
   font-size: 13.5px;
   line-height: 1.5;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .login-field input {
   height: 46px;
   padding: 0 14px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 10px;
   font-size: 15px;
 }
 
 .login-field input[aria-invalid='true'] {
-  border: 1.5px solid #a8281c;
+  border: 1.5px solid var(--danger-ink);
 }
 
 /* Ô chọn (select) dùng chung cho bộ lọc và form */
 .app-select {
-  height: 46px;
+  height: var(--field-h);
   width: 100%;
   padding: 0 12px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 10px;
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--surface);
+  color: var(--ink);
   font-family: inherit;
   font-size: 15px;
 }
 
 .app-select:disabled {
-  background: #f2f2f1;
-  color: #5c5c5c;
+  background: var(--surface-2);
+  color: var(--muted);
 }
 
 .login-field input[readonly] {
-  background: #f2f2f1;
-  color: #5c5c5c;
+  background: var(--surface-2);
+  color: var(--muted);
 }
 
 .login-submit {
   height: 48px;
   border-radius: 10px;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--ink);
+  color: var(--surface);
   font-size: 16px;
   font-weight: 600;
 }
 
 .login-submit:disabled {
-  background: #a3a3a3;
+  background: var(--muted-3);
   cursor: not-allowed;
 }
 
 .login-note {
   padding: 14px 16px;
   border-radius: 10px;
-  background: #f5f5f4;
+  background: var(--canvas);
   font-size: 14px;
   line-height: 1.55;
-  color: #3d3d3d;
+  color: var(--ink-2);
 }
 
 .login-rules {
@@ -430,16 +513,16 @@ textarea:focus {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .login-rules li.passed {
-  color: #2b6a1f;
+  color: var(--ok-ink);
 }
 
 .login-switch {
   font-size: 14px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 @media (max-width: 640px) {
@@ -463,7 +546,7 @@ textarea:focus {
 
 .login-field-error {
   font-size: 13.5px;
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .login-password {
@@ -492,20 +575,20 @@ textarea:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .login-password-toggle:hover {
-  color: #1a1a1a;
-  background: #f2f2f1;
+  color: var(--ink);
+  background: var(--surface-2);
 }
 
 .login-page input:focus,
 .app-shell input:focus,
 .app-select:focus,
 .dialog input:focus {
-  border-color: #1a1a1a;
-  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.12);
+  border-color: var(--ink);
+  box-shadow: var(--focus-ring);
 }
 
 .login-page :is(a, button):focus-visible,
@@ -515,7 +598,7 @@ textarea:focus {
 .status-page :is(a, button):focus-visible,
 .dialog :is(a, button):focus-visible,
 .app-drawer :is(a, button):focus-visible {
-  outline: 2px solid #1f5fbf;
+  outline: 2px solid var(--link);
   outline-offset: 2px;
 }
 
@@ -526,17 +609,17 @@ textarea:focus {
   align-items: flex-start;
   gap: 8px;
   padding: 28px;
-  border: 1px dashed #d4d4d4;
+  border: 1px dashed var(--line-input);
   border-radius: 14px;
-  background: #fff;
-  color: #5c5c5c;
+  background: var(--surface);
+  color: var(--muted);
   max-width: 560px;
 }
 
 .status-state h2 {
   font-size: 17px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .status-state p {
@@ -548,12 +631,12 @@ textarea:focus {
   margin-top: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #1f5fbf;
+  color: var(--link);
   text-decoration: none;
 }
 
 .status-state-action:hover {
-  color: #174a94;
+  color: var(--link-hover);
 }
 
 /* Trang404 cả trang: chữ 404, biểu tượng, tiêu đề và hai nút */
@@ -561,8 +644,8 @@ textarea:focus {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .status-page-header {
@@ -570,7 +653,7 @@ textarea:focus {
   display: flex;
   align-items: center;
   padding: 0 32px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--line);
 }
 
 .status-page-main {
@@ -611,15 +694,15 @@ textarea:focus {
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  background: #d4f26a;
-  color: #1a1a1a;
+  background: var(--accent);
+  color: var(--ink);
 }
 
 .status-page-eyebrow {
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .status-page h1 {
@@ -632,7 +715,7 @@ textarea:focus {
 .status-page p {
   font-size: 16px;
   line-height: 1.6;
-  color: #3d3d3d;
+  color: var(--ink-2);
 }
 
 .status-page-actions {
@@ -656,24 +739,24 @@ textarea:focus {
 
 .status-page-back {
   padding: 0 18px;
-  border: 1px solid #d4d4d4;
-  background: #fff;
-  color: #1a1a1a;
+  border: 1px solid var(--line-input);
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .status-page-back:hover {
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 .status-page-home {
   padding: 0 20px;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--ink);
+  color: var(--surface);
 }
 
 .status-page-home:hover {
-  background: #333;
-  color: #fff;
+  background: var(--ink-2);
+  color: var(--surface);
 }
 
 @media (max-width: 480px) {
@@ -694,8 +777,8 @@ textarea:focus {
   justify-content: center;
   gap: 14px;
   padding: 24px;
-  background: #fafaf9;
-  color: #3d3d3d;
+  background: var(--canvas);
+  color: var(--ink-2);
   font-size: 15px;
   text-align: center;
 }
@@ -704,8 +787,8 @@ textarea:focus {
   width: 28px;
   height: 28px;
   border-radius: 999px;
-  border: 3px solid #e5e5e5;
-  border-top-color: #1a1a1a;
+  border: 3px solid var(--line);
+  border-top-color: var(--ink);
   animation: app-spin 0.8s linear infinite;
 }
 
@@ -716,32 +799,32 @@ textarea:focus {
 }
 
 .app-button {
-  min-height: 40px;
+  min-height: var(--btn-h);
   padding: 0 16px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   border-radius: 9px;
-  border: 1px solid #d4d4d4;
-  background: #fff;
-  color: #1a1a1a;
+  border: 1px solid var(--line-input);
+  background: var(--surface);
+  color: var(--ink);
   font-size: 14px;
   font-weight: 600;
 }
 
 .app-button:hover:not(:disabled) {
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 .app-button-primary {
-  border-color: #1a1a1a;
-  background: #1a1a1a;
-  color: #fff;
+  border-color: var(--ink);
+  background: var(--ink);
+  color: var(--surface);
 }
 
 .app-button-primary:hover:not(:disabled) {
-  background: #3d3d3d;
+  background: var(--ink-2);
 }
 
 .app-button:disabled {
@@ -751,24 +834,24 @@ textarea:focus {
 
 /* Nút hành động nguy hiểm: xóa, vô hiệu hóa */
 .app-button-danger {
-  border-color: #e8b4ae;
-  color: #a8281c;
+  border-color: var(--danger-line);
+  color: var(--danger-ink);
 }
 
 .app-button-danger:hover:not(:disabled) {
-  background: #fbeeec;
+  background: var(--danger-bg-soft);
 }
 
 .app-button-small {
-  min-height: 34px;
+  min-height: var(--btn-h-sm);
   padding: 0 12px;
 }
 
 .app-shell {
   min-height: 100vh;
   display: flex;
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .app-sidebar {
@@ -783,8 +866,8 @@ textarea:focus {
   flex-direction: column;
   gap: 22px;
   padding: 20px 12px;
-  border-right: 1px solid #e5e5e5;
-  background: #fff;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
 }
 
 .app-logo {
@@ -794,7 +877,7 @@ textarea:focus {
   padding: 0 8px;
   font-size: 16px;
   font-weight: 700;
-  color: #1a1a1a;
+  color: var(--ink);
   text-decoration: none;
 }
 
@@ -802,7 +885,7 @@ textarea:focus {
   width: 36px;
   height: 36px;
   border-radius: 9px;
-  background: #d4f26a;
+  background: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -830,7 +913,7 @@ textarea:focus {
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .app-nav-item {
@@ -842,25 +925,25 @@ textarea:focus {
   border-radius: 8px;
   font-size: 15px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--ink);
   text-decoration: none;
 }
 
 .app-nav-item:hover {
-  background: #f2f2f1;
-  color: #1a1a1a;
+  background: var(--surface-2);
+  color: var(--ink);
 }
 
 .app-nav-item.is-active {
-  background: #ebebea;
-  color: #1a1a1a;
+  background: var(--surface-3);
+  color: var(--ink);
   font-weight: 600;
 }
 
 .account-menu {
   position: relative;
   padding-top: 12px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .account-card {
@@ -872,11 +955,11 @@ textarea:focus {
   padding: 8px;
   border-radius: 10px;
   text-align: left;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .account-card:hover {
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 .account-card-text {
@@ -890,7 +973,7 @@ textarea:focus {
 
 .account-card-text strong {
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--ink);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -914,56 +997,56 @@ textarea:focus {
 }
 
 .avatar-Student {
-  background: #e3ecfb;
-  color: #1f4fa0;
+  background: var(--info-bg);
+  color: var(--info-ink);
 }
 
 .avatar-Lecturer {
-  background: #ede7fb;
-  color: #5b3ba8;
+  background: var(--doing-bg);
+  color: var(--doing-ink);
 }
 
 .avatar-AcademicAffairs {
-  background: #ddf3d8;
-  color: #2b6a1f;
+  background: var(--ok-bg);
+  color: var(--ok-ink);
 }
 
 /* Nhãn vai trò và trạng thái trong bảng người dùng */
 .app-chip {
   display: inline-block;
-  padding: 2px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   white-space: nowrap;
-  background: #f2f2f1;
-  color: #3d3d3d;
+  background: var(--surface-2);
+  color: var(--ink-2);
 }
 
 .app-chip-Student {
-  background: #e3ecfb;
-  color: #1f4fa0;
+  background: var(--info-bg);
+  color: var(--info-ink);
 }
 
 .app-chip-Lecturer {
-  background: #ede7fb;
-  color: #5b3ba8;
+  background: var(--doing-bg);
+  color: var(--doing-ink);
 }
 
 .app-chip-AcademicAffairs,
 .app-chip-active {
-  background: #ddf3d8;
-  color: #2b6a1f;
+  background: var(--ok-bg);
+  color: var(--ok-ink);
 }
 
 .app-chip-pending {
-  background: #fdf0d5;
-  color: #8a5a00;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
 }
 
 .app-chip-disabled {
-  background: #f2f2f1;
-  color: #5c5c5c;
+  background: var(--surface-2);
+  color: var(--muted);
 }
 
 .account-menu-popup {
@@ -974,9 +1057,9 @@ textarea:focus {
   z-index: 30;
   padding: 6px;
   border-radius: 12px;
-  border: 1px solid #e5e5e5;
-  background: #fff;
-  box-shadow: 0 10px 28px rgba(26, 26, 26, 0.1);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  box-shadow: var(--shadow-menu);
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -991,13 +1074,13 @@ textarea:focus {
   border-radius: 8px;
   font-size: 14.5px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--ink);
   text-decoration: none;
   text-align: left;
 }
 
 .account-menu-item-danger {
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .account-menu-head {
@@ -1006,7 +1089,7 @@ textarea:focus {
   gap: 10px;
   margin-bottom: 4px;
   padding: 10px 10px 12px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--line);
 }
 
 .account-menu-head-text {
@@ -1026,11 +1109,11 @@ textarea:focus {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 12.5px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .account-menu-item:hover:not(:disabled) {
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 .app-main {
@@ -1048,7 +1131,7 @@ textarea:focus {
   justify-content: space-between;
   gap: 12px;
   padding: 10px 32px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--line);
 }
 
 .app-topbar-left,
@@ -1065,7 +1148,7 @@ textarea:focus {
 
 .app-topbar-title {
   font-size: 14px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .app-menu-toggle {
@@ -1073,10 +1156,10 @@ textarea:focus {
   width: 40px;
   height: 40px;
   border-radius: 9px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   align-items: center;
   justify-content: center;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .app-content {
@@ -1103,7 +1186,7 @@ textarea:focus {
 .app-page-heading p,
 .app-muted {
   font-size: 15px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .app-card {
@@ -1111,9 +1194,9 @@ textarea:focus {
   flex-direction: column;
   gap: 18px;
   padding: 24px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .app-card-header {
@@ -1137,7 +1220,7 @@ textarea:focus {
 
 .profile-fields dt {
   font-size: 13px;
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .profile-fields dd {
@@ -1200,7 +1283,7 @@ textarea:focus {
 .dialog-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(26, 26, 26, 0.4);
+  background: var(--overlay);
 }
 
 .app-backdrop {
@@ -1217,14 +1300,14 @@ textarea:focus {
 
 .dialog {
   width: 100%;
-  max-width: 440px;
+  max-width: var(--dialog-w);
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   padding: 28px;
   border-radius: 12px;
-  background: #fff;
-  color: #1a1a1a;
-  box-shadow: 0 20px 48px rgba(26, 26, 26, 0.18);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-popup);
 }
 
 .dialog .login-heading h2 {
@@ -1243,7 +1326,7 @@ textarea:focus {
 }
 
 .dialog-wide {
-  max-width: 880px;
+  max-width: var(--dialog-w-wide);
 }
 
 .app-choice-group {
@@ -1305,13 +1388,13 @@ textarea:focus {
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .app-search input {
   height: 40px;
   padding: 0 14px 0 36px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 10px;
   font-size: 15px;
 }
@@ -1323,9 +1406,9 @@ textarea:focus {
 
 .app-table-scroll {
   overflow-x: auto;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .app-table {
@@ -1341,16 +1424,16 @@ textarea:focus {
 .app-table th,
 .app-table td {
   padding: 12px 16px;
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: top;
 }
 
 .app-table th {
-  background: #fafaf9;
+  background: var(--canvas);
   font-size: 13px;
   font-weight: 700;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .app-table tbody tr:last-child td {
@@ -1390,7 +1473,7 @@ textarea:focus {
 
 .app-row-errors {
   list-style: none;
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .app-drawer-backdrop {
@@ -1399,7 +1482,7 @@ textarea:focus {
   z-index: 45;
   display: flex;
   justify-content: flex-end;
-  background: rgba(26, 26, 26, 0.4);
+  background: var(--overlay);
 }
 
 .app-drawer {
@@ -1408,8 +1491,8 @@ textarea:focus {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  box-shadow: -12px 0 32px rgba(26, 26, 26, 0.18);
+  background: var(--surface);
+  box-shadow: var(--shadow-drawer);
 }
 
 .app-drawer-header,
@@ -1422,7 +1505,7 @@ textarea:focus {
 }
 
 .app-drawer-header {
-  border-bottom: 1px solid #e5e5e5;
+  border-bottom: 1px solid var(--line);
 }
 
 .app-drawer-header h2 {
@@ -1431,7 +1514,7 @@ textarea:focus {
 }
 
 .app-drawer-footer {
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .app-drawer-body {
@@ -1448,7 +1531,7 @@ textarea:focus {
   flex-direction: column;
   gap: 12px;
   padding-top: 20px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .app-drawer-section h3 {
@@ -1463,17 +1546,17 @@ textarea:focus {
 }
 
 .app-icon-button {
-  width: 36px;
-  height: 36px;
+  width: var(--btn-h-sm);
+  height: var(--btn-h-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 9px;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .app-icon-button:hover:not(:disabled) {
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 @media (max-width: 900px) {
@@ -1512,13 +1595,13 @@ textarea:focus {
 
 /* Đợt khóa luận: thẻ đợt, Gantt, bảng thông báo, cấu hình, thêm người */
 .app-chip-info {
-  background: #e3ecfb;
-  color: #1f4fa0;
+  background: var(--info-bg);
+  color: var(--info-ink);
 }
 
 .app-chip-error {
-  background: #fbe9e7;
-  color: #a8281c;
+  background: var(--danger-bg);
+  color: var(--danger-ink);
 }
 
 .app-chip-row {
@@ -1539,12 +1622,12 @@ textarea:focus {
 
 .app-link {
   font-weight: 600;
-  color: #1f5fbf;
+  color: var(--link);
   text-decoration: none;
 }
 
 .app-link:hover {
-  color: #174a94;
+  color: var(--link-hover);
   text-decoration: underline;
 }
 
@@ -1555,7 +1638,7 @@ textarea:focus {
   gap: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #1f5fbf;
+  color: var(--link);
   text-decoration: none;
 }
 
@@ -1566,7 +1649,7 @@ textarea:focus {
   gap: 4px;
   padding: 4px;
   border-radius: 12px;
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 .app-segmented button {
@@ -1576,13 +1659,13 @@ textarea:focus {
   border-radius: 9px;
   font-size: 14px;
   font-weight: 600;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .app-segmented button[aria-pressed='true'] {
-  border-color: #e5e5e5;
-  background: #fff;
-  color: #1a1a1a;
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--ink);
 }
 
 .app-round-table {
@@ -1590,7 +1673,7 @@ textarea:focus {
 }
 
 .dialog-medium {
-  max-width: 560px;
+  max-width: var(--dialog-w-md);
 }
 
 .round-grid {
@@ -1604,20 +1687,20 @@ textarea:focus {
   flex-direction: column;
   gap: 14px;
   padding: 22px 24px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   text-align: left;
 }
 
 .round-card.needs-action {
-  border-color: #1a1a1a;
+  border-color: var(--ink);
 }
 
 .round-card:hover {
-  background: #fafaf9;
+  background: var(--canvas);
 }
 
 .round-card > span {
@@ -1635,29 +1718,29 @@ textarea:focus {
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .round-card-status {
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
   font-size: 12.5px;
   font-weight: 600;
 }
 
 .round-card-status.is-running {
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--ink);
+  color: var(--surface);
 }
 
 .round-card-status.is-draft {
-  background: #fef4e2;
-  color: #8a4b08;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
 }
 
 .round-card-status.is-ended {
-  background: #f2f2f1;
-  color: #3d3d3d;
+  background: var(--surface-2);
+  color: var(--ink-2);
 }
 
 .round-card-title {
@@ -1673,7 +1756,7 @@ textarea:focus {
 
 .round-card-week {
   font-size: 13.5px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .round-card-progress {
@@ -1684,30 +1767,30 @@ textarea:focus {
 .round-card-now {
   font-size: 13px;
   font-weight: 600;
-  color: #3d3d3d;
+  color: var(--ink-2);
 }
 
 .progress-bar {
   display: block;
   height: 6px;
   border-radius: 999px;
-  background: #e5e5e5;
+  background: var(--line);
   overflow: hidden;
 }
 
 .progress-bar span {
   display: block;
   height: 100%;
-  background: #1a1a1a;
+  background: var(--ink);
 }
 
 .round-card-foot {
   flex-direction: column;
   gap: 8px;
   padding-top: 14px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
   font-size: 14px;
-  color: #3d3d3d;
+  color: var(--ink-2);
 }
 
 .round-card-need {
@@ -1715,11 +1798,11 @@ textarea:focus {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .round-card-need.is-needed {
-  color: #8a4b08;
+  color: var(--warn-ink);
 }
 
 .round-card-dot {
@@ -1727,11 +1810,11 @@ textarea:focus {
   height: 8px;
   flex: none;
   border-radius: 999px;
-  background: #b5b5b5;
+  background: var(--muted-3);
 }
 
 .round-card-need.is-needed .round-card-dot {
-  background: #c2570c;
+  background: var(--warn-ink);
 }
 
 .round-card-open {
@@ -1739,7 +1822,7 @@ textarea:focus {
   gap: 6px;
   font-size: 14px;
   font-weight: 600;
-  color: #1f5fbf;
+  color: var(--link);
 }
 
 .round-topics {
@@ -1757,25 +1840,25 @@ textarea:focus {
 .home-note {
   font-size: 13px;
   line-height: 1.5;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .home-back {
-  min-height: 42px;
+  min-height: var(--field-h-sm);
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 0 14px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 10px;
-  background: #fff;
+  background: var(--surface);
   font-size: 14.5px;
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .home-back:hover {
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 .home-period {
@@ -1783,20 +1866,20 @@ textarea:focus {
   align-items: center;
   gap: 8px;
   font-size: 14px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .home-period-chip {
   padding: 6px 12px;
   border-radius: 999px;
-  background: #f2f2f1;
+  background: var(--surface-2);
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .home-period-hint {
   font-size: 13px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 /* Việc sắp đến hạn */
@@ -1813,19 +1896,19 @@ textarea:focus {
   flex-direction: column;
   gap: 10px;
   padding: 18px 20px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--surface);
+  color: var(--ink);
   text-decoration: none;
 }
 
 .todo-card.is-first {
-  border-color: #1a1a1a;
+  border-color: var(--ink);
 }
 
 .todo-card:hover {
-  background: #fafaf9;
+  background: var(--canvas);
 }
 
 .todo-card-top {
@@ -1839,25 +1922,25 @@ textarea:focus {
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.06em;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .todo-card-when {
-  padding: 3px 9px;
+  padding: 4px 10px;
   border-radius: 999px;
-  background: #fef4e2;
-  color: #8a4b08;
+  background: var(--warn-bg);
+  color: var(--warn-ink);
   font-size: 12.5px;
   font-weight: 600;
 }
 
 .todo-card.is-first .todo-card-when {
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--ink);
+  color: var(--surface);
 }
 
 .todo-card-title {
-  font-size: 16.5px;
+  font-size: 16px;
   font-weight: 700;
   line-height: 1.35;
 }
@@ -1865,7 +1948,7 @@ textarea:focus {
 .todo-card-sub {
   font-size: 13.5px;
   line-height: 1.45;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 /* Bảng thông báo của đợt */
@@ -1873,9 +1956,9 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 14px;
-  background: #fff;
+  background: var(--surface);
 }
 
 .notice-header {
@@ -1900,7 +1983,7 @@ textarea:focus {
 
 .notice-header-text span {
   font-size: 13.5px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .notice-header-actions {
@@ -1912,14 +1995,14 @@ textarea:focus {
 
 .notice-search {
   min-width: 240px;
-  height: 42px;
+  height: var(--field-h-sm);
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 10px;
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .notice-search input {
@@ -1931,7 +2014,7 @@ textarea:focus {
   border-radius: 0;
   background: transparent;
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .notice-search input:focus {
@@ -1939,27 +2022,27 @@ textarea:focus {
 }
 
 .notice-search:focus-within {
-  border-color: #1a1a1a;
-  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.12);
+  border-color: var(--ink);
+  box-shadow: var(--focus-ring);
 }
 
 .notice-compose {
-  height: 42px;
+  height: var(--field-h-sm);
   display: inline-flex;
   align-items: center;
   gap: 8px;
   padding: 0 16px;
   border-radius: 10px;
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--ink);
+  color: var(--surface);
   font-size: 14.5px;
   font-weight: 600;
   text-decoration: none;
 }
 
 .notice-compose:hover {
-  background: #333;
-  color: #fff;
+  background: var(--ink-2);
+  color: var(--surface);
 }
 
 .notice-tabs {
@@ -1970,36 +2053,36 @@ textarea:focus {
   margin: 0 24px 14px;
   padding: 4px;
   border-radius: 12px;
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 .notice-tabs button {
-  min-height: 36px;
+  min-height: var(--btn-h-sm);
   padding: 0 14px;
   border: 1px solid transparent;
   border-radius: 9px;
   font-size: 13.5px;
   font-weight: 500;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .notice-tabs button[aria-pressed='true'] {
-  border-color: #e5e5e5;
-  background: #fff;
+  border-color: var(--line);
+  background: var(--surface);
   font-weight: 600;
 }
 
 .notice-list {
   list-style: none;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .notice-item {
-  border-bottom: 1px solid #f0f0ef;
+  border-bottom: 1px solid var(--line-soft);
 }
 
 .notice-item.is-open {
-  background: #fafaf9;
+  background: var(--canvas);
 }
 
 .notice-head {
@@ -2009,7 +2092,7 @@ textarea:focus {
   gap: 14px;
   padding: 16px 24px;
   text-align: left;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .notice-avatar {
@@ -2026,7 +2109,7 @@ textarea:focus {
 }
 
 .notice-title {
-  font-size: 15.5px;
+  font-size: 15px;
   font-weight: 600;
   line-height: 1.4;
 }
@@ -2037,12 +2120,12 @@ textarea:focus {
   align-items: center;
   gap: 8px;
   font-size: 12.5px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .notice-meta strong {
   font-weight: 600;
-  color: #3d3d3d;
+  color: var(--ink-2);
 }
 
 .notice-role {
@@ -2052,18 +2135,18 @@ textarea:focus {
 }
 
 .notice-role-affairs {
-  background: #ddf3d8;
-  color: #2b6a1f;
+  background: var(--ok-bg);
+  color: var(--ok-ink);
 }
 
 .notice-role-lecturer {
-  background: #ede7fb;
-  color: #5b3ba8;
+  background: var(--doing-bg);
+  color: var(--doing-ink);
 }
 
 .notice-chevron {
   flex: none;
-  color: #5c5c5c;
+  color: var(--muted);
   transition: transform 0.15s ease;
 }
 
@@ -2074,7 +2157,7 @@ textarea:focus {
 .notice-excerpt {
   font-size: 14px;
   line-height: 1.5;
-  color: #3d3d3d;
+  color: var(--ink-2);
   display: -webkit-box;
   -webkit-line-clamp: 1;
   -webkit-box-orient: vertical;
@@ -2090,26 +2173,26 @@ textarea:focus {
 
 .notice-empty {
   padding: 32px 24px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
   text-align: center;
   font-size: 14px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .notice-error {
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .notice-more {
   min-height: 48px;
-  background: #fafaf9;
+  background: var(--canvas);
   font-size: 14px;
   font-weight: 600;
-  color: #1f5fbf;
+  color: var(--link);
 }
 
 .notice-more:hover {
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 @media (max-width: 600px) {
@@ -2150,7 +2233,7 @@ textarea:focus {
   flex-wrap: wrap;
   gap: 16px;
   font-size: 13px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .gantt-legend li {
@@ -2166,7 +2249,7 @@ textarea:focus {
 }
 
 .gantt-swatch-week {
-  background: #d4f26a;
+  background: var(--accent);
 }
 
 .gantt-scroll {
@@ -2181,7 +2264,7 @@ textarea:focus {
   display: grid;
   grid-template-columns: 220px 1fr;
   align-items: center;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .gantt-head {
@@ -2204,7 +2287,7 @@ textarea:focus {
 .gantt-action {
   font-size: 12.5px;
   font-weight: 600;
-  color: #1f5fbf;
+  color: var(--link);
   text-decoration: none;
 }
 
@@ -2230,12 +2313,12 @@ textarea:focus {
   justify-content: center;
   font-size: 11px;
   font-weight: 600;
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .gantt-week-now {
-  background: #d4f26a;
-  color: #1a1a1a;
+  background: var(--accent);
+  color: var(--ink);
   border-radius: 6px 6px 0 0;
 }
 
@@ -2254,16 +2337,16 @@ textarea:focus {
 }
 
 .gantt-bar-past {
-  background: #a3a3a3;
+  background: var(--muted-3);
 }
 
 .gantt-bar-now {
-  background: #1f5fbf;
+  background: var(--link);
 }
 
 .gantt-bar-next {
-  background: #fff;
-  border: 2px solid #1f5fbf;
+  background: var(--surface);
+  border: 2px solid var(--link);
 }
 
 /* Cấu hình mốc */
@@ -2277,7 +2360,7 @@ textarea:focus {
 }
 
 .app-config-table input[aria-invalid='true'] {
-  border: 1.5px solid #a8281c;
+  border: 1.5px solid var(--danger-ink);
 }
 
 .app-config-table .app-select {
@@ -2287,16 +2370,16 @@ textarea:focus {
 
 .app-config-name {
   min-width: 220px;
-  background: #fff;
+  background: var(--surface);
   font-size: 14px;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .app-config-hint {
   display: block;
   font-size: 12.5px;
   font-weight: 400;
-  color: #737373;
+  color: var(--muted-2);
 }
 
 .app-switch {
@@ -2317,7 +2400,7 @@ textarea:focus {
 }
 
 .app-pick-blocked {
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .app-check-results {
@@ -2363,9 +2446,9 @@ textarea:focus {
   flex-direction: column;
   gap: 6px;
   padding: 14px 16px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 12px;
-  background: #fafaf9;
+  background: var(--canvas);
 }
 
 .eval-assign-card label {
@@ -2374,7 +2457,7 @@ textarea:focus {
 }
 
 .eval-assign-card .app-select {
-  height: 42px;
+  height: var(--field-h-sm);
   font-size: 14.5px;
 }
 
@@ -2404,17 +2487,17 @@ textarea:focus {
 
 .eval-optional {
   font-weight: 400;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .eval-editor input,
 .eval-editor textarea {
   width: 100%;
   padding: 0 10px;
-  border: 1px solid #d4d4d4;
+  border: 1px solid var(--line-input);
   border-radius: 9px;
-  background: #fff;
-  color: #1a1a1a;
+  background: var(--surface);
+  color: var(--ink);
   font: inherit;
   font-size: 14.5px;
 }
@@ -2435,34 +2518,34 @@ textarea:focus {
 }
 
 .eval-editor input[aria-invalid='true'] {
-  border-color: #a8281c;
+  border-color: var(--danger-ink);
 }
 
 .eval-editor input:disabled,
 .eval-editor textarea:disabled {
-  background: #f2f2f1;
-  color: #5c5c5c;
+  background: var(--surface-2);
+  color: var(--muted);
 }
 
 .eval-note {
   padding: 12px 14px;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 10px;
-  background: #f2f2f1;
-  color: #3d3d3d;
+  background: var(--surface-2);
+  color: var(--ink-2);
   font-size: 14px;
   line-height: 1.5;
 }
 
 .eval-note-warn {
-  border-color: #f3d19a;
-  background: #fef4e2;
-  color: #5c3a06;
+  border-color: var(--warn-line);
+  background: var(--warn-bg);
+  color: var(--warn-ink-strong);
 }
 
 .eval-table {
   overflow: hidden;
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--line);
   border-radius: 10px;
 }
 
@@ -2472,24 +2555,24 @@ textarea:focus {
   align-items: start;
   gap: 10px;
   padding: 10px 14px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .eval-grid-head {
   border-top: 0;
-  background: #fafaf9;
+  background: var(--canvas);
   font-size: 14px;
   font-weight: 600;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .eval-grid-criterion {
-  background: #fafaf9;
+  background: var(--canvas);
 }
 
 .eval-grid-sub {
   padding: 6px 14px;
-  border-top-color: #f0f0ef;
+  border-top-color: var(--line-soft);
 }
 
 .eval-no {
@@ -2500,7 +2583,7 @@ textarea:focus {
 .eval-no-sub {
   padding-left: 14px;
   font-weight: 400;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .eval-editor .eval-input-strong {
@@ -2508,10 +2591,10 @@ textarea:focus {
 }
 
 .eval-editor .eval-input-desc {
-  height: 36px;
-  border-color: #e5e5e5;
+  height: var(--field-h-sm);
+  border-color: var(--line);
   font-size: 13.5px;
-  color: #3d3d3d;
+  color: var(--ink-2);
 }
 
 .eval-remove {
@@ -2523,12 +2606,12 @@ textarea:focus {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #5c5c5c;
+  color: var(--muted);
   cursor: pointer;
 }
 
 .eval-remove:hover:not(:disabled) {
-  background: #f2f2f1;
+  background: var(--surface-2);
 }
 
 .eval-criterion-footer {
@@ -2541,11 +2624,11 @@ textarea:focus {
 }
 
 .eval-link-button {
-  min-height: 36px;
+  min-height: var(--btn-h-sm);
   padding: 0 4px;
   border: 0;
   background: transparent;
-  color: #1f5fbf;
+  color: var(--link);
   font: inherit;
   font-size: 14px;
   font-weight: 600;
@@ -2558,13 +2641,13 @@ textarea:focus {
 }
 
 .eval-check-ok {
-  color: #2b6a1f;
+  color: var(--ok-ink);
 }
 
 .eval-check-bad,
 .eval-field-error,
 .eval-summary {
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .eval-field-error {
@@ -2582,15 +2665,15 @@ textarea:focus {
   justify-content: space-between;
   gap: 12px;
   padding: 12px 14px;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid var(--line);
 }
 
 .eval-total-ok {
-  background: #f4fbe0;
+  background: var(--ok-bg-soft);
 }
 
 .eval-total-bad {
-  background: #fbe9e7;
+  background: var(--danger-bg);
 }
 
 .eval-total {
@@ -2609,21 +2692,21 @@ textarea:focus {
   grid-template-columns: minmax(0, 1fr) 80px 110px 110px;
   gap: 10px;
   padding: 10px 14px;
-  border: 1px dashed #c4c4c4;
+  border: 1px dashed var(--line-input);
   border-radius: 10px;
   font-size: 14px;
-  color: #5c5c5c;
+  color: var(--muted);
 }
 
 .eval-preview-name {
   font-weight: 600;
-  color: #1a1a1a;
+  color: var(--ink);
 }
 
 .eval-status-ok {
   font-size: 14px;
   font-weight: 600;
-  color: #2b6a1f;
+  color: var(--ok-ink);
 }
 
 .eval-section {
@@ -2680,7 +2763,7 @@ textarea:focus {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #1f5fbf;
+  color: var(--link);
   font: inherit;
   font-weight: 700;
   text-align: left;
@@ -2697,7 +2780,7 @@ textarea:focus {
 }
 
 .eval-icon-danger {
-  color: #a8281c;
+  color: var(--danger-ink);
 }
 
 .eval-drawer {
@@ -2717,14 +2800,14 @@ textarea:focus {
 
 .eval-drawer-footer .eval-delete {
   margin-right: auto;
-  border-color: #e3b3ad;
-  color: #a8281c;
+  border-color: var(--danger-line);
+  color: var(--danger-ink);
 }
 
 .eval-save-hint {
   margin: 0;
   font-size: 13.5px;
-  color: #3d3d3d;
+  color: var(--ink-2);
 }
 
 .eval-assign-round {
@@ -2762,4 +2845,46 @@ textarea:focus {
     grid-template-columns: minmax(0, 1fr) 52px 64px 64px;
     font-size: 13px;
   }
+}
+
+/* Toast: thông báo kết quả thao tác (react-hot-toast, gắn ở AppToaster) */
+div.app-toast {
+  max-width: 440px;
+  padding: 12px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-menu);
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+div.app-toast-success {
+  border-color: var(--ok-line);
+  background: var(--ok-bg-soft);
+  color: var(--ok-ink);
+}
+
+div.app-toast-error {
+  border-color: var(--danger-line);
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+}
+
+.app-toast-action {
+  display: block;
+  margin-top: 6px;
+  min-height: var(--btn-h-sm);
+  padding: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--link);
+  text-align: left;
+}
+
+.app-toast-action:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
 }

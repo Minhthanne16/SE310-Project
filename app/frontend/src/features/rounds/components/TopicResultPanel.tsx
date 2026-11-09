@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import type {
   ResultOutcome,
   TopicService,
@@ -54,9 +55,6 @@ export const TopicResultPanel: React.FC<TopicResultPanelProps> = ({
   readOnly = false,
   onChanged,
 }) => {
-  const [flash, setFlash] = useState<{ ok: boolean; text: string } | null>(
-    null,
-  );
   const [busy, setBusy] = useState(false);
   const [composing, setComposing] = useState(false);
   const [message, setMessage] = useState(() => defaultMessage(topic));
@@ -96,11 +94,12 @@ export const TopicResultPanel: React.FC<TopicResultPanelProps> = ({
     setBusy(true);
     try {
       const out = await action();
-      setFlash({ ok: out.ok, text: out.message });
+      if (out.ok) toast.success(out.message);
+      else toast.error(out.message);
       if (out.ok) after?.();
       await onChanged();
     } catch (err: unknown) {
-      setFlash({ ok: false, text: errorMessage(err) });
+      toast.error(errorMessage(err));
     } finally {
       setBusy(false);
     }
@@ -237,15 +236,6 @@ export const TopicResultPanel: React.FC<TopicResultPanelProps> = ({
         </Link>
       </p>
 
-      {flash && (
-        <div
-          role="status"
-          className={`rnd-banner ${flash.ok ? 'rnd-banner-ok' : 'rnd-banner-warn'}`}
-        >
-          {flash.text}
-        </div>
-      )}
-
       {readOnly ? (
         <p className="rnd-meta">Đợt đã kết thúc nên kết quả chỉ để xem.</p>
       ) : topic.status === 'Đã hoàn tất' ? (
@@ -263,7 +253,6 @@ export const TopicResultPanel: React.FC<TopicResultPanelProps> = ({
                 disabled={busy}
                 onClick={() => {
                   setUnconfirming(true);
-                  setFlash(null);
                 }}
               >
                 Hủy xác nhận
@@ -277,7 +266,6 @@ export const TopicResultPanel: React.FC<TopicResultPanelProps> = ({
                 }
                 onClick={() => {
                   setPublishing(true);
-                  setFlash(null);
                 }}
               >
                 Công bố kết quả
@@ -371,7 +359,6 @@ export const TopicResultPanel: React.FC<TopicResultPanelProps> = ({
                 onClick={() => {
                   setMessage(defaultMessage(topic));
                   setComposing(true);
-                  setFlash(null);
                 }}
               >
                 Gửi thông báo

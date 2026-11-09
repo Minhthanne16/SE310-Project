@@ -142,8 +142,6 @@ const ProfileContent: React.FC<{
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [editing, setEditing] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const [passwordChanged, setPasswordChanged] = useState(false);
   const [values, setValues] = useState<ProfileInput | null>(null);
   const [errors, setErrors] = useState<ProfileFieldErrors>({});
   const [avatarError, setAvatarError] = useState<string | null>(null);
@@ -201,7 +199,6 @@ const ProfileContent: React.FC<{
 
   const openDialog = () => {
     dialogOpenRef.current = true;
-    setPasswordChanged(false);
     setDialogOpen(true);
   };
 
@@ -252,7 +249,6 @@ const ProfileContent: React.FC<{
     setAvatarName(null);
     setFormError(null);
     setPreviewUrl(null);
-    setSaved(false);
     setEditing(true);
   };
 
@@ -320,7 +316,7 @@ const ProfileContent: React.FC<{
       if (values.avatarFile)
         apply(await profileService.uploadAvatar(values.avatarFile));
       else if (values.removeAvatar) apply(await profileService.removeAvatar());
-      setSaved(true);
+      toast.success('Đã lưu thông tin cá nhân.');
       stopEditing();
     } catch (err: unknown) {
       setFormError(
@@ -408,11 +404,6 @@ const ProfileContent: React.FC<{
               )}
             </div>
 
-            {saved && !editing && (
-              <div role="status" className="prf-notice prf-notice-ok">
-                Đã lưu thông tin cá nhân.
-              </div>
-            )}
             {editing && (hasFieldErrors || avatarError) && (
               <div role="alert" className="prf-notice prf-notice-err">
                 Chưa lưu được. Sửa các mục báo đỏ bên dưới rồi bấm Lưu thay đổi.
@@ -610,11 +601,6 @@ const ProfileContent: React.FC<{
                 Đổi mật khẩu
               </button>
             </div>
-            {passwordChanged && (
-              <div role="status" className="prf-notice prf-notice-ok">
-                Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.
-              </div>
-            )}
           </section>
         </div>
 
@@ -674,7 +660,9 @@ const ProfileContent: React.FC<{
           onClose={closeDialog}
           onChanged={() => {
             closeDialog();
-            setPasswordChanged(true);
+            toast.success(
+              'Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.',
+            );
           }}
         />
       )}
