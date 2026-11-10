@@ -160,8 +160,10 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(32);
             entity.HasIndex(e => new { e.RoundId, e.Number }).IsUnique();
             entity.HasIndex(e => e.SupervisorId);
-            // Một nhóm chỉ giữ một đề tài (giá trị null không tính trùng).
-            entity.HasIndex(e => e.GroupId).IsUnique();
+            // Một nhóm chỉ có một đơn/đề tài đang hoạt động. Đề xuất Đã hủy vẫn giữ GroupId để truy vết
+            // nhưng không được chặn đề xuất lại bằng chính nhóm đó (PDR-012).
+            entity.HasIndex(e => e.GroupId).HasDatabaseName("IX_ThesisTopics_ActiveGroupId")
+                .HasFilter("\"GroupId\" IS NOT NULL AND \"Status\" IN ('PendingApproval', 'Registered', 'Rejected')").IsUnique();
             entity.HasOne<ThesisGroup>().WithMany().HasForeignKey(e => e.GroupId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne<ThesisRound>().WithMany(r => r.Topics).HasForeignKey(e => e.RoundId).OnDelete(DeleteBehavior.Cascade);
             // Tài khoản có đề tài chỉ được vô hiệu hóa, không xóa (BUSINESS_RULES); chặn thêm ở database.

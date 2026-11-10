@@ -43,3 +43,10 @@ public enum RegisterOutcome
     // Nhóm vừa ghi danh đề tài khác.
     GroupHasTopic
 }
+
+public enum ProposalCreateOutcome
+{
+    Created,
+    MemberTaken,
+    GroupHasTopic
+}

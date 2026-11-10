@@ -13,6 +13,8 @@ export const TOPIC_STATUSES = [
   'Chờ GV duyệt',
   'Đã đăng ký',
   'Bị từ chối',
+  // Chỉ thuộc lịch sử đề xuất của SV theo PDR-012, không tính vào tổng hợp vòng đời đề tài.
+  'Đã hủy',
   'Đang thực hiện',
   // Trạng thái chấm điểm suy ra từ phiếu điểm của cả nhóm (PDR-049).
   'Đang cho điểm',
@@ -36,6 +38,7 @@ export const SETTLED_TOPIC_STATUSES: readonly TopicStatus[] = [
   'Không đủ điều kiện công bố',
   'Không có nhóm',
   'Bị từ chối',
+  'Đã hủy',
 ];
 
 export const isSettledTopicStatus = (status: TopicStatus): boolean =>

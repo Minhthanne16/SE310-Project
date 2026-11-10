@@ -63,6 +63,41 @@ public class RegisterTopicDto
     public List<string>? MemberCodes { get; set; }
 }
 
+// Sinh viên gửi đề xuất; người gọi là đại diện khi nhóm chưa tồn tại hoặc đã được giữ từ đề xuất đã hủy.
+public class ProposalInputDto : TopicInputDto
+{
+    public Guid SupervisorId { get; set; }
+    public List<string>? MemberCodes { get; set; }
+}
+
+// Sửa khi đề xuất còn chờ; đổi GVHD sẽ chuyển đề xuất sang GV mới (REPORT_SPEC).
+public class ProposalUpdateDto : TopicInputDto
+{
+    public Guid SupervisorId { get; set; }
+}
+
+public class RejectProposalDto
+{
+    public string? Reason { get; set; }
+}
+
+public class StudentProposalsDto
+{
+    public TopicRoundDto Round { get; set; } = new();
+    public bool RegistrationOpen { get; set; }
+    public GroupDto? Group { get; set; }
+    // Gồm cả đề xuất Đã hủy để sinh viên tra cứu lịch sử PDR-012, mới nhất trước.
+    public List<TopicDetailDto> Items { get; set; } = [];
+}
+
+public class LecturerProposalsDto
+{
+    public TopicRoundDto Round { get; set; } = new();
+    // Chờ duyệt và các đề xuất đã xử lý/lịch sử, mới nhất trước.
+    public List<TopicDetailDto> Items { get; set; } = [];
+    public LecturerLoadDto Load { get; set; } = new();
+}
+
 public class RegistrationHistoryDto
 {
     public Guid TopicId { get; set; }

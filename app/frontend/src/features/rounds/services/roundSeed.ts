@@ -109,6 +109,7 @@ function topics(
     'Chờ GV duyệt': 0,
     'Đã đăng ký': 0,
     'Bị từ chối': 0,
+    'Đã hủy': 0,
     'Đang thực hiện': 0,
     'Đang cho điểm': 0,
     'Đã cho điểm': 0,

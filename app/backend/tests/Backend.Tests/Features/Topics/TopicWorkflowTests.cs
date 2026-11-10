@@ -63,7 +63,14 @@ public sealed class TopicWorkflowTests : IDisposable
             role, code, $"Người {code}", role == UserRole.Student ? "KTPM2023" : "CNPM");
     }
 
-    private sealed record World(Guid RoundId, Guid Lecturer, Guid OtherLecturer, Guid Student, Guid Outsider);
+    private sealed record World(
+        Guid RoundId,
+        Guid Lecturer,
+        Guid OtherLecturer,
+        Guid Student,
+        Guid Partner,
+        string PartnerCode,
+        Guid Outsider);
 
     // Đợt đang diễn ra có hai GV, một SV; thêm một GV và một SV không thuộc đợt.
     private async Task<World> OpenRound(int loadMin = 0, int loadMax = 0)
@@ -71,7 +78,10 @@ public sealed class TopicWorkflowTests : IDisposable
         var suffix = Guid.NewGuid().ToString("N")[..5].ToUpperInvariant();
         var lecturer = await Seed(UserRole.Lecturer, $"GV{suffix}A");
         var other = await Seed(UserRole.Lecturer, $"GV{suffix}B");
-        var student = await Seed(UserRole.Student, $"SV{suffix}A");
+        var studentCode = $"SV{suffix}A";
+        var partnerCode = $"SV{suffix}B";
+        var student = await Seed(UserRole.Student, studentCode);
+        var partner = await Seed(UserRole.Student, partnerCode);
         var outsider = await Seed(UserRole.Lecturer, $"GV{suffix}C");
         var created = (await Send(new CreateRoundCommand(new RoundInputDto
         {
@@ -85,10 +95,10 @@ public sealed class TopicWorkflowTests : IDisposable
             }));
         await Send(new UpdateRoundMilestonesCommand(created.Id, Dated()));
         await Send(new AddParticipantsCommand(created.Id, "lecturers", [$"GV{suffix}A", $"GV{suffix}B"]));
-        await Send(new AddParticipantsCommand(created.Id, "students", [$"SV{suffix}A"]));
+        await Send(new AddParticipantsCommand(created.Id, "students", [studentCode, partnerCode]));
         var opened = await Send(new OpenRoundCommand(created.Id));
         Assert.Equal(RoundResultStatus.Ok, opened.Status);
-        return new World(created.Id, lecturer, other, student, outsider);
+        return new World(created.Id, lecturer, other, student, partner, partnerCode, outsider);
     }
 
     private static RoundMilestonesInputDto Dated()
@@ -374,6 +384,140 @@ public sealed class TopicWorkflowTests : IDisposable
 
         Assert.Equal(RoundResultStatus.Conflict, finish.Status);
         Assert.StartsWith("Còn 1 đề tài chưa công bố kết quả.", finish.Response.Message);
+    }
+
+    [Fact]
+    public async Task AProposalCanBeEditedCancelledByAnyMemberAndResubmittedWithTheSameGroup()
+    {
+        var w = await OpenRound();
+        await Submit(w);
+        await Publish(w);
+        var input = new ProposalInputDto
+        {
+            RoundId = w.RoundId,
+            SupervisorId = w.Lecturer,
+            Title = "Đề tài sinh viên đề xuất",
+            Field = "Trí tuệ nhân tạo",
+            Description = "Mô tả đề xuất",
+            Requirements = "Biết Python",
+            MemberCodes = [w.PartnerCode]
+        };
+
+        var created = await Send(new CreateProposalCommand(w.Student, input));
+
+        Assert.Equal(TopicResultStatus.Created, created.Status);
+        var first = created.Response.Data!;
+        Assert.Equal("Chờ GV duyệt", first.Status);
+        Assert.Equal("SV đề xuất", first.Source);
+        Assert.Equal(2, first.Group.Count);
+        var groupId = (await Send(new ListMyProposalsQuery(w.Student, w.RoundId))).Response.Data!.Group!.Id;
+
+        var updated = await Send(new UpdateProposalCommand(w.Student, first.Id, new ProposalUpdateDto
+        {
+            SupervisorId = w.Lecturer,
+            Title = "Đề tài đã sửa",
+            Field = input.Field,
+            Description = "Mô tả đã sửa",
+            Requirements = input.Requirements
+        }));
+        Assert.Equal(TopicResultStatus.Ok, updated.Status);
+        Assert.Equal("Đề tài đã sửa", updated.Response.Data!.Title);
+
+        var wrongLecturer = await Send(new AcceptProposalCommand(w.OtherLecturer, first.Id));
+        Assert.Equal(TopicResultStatus.Forbidden, wrongLecturer.Status);
+
+        var cancelled = await Send(new CancelProposalCommand(w.Partner, first.Id));
+        Assert.Equal(TopicResultStatus.Ok, cancelled.Status);
+        Assert.Equal("Đã hủy", cancelled.Response.Data!.Status);
+        Assert.Equal(w.Partner, cancelled.Response.Data.Group.Single(m => m.Representative == false).Id);
+        Assert.Equal(TopicResultStatus.Conflict, (await Send(new CancelProposalCommand(w.Student, first.Id))).Status);
+
+        var resubmitted = await Send(new CreateProposalCommand(w.Student, new ProposalInputDto
+        {
+            RoundId = input.RoundId,
+            SupervisorId = input.SupervisorId,
+            Title = input.Title,
+            Field = input.Field,
+            Description = input.Description,
+            Requirements = input.Requirements,
+            MemberCodes = []
+        }));
+        Assert.Equal(TopicResultStatus.Created, resubmitted.Status);
+        Assert.Equal(groupId, (await Send(new ListMyProposalsQuery(w.Student, w.RoundId))).Response.Data!.Group!.Id);
+
+        var history = (await Send(new ListMyProposalsQuery(w.Student, w.RoundId))).Response.Data!;
+        Assert.Equal(2, history.Items.Count);
+        var cancelledHistory = history.Items.Single(p => p.Id == first.Id);
+        Assert.Equal("Đã hủy", cancelledHistory.Status);
+        Assert.Contains(cancelledHistory.History, h => h.Action == "Hủy đề xuất" && h.Actor.Contains(w.PartnerCode));
+    }
+
+    [Fact]
+    public async Task OnlyTheNamedSupervisorAcceptsOrRejectsAndRejectionKeepsItsReason()
+    {
+        var w = await OpenRound();
+        await Submit(w);
+        await Publish(w);
+        var proposal = (await Send(new CreateProposalCommand(w.Student, new ProposalInputDto
+        {
+            RoundId = w.RoundId,
+            SupervisorId = w.Lecturer,
+            Title = "Đề tài cần duyệt",
+            Field = "Kỹ thuật phần mềm",
+            Description = "Mô tả đề xuất"
+        }))).Response.Data!;
+
+        Assert.Equal(TopicResultStatus.Forbidden, (await Send(new AcceptProposalCommand(w.OtherLecturer, proposal.Id))).Status);
+        await Assert.ThrowsAsync<ValidationException>(() => Send(new RejectProposalCommand(w.Lecturer, proposal.Id, " ")));
+
+        var rejected = await Send(new RejectProposalCommand(w.Lecturer, proposal.Id, "Trùng với đề tài đã có."));
+        Assert.Equal(TopicResultStatus.Ok, rejected.Status);
+        Assert.Equal("Bị từ chối", rejected.Response.Data!.Status);
+        Assert.Equal(TopicResultStatus.Conflict, (await Send(new CancelProposalCommand(w.Student, proposal.Id))).Status);
+
+        var detail = (await Send(new GetTopicQuery(proposal.Id, w.Student, ViewerRole.Student))).Response.Data!;
+        var decision = Assert.Single(detail.History, h => h.Action == "Từ chối đề xuất");
+        Assert.Contains("Trùng với đề tài đã có.", decision.Detail);
+        Assert.StartsWith("Người GV", decision.Actor);
+    }
+
+    [Fact]
+    public async Task ProposalSupervisorListContainsOnlyLecturersOfTheStudentsRound()
+    {
+        var w = await OpenRound();
+
+        var list = await Send(new ListProposalSupervisorsQuery(w.Student, w.RoundId));
+
+        Assert.Equal(TopicResultStatus.Ok, list.Status);
+        Assert.Equal(new[] { w.Lecturer, w.OtherLecturer }.Order(), list.Response.Data!.Select(person => person.Id).Order());
+        Assert.Equal(TopicResultStatus.Forbidden,
+            (await Send(new ListProposalSupervisorsQuery(Guid.NewGuid(), w.RoundId))).Status);
+    }
+
+    [Fact]
+    public async Task AProposalIsAcceptedExactlyOnceAndItsHistoryIsVisibleToAcademicAffairs()
+    {
+        var w = await OpenRound();
+        await Submit(w);
+        await Publish(w);
+        var proposal = (await Send(new CreateProposalCommand(w.Student, new ProposalInputDto
+        {
+            RoundId = w.RoundId,
+            SupervisorId = w.Lecturer,
+            Title = "Đề tài được chấp nhận",
+            Field = "Hệ thống thông tin",
+            Description = "Mô tả đề xuất"
+        }))).Response.Data!;
+
+        _clock.Advance(TimeSpan.FromMinutes(1));
+        var accepted = await Send(new AcceptProposalCommand(w.Lecturer, proposal.Id));
+        Assert.Equal(TopicResultStatus.Ok, accepted.Status);
+        Assert.Equal("Đã đăng ký", accepted.Response.Data!.Status);
+        Assert.Equal(TopicResultStatus.Conflict, (await Send(new AcceptProposalCommand(w.Lecturer, proposal.Id))).Status);
+
+        var detail = (await Send(new GetTopicQuery(proposal.Id, Guid.Empty, ViewerRole.AcademicAffairs))).Response.Data!;
+        Assert.Equal(["Chấp nhận đề xuất", "Gửi đề xuất"], detail.History.Select(h => h.Action));
+        Assert.StartsWith("Người GV", detail.History[0].Actor);
     }
 
     [Fact]

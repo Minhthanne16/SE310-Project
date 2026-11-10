@@ -24,7 +24,9 @@ public enum TopicStatus
     Confirmed = 9,
     Completed = 10,
     Ineligible = 11,
-    NoGroup = 12
+    NoGroup = 12,
+    // Chỉ thuộc vòng đời đề xuất của SV (PDR-012), không phải nhánh của đề tài đã đăng ký.
+    Cancelled = 13
 }
 
 // Đề tài khóa luận thuộc một đợt (P03-S01, DESIGN · Đề tài của tôi / Quản lý đề tài).

@@ -300,7 +300,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Hành vi**
 
 - Bốn kịch bản (prop `scenario`): Chờ GV duyệt, Sửa đơn, Đã đăng ký, GV từ chối (nhóm thấy lý do).
-- Hủy đơn đang chờ: đơn rời danh sách đang hoạt động, vẫn tra cứu được trong lịch sử với trạng thái Đã hủy; chỉ hủy khi còn Chờ GV duyệt (PDR-012).
+- Hủy đơn đang chờ: bất kỳ thành viên nào của nhóm hủy cho cả nhóm; đơn rời danh sách đang hoạt động, vẫn tra cứu được trong lịch sử với trạng thái Đã hủy; chỉ hủy khi còn Chờ GV duyệt (PDR-012).
 - Sau khi hủy, nút Đề xuất có thể bật lại ngay khi đợt vẫn mở và các thành viên không có đăng ký/đề xuất khác đang hoạt động (PDR-012).
 
 **Quy tắc nghiệp vụ**

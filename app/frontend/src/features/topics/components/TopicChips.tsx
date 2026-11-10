@@ -6,6 +6,7 @@ const STATUS_CLASS: Record<TopicStatus, string> = {
   'Chưa đăng ký': '',
   'Chờ GV duyệt': 'tpc-chip-pending',
   'Bị từ chối': 'tpc-chip-rejected',
+  'Đã hủy': 'tpc-chip-nogroup',
   'Đã đăng ký': 'tpc-chip-registered',
   'Đang thực hiện': 'tpc-chip-active',
   'Đang cho điểm': 'tpc-chip-grading',

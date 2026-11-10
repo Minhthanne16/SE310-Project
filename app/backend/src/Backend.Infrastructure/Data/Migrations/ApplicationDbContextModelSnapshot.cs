@@ -588,6 +588,8 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("GroupId")
+                        .HasDatabaseName("IX_ThesisTopics_ActiveGroupId")
+                        .HasFilter("\"GroupId\" IS NOT NULL AND \"Status\" IN ('PendingApproval', 'Registered', 'Rejected')")
                         .IsUnique();
 
                     b.HasIndex("SupervisorId");
