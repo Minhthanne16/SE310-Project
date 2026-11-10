@@ -136,7 +136,7 @@ public sealed class ListMyTopicsHandler(IRoundRepository rounds, ITopicRepositor
 
         var today = RoundRules.TodayVietnam(clock);
         var all = await topics.ListByRoundAsync(round.Id, cancellationToken: cancellationToken);
-        var mine = all.Where(t => t.SupervisorId == request.LecturerId).ToList();
+        var mine = all.Where(t => t.SupervisorId == request.LecturerId && t.Status != TopicStatus.Cancelled).ToList();
         var members = await groups.MembersOf(mine, cancellationToken);
         return TopicResult<LecturerTopicsDto>.Ok(new LecturerTopicsDto
         {
@@ -275,11 +275,12 @@ public sealed class ListRoundTopicsHandler(IRoundRepository rounds, ITopicReposi
             return TopicResult<RoundTopicsDto>.Fail(TopicResultStatus.NotFound, RoundRules.NotFoundMessage);
         var today = RoundRules.TodayVietnam(clock);
         var all = await topics.ListByRoundAsync(round.Id, cancellationToken: cancellationToken);
-        var members = await groups.MembersOf(all, cancellationToken);
+        var visible = all.Where(t => t.Status != TopicStatus.Cancelled).ToList();
+        var members = await groups.MembersOf(visible, cancellationToken);
         return TopicResult<RoundTopicsDto>.Ok(new RoundTopicsDto
         {
             Round = TopicRules.RoundInfo(round, today, forLecturer: false),
-            Items = all.Select(t => TopicMapping.ToDto(t, round, today, viewerIsSupervisor: false, members)).ToList(),
+            Items = visible.Select(t => TopicMapping.ToDto(t, round, today, viewerIsSupervisor: false, members)).ToList(),
             Loads = RoundMapping.IdsOf(round, ParticipantKind.Lecturer).Select(id => TopicRules.Load(id, all, round)).ToList()
         });
     }
@@ -321,11 +322,14 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
         var round = (await rounds.GetByIdAsync(topic.RoundId, cancellationToken))!;
 
         var isSupervisor = request.Role == ViewerRole.Lecturer && topic.SupervisorId == request.ViewerId;
+        var members = await groups.MembersOf([topic], cancellationToken);
+        var ownGroup = members.Values.Any(g => g.Members.Any(m => m.StudentId == request.ViewerId));
         var allowed = request.Role switch
         {
             ViewerRole.AcademicAffairs => true,
             ViewerRole.Lecturer => isSupervisor,
-            _ => round.TopicsPublishedAt is not null && topic.Source == TopicSource.Lecturer && TopicMapping.IsStudentOf(round, request.ViewerId)
+            _ => round.TopicsPublishedAt is not null && TopicMapping.IsStudentOf(round, request.ViewerId)
+                && (topic.Source == TopicSource.Lecturer || ownGroup)
         };
         // Không tiết lộ đề tài người xem không có quyền: trả như không tồn tại.
         if (!allowed)
@@ -333,11 +337,9 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
 
         var today = RoundRules.TodayVietnam(clock);
         // Sinh viên chỉ thấy thành viên khi đề tài là của nhóm mình.
-        var members = await groups.MembersOf([topic], cancellationToken);
-        var ownGroup = members.Values.Any(g => g.Members.Any(m => m.StudentId == request.ViewerId));
         var detail = (TopicDetailDto)TopicMapping.Fill(new TopicDetailDto(), topic, round, today, isSupervisor,
             request.Role != ViewerRole.Student || ownGroup ? members : null);
-        if (request.Role != ViewerRole.Student)
+        if (request.Role != ViewerRole.Student || (topic.Source == TopicSource.StudentProposal && ownGroup))
         {
             var names = await topics.GetUserNamesAsync(
                 topic.History.Where(h => h.ActorUserId is not null).Select(h => h.ActorUserId!.Value).Distinct().ToList(), cancellationToken);

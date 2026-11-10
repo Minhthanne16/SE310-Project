@@ -30,6 +30,8 @@ public static class TopicRules
     public const string FixedMembersMessage = "Nhóm đã có thành viên cố định; không đổi thành viên khi ghi danh lại.";
     public const string NotRegisteredMessage = "Nhóm không còn ghi danh đề tài này.";
     public const string NotPublicTopicMessage = "Chỉ ghi danh được đề tài giảng viên đã công bố.";
+    public const string OnlyProposalRepresentativeMessage = "Chỉ đại diện nhóm được tạo hoặc sửa đề xuất.";
+    public const string ProposalNotPendingMessage = "Đề xuất không còn ở trạng thái Chờ GV duyệt.";
 
     private static readonly Dictionary<TopicStatus, string> StatusLabels = new()
     {
@@ -44,7 +46,8 @@ public static class TopicRules
         [TopicStatus.Confirmed] = "Đã xác nhận",
         [TopicStatus.Completed] = "Đã hoàn tất",
         [TopicStatus.Ineligible] = "Không đủ điều kiện công bố",
-        [TopicStatus.NoGroup] = "Không có nhóm"
+        [TopicStatus.NoGroup] = "Không có nhóm",
+        [TopicStatus.Cancelled] = "Đã hủy"
     };
 
     public static IReadOnlyCollection<string> StatusLabelList => StatusLabels.Values;
@@ -79,11 +82,11 @@ public static class TopicRules
 
     // Không còn chờ kết quả nên không chặn kết thúc đợt (PDR-031, PDR-048).
     public static bool IsSettled(TopicStatus status) =>
-        status is TopicStatus.Completed or TopicStatus.Ineligible or TopicStatus.NoGroup or TopicStatus.Rejected;
+        status is TopicStatus.Completed or TopicStatus.Ineligible or TopicStatus.NoGroup or TopicStatus.Rejected or TopicStatus.Cancelled;
 
     // Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận.
     public static bool CountsTowardLoad(ThesisTopic topic) =>
-        topic.Source == TopicSource.Lecturer || topic.Status is not (TopicStatus.PendingApproval or TopicStatus.Rejected);
+        topic.Source == TopicSource.Lecturer || topic.Status is not (TopicStatus.PendingApproval or TopicStatus.Rejected or TopicStatus.Cancelled);
 
     public static LecturerLoadDto Load(Guid lecturerId, IEnumerable<ThesisTopic> roundTopics, ThesisRound round)
     {

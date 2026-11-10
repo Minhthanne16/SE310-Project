@@ -100,7 +100,9 @@ internal static class RoundMapping
     // Đếm theo trạng thái hiển thị (PDR-049); đề tài chưa ở trạng thái kết thúc chặn kết thúc đợt (PDR-031).
     public static RoundTopicSummaryDto TopicSummary(ThesisRound round, DateOnly today)
     {
-        var statuses = round.Topics.Select(t => TopicRules.Effective(t, round, today)).ToList();
+        // Đề xuất Đã hủy là lịch sử PDR-012, không nằm trong vòng đời/trạng thái tổng hợp của đề tài.
+        var statuses = round.Topics.Where(t => t.Status != TopicStatus.Cancelled)
+            .Select(t => TopicRules.Effective(t, round, today)).ToList();
         var byStatus = RoundRules.TopicStatuses.ToDictionary(s => s, _ => 0);
         foreach (var status in statuses) byStatus[TopicRules.Label(status)] = byStatus.GetValueOrDefault(TopicRules.Label(status)) + 1;
         return new RoundTopicSummaryDto

@@ -228,6 +228,32 @@ export interface TopicInput {
   requirements: string;
 }
 
+// Hợp đồng P03-S03. Người gửi là đại diện khi tạo/sửa; bất kỳ thành viên nào hủy khi đơn còn chờ.
+export interface ProposalInput extends TopicInput {
+  roundId: string;
+  supervisorId: string;
+  memberCodes: string[];
+}
+
+export interface ProposalUpdateInput extends TopicInput {
+  supervisorId: string;
+}
+
+export interface StudentProposals {
+  round: TopicRoundInfo;
+  registrationOpen: boolean;
+  group: RegistrationGroup | null;
+  // Mới nhất trước, gồm cả đề xuất Đã hủy để tra cứu PDR-012.
+  items: TopicDetailDto[];
+}
+
+export interface LecturerProposals {
+  round: TopicRoundInfo;
+  // Chờ xử lý và lịch sử xử lý của các đề xuất gửi đúng GVHD này.
+  items: TopicDetailDto[];
+  load: LecturerLoadDto;
+}
+
 // --- Ghi danh nhóm của sinh viên (PDR-054) ---
 
 export interface RegistrationGroup {

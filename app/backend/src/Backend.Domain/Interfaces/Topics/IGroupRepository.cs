@@ -15,6 +15,10 @@ public interface IGroupRepository
     // Nhóm theo id kèm thành viên (và tài khoản), không theo dõi thay đổi.
     Task<IReadOnlyDictionary<Guid, ThesisGroup>> GetGroupsAsync(IReadOnlyCollection<Guid> groupIds, CancellationToken cancellationToken = default);
 
+    // Tạo nhóm (nếu cần) và đề xuất chờ duyệt trong cùng transaction; thua tranh chấp không để lại nhóm thứ hai.
+    Task<ProposalCreateOutcome> CreateProposalAsync(ThesisGroup group, bool newGroup, ThesisTopic proposal,
+        CancellationToken cancellationToken = default);
+
     // Trong một transaction: tạo nhóm (nếu mới), nhận đề tài chỉ khi đề tài còn trống
     // (cập nhật có điều kiện), ghi lần ghi danh, lịch sử và thông báo. Thua tranh chấp thì không lưu gì.
     Task<RegisterOutcome> RegisterAsync(ThesisGroup group, bool newGroup, Guid topicId, TopicRegistration registration,

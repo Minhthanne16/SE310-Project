@@ -21,7 +21,11 @@ export const LECTURER_LOAD_MAX = 0;
 // tôi). Đề xuất đang Chờ GV duyệt hoặc Bị từ chối chưa được tính.
 export function countsTowardLoad(topic: Topic): boolean {
   if (topic.source === 'GV công bố') return true;
-  return topic.status !== 'Chờ GV duyệt' && topic.status !== 'Bị từ chối';
+  return (
+    topic.status !== 'Chờ GV duyệt' &&
+    topic.status !== 'Bị từ chối' &&
+    topic.status !== 'Đã hủy'
+  );
 }
 
 export function loadLevel(
@@ -184,6 +188,7 @@ export function thesisProgress(topic: Topic): string {
     case 'Chưa đăng ký':
     case 'Chờ GV duyệt':
     case 'Bị từ chối':
+    case 'Đã hủy':
     case 'Không có nhóm':
       return '—';
     case 'Đã đăng ký':
@@ -334,6 +339,7 @@ export function confirmResultBlocker(topic: Topic): string | null {
       return 'Chưa có điểm.';
     case 'Chưa đăng ký':
     case 'Bị từ chối':
+    case 'Đã hủy':
     case 'Không đủ điều kiện công bố':
     case 'Không có nhóm':
       return `Đề tài đang ở trạng thái ${topic.status}, chưa có kết quả để xác nhận.`;

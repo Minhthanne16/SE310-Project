@@ -31,7 +31,7 @@ internal static class RegistrationMapping
         {
             dto.Topic = TopicMapping.ToDto(topic, round, today, viewerIsSupervisor: false,
                 new Dictionary<Guid, ThesisGroup> { [group.Id] = group });
-            dto.CanCancel = open;
+            dto.CanCancel = open && topic.Source == TopicSource.Lecturer && topic.Status == TopicStatus.Registered;
         }
 
         var registrations = await groups.ListRegistrationsAsync(group.Id, cancellationToken);
@@ -158,6 +158,8 @@ public sealed class CancelRegistrationHandler(
     {
         var topic = await topics.GetByIdAsync(request.TopicId, cancellationToken);
         if (topic is null) return Fail(TopicResultStatus.NotFound, TopicRules.NotFoundMessage);
+        if (topic.Source != TopicSource.Lecturer || topic.Status != TopicStatus.Registered)
+            return Fail(TopicResultStatus.Conflict, TopicRules.NotRegisteredMessage);
         var round = (await rounds.GetByIdAsync(topic.RoundId, cancellationToken))!;
         var me = request.StudentId;
         if (!TopicMapping.IsStudentOf(round, me)) return Fail(TopicResultStatus.Forbidden, TopicRules.NotRoundStudentMessage);

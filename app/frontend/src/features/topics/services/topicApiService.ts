@@ -13,9 +13,14 @@ import type { Round } from '@/types/round';
 import type {
   LecturerLoad,
   LecturerLoadDto,
+  LecturerProposals,
   LecturerTopicList,
   MyRegistration,
+  ProposalInput,
+  ProposalUpdateInput,
   RoundTopicList,
+  StudentProposals,
+  TopicPerson,
   Topic,
   TopicDetailDto,
   TopicDto,
@@ -269,3 +274,73 @@ export function createStudentTopicService(): StudentTopicService {
 
 export const studentTopicService: StudentTopicService =
   createStudentTopicService();
+
+// --- Đề xuất đề tài (P03-S03) ---
+
+const proposalBody = (input: ProposalInput | ProposalUpdateInput) => ({
+  ...('roundId' in input ? { roundId: input.roundId } : {}),
+  supervisorId: input.supervisorId,
+  title: input.title,
+  field: input.field,
+  description: input.description,
+  requirements: input.requirements.trim() || null,
+  ...('memberCodes' in input ? { memberCodes: input.memberCodes } : {}),
+});
+
+export interface StudentProposalService {
+  listRounds(): Promise<Round[]>;
+  listMine(roundId: string): Promise<StudentProposals>;
+  listSupervisors(roundId: string): Promise<TopicPerson[]>;
+  create(input: ProposalInput): Promise<TopicDto>;
+  update(id: string, input: ProposalUpdateInput): Promise<TopicDto>;
+  cancel(id: string): Promise<TopicDto>;
+}
+
+export function createStudentProposalService(): StudentProposalService {
+  return {
+    listRounds: () => call<Round[]>('/rounds'),
+    listMine: (roundId) =>
+      call<StudentProposals>(`/topics/my-proposals?roundId=${enc(roundId)}`),
+    listSupervisors: (roundId) =>
+      call<TopicPerson[]>(
+        `/topics/proposal-supervisors?roundId=${enc(roundId)}`,
+      ),
+    create: (input) =>
+      call<TopicDto>('/topics/proposals', json('POST', proposalBody(input))),
+    update: (id, input) =>
+      call<TopicDto>(
+        `/topics/proposals/${enc(id)}`,
+        json('PUT', proposalBody(input)),
+      ),
+    cancel: (id) =>
+      call<TopicDto>(`/topics/proposals/${enc(id)}`, json('DELETE')),
+  };
+}
+
+export const studentProposalService: StudentProposalService =
+  createStudentProposalService();
+
+export interface LecturerProposalService {
+  listRounds(): Promise<Round[]>;
+  list(roundId: string): Promise<LecturerProposals>;
+  accept(id: string): Promise<TopicDto>;
+  reject(id: string, reason: string): Promise<TopicDto>;
+}
+
+export function createLecturerProposalService(): LecturerProposalService {
+  return {
+    listRounds: () => call<Round[]>('/rounds'),
+    list: (roundId) =>
+      call<LecturerProposals>(`/topics/proposals?roundId=${enc(roundId)}`),
+    accept: (id) =>
+      call<TopicDto>(`/topics/proposals/${enc(id)}/accept`, json('POST')),
+    reject: (id, reason) =>
+      call<TopicDto>(
+        `/topics/proposals/${enc(id)}/reject`,
+        json('POST', { reason }),
+      ),
+  };
+}
+
+export const lecturerProposalService: LecturerProposalService =
+  createLecturerProposalService();

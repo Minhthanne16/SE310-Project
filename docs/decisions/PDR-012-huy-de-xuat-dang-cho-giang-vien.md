@@ -10,7 +10,7 @@ Thiết kế trước đây nói đơn chờ bị hủy sẽ biến khỏi danh 
 
 ## Quyết định
 
-- Nhóm chỉ được hủy **đề xuất đang ở trạng thái `Chờ GV duyệt`**. Sau khi Giảng viên đã chấp nhận hoặc từ chối, thao tác hủy đề xuất này không còn áp dụng.
+- Nhóm chỉ được hủy **đề xuất đang ở trạng thái `Chờ GV duyệt`**. Bất kỳ thành viên nào của nhóm đều có thể hủy cho cả nhóm; người thực hiện phải được lưu lại. Sau khi Giảng viên đã chấp nhận hoặc từ chối, thao tác hủy đề xuất này không còn áp dụng.
 - Đề xuất bị hủy được **giữ bản ghi với trạng thái `Đã hủy`** trong lịch sử, gồm người hủy và thời điểm. Trạng thái này thuộc vòng đời **đề xuất**, không tự thêm nhánh vào chuỗi trạng thái chính của đề tài đã đăng ký.
 - Đề xuất `Đã hủy` rời danh sách chờ xử lý của Giảng viên và danh sách đơn đang hoạt động của nhóm; người có quyền vẫn tra cứu được trong lịch sử. Không xóa vật lý để làm đơn “biến mất”.
 - Sau khi hủy, nhóm được **tạo đề xuất mới ngay nếu đợt còn mở đăng ký** và các thành viên không có đăng ký/đề xuất khác đang hoạt động trong đợt. Đề xuất cũ `Đã hủy` không tự biến thành đề xuất mới; hai lần gửi có lịch sử riêng.
