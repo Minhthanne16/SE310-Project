@@ -6,7 +6,7 @@
 
 | Phần | Công nghệ |
 | --- | --- |
-| Frontend | Node.js 24, Next.js 16.4.0 App Router, React 19.3.0, TypeScript 5.9.3 strict mode |
+| Frontend | Node.js 24, Next.js 16.4.3 App Router, React 19.3.0, TypeScript 5.9.3 strict mode |
 | UI | Tailwind CSS 4.3.3, React Hot Toast, Lucide React |
 | FE testing/tooling | Vitest 5.0.3, Testing Library, jsdom, Oxlint 1.87.0, Prettier 3.9.9, Turbopack |
 | Backend | ASP.NET Core Web API, .NET 10, Clean Architecture, CQRS/MediatR 14.2.0, Repository |
@@ -81,7 +81,7 @@ npm ci
 npm run dev
 ```
 
-`app/frontend/next.config.ts` chuyển `/api/*` đến `http://localhost:5290` khi chạy local. Có thể đặt `API_INTERNAL_URL` nếu API ở địa chỉ khác. Đặt `InitializeDatabase=true` để API tự chạy migration khi khởi động.
+`app/frontend/next.config.ts` chuyển `/api/*` đến `http://localhost:5290` khi chạy local. Có thể đặt `API_INTERNAL_URL` nếu API ở địa chỉ khác. Các màn đợt và đề tài luôn gọi API thật nên `npm run dev` cần backend đang chạy; kho dữ liệu trong bộ nhớ (`roundDemoService.ts`, `topicDemoService.ts`) chỉ dùng cho test. Đặt `InitializeDatabase=true` để API tự chạy migration khi khởi động.
 
 ## Kiểm tra
 
@@ -104,6 +104,6 @@ Test ghi danh đề tài (P03-S02) gồm test đồng thời trên PostgreSQL th
 powershell -ExecutionPolicy Bypass -File app/scripts/test-ghi-danh.ps1
 ```
 
-Không có biến `QLKLTN_TEST_POSTGRES` thì `dotnet test` bỏ qua 5 test đồng thời (`RegistrationConcurrencyTests`); không trỏ biến này vào database dùng chung.
+Không có biến `QLKLTN_TEST_POSTGRES` thì `dotnet test` bỏ qua 7 test đồng thời (`RegistrationConcurrencyTests`); không trỏ biến này vào database dùng chung.
 
 CI dùng `npm ci`, NuGet lockfile, build/test cả hai phần và Gitleaks. Workflow GHCR chỉ chạy khi được kích hoạt thủ công (`workflow_dispatch`).

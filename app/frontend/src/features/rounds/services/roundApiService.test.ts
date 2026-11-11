@@ -29,6 +29,15 @@ const failure = (message: string) => ({
   data: null,
 });
 
+it('returns an empty notice board without calling the backend', async () => {
+  const fetchMock = stubFetch();
+  const page = await createApiRoundService().listNotifications({
+    roundId: 'r 1',
+  });
+  expect(page).toEqual({ items: [], total: 0 });
+  expect(fetchMock).not.toHaveBeenCalled();
+});
+
 it('calls the round endpoints with the expected method, URL and body', async () => {
   const fetchMock = stubFetch();
   const service = createApiRoundService();

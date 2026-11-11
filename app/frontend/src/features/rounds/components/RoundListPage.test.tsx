@@ -9,10 +9,8 @@ import {
 import { act } from 'react';
 import { afterEach, expect, it } from 'vitest';
 import { addDays } from '@/features/rounds/roundUtils';
-import {
-  createRoundService,
-  type RoundService,
-} from '@/features/rounds/services/roundService';
+import { createRoundService } from '@/features/rounds/services/roundDemoService';
+import { type RoundService } from '@/features/rounds/services/roundService';
 import { RoundListPage } from './RoundListPage';
 
 afterEach(cleanup);

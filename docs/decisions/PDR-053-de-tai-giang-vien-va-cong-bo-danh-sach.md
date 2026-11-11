@@ -64,7 +64,7 @@ Mọi endpoint yêu cầu đăng nhập; lỗi dùng `ApiResponse`.
   - đề tài `Đã đăng ký` hiển thị `Đang thực hiện`.
 - **Frontend:**
   - Màn GV `/gv/de-tai` và SV `/sv/dang-ky` chỉ dùng API thật.
-  - Màn Giáo vụ (Đề tài, Chi tiết đề tài, tab Đề tài của Chi tiết đợt) dùng API khi `NEXT_PUBLIC_ROUNDS_API=true`, cùng cờ với đợt; tắt cờ thì vẫn chạy kho demo.
+  - Màn Giáo vụ (Đề tài, Chi tiết đề tài, tab Đề tài của Chi tiết đợt) dùng API. Cập nhật 2026-11-11: đã bỏ cờ `NEXT_PUBLIC_ROUNDS_API`; kho trong bộ nhớ chỉ còn phục vụ test.
   - Xác nhận/công bố kết quả (Phase 07) chưa có API nên trả "Bỏ qua: chức năng kết quả chưa có API".
   - Màn SV chỉ xem danh sách và chi tiết; ghi danh thuộc P03-S02, đề xuất thuộc P03-S03.
 

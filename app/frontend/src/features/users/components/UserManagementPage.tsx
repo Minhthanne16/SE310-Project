@@ -15,6 +15,7 @@ import {
   userService as defaultUserService,
   type UserService,
 } from '@/features/users/services/userService';
+import { formatDateOrDash } from '@/lib/date';
 import type { UserRole } from '@/types/auth';
 import {
   getUserStatus,
@@ -42,12 +43,6 @@ interface Notice {
 const PAGE_SIZE = 10;
 const ROLES: UserRole[] = ['Student', 'Lecturer', 'AcademicAffairs'];
 const STATUSES: UserStatus[] = ['active', 'pending', 'disabled'];
-
-const formatDate = (iso: string | null) => {
-  if (!iso) return '—';
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  return m ? `${m[3]}/${m[2]}/${m[1]}` : iso;
-};
 
 const orgOf = (u: ManagedUser) => {
   if (u.role === 'Student') return u.className || '—';
@@ -426,7 +421,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
                       </td>
                       <td>{orgOf(user)}</td>
                       <td className="usr-tabular">
-                        {formatDate(user.dateOfBirth)}
+                        {formatDateOrDash(user.dateOfBirth)}
                       </td>
                       <td>
                         <span className={`usr-status usr-status-${status}`}>

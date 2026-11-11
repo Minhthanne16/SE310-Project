@@ -50,7 +50,6 @@ public static class TopicRules
         [TopicStatus.Cancelled] = "Đã hủy"
     };
 
-    public static IReadOnlyCollection<string> StatusLabelList => StatusLabels.Values;
     public static string Label(TopicStatus status) => StatusLabels[status];
     public static string SourceLabel(TopicSource source) => source == TopicSource.Lecturer ? "GV công bố" : "SV đề xuất";
 

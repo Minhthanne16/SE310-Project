@@ -189,8 +189,11 @@ export const StudentTopicsPage: React.FC<StudentTopicsPageProps> = ({
       </p>
       <MyGroupLine mine={state.mine} />
       <p className="tpc-note">
-        Đề xuất đề tài cùng giảng viên đang được xây dựng; hiện bạn ghi danh
-        được đề tài giảng viên đã công bố.
+        <span>
+          Chưa thấy đề tài phù hợp? Đề xuất đề tài của riêng nhóm kèm giảng viên
+          hướng dẫn ở trang{' '}
+          <Link href="/sv/don-dang-ky">Đơn đăng ký của tôi</Link>.
+        </span>
       </p>
 
       <div className="tpc-filters">

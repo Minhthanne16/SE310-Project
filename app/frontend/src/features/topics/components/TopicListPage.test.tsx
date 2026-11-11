@@ -8,8 +8,8 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { currentUrl, resetNavigation, setUrl } from '@/test/navigationMock';
-import { createRoundService } from '@/features/rounds/services/roundService';
-import { createTopicService } from '@/features/topics/services/topicService';
+import { createRoundService } from '@/features/rounds/services/roundDemoService';
+import { createTopicService } from '@/features/topics/services/topicDemoService';
 import { TopicListPage } from './TopicListPage';
 
 vi.mock('next/navigation', async () => {
