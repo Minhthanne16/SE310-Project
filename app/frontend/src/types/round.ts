@@ -1,6 +1,5 @@
-// Đợt khóa luận (docs/DESIGN/03: Danh sách đợt, Chi tiết đợt, Gantt). Mặc định
-// chạy trên kho demo (features/rounds/services/roundService.ts); đặt
-// NEXT_PUBLIC_ROUNDS_API=true để dùng API thật (roundApiService.ts).
+// Đợt khóa luận (docs/DESIGN/03: Danh sách đợt, Chi tiết đợt, Gantt). Hợp đồng
+// /api/rounds (features/rounds/services/roundApiService.ts).
 
 export const ROUND_PROGRAMS = ['Văn bằng 1', 'Văn bằng 2', 'Thạc sĩ'] as const;
 export type RoundProgram = (typeof ROUND_PROGRAMS)[number];

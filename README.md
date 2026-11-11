@@ -81,7 +81,7 @@ npm ci
 npm run dev
 ```
 
-`app/frontend/next.config.ts` chuyển `/api/*` đến `http://localhost:5290` khi chạy local. Có thể đặt `API_INTERNAL_URL` nếu API ở địa chỉ khác. Đặt `InitializeDatabase=true` để API tự chạy migration khi khởi động.
+`app/frontend/next.config.ts` chuyển `/api/*` đến `http://localhost:5290` khi chạy local. Có thể đặt `API_INTERNAL_URL` nếu API ở địa chỉ khác. Các màn đợt và đề tài luôn gọi API thật nên `npm run dev` cần backend đang chạy; kho dữ liệu trong bộ nhớ (`roundDemoService.ts`, `topicDemoService.ts`) chỉ dùng cho test. Đặt `InitializeDatabase=true` để API tự chạy migration khi khởi động.
 
 ## Kiểm tra
 

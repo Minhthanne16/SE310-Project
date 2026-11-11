@@ -1,14 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import {
-  RoundNotFoundError,
-  createRoundService,
-} from '@/features/rounds/services/roundService';
+import { createRoundService } from '@/features/rounds/services/roundDemoService';
+import { RoundNotFoundError } from '@/features/rounds/services/roundService';
 import { DEMO_TODAY, seedRounds } from '@/features/rounds/services/roundSeed';
 import { seedTopics } from '@/features/topics/services/topicSeed';
-import {
-  TopicNotFoundError,
-  createTopicService,
-} from '@/features/topics/services/topicService';
+import { createTopicService } from '@/features/topics/services/topicDemoService';
+import { TopicNotFoundError } from '@/features/topics/services/topicService';
 import {
   TOPIC_STATUSES,
   isSettledTopicStatus,

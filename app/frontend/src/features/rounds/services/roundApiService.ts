@@ -3,7 +3,6 @@ import {
   DuplicateRoundNameError,
   RoundNotFoundError,
   RoundRuleError,
-  createRoundService,
   type AddParticipantsResult,
   type RoundService,
 } from '@/features/rounds/services/roundService';
@@ -25,11 +24,13 @@ const KIND_PATH: Record<ParticipantKind, string> = {
 
 const enc = encodeURIComponent;
 
-const localToday = () => {
+// Khai báo hàm (không phải const) vì roundService.ts và file này import nhau:
+// roundService gọi createApiRoundService khi nạp module.
+function localToday(): string {
   const d = new Date();
   const p = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
-};
+}
 
 // Tính khi gọi (không ở mức module) vì roundService.ts và file này import nhau.
 const duplicateMessage = () => new DuplicateRoundNameError().message;
@@ -65,11 +66,9 @@ async function call<T>(
   }
 }
 
-// RoundService gọi backend thật (RoundsController, /api/rounds/*). Đang bật
-// bằng NEXT_PUBLIC_ROUNDS_API=true; xem roundService.ts.
+// RoundService gọi backend thật (RoundsController, /api/rounds/*); đây là cài
+// đặt ứng dụng dùng, xem roundService.ts.
 export function createApiRoundService(): RoundService {
-  // Backend chưa có thông báo của đợt nên listNotifications chạy trên kho demo.
-  const demo = createRoundService();
   const service: RoundService = {
     today: localToday(),
 
@@ -137,7 +136,9 @@ export function createApiRoundService(): RoundService {
         json('DELETE'),
       ),
 
-    listNotifications: (query) => demo.listNotifications(query),
+    // Backend chưa có API thông báo của đợt (Phase 08): Bảng thông báo để trống
+    // thay vì hiện dữ liệu mẫu cho người dùng thật.
+    listNotifications: async () => ({ items: [], total: 0 }),
     markTopicsPublished: (id) =>
       call<Round>(`/rounds/${enc(id)}/topics/publish`, json('POST')),
   };
