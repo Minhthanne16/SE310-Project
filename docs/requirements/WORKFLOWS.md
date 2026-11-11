@@ -12,7 +12,7 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
    Khi đề xuất còn chờ, nhóm có thể hủy; đề xuất được giữ `Đã hủy` trong lịch sử và rời danh sách chờ của Giảng viên (PDR-012).
    Nhóm giữ nguyên thành viên/đại diện; nếu đợt vẫn mở đăng ký và không có đăng ký/đề xuất khác đang hoạt động, nhóm có thể tạo đề xuất mới ngay sau khi hủy (PDR-012).
 5. Đề tài hợp lệ chuyển sang `Đã đăng ký`; nhóm nộp đề cương để bắt đầu thực hiện.
-6. Giáo vụ chỉ kết thúc đợt khi mọi đề tài trong đợt đã `Đã hoàn tất` hoặc `Không đủ điều kiện công bố`; còn đề tài chưa kết thúc thì thao tác bị chặn và liệt kê để xử lý (PDR-031).
+6. Giáo vụ chỉ kết thúc đợt khi mọi đề tài trong đợt đã `Đã hoàn tất`, `Không đủ điều kiện công bố` hoặc `Không có nhóm`; còn đề tài chưa kết thúc thì thao tác bị chặn và liệt kê để xử lý (PDR-031, mở rộng ở PDR-048 mục 5).
 7. Nếu sao chép từ đợt cũ, Giáo vụ nhận một đợt Nháp mới chỉ có khung chín mốc và cấu hình “Cho nộp trễ”; nhập lại ngày mốc, hạn trễ, người tham gia, mẫu và dữ liệu riêng trước khi vận hành (PDR-034/041).
 
 ## 2. Thực hiện và quản lý tài liệu

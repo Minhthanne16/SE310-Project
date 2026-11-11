@@ -237,7 +237,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Chưa công bố danh sách thì không Đề xuất.
-- Ghi chú triển khai (2026-11-07, `/sv/dang-ky`): dùng `GET /api/topics/published` ([PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); dựng ba tình trạng đợt (chưa có đợt, chưa có danh sách, danh sách). Bảng có tìm kiếm, mỗi dòng mở xem mô tả/yêu cầu. Từ 2026-11-08 có dòng "Nhóm của bạn" và nút "Chi tiết" mở màn ghi danh (P03-S02); đề xuất (P03-S03) chưa làm, trang ghi rõ "đang được xây dựng".
+- Ghi chú triển khai (2026-11-07, `/sv/dang-ky`): dùng `GET /api/topics/published` ([PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md)); dựng ba tình trạng đợt (chưa có đợt, chưa có danh sách, danh sách). Bảng có tìm kiếm, mỗi dòng mở xem mô tả/yêu cầu. Từ 2026-11-08 có dòng "Nhóm của bạn" và nút "Chi tiết" mở màn ghi danh (P03-S02). Đề xuất (P03-S03) làm ở `/sv/don-dang-ky`; từ 2026-11-11 trang này có ghi chú dẫn sang "Đơn đăng ký của tôi" thay cho câu "đang được xây dựng".
 
 ## Chi tiết đề tài và ghi danh
 - **Vai trò:** Sinh viên
