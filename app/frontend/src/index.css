@@ -77,7 +77,7 @@
   --shadow-popup: 0 20px 48px rgba(26, 26, 26, 0.18);
   --shadow-drawer: -12px 0 32px rgba(26, 26, 26, 0.18);
   --focus-ring: 0 0 0 3px rgba(26, 26, 26, 0.12);
-  --overlay: var(--overlay);
+  --overlay: rgba(26, 26, 26, 0.4);
 
   /* Phông (được nạp bằng next/font ở app/layout.tsx) */
   --font-sans:

@@ -67,3 +67,7 @@ export const authService: AuthService = {
     await apiRequest<boolean>('/auth/logout', { method: 'POST' });
   },
 };
+
+export function getCurrentUser(): Promise<CurrentUser> {
+  return apiRequest<CurrentUser>('/auth/me');
+}
