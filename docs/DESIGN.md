@@ -149,7 +149,7 @@ grep -rnE "(min-)?height: *(3[0-9]|2[0-9])px" src --include=*.css
 npm run typecheck && npm run lint && npm test
 ```
 
-Kết quả mong đợi: lệnh đầu và lệnh thứ hai không in gì. Lệnh thứ ba hiện còn khoảng 10 dòng, đều là avatar, logo, spinner, thanh Gantt (không phải vùng bấm); dòng mới nào là nút hay ô nhập thì phải nâng lên 40px. Với thay đổi nhìn thấy được, mở trang bằng `chay-du-an.bat` hoặc `npm run dev` và xem ở bề rộng điện thoại (lề 16px, không cuộn ngang trang) lẫn máy tính.
+Kết quả mong đợi: lệnh đầu và lệnh thứ hai không in gì. Lệnh thứ ba hiện còn 8 dòng, đều là avatar, logo, spinner, thanh Gantt (không phải vùng bấm); dòng mới nào là nút hay ô nhập thì phải nâng lên 40px. Với thay đổi nhìn thấy được, mở trang bằng `chay-du-an.bat` hoặc `npm run dev` và xem ở bề rộng điện thoại (lề 16px, không cuộn ngang trang) lẫn máy tính.
 
 ## Khi cần thêm hoặc đổi giá trị thiết kế
 
