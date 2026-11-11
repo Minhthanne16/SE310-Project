@@ -1,6 +1,6 @@
 # DESIGN.md · Quy tắc giao diện cho người và AI
 
-Đây là **điểm vào duy nhất** khi viết hoặc sửa giao diện QLKLTN. Đọc tệp này trước, rồi mới mở [DESIGN/02-thiet-ke-dung-chung.md](DESIGN/02-thiet-ke-dung-chung.md) (giá trị gốc lấy từ canvas) và [DESIGN/03-dac-ta-man-hinh.md](DESIGN/03-dac-ta-man-hinh.md) (đặc tả từng màn). Tệp này không thay đặc tả nghiệp vụ; nếu mâu thuẫn với `DESIGN/` hoặc `OPEN_QUESTIONS.md`, ghi nhận và làm rõ trước khi code (xem [CONTENT.md](CONTENT.md)).
+Đây là **điểm vào duy nhất** khi viết hoặc sửa giao diện QLKLTN. Đọc tệp này trước, rồi mới mở [DESIGN/02-thiet-ke-dung-chung.md](DESIGN/02-thiet-ke-dung-chung.md) (nguồn gốc từ canvas, khung trang, thành phần lặp lại, truy cập) và [DESIGN/03-dac-ta-man-hinh.md](DESIGN/03-dac-ta-man-hinh.md) (đặc tả từng màn). Tệp này không thay đặc tả nghiệp vụ; nếu mâu thuẫn với `DESIGN/` hoặc `OPEN_QUESTIONS.md`, ghi nhận và làm rõ trước khi code (xem [CONTENT.md](CONTENT.md)).
 
 Nguồn chuẩn của giá trị là `:root` trong [app/frontend/src/index.css](../app/frontend/src/index.css). Bảng dưới chỉ là bản đọc nhanh; khi lệch, `index.css` đúng.
 
@@ -97,7 +97,9 @@ Thẻ: viền 1px `--line`, nền `--surface`, **không bóng**. Khoảng cách 
 
 ### Cỡ chữ
 
-Chỉ dùng thang: 11 (nhãn nhóm menu, chữ hoa cách 0.08em), 12 và 12.5 (chip, nhãn), 13 và 13.5 (chú thích), 14 và 14.5 (bảng, nút, ô nhập), 15 (nội dung, menu), 16 đến 20 (tên đối tượng), 30 đậm 700 (h1 trang). Không thêm cỡ lẻ như 10.5, 15.5, 16.5, 19.
+**Khai báo `font-size` mới theo thang 4px:** 12, 16, 20, 24, 28, 32. Không thêm cỡ lẻ như 10.5, 11.5, 15.5, 16.5, 17, 18, 19, 22, 26.
+
+**Phần đã dựng giữ nguyên** (chưa đổi sang thang 4px, không sao chép sang mã mới): 11 (nhãn nhóm menu, chữ hoa cách 0.08em), 12.5 (chip, nhãn), 13 và 13.5 (chú thích), 14 và 14.5 (bảng, nút, ô nhập), 15 (nội dung, menu), 17 đến 18 (tên đối tượng), 22, 26, 30 đậm 700 (h1 trang). Thành phần có sẵn (`app-button`, `app-chip`, `app-table`...) giữ cỡ chữ của nó; thang 4px chỉ áp cho khai báo mới. Cỡ chữ nội dung của màn mới và việc đưa phần đã dựng về thang 4px chưa chốt, xem [OQ-027](OPEN_QUESTIONS.md).
 
 ## Thành phần dùng chung
 
@@ -154,5 +156,5 @@ Kết quả mong đợi: lệnh đầu và lệnh thứ hai không in gì. Lện
 ## Khi cần thêm hoặc đổi giá trị thiết kế
 
 1. Sửa `:root` trong `index.css`.
-2. Sửa bảng trong tệp này và `DESIGN/02-thiet-ke-dung-chung.md` trong cùng thay đổi.
-3. Nếu giá trị lấy từ canvas mới, ghi rõ nguồn trong `DESIGN/02`.
+2. Sửa bảng trong tệp này trong cùng thay đổi (`DESIGN/02-thiet-ke-dung-chung.md` không chép lại token).
+3. Nếu giá trị lấy từ canvas mới, ghi rõ nguồn trong mục "Token" của `DESIGN/02`.
