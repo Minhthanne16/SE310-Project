@@ -888,18 +888,6 @@
   color: var(--muted);
 }
 
-.rnd-drop {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  padding: 12px 14px;
-  border: 1px dashed var(--line-input);
-  border-radius: 10px;
-  font-size: 14px;
-  color: var(--ink-2);
-}
-
 .rnd-sums {
   display: flex;
   gap: 8px;
@@ -1686,11 +1674,6 @@
   color: var(--muted);
 }
 
-/* Gantt trần (dùng ở Trang chủ): không có khung riêng */
-.rnd-gantt-bare .rnd-gantt-legend {
-  padding: 0 0 12px;
-}
-
 @media (max-width: 640px) {
   .rnd-title {
     font-size: 26px;
@@ -1910,13 +1893,6 @@ button.rnd-link {
   font-size: 13.5px;
   color: var(--muted);
   line-height: 1.5;
-}
-
-.rnd-file-row {
-  display: flex;
-  align-items: center;
-  gap: 10px 12px;
-  flex-wrap: wrap;
 }
 
 .rnd-file-row {

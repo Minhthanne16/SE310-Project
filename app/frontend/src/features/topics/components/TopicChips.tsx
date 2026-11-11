@@ -1,6 +1,6 @@
 import React from 'react';
 import '@/features/topics/topics.css';
-import type { TopicSource, TopicStatus } from '@/types/topic';
+import type { TopicStatus } from '@/types/topic';
 
 const STATUS_CLASS: Record<TopicStatus, string> = {
   'Chưa đăng ký': '',
@@ -21,7 +21,3 @@ const STATUS_CLASS: Record<TopicStatus, string> = {
 export const TopicStatusChip: React.FC<{ status: TopicStatus }> = ({
   status,
 }) => <span className={`tpc-chip ${STATUS_CLASS[status]}`}>{status}</span>;
-
-export const TopicSourceChip: React.FC<{ source: TopicSource }> = ({
-  source,
-}) => <span className="tpc-chip">{source}</span>;

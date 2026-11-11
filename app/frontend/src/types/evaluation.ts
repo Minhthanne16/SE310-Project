@@ -3,12 +3,6 @@
 export const TEMPLATE_STATUSES = ['Active', 'Closed', 'Draft'] as const;
 export type TemplateStatus = (typeof TEMPLATE_STATUSES)[number];
 
-export const TEMPLATE_STATUS_LABEL: Record<TemplateStatus, string> = {
-  Active: 'Đang dùng',
-  Draft: 'Nháp',
-  Closed: 'Đã đóng',
-};
-
 // Chủ tịch và thư ký dùng chung mẫu Hội đồng.
 // Trạng thái hiển thị suy ra từ nội dung và việc gán: Nháp (chưa đủ điều kiện),
 // Đủ điều kiện sử dụng (hợp lệ, chưa gán), Đang được sử dụng (đã gán cho đợt).

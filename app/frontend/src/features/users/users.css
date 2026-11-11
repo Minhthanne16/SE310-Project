@@ -151,17 +151,6 @@
   background: var(--surface-3);
 }
 
-.usr-link-button {
-  padding: 0;
-  border: 0;
-  background: none;
-  color: inherit;
-  font: inherit;
-  font-weight: 600;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 /* Thẻ số liệu */
 .usr-stats {
   display: grid;
@@ -592,10 +581,6 @@
   justify-content: flex-end;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.usr-actions-split {
-  justify-content: space-between;
 }
 
 .usr-modal-foot {
