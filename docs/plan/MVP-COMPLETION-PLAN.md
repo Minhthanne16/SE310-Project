@@ -181,7 +181,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 - [ ] Dùng storage qua backend, chỉ chấp nhận PDF thực sự tối đa 20 MB, kiểm tra quyền xem/tải và giữ tất cả version theo PDR-039–042.
 - [ ] Bảo đảm lỗi storage/database không để record hoặc object mồ côi.
 
-**Nghiệm thu:** File giả PDF/sai quyền/quá dung lượng bị chặn; các mốc đúng hạn, trong hạn trễ và quá hạn cho kết quả đúng.
+**Nghiệm thu:** File giả PDF/sai quyền/quá dung lượng bị chặn; các mốc đúng hạn, trong hạn trễ và quá hạn cho kết quả đúng. *(2026-11-12: đã triển khai theo [PDR-058](../decisions/PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md), kiểm thử tự động với storage giả; còn thiếu chạy thật trên MinIO và các phần phụ thuộc P04-S01/P05 nên chưa tick.)*
 
 #### G4.3 — Chốt bản khóa luận cuối và ngoại lệ
 

@@ -118,7 +118,11 @@ export function validateMilestones(milestones: Milestone[]): MilestoneErrors {
   for (const m of milestones) {
     const start = m.startDate.trim();
     const end = m.endDate.trim();
-    if (!start && !end) continue;
+    const late = m.allowLate === null ? '' : (m.lateEndDate ?? '').trim();
+    if (!start && !end) {
+      if (late) errors[m.key] = 'Đặt ngày kết thúc trước khi đặt hạn nộp trễ.';
+      continue;
+    }
     if (!start || !end || !isIsoDate(start) || !isIsoDate(end)) {
       errors[m.key] = 'Nhập đủ ngày bắt đầu và ngày kết thúc.';
       continue;
@@ -132,6 +136,9 @@ export function validateMilestones(milestones: Milestone[]): MilestoneErrors {
         `Mốc này bắt đầu trước mốc “${previous.name}”. Các mốc phải theo thứ tự thời gian.`;
       continue;
     }
+    // PDR-041: hạn trễ riêng của mốc phải sau hạn thường.
+    if (late && (!isIsoDate(late) || late <= end))
+      errors[m.key] = 'Hạn nộp trễ phải sau ngày kết thúc của mốc.';
     previous = m;
   }
   return errors;
@@ -146,6 +153,9 @@ export function openBlockers(round: Round): string[] {
     if (!m.startDate.trim() && !m.endDate.trim())
       blockers.push(`${m.name}: chưa đặt ngày`);
     else if (errors[m.key]) blockers.push(`${m.name}: ${errors[m.key]}`);
+    // PDR-041: bật nộp trễ thì phải có hạn trễ trước khi mở đợt.
+    else if (m.allowLate === true && !(m.lateEndDate ?? '').trim())
+      blockers.push(`${m.name}: bật “Cho nộp trễ” nhưng chưa đặt hạn nộp trễ`);
   }
   return blockers;
 }

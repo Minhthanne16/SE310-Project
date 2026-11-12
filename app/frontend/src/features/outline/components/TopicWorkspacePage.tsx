@@ -6,6 +6,7 @@ import { ArrowLeft } from 'lucide-react';
 import '@/features/topics/topics.css';
 import '@/features/outline/outline.css';
 import { OutlineSection } from '@/features/outline/components/OutlineSection';
+import { SubmissionPanel } from '@/features/submissions/components/SubmissionPanel';
 import {
   OutlineNotFoundError,
   outlineService as defaultService,
@@ -17,7 +18,7 @@ import type { TopicDetailDto } from '@/types/topic';
 
 // Không gian đề tài (DESIGN/03, route /de-tai/[id]): một màn cho nhóm, GVHD và Giáo vụ;
 // quyền lấy từ vai trò người xem do máy chủ trả (viewerRole). Hiện dựng phần tổng quan
-// và chặng Đề cương (P04-S01); các chặng sau thêm khi có API.
+// chặng Đề cương (P04-S01) và báo cáo giữa kỳ/cuối kỳ (P04-S02); các chặng sau thêm khi có API.
 interface TopicWorkspacePageProps {
   topicId: string;
   service?: OutlineService;
@@ -160,6 +161,13 @@ export const TopicWorkspacePage: React.FC<TopicWorkspacePageProps> = ({
         service={service}
         onReady={(outline) => setRole(outline.viewerRole)}
       />
+
+      <section aria-labelledby="ws-reports-title">
+        <div className="app-page-heading">
+          <h2 id="ws-reports-title">Báo cáo giữa kỳ và cuối kỳ</h2>
+        </div>
+        <SubmissionPanel topicId={topic.id} />
+      </section>
     </div>
   );
 };

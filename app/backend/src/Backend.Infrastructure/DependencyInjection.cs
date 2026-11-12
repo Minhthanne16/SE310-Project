@@ -7,6 +7,7 @@ using Backend.Infrastructure.Repositories.Evaluations;
 using Backend.Infrastructure.Repositories.Notifications;
 using Backend.Infrastructure.Repositories.Products;
 using Backend.Infrastructure.Repositories.Rounds;
+using Backend.Infrastructure.Repositories.Submissions;
 using Backend.Infrastructure.Repositories.Topics;
 using Backend.Infrastructure.Repositories.Users;
 using Backend.Infrastructure.Integrations.Authentication;
@@ -39,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IOutlineRepository, OutlineRepository>();
+        services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();

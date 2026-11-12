@@ -1,0 +1,247 @@
+/* Báo cáo giữa kỳ/cuối kỳ (P04-S02). Màu và kích thước theo docs/DESIGN/02. */
+.sub-page {
+  display: grid;
+  gap: 20px;
+  max-width: 1240px;
+}
+
+.sub-page h1 {
+  margin: 0;
+  font-size: 30px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.sub-topic {
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: #fff;
+  padding: 20px;
+  display: grid;
+  gap: 6px;
+}
+
+.sub-topic h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.sub-panel {
+  display: grid;
+  gap: 20px;
+}
+
+.sub-kind {
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  background: #fff;
+  padding: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.sub-kind-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.sub-kind-head h2 {
+  margin: 0 4px 0 0;
+  font-size: 18px;
+  color: #1a1a1a;
+}
+
+.sub-muted {
+  margin: 0;
+  font-size: 13.5px;
+  color: #5c5c5c;
+}
+
+.sub-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  background: #f2f2f1;
+  color: #3d3d3d;
+}
+
+.sub-chip-ok {
+  background: #ddf3d8;
+  color: #2b6a1f;
+}
+
+.sub-chip-warn {
+  background: #fdf1d8;
+  color: #6b3a06;
+}
+
+.sub-chip-info {
+  background: #e3ecfb;
+  color: #1f4fa0;
+}
+
+.sub-form {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #fafaf9;
+  border: 1px solid #e5e5e5;
+}
+
+.sub-field {
+  display: grid;
+  gap: 6px;
+  font-size: 14px;
+  color: #1a1a1a;
+}
+
+.sub-field label {
+  font-weight: 600;
+}
+
+.sub-field input[type='file'],
+.sub-field textarea {
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 1px solid #d4d4d4;
+  border-radius: 9px;
+  background: #fff;
+  font: inherit;
+  color: #1a1a1a;
+}
+
+.sub-field [aria-invalid='true'] {
+  border-color: #a8281c;
+}
+
+.sub-field input:focus-visible,
+.sub-field textarea:focus-visible,
+.sub-btn:focus-visible {
+  outline: 2px solid #1f5fbf;
+  outline-offset: 2px;
+}
+
+.sub-error {
+  font-size: 13.5px;
+  color: #a8281c;
+}
+
+.sub-banner {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 14px;
+  background: #f2f2f1;
+  color: #3d3d3d;
+}
+
+.sub-banner-ok {
+  background: #ddf3d8;
+  color: #2b6a1f;
+}
+
+.sub-banner-warn {
+  background: #fef4e2;
+  color: #8a4b08;
+}
+
+.sub-banner-bad {
+  background: #fdecea;
+  border: 1px solid #e8b4ae;
+  color: #a8281c;
+}
+
+.sub-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid #d4d4d4;
+  border-radius: 9px;
+  background: #fff;
+  color: #1a1a1a;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.sub-btn-primary {
+  border-color: #1a1a1a;
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.sub-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.sub-empty {
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed #d4d4d4;
+  border-radius: 12px;
+  font-size: 14px;
+  color: #5c5c5c;
+}
+
+.sub-versions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+}
+
+.sub-version {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  align-items: center;
+  padding: 12px 0;
+  border-top: 1px solid #e5e5e5;
+}
+
+.sub-version > :not(.sub-btn) {
+  grid-column: 1;
+}
+
+.sub-version > .sub-btn {
+  grid-column: 2;
+  grid-row: 1 / span 3;
+}
+
+.sub-version-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14.5px;
+  color: #1a1a1a;
+}
+
+.sub-file {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.sub-note {
+  font-size: 14px;
+  color: #3d3d3d;
+  overflow-wrap: anywhere;
+}

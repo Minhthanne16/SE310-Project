@@ -111,7 +111,9 @@ public sealed class OutlineWorkflowTests : IDisposable
                 StartDate = start.AddDays(i * 7).ToString("yyyy-MM-dd"),
                 EndDate = start.AddDays(i * 7 + 5).ToString("yyyy-MM-dd"),
                 NotifyAudience = "Tất cả",
-                AllowLate = ThesisRound.HasLateToggle(key) ? true : null
+                // Đề cương tắt nộp trễ; các mốc báo cáo bật nộp trễ và có hạn trễ riêng (PDR-041).
+                AllowLate = ThesisRound.HasLateToggle(key) ? key != MilestoneKey.Outline : null,
+                LateEndDate = key is MilestoneKey.Midterm or MilestoneKey.Final ? start.AddDays(i * 7 + 6).ToString("yyyy-MM-dd") : null
             }).ToList()
         };
     }
@@ -313,7 +315,7 @@ public sealed class OutlineWorkflowTests : IDisposable
     }
 
     [Fact]
-    public async Task SubmissionsCloseAfterTheOutlineMilestoneWhenNoLateDeadlineIsSet()
+    public async Task SubmissionsCloseAfterTheOutlineMilestoneWhenLateSubmissionIsOff()
     {
         var w = await RegisteredTopic();
         await Submit(w, w.Rep);

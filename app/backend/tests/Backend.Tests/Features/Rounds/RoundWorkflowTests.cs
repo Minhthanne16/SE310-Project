@@ -115,7 +115,9 @@ public sealed class RoundWorkflowTests : IDisposable
             StartDate = start.AddDays(i * 7).ToString("yyyy-MM-dd"),
             EndDate = start.AddDays(i * 7 + 5).ToString("yyyy-MM-dd"),
             NotifyAudience = "Tất cả",
-            AllowLate = ThesisRound.HasLateToggle(key) ? true : null
+            AllowLate = ThesisRound.HasLateToggle(key) ? true : null,
+            // PDR-041: mốc bật nộp trễ phải có hạn trễ sau hạn thường.
+            LateEndDate = ThesisRound.HasLateToggle(key) ? start.AddDays(i * 7 + 6).ToString("yyyy-MM-dd") : null
         }).ToList();
         tweak?.Invoke(list);
         return new RoundMilestonesInputDto { Milestones = list };
@@ -293,7 +295,7 @@ public sealed class RoundWorkflowTests : IDisposable
         var round = await Create();
         var input = Dated(l =>
         {
-            foreach (var m in l) { m.StartDate = ""; m.EndDate = null; }
+            foreach (var m in l) { m.StartDate = ""; m.EndDate = null; m.LateEndDate = null; }
         });
 
         Assert.Equal(RoundResultStatus.Ok, (await Send(new UpdateRoundMilestonesCommand(round.Id, input))).Status);

@@ -65,12 +65,21 @@ public static class OutlineRules
     public static bool HasWorkingGroup(ThesisTopic topic, ThesisRound round, DateOnly today) =>
         topic.GroupId is not null && TopicRules.Effective(topic, round, today) is TopicStatus.Registered or TopicStatus.InProgress;
 
-    // Hạn nộp: tới hết ngày kết thúc mốc Đề cương (giờ Việt Nam). Nộp trễ theo PDR-041 cần hạn trễ
-    // riêng của mốc; đợt chưa lưu hạn trễ (P02) nên sau hạn thường là đóng, kể cả khi bật "Cho nộp trễ".
-    public static string? WindowBlocker(ThesisRound round, DateOnly today) =>
-        TopicRules.MilestoneEnd(round, MilestoneKey.Outline) is { } end && today > end
-            ? $"Đã hết hạn nộp đề cương ({end:dd/MM/yyyy})."
-            : null;
+    public static RoundMilestone? Milestone(ThesisRound round) => round.Milestones.FirstOrDefault(m => m.Key == MilestoneKey.Outline);
+
+    // Hạn nộp: tới hết ngày kết thúc mốc Đề cương (giờ Việt Nam); sau đó, nếu mốc bật "Cho nộp trễ" và có
+    // hạn trễ riêng thì nhận bài gắn nhãn Nộp trễ tới hết hạn đó (PDR-041, PDR-056). Còn lại là đóng.
+    public static string? WindowBlocker(ThesisRound round, DateOnly today)
+    {
+        var milestone = Milestone(round);
+        if (Submissions.SubmissionRules.Window(milestone, today) != Submissions.SubmissionWindow.Closed) return null;
+        return Submissions.SubmissionRules.LateDeadline(milestone) is { } late
+            ? $"Đã hết hạn nộp trễ đề cương ({late:dd/MM/yyyy})."
+            : $"Đã hết hạn nộp đề cương ({milestone?.EndDate:dd/MM/yyyy}).";
+    }
+
+    public static bool IsLate(ThesisRound round, DateOnly today) =>
+        Submissions.SubmissionRules.Window(Milestone(round), today) == Submissions.SubmissionWindow.Late;
 
     public static string? SubmitBlocker(ThesisTopic topic, ThesisRound round, DateOnly today)
     {
@@ -141,6 +150,7 @@ internal static class OutlineAccess
             TopicTitle = topic.Title,
             ViewerRole = role,
             Deadline = RoundRules.FormatDate(TopicRules.MilestoneEnd(round, MilestoneKey.Outline)),
+            LateDeadline = RoundRules.FormatDate(Submissions.SubmissionRules.LateDeadline(OutlineRules.Milestone(round))),
             ApprovedAt = Utc(topic.OutlineApprovedAt),
             ApprovedBy = topic.OutlineApprovedById is null ? null : Name(topic.OutlineApprovedById),
             ApprovedVersionNo = topic.OutlineApprovedSubmissionId is { } approvedId ? versionOf.GetValueOrDefault(approvedId) : null,
@@ -270,6 +280,7 @@ public sealed class SubmitOutlineHandler(ITopicRepository topics, IRoundReposito
             SizeBytes = request.Content.Length,
             Note = TopicRules.CleanOptional(request.Note),
             SubmittedById = request.StudentId,
+            Late = OutlineRules.IsLate(context.Round, today),
             CreatedAt = now
         };
         var names = await topics.GetUserNamesAsync([request.StudentId], cancellationToken);

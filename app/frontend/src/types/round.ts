@@ -95,9 +95,11 @@ export interface Milestone {
   endDate: string;
   notifyAudience: NotifyAudience;
   // Chỉ có ý nghĩa với Đề cương, Giữa kỳ, Cuối kỳ (mặc định true, theo
-  // period_milestones.allow_late); null với các mốc còn lại. Chỉ là công tắc:
-  // thời hạn nộp trễ chưa quy định (OQ-006).
+  // period_milestones.allow_late); null với các mốc còn lại.
   allowLate: boolean | null;
+  // Hạn nộp trễ riêng của mốc (PDR-041), yyyy-MM-dd, sau endDate; rỗng hoặc
+  // thiếu nghĩa là chưa đặt. Chỉ mở quyền nộp khi allowLate = true.
+  lateEndDate?: string;
 }
 
 export type MilestoneErrors = Partial<Record<MilestoneKey, string>>;

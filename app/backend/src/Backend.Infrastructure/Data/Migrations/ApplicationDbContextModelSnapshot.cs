@@ -441,6 +441,9 @@ namespace Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<DateOnly?>("LateEndDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("NotifyAudience")
                         .IsRequired()
                         .HasMaxLength(16)

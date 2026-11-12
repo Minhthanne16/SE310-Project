@@ -190,6 +190,34 @@ public static class RoundRules
         }
         return errors;
     }
+
+    // PDR-041: hạn trễ riêng của từng mốc Đề cương/Giữa kỳ/Cuối kỳ phải sau hạn thường. requireWhenEnabled=true
+    // (mở đợt, đợt đang diễn ra): mốc bật "Cho nộp trễ" bắt buộc có hạn trễ; false (đợt Nháp): được để trống.
+    public static List<string> ValidateLateDeadlines(
+        IEnumerable<(MilestoneKey Key, string? End, bool? AllowLate, string? LateEnd)> milestones, bool requireWhenEnabled)
+    {
+        var errors = new List<string>();
+        foreach (var (key, rawEnd, allowLate, rawLate) in milestones)
+        {
+            if (!ThesisRound.HasLateToggle(key)) continue;
+            var name = Name(key);
+            var late = rawLate?.Trim() ?? string.Empty;
+            if (late.Length == 0)
+            {
+                // Mốc chưa có ngày kết thúc đã bị báo ở kiểm tra ngày; không báo thêm lỗi hạn trễ cho mốc đó.
+                if (requireWhenEnabled && allowLate == true && TryParseDate(rawEnd, out _))
+                    errors.Add($"{name}: Bật “Cho nộp trễ” thì phải đặt hạn nộp trễ sau ngày kết thúc.");
+                continue;
+            }
+            if (!TryParseDate(late, out var lateDate))
+                errors.Add($"{name}: Hạn nộp trễ không đúng định dạng ngày.");
+            else if (!TryParseDate(rawEnd, out var end))
+                errors.Add($"{name}: Đặt ngày kết thúc trước khi đặt hạn nộp trễ.");
+            else if (lateDate <= end)
+                errors.Add($"{name}: Hạn nộp trễ phải sau ngày kết thúc của mốc.");
+        }
+        return errors;
+    }
 }
 
 public abstract class RoundTextValidator<T> : AbstractValidator<T>

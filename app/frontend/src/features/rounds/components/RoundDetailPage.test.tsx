@@ -152,6 +152,14 @@ it('validates milestone order live and saves a valid configuration', async () =>
   fireEvent.change(screen.getByLabelText('Kết thúc Báo cáo giữa kỳ'), {
     target: { value: '2026-11-02' },
   });
+  // PDR-041: hạn trễ phải sau hạn thường mới lưu được.
+  expect(
+    screen.getByText('Hạn nộp trễ phải sau ngày kết thúc của mốc.'),
+  ).toBeInTheDocument();
+  expect(save).toBeDisabled();
+  fireEvent.change(screen.getByLabelText('Hạn nộp trễ Báo cáo giữa kỳ'), {
+    target: { value: '2026-11-05' },
+  });
   fireEvent.change(screen.getByLabelText('Thông báo cho Đề cương'), {
     target: { value: 'Sinh viên' },
   });

@@ -26,6 +26,8 @@ const completeDates = async (service: RoundService, id: string) => {
       ...m,
       startDate: addDays('2026-11-02', i * 7),
       endDate: addDays('2026-11-02', i * 7 + 5),
+      // PDR-041: mốc bật nộp trễ phải có hạn trễ sau hạn thường.
+      ...(m.allowLate ? { lateEndDate: addDays('2026-11-02', i * 7 + 6) } : {}),
     })),
   );
 };
