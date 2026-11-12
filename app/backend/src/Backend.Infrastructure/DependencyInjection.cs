@@ -7,6 +7,7 @@ using Backend.Infrastructure.Repositories.Evaluations;
 using Backend.Infrastructure.Repositories.Notifications;
 using Backend.Infrastructure.Repositories.Products;
 using Backend.Infrastructure.Repositories.Rounds;
+using Backend.Infrastructure.Repositories.Submissions;
 using Backend.Infrastructure.Repositories.Topics;
 using Backend.Infrastructure.Repositories.Users;
 using Backend.Infrastructure.Integrations.Authentication;
@@ -38,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IRoundRepository, RoundRepository>();
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
+        services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
@@ -57,11 +59,14 @@ public static class DependencyInjection
                 .WithSSL(storage.UseSsl)
                 .Build());
             services.AddSingleton(storage);
-            services.AddSingleton<IAvatarStorage, MinioAvatarStorage>();
+            services.AddSingleton<MinioAvatarStorage>();
+            services.AddSingleton<IAvatarStorage>(p => p.GetRequiredService<MinioAvatarStorage>());
+            services.AddSingleton<IDocumentStorage>(p => p.GetRequiredService<MinioAvatarStorage>());
         }
         else
         {
             services.AddSingleton<IAvatarStorage, UnavailableAvatarStorage>();
+            services.AddSingleton<IDocumentStorage, UnavailableAvatarStorage>();
         }
 
         return services;

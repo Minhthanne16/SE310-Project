@@ -144,7 +144,9 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
                 StartDate = start.AddDays(i * 7).ToString("yyyy-MM-dd"),
                 EndDate = start.AddDays(i * 7 + 5).ToString("yyyy-MM-dd"),
                 NotifyAudience = "Tất cả",
-                AllowLate = ThesisRound.HasLateToggle(key) ? true : null
+                AllowLate = ThesisRound.HasLateToggle(key) ? true : null,
+                // PDR-041: mốc bật nộp trễ phải có hạn trễ sau hạn thường.
+                LateEndDate = ThesisRound.HasLateToggle(key) ? start.AddDays(i * 7 + 6).ToString("yyyy-MM-dd") : null
             }).ToList()
         };
     }

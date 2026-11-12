@@ -5,7 +5,7 @@ using Minio.Exceptions;
 
 namespace Backend.Infrastructure.Integrations.Storage;
 
-public sealed class MinioAvatarStorage(IMinioClient client, StorageOptions options) : IAvatarStorage
+public sealed class MinioAvatarStorage(IMinioClient client, StorageOptions options) : IAvatarStorage, IDocumentStorage
 {
     public Task SaveAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken = default) =>
         GuardAsync(async () =>
@@ -60,8 +60,8 @@ public sealed class MinioAvatarStorage(IMinioClient client, StorageOptions optio
     }
 }
 
-// Môi trường chưa cấu hình Storage: hồ sơ vẫn hoạt động, chỉ thao tác ảnh báo lỗi rõ.
-public sealed class UnavailableAvatarStorage : IAvatarStorage
+// Môi trường chưa cấu hình Storage: hồ sơ vẫn hoạt động, chỉ thao tác ảnh và tệp bài nộp báo lỗi rõ.
+public sealed class UnavailableAvatarStorage : IAvatarStorage, IDocumentStorage
 {
     public Task SaveAsync(string objectKey, byte[] content, string contentType, CancellationToken cancellationToken = default) => throw Unavailable();
     public Task<byte[]?> ReadAsync(string objectKey, CancellationToken cancellationToken = default) => throw Unavailable();

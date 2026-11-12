@@ -1,3 +1,4 @@
+import { addDays } from '@/features/rounds/roundUtils';
 import {
   MILESTONE_DEFS,
   TOPIC_STATUSES,
@@ -26,6 +27,10 @@ export function buildMilestones(dates: DatePair[]): Milestone[] {
     endDate: dates[index]?.[1] ?? '',
     notifyAudience: 'Tất cả',
     allowLate: def.hasLateToggle ? true : null,
+    // PDR-041: mốc bật nộp trễ có hạn trễ riêng, ở dữ liệu mẫu là 3 ngày sau hạn thường.
+    ...(def.hasLateToggle && dates[index]?.[1]
+      ? { lateEndDate: addDays(dates[index]![1], 3) }
+      : {}),
   }));
 }
 

@@ -174,6 +174,90 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
         Assert.Contains("Nhập mô tả đề tài.", errors);
     }
 
+    // P04-S02, PDR-056: hợp đồng HTTP của nộp/đọc báo cáo.
+    [Fact]
+    public async Task GroupSubmitsReportsAndOnlyRelatedPeopleDownload()
+    {
+        var staff = await Login(UserRole.AcademicAffairs);
+        var lecturer = await Login(UserRole.Lecturer);
+        var otherLecturer = await Login(UserRole.Lecturer);
+        var student = await Login(UserRole.Student);
+        var outsider = await Login(UserRole.Student);
+        var roundId = await RunningRound(staff, [lecturer.Code, otherLecturer.Code], [student.Code, outsider.Code]);
+        var topicId = (await ReadJson(await Send(HttpMethod.Post, "/api/topics", lecturer, NewTopic(roundId)))).GetProperty("data").GetProperty("id").GetGuid();
+        Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Post, $"/api/rounds/{roundId}/topics/publish", staff)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Post, $"/api/topics/{topicId}/registration", student, new { memberCodes = Array.Empty<string>() })).StatusCode);
+        var url = $"/api/topics/{topicId}/submissions";
+
+        static MultipartFormDataContent Form(string kind, byte[]? content, string fileName = "bao-cao.pdf", string? note = null)
+        {
+            var form = new MultipartFormDataContent { { new StringContent(kind), "kind" } };
+            if (note is not null) form.Add(new StringContent(note), "note");
+            if (content is not null) form.Add(new ByteArrayContent(content), "file", fileName);
+            return form;
+        }
+
+        // Còn trong thời gian đăng ký thì chưa nộp được.
+        var early = await Send(HttpMethod.Post, url, student, Form("midterm", SubmissionWorkflowTests.Pdf()));
+        Assert.Equal(HttpStatusCode.Conflict, early.StatusCode);
+
+        // Hết hạn đăng ký: đề tài Đang thực hiện.
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
+        await _factory.Db(async db =>
+        {
+            var registration = await db.RoundMilestones.SingleAsync(m => m.RoundId == roundId && m.Key == MilestoneKey.TopicRegistration);
+            registration.StartDate = today.AddDays(-2);
+            registration.EndDate = today.AddDays(-1);
+            await db.SaveChangesAsync();
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Send(HttpMethod.Get, url, null)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Send(HttpMethod.Post, url, student, Form("midterm", null))).StatusCode);
+        var fake = await Send(HttpMethod.Post, url, student, Form("midterm", "PK-0304 docx doi ten thanh pdf, khong co chu ky PDF"u8.ToArray(), "gia.pdf"));
+        Assert.Equal(HttpStatusCode.BadRequest, fake.StatusCode);
+        Assert.Equal("Tệp không phải PDF hợp lệ. Chỉ nhận tệp PDF.", (await ReadJson(fake)).GetProperty("message").GetString());
+        var tooLarge = await Send(HttpMethod.Post, url, student, Form("midterm", SubmissionWorkflowTests.Pdf("to", 20 * 1024 * 1024 + 1)));
+        Assert.Equal(HttpStatusCode.BadRequest, tooLarge.StatusCode);
+        Assert.Equal("Tệp vượt quá 20 MB. Giảm dung lượng tệp PDF rồi nộp lại.", (await ReadJson(tooLarge)).GetProperty("message").GetString());
+        Assert.Equal(HttpStatusCode.BadRequest, (await Send(HttpMethod.Post, url, student, Form("final", SubmissionWorkflowTests.Pdf()))).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Post, url, lecturer, Form("midterm", SubmissionWorkflowTests.Pdf()))).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Post, url, outsider, Form("midterm", SubmissionWorkflowTests.Pdf()))).StatusCode);
+        Assert.DoesNotContain(_factory.Storage.Objects.Keys, k => k.Contains(topicId.ToString("N")));
+
+        var pdf = SubmissionWorkflowTests.Pdf("hop-dong");
+        var created = await Send(HttpMethod.Post, url, student, Form("midterm", pdf, "Giữa kỳ.pdf", "Bản đầu"));
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var body = await created.Content.ReadAsStringAsync();
+        // Khóa object và thông tin storage không bao giờ ra frontend.
+        Assert.DoesNotContain("objectKey", body, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("submissions/", body.Replace("/api/submissions/", string.Empty));
+        var midterm = JsonDocument.Parse(body).RootElement.GetProperty("data").GetProperty("kinds")[0];
+        Assert.Equal("midterm", midterm.GetProperty("kind").GetString());
+        Assert.Equal("onTime", midterm.GetProperty("window").GetString());
+        var version = midterm.GetProperty("versions")[0];
+        Assert.Equal(1, version.GetProperty("version").GetInt32());
+        Assert.Equal("Giữa kỳ.pdf", version.GetProperty("fileName").GetString());
+        Assert.Equal(student.Code, version.GetProperty("submittedBy").GetProperty("code").GetString());
+        var fileUrl = version.GetProperty("downloadUrl").GetString()!;
+
+        foreach (var who in new[] { student, lecturer, staff })
+        {
+            Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Get, url, who)).StatusCode);
+            var file = await Send(HttpMethod.Get, fileUrl, who);
+            Assert.Equal(HttpStatusCode.OK, file.StatusCode);
+            Assert.Equal("application/pdf", file.Content.Headers.ContentType!.MediaType);
+            Assert.Equal("attachment", file.Content.Headers.ContentDisposition!.DispositionType);
+            Assert.Equal("nosniff", file.Headers.GetValues("X-Content-Type-Options").Single());
+            Assert.Equal(pdf, await file.Content.ReadAsByteArrayAsync());
+        }
+        foreach (var who in new[] { outsider, otherLecturer })
+        {
+            Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Get, url, who)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Get, fileUrl, who)).StatusCode);
+        }
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Send(HttpMethod.Get, fileUrl, null)).StatusCode);
+    }
+
     private static object NewTopic(Guid roundId, string title = "Hệ thống gợi ý khóa học", string description = "Gợi ý theo lịch sử học tập.") => new
     {
         roundId, title, field = "Trí tuệ nhân tạo", description, requirements = "Biết Python"
@@ -193,7 +277,9 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
             startDate = (i == 0 ? today.AddDays(-1) : today.AddDays(i * 3)).ToString("yyyy-MM-dd"),
             endDate = (i == 0 ? today.AddDays(1) : today.AddDays(i * 3 + 2)).ToString("yyyy-MM-dd"),
             notifyAudience = "Tất cả",
-            allowLate = key is "outline" or "midterm" or "final" ? (bool?)true : null
+            allowLate = key is "outline" or "midterm" or "final" ? (bool?)true : null,
+            // PDR-041: mốc bật nộp trễ phải có hạn trễ sau hạn thường.
+            lateEndDate = key is "outline" or "midterm" or "final" ? today.AddDays(i * 3 + 3).ToString("yyyy-MM-dd") : null
         }).ToList();
         Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Put, $"/api/rounds/{id}/milestones", staff, new { milestones })).StatusCode);
         if (lecturers.Length > 0)
@@ -221,7 +307,7 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
     {
         var request = new HttpRequestMessage(method, url);
         if (who is not null) request.Headers.Add("Cookie", $"{CookieName}={who.Cookie}");
-        if (body is not null) request.Content = JsonContent.Create(body);
+        if (body is not null) request.Content = body as HttpContent ?? JsonContent.Create(body);
         return await Client().SendAsync(request);
     }
 
@@ -242,6 +328,14 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
             _options = new DbContextOptionsBuilder<ApplicationDbContext>().UseSqlite(_connection).Options;
             using var db = new ApplicationDbContext(_options);
             db.Database.EnsureCreated();
+        }
+
+        public InMemoryDocumentStorage Storage { get; } = new();
+
+        public async Task Db(Func<ApplicationDbContext, Task> action)
+        {
+            using var db = new ApplicationDbContext(_options);
+            await action(db);
         }
 
         public async Task CopyUser(User user)
@@ -276,6 +370,10 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
                 services.AddScoped<ITopicRepository, TopicRepository>();
                 services.RemoveAll<IGroupRepository>();
                 services.AddScoped<IGroupRepository, GroupRepository>();
+                services.RemoveAll<ISubmissionRepository>();
+                services.AddScoped<ISubmissionRepository, Backend.Infrastructure.Repositories.Submissions.SubmissionRepository>();
+                services.RemoveAll<Backend.Application.Common.Storage.IDocumentStorage>();
+                services.AddSingleton<Backend.Application.Common.Storage.IDocumentStorage>(Storage);
             });
         }
 

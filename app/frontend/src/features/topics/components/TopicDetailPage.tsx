@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { StatusState } from '@/components/ui/StatusState';
+import { SubmissionPanel } from '@/features/submissions/components/SubmissionPanel';
 import '@/features/topics/topics.css';
 import { TopicStatusChip } from '@/features/topics/components/TopicChips';
 import {
@@ -33,6 +34,9 @@ import {
 interface TopicDetailPageProps {
   topicId: string;
   topicService?: TopicService;
+  // Đề tài thật (cùng cờ với đợt thật): tab Báo cáo đọc và tải tệp qua
+  // /api/topics/{id}/submissions (PDR-056) thay cho dữ liệu mẫu.
+  liveSubmissions?: boolean;
 }
 
 type TopicTab = 'tong-quan' | 'bao-cao' | 'diem' | 'lich-su';
@@ -171,6 +175,7 @@ function docStatus(
 export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
   topicId,
   topicService = defaultTopicService,
+  liveSubmissions = process.env.NEXT_PUBLIC_ROUNDS_API === 'true',
 }) => {
   const [tabParam, setTabParam] = useUrlParam('tab');
   const tab: TopicTab = isTab(tabParam) ? tabParam : 'tong-quan';
@@ -410,7 +415,12 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
           </div>
         )}
 
+        {tab === 'bao-cao' && liveSubmissions && (
+          <SubmissionPanel topicId={topic.id} />
+        )}
+
         {tab === 'bao-cao' &&
+          !liveSubmissions &&
           (docGroups.length === 0 ? (
             <p className="app-muted">Nhóm chưa nộp bài nào.</p>
           ) : (

@@ -384,6 +384,9 @@ namespace Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(32)
                         .HasColumnType("character varying(32)");
 
+                    b.Property<DateOnly?>("LateEndDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("NotifyAudience")
                         .IsRequired()
                         .HasMaxLength(16)
@@ -437,6 +440,65 @@ namespace Backend.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("RoundParticipants");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.Submission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<bool>("IsLate")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("SubmittedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TopicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObjectKey")
+                        .IsUnique();
+
+                    b.HasIndex("SubmittedById");
+
+                    b.HasIndex("TopicId", "Kind", "Version")
+                        .IsUnique();
+
+                    b.ToTable("Submissions");
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.ThesisGroup", b =>
@@ -915,6 +977,23 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.Navigation("Round");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.Submission", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.User", "SubmittedBy")
+                        .WithMany()
+                        .HasForeignKey("SubmittedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.ThesisTopic", null)
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SubmittedBy");
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.ThesisGroup", b =>

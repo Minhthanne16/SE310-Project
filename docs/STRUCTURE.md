@@ -67,7 +67,8 @@ docs/
 │   ├── PDR-052-hop-dong-quen-mat-khau-va-lich-su-tai-khoan.md
 │   ├── PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md
 │   ├── PDR-054-ghi-danh-nhom-de-tai-cong-bo.md
-│   └── PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md
+│   ├── PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md
+│   └── PDR-056-nop-bao-cao-giua-ky-cuoi-ky.md
 ├── product/
 │   ├── GLOSSARY.md
 │   ├── ROLES.md

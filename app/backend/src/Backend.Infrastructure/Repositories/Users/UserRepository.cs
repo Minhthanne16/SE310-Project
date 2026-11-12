@@ -32,7 +32,7 @@ public class UserRepository : IUserRepository
 
     public async Task<IReadOnlySet<Guid>> GetUserIdsWithRelatedDataAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)
     {
-        // Thông báo, đề tài (GVHD) và nhóm. Phiếu điểm, bài nộp... chưa được xây; khi thêm bảng đó, bổ sung truy vấn tại đây.
+        // Thông báo, đề tài (GVHD), nhóm và bài nộp. Phiếu điểm, phân công... chưa được xây; khi thêm bảng đó, bổ sung truy vấn tại đây.
         var recipients = await _context.Notifications
             .Where(n => userIds.Contains(n.RecipientUserId))
             .Select(n => n.RecipientUserId)
@@ -53,7 +53,12 @@ public class UserRepository : IUserRepository
             .Select(m => m.StudentId)
             .Distinct()
             .ToListAsync(cancellationToken);
-        return recipients.Concat(senders).Concat(supervisors).Concat(members).ToHashSet();
+        var submitters = await _context.Submissions
+            .Where(s => userIds.Contains(s.SubmittedById))
+            .Select(s => s.SubmittedById)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        return recipients.Concat(senders).Concat(supervisors).Concat(members).Concat(submitters).ToHashSet();
     }
 
     public async Task<IReadOnlySet<string>> GetExistingUserCodesAsync(IReadOnlyCollection<string> userCodes, CancellationToken cancellationToken = default)

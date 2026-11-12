@@ -26,6 +26,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ThesisGroup> ThesisGroups => Set<ThesisGroup>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<TopicRegistration> TopicRegistrations => Set<TopicRegistration>();
+    public DbSet<Submission> Submissions => Set<Submission>();
     public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
@@ -208,6 +209,22 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Detail).HasMaxLength(8000);
             entity.HasIndex(e => new { e.TopicId, e.CreatedAt });
+        });
+
+        modelBuilder.Entity<Submission>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(32);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.ObjectKey).IsRequired().HasMaxLength(512);
+            entity.Property(e => e.Note).HasMaxLength(500);
+            // Hai thành viên nộp cùng lúc không thể nhận cùng số phiên bản.
+            entity.HasIndex(e => new { e.TopicId, e.Kind, e.Version }).IsUnique();
+            entity.HasIndex(e => e.ObjectKey).IsUnique();
+            // Bài nộp là bằng chứng (PDR-042): không xóa theo đề tài hay tài khoản bằng thao tác thường.
+            // Chỉ đợt Nháp mới xóa được, mà đợt Nháp chưa thể có bài nộp.
+            entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.SubmittedBy).WithMany().HasForeignKey(e => e.SubmittedById).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<PasswordResetToken>(entity =>

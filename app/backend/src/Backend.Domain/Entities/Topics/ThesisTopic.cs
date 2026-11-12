@@ -65,4 +65,5 @@ public static class TopicHistoryCategories
     public const string Status = "Trạng thái";
     public const string Content = "Nội dung";
     public const string Group = "Nhóm";
+    public const string Submission = "Bài nộp";
 }
