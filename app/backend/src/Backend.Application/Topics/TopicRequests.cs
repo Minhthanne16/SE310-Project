@@ -19,7 +19,7 @@ public record ListRoundTopicsQuery(Guid RoundId) : IRequest<TopicResult<RoundTop
 public record ListPublishedTopicsQuery(Guid StudentId, Guid RoundId) : IRequest<TopicResult<RoundTopicsDto>>;
 public record GetTopicQuery(Guid TopicId, Guid ViewerId, ViewerRole Role) : IRequest<TopicResult<TopicDetailDto>>;
 
-public enum TopicResultStatus { Ok, Created, NotFound, Forbidden, Conflict, Invalid }
+public enum TopicResultStatus { Ok, Created, NotFound, Forbidden, Conflict, Invalid, Unavailable }
 
 public sealed record TopicResult<T>(TopicResultStatus Status, ApiResponse<T> Response)
 {
@@ -81,6 +81,7 @@ internal static class TopicMapping
         dto.UpdatedAt = topic.UpdatedAt is { } updated ? DateTime.SpecifyKind(updated, DateTimeKind.Utc) : null;
         dto.CanEdit = viewerIsSupervisor ? TopicRules.EditScope(topic, round, today) : TopicEditScopes.None;
         dto.CanDelete = viewerIsSupervisor && TopicRules.CanDelete(round);
+        dto.OutlineApprovedAt = topic.OutlineApprovedAt is { } approved ? DateTime.SpecifyKind(approved, DateTimeKind.Utc) : null;
         dto.Group = topic.GroupId is { } groupId && groups?.GetValueOrDefault(groupId) is { } group
             ? Members(group.Members, group.RepresentativeId)
             : [];
@@ -123,7 +124,8 @@ internal static class TopicMapping
         round.Participants.Any(p => p.UserId == userId && p.Kind == ParticipantKind.Student);
 }
 
-public sealed class ListMyTopicsHandler(IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, TimeProvider clock)
+public sealed class ListMyTopicsHandler(IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups,
+    IOutlineRepository outlines, TimeProvider clock)
     : IRequestHandler<ListMyTopicsQuery, TopicResult<LecturerTopicsDto>>
 {
     public async Task<TopicResult<LecturerTopicsDto>> Handle(ListMyTopicsQuery request, CancellationToken cancellationToken)
@@ -138,10 +140,22 @@ public sealed class ListMyTopicsHandler(IRoundRepository rounds, ITopicRepositor
         var all = await topics.ListByRoundAsync(round.Id, cancellationToken: cancellationToken);
         var mine = all.Where(t => t.SupervisorId == request.LecturerId && t.Status != TopicStatus.Cancelled).ToList();
         var members = await groups.MembersOf(mine, cancellationToken);
+        var summaries = await outlines.SummaryAsync(mine.Where(t => t.GroupId is not null).Select(t => t.Id).ToList(), cancellationToken);
         return TopicResult<LecturerTopicsDto>.Ok(new LecturerTopicsDto
         {
             Round = TopicRules.RoundInfo(round, today, forLecturer: true),
-            Items = mine.Select(t => TopicMapping.ToDto(t, round, today, viewerIsSupervisor: true, members)).ToList(),
+            Items = mine.Select(t =>
+            {
+                var dto = TopicMapping.ToDto(t, round, today, viewerIsSupervisor: true, members);
+                if (summaries.TryGetValue(t.Id, out var s))
+                    dto.Outline = new OutlineSummaryDto
+                    {
+                        Versions = s.Versions,
+                        OpenRequests = s.OpenRequests,
+                        AwaitingReview = s.AwaitingReview && t.OutlineApprovedAt is null
+                    };
+                return dto;
+            }).ToList(),
             Load = TopicRules.Load(request.LecturerId, all, round)
         });
     }
@@ -311,7 +325,8 @@ public sealed class ListPublishedTopicsHandler(IRoundRepository rounds, ITopicRe
     }
 }
 
-public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, TimeProvider clock)
+public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups,
+    IOutlineRepository outlines, TimeProvider clock)
     : IRequestHandler<GetTopicQuery, TopicResult<TopicDetailDto>>
 {
     public async Task<TopicResult<TopicDetailDto>> Handle(GetTopicQuery request, CancellationToken cancellationToken)
@@ -354,6 +369,23 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
                     Action = h.Action,
                     Detail = h.Detail
                 }).ToList();
+        }
+        // Phiên bản bài nộp: người liên quan tới đề tài (Giáo vụ, GVHD, thành viên nhóm).
+        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || ownGroup)
+        {
+            var submissions = await outlines.ListSubmissionsAsync(topic.Id, cancellationToken);
+            var submitters = await topics.GetUserNamesAsync(submissions.Select(x => x.SubmittedById).Distinct().ToList(), cancellationToken);
+            detail.Submissions = submissions.OrderBy(x => x.VersionNo).Select(x => new SubmissionSummaryDto
+            {
+                Id = x.Id,
+                Kind = "Đề cương",
+                VersionNo = x.VersionNo,
+                SubmittedBy = submitters.GetValueOrDefault(x.SubmittedById, "Tài khoản đã xóa"),
+                SubmittedAt = DateTime.SpecifyKind(x.CreatedAt, DateTimeKind.Utc),
+                Late = x.Late,
+                FileName = x.FileName,
+                Note = x.Note
+            }).ToList();
         }
         return TopicResult<TopicDetailDto>.Ok(detail);
     }

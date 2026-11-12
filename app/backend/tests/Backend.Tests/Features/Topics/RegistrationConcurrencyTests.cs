@@ -57,6 +57,7 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
         services.AddScoped<IRoundRepository, RoundRepository>();
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
+        services.AddScoped<IOutlineRepository, OutlineRepository>();
         _provider = services.BuildServiceProvider();
 
         // Migration thật của ứng dụng (tạo database rồi áp dụng), để kiểm đúng tên chỉ mục duy nhất.

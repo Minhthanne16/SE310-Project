@@ -375,7 +375,7 @@ public sealed class AuthApiTests : IClassFixture<AuthApiTests.AuthApiFactory>
     }
 }
 
-public sealed class InMemoryAvatarStorage : IAvatarStorage
+public sealed class InMemoryAvatarStorage : IAvatarStorage, IDocumentStorage
 {
     private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte[]> _objects = new();
     public bool FailNextSave { get; set; }

@@ -62,7 +62,7 @@ Ba endpoint chỉ dành cho vai trò `Student`; lỗi dùng `ApiResponse`.
 
 ## Chưa làm
 
-- **Điều kiện "nhóm chưa nộp đề cương" của PDR-047:** chưa kiểm được vì chưa có mô-đun nộp bài (P04). Phải chặn thêm ở `CancelRegistrationHandler` khi có.
+- ~~**Điều kiện "nhóm chưa nộp đề cương" của PDR-047:** chưa kiểm được vì chưa có mô-đun nộp bài (P04).~~ Đã chặn từ 2026-11-12 ([PDR-057](PDR-057-de-cuong-va-yeu-cau-chinh-sua.md)): hủy sau khi nộp đề cương trả 409 "Nhóm đã nộp đề cương nên không hủy ghi danh được."
 - **Đề xuất đề tài (P03-S03)** dùng chung bảng nhóm này khi làm.
 
 ## Giao diện sinh viên (2026-11-08)

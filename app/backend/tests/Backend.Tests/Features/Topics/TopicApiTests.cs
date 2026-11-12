@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using Backend.Application.Common.Storage;
 using Backend.Domain.Entities;
 using Backend.Domain.Interfaces;
 using Backend.Infrastructure.Data;
@@ -174,6 +175,98 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
         Assert.Contains("Nhập mô tả đề tài.", errors);
     }
 
+    // P04-S01 qua HTTP: multipart, tải PDF, phân quyền theo vai trò và mã lỗi (PDR-013, PDR-057).
+    [Fact]
+    public async Task OutlineEndpointsOverHttp()
+    {
+        var staff = await Login(UserRole.AcademicAffairs);
+        var lecturer = await Login(UserRole.Lecturer);
+        var otherLecturer = await Login(UserRole.Lecturer);
+        var rep = await Login(UserRole.Student);
+        var outsider = await Login(UserRole.Student);
+        var roundId = await RunningRound(staff, [lecturer.Code, otherLecturer.Code], [rep.Code, outsider.Code]);
+        var topicId = (await ReadJson(await Send(HttpMethod.Post, "/api/topics", lecturer, NewTopic(roundId))))
+            .GetProperty("data").GetProperty("id").GetGuid();
+        await Send(HttpMethod.Post, $"/api/rounds/{roundId}/topics/publish", staff);
+        await Send(HttpMethod.Post, $"/api/topics/{topicId}/registration", rep, new { memberCodes = Array.Empty<string>() });
+        var url = $"/api/topics/{topicId}/outline";
+        var pdf = System.Text.Encoding.UTF8.GetBytes("%PDF-1.7\nđề cương\n%%EOF");
+
+        var empty = await ReadJson(await Send(HttpMethod.Get, url, rep));
+        Assert.Equal("member", empty.GetProperty("data").GetProperty("viewerRole").GetString());
+        Assert.True(empty.GetProperty("data").GetProperty("canSubmit").GetBoolean());
+        Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Get, url, outsider)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Get, url, otherLecturer)).StatusCode);
+        Assert.Equal("staff", (await ReadJson(await Send(HttpMethod.Get, url, staff))).GetProperty("data").GetProperty("viewerRole").GetString());
+
+        Assert.Equal(HttpStatusCode.BadRequest, (await Upload(url, rep, null, "a.pdf")).StatusCode);
+        var notPdf = await Upload(url, rep, System.Text.Encoding.UTF8.GetBytes("hello"), "a.pdf");
+        Assert.Equal(HttpStatusCode.BadRequest, notPdf.StatusCode);
+        Assert.Equal("Tệp không phải PDF.", (await ReadJson(notPdf)).GetProperty("message").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden, (await Upload(url, lecturer, pdf, "a.pdf")).StatusCode);
+
+        var submitted = await Upload(url, rep, pdf, "De cuong nhom.pdf", "Bản đầu");
+        Assert.Equal(HttpStatusCode.OK, submitted.StatusCode);
+        var v1 = (await ReadJson(submitted)).GetProperty("data").GetProperty("submissions")[0];
+        Assert.Equal(1, v1.GetProperty("versionNo").GetInt32());
+        Assert.Equal("Bản đầu", v1.GetProperty("note").GetString());
+        var v1Id = v1.GetProperty("id").GetGuid();
+
+        var file = await Send(HttpMethod.Get, $"{url}/submissions/{v1Id}/file", lecturer);
+        Assert.Equal(HttpStatusCode.OK, file.StatusCode);
+        Assert.Equal("application/pdf", file.Content.Headers.ContentType!.MediaType);
+        Assert.Equal("nosniff", file.Headers.GetValues("X-Content-Type-Options").Single());
+        Assert.Equal("attachment", file.Content.Headers.ContentDisposition!.DispositionType);
+        Assert.Equal(pdf, await file.Content.ReadAsByteArrayAsync());
+        Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Get, $"{url}/submissions/{v1Id}/file", outsider)).StatusCode);
+
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Post, $"{url}/requests", rep, new { content = "x" })).StatusCode);
+        var blank = await Send(HttpMethod.Post, $"{url}/requests", lecturer, new { content = "  " });
+        Assert.Equal(HttpStatusCode.BadRequest, blank.StatusCode);
+        var created = await Send(HttpMethod.Post, $"{url}/requests", lecturer, new { content = "Bổ sung phạm vi" });
+        Assert.Equal(HttpStatusCode.OK, created.StatusCode);
+        var requestId = (await ReadJson(created)).GetProperty("data").GetProperty("requests")[0].GetProperty("id").GetGuid();
+
+        var studentView = (await ReadJson(await Send(HttpMethod.Get, url, rep))).GetProperty("data");
+        Assert.Equal("open", studentView.GetProperty("requests")[0].GetProperty("status").GetString());
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Post, $"{url}/requests/{requestId}/resolve", rep)).StatusCode);
+
+        var blocked = await Send(HttpMethod.Post, $"{url}/approve", lecturer, new { submissionId = v1Id });
+        Assert.Equal(HttpStatusCode.Conflict, blocked.StatusCode);
+        Assert.Equal("Còn 1 yêu cầu chỉnh sửa chưa hoàn tất.", (await ReadJson(blocked)).GetProperty("message").GetString());
+        Assert.Equal(HttpStatusCode.Conflict, (await Send(HttpMethod.Post, $"{url}/requests/{requestId}/resolve", lecturer)).StatusCode);
+
+        var v2Id = (await ReadJson(await Upload(url, rep, pdf, "v2.pdf", "Đã bổ sung phạm vi")))
+            .GetProperty("data").GetProperty("submissions")[0].GetProperty("id").GetGuid();
+        Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Put, $"{url}/submissions/{v2Id}/comment", lecturer, new { comment = "Ổn" })).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await Send(HttpMethod.Post, $"{url}/requests/{requestId}/resolve", lecturer)).StatusCode);
+        var approved = await Send(HttpMethod.Post, $"{url}/approve", lecturer, new { submissionId = v2Id });
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
+        Assert.Equal(2, (await ReadJson(approved)).GetProperty("data").GetProperty("approvedVersionNo").GetInt32());
+
+        var detail = (await ReadJson(await Send(HttpMethod.Get, $"/api/topics/{topicId}", rep))).GetProperty("data");
+        Assert.Equal(JsonValueKind.String, detail.GetProperty("outlineApprovedAt").ValueKind);
+        Assert.Equal(2, detail.GetProperty("submissions").GetArrayLength());
+        var mine = (await ReadJson(await Send(HttpMethod.Get, $"/api/topics/mine?roundId={roundId}", lecturer))).GetProperty("data");
+        Assert.Equal(2, mine.GetProperty("items")[0].GetProperty("outline").GetProperty("versions").GetInt32());
+        Assert.Equal(HttpStatusCode.Conflict, (await Upload(url, rep, pdf, "v3.pdf")).StatusCode);
+    }
+
+    private async Task<HttpResponseMessage> Upload(string url, Account who, byte[]? content, string fileName, string? note = null)
+    {
+        var form = new MultipartFormDataContent();
+        if (content is not null)
+        {
+            var part = new ByteArrayContent(content);
+            part.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+            form.Add(part, "file", fileName);
+        }
+        if (note is not null) form.Add(new StringContent(note), "note");
+        var request = new HttpRequestMessage(HttpMethod.Post, $"{url}/submissions") { Content = form };
+        request.Headers.Add("Cookie", $"{CookieName}={who.Cookie}");
+        return await Client().SendAsync(request);
+    }
+
     private static object NewTopic(Guid roundId, string title = "Hệ thống gợi ý khóa học", string description = "Gợi ý theo lịch sử học tập.") => new
     {
         roundId, title, field = "Trí tuệ nhân tạo", description, requirements = "Biết Python"
@@ -235,6 +328,7 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
         private readonly SqliteConnection _connection = new("Data Source=:memory:");
         private readonly DbContextOptions<ApplicationDbContext> _options;
         public AuthApiTests.TestUserStore Users { get; } = new();
+        public InMemoryAvatarStorage Files { get; } = new();
 
         public Factory()
         {
@@ -276,6 +370,8 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
                 services.AddScoped<ITopicRepository, TopicRepository>();
                 services.RemoveAll<IGroupRepository>();
                 services.AddScoped<IGroupRepository, GroupRepository>();
+                services.RemoveAll<IDocumentStorage>();
+                services.AddSingleton<IDocumentStorage>(Files);
             });
         }
 
