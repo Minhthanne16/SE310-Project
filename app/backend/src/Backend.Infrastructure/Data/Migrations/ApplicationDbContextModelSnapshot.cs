@@ -364,6 +364,63 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.RevisionRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RaisedOnSubmissionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ResolvedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TopicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedById");
+
+                    b.HasIndex("RaisedOnSubmissionId");
+
+                    b.HasIndex("TopicId", "ResolvedAt");
+
+                    b.ToTable("RevisionRequests");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.RevisionRequestLink", b =>
+                {
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RequestId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("SubmissionId", "RequestId");
+
+                    b.HasIndex("RequestId");
+
+                    b.ToTable("RevisionRequestLinks");
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.RoundMilestone", b =>
                 {
                     b.Property<Guid>("Id")
@@ -440,65 +497,6 @@ namespace Backend.Infrastructure.Data.Migrations
                         .IsUnique();
 
                     b.ToTable("RoundParticipants");
-                });
-
-            modelBuilder.Entity("Backend.Domain.Entities.Submission", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("FileName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<bool>("IsLate")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Kind")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<string>("Note")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<string>("ObjectKey")
-                        .IsRequired()
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<long>("SizeBytes")
-                        .HasColumnType("bigint");
-
-                    b.Property<Guid>("SubmittedById")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("TopicId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Version")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ObjectKey")
-                        .IsUnique();
-
-                    b.HasIndex("SubmittedById");
-
-                    b.HasIndex("TopicId", "Kind", "Version")
-                        .IsUnique();
-
-                    b.ToTable("Submissions");
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.ThesisGroup", b =>
@@ -619,6 +617,15 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.Property<int>("Number")
                         .HasColumnType("integer");
 
+                    b.Property<DateTime?>("OutlineApprovedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("OutlineApprovedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("OutlineApprovedSubmissionId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Requirements")
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
@@ -650,7 +657,9 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("GroupId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasDatabaseName("IX_ThesisTopics_ActiveGroupId")
+                        .HasFilter("\"GroupId\" IS NOT NULL AND \"Status\" IN ('PendingApproval', 'Registered', 'Rejected')");
 
                     b.HasIndex("SupervisorId");
 
@@ -732,6 +741,71 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.HasIndex("GroupId", "CreatedAt");
 
                     b.ToTable("TopicRegistrations");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.TopicSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<bool>("Late")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("ObjectKey")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("ReviewComment")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<long>("SizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<Guid>("SubmittedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("TopicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VersionNo")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmittedById");
+
+                    b.HasIndex("TopicId", "Kind", "VersionNo")
+                        .IsUnique();
+
+                    b.ToTable("TopicSubmissions");
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.User", b =>
@@ -951,6 +1025,42 @@ namespace Backend.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.RevisionRequest", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("CreatedById")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.TopicSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("RaisedOnSubmissionId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.ThesisTopic", null)
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.RevisionRequestLink", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.RevisionRequest", null)
+                        .WithMany()
+                        .HasForeignKey("RequestId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.TopicSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.RoundMilestone", b =>
                 {
                     b.HasOne("Backend.Domain.Entities.ThesisRound", null)
@@ -977,23 +1087,6 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.Navigation("Round");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("Backend.Domain.Entities.Submission", b =>
-                {
-                    b.HasOne("Backend.Domain.Entities.User", "SubmittedBy")
-                        .WithMany()
-                        .HasForeignKey("SubmittedById")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("Backend.Domain.Entities.ThesisTopic", null)
-                        .WithMany()
-                        .HasForeignKey("TopicId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("SubmittedBy");
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.ThesisGroup", b =>
@@ -1056,6 +1149,21 @@ namespace Backend.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.ThesisTopic", null)
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.TopicSubmission", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("SubmittedById")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("Backend.Domain.Entities.ThesisTopic", null)

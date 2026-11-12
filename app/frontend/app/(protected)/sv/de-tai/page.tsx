@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { StudentWorkspacePage } from '@/features/submissions/components/StudentWorkspacePage';
+import { StudentMyTopicPage } from '@/features/outline/components/StudentMyTopicPage';
 
 export const metadata: Metadata = {
   title: 'Đề tài của tôi · QLKLTN',
 };
 
-export default function StudentWorkspace() {
-  return <StudentWorkspacePage />;
+export default function Page() {
+  return <StudentMyTopicPage />;
 }

@@ -13,9 +13,14 @@ import type { Round } from '@/types/round';
 import type {
   LecturerLoad,
   LecturerLoadDto,
+  LecturerProposals,
   LecturerTopicList,
   MyRegistration,
+  ProposalInput,
+  ProposalUpdateInput,
   RoundTopicList,
+  StudentProposals,
+  TopicPerson,
   Topic,
   TopicDetailDto,
   TopicDto,
@@ -60,8 +65,8 @@ const json = (method: string, body?: unknown): RequestInit => ({
   body: body === undefined ? undefined : JSON.stringify(body),
 });
 
-// TopicDto có phần đề tài (P03-S01) và nhóm (P03-S02); phản biện, hội đồng, bài nộp
-// và điểm chưa có API nên để trống (các màn hiển thị "chưa có").
+// TopicDto có phần đề tài (P03-S01), nhóm (P03-S02) và đề cương (P04-S01); phản biện,
+// hội đồng, bài nộp giữa/cuối kỳ và điểm chưa có API nên để trống (các màn hiển thị "chưa có").
 export function toTopic(dto: TopicDto | TopicDetailDto): Topic {
   return {
     id: dto.id,
@@ -78,9 +83,21 @@ export function toTopic(dto: TopicDto | TopicDetailDto): Topic {
     reviewer: null,
     council: null,
     defense: null,
-    outlineApprovedAt: null,
+    outlineApprovedAt: dto.outlineApprovedAt ?? null,
     finalLockedVersionNo: null,
-    submissions: [],
+    submissions:
+      'submissions' in dto
+        ? dto.submissions.map((s) => ({
+            id: s.id,
+            versionNo: s.versionNo,
+            kind: s.kind,
+            submittedBy: s.submittedBy,
+            submittedAt: s.submittedAt,
+            late: s.late,
+            fileName: s.fileName,
+            note: s.note ?? '',
+          }))
+        : [],
     scores: [],
     history:
       'history' in dto
@@ -269,3 +286,73 @@ export function createStudentTopicService(): StudentTopicService {
 
 export const studentTopicService: StudentTopicService =
   createStudentTopicService();
+
+// --- Đề xuất đề tài (P03-S03) ---
+
+const proposalBody = (input: ProposalInput | ProposalUpdateInput) => ({
+  ...('roundId' in input ? { roundId: input.roundId } : {}),
+  supervisorId: input.supervisorId,
+  title: input.title,
+  field: input.field,
+  description: input.description,
+  requirements: input.requirements.trim() || null,
+  ...('memberCodes' in input ? { memberCodes: input.memberCodes } : {}),
+});
+
+export interface StudentProposalService {
+  listRounds(): Promise<Round[]>;
+  listMine(roundId: string): Promise<StudentProposals>;
+  listSupervisors(roundId: string): Promise<TopicPerson[]>;
+  create(input: ProposalInput): Promise<TopicDto>;
+  update(id: string, input: ProposalUpdateInput): Promise<TopicDto>;
+  cancel(id: string): Promise<TopicDto>;
+}
+
+export function createStudentProposalService(): StudentProposalService {
+  return {
+    listRounds: () => call<Round[]>('/rounds'),
+    listMine: (roundId) =>
+      call<StudentProposals>(`/topics/my-proposals?roundId=${enc(roundId)}`),
+    listSupervisors: (roundId) =>
+      call<TopicPerson[]>(
+        `/topics/proposal-supervisors?roundId=${enc(roundId)}`,
+      ),
+    create: (input) =>
+      call<TopicDto>('/topics/proposals', json('POST', proposalBody(input))),
+    update: (id, input) =>
+      call<TopicDto>(
+        `/topics/proposals/${enc(id)}`,
+        json('PUT', proposalBody(input)),
+      ),
+    cancel: (id) =>
+      call<TopicDto>(`/topics/proposals/${enc(id)}`, json('DELETE')),
+  };
+}
+
+export const studentProposalService: StudentProposalService =
+  createStudentProposalService();
+
+export interface LecturerProposalService {
+  listRounds(): Promise<Round[]>;
+  list(roundId: string): Promise<LecturerProposals>;
+  accept(id: string): Promise<TopicDto>;
+  reject(id: string, reason: string): Promise<TopicDto>;
+}
+
+export function createLecturerProposalService(): LecturerProposalService {
+  return {
+    listRounds: () => call<Round[]>('/rounds'),
+    list: (roundId) =>
+      call<LecturerProposals>(`/topics/proposals?roundId=${enc(roundId)}`),
+    accept: (id) =>
+      call<TopicDto>(`/topics/proposals/${enc(id)}/accept`, json('POST')),
+    reject: (id, reason) =>
+      call<TopicDto>(
+        `/topics/proposals/${enc(id)}/reject`,
+        json('POST', { reason }),
+      ),
+  };
+}
+
+export const lecturerProposalService: LecturerProposalService =
+  createLecturerProposalService();

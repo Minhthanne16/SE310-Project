@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
 import { Download, Search } from 'lucide-react';
 import '@/features/rounds/rounds.css';
 import {
@@ -112,7 +113,6 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
   const [exporting, setExporting] = useState(false);
   const [exportBusy, setExportBusy] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
-  const [exportedText, setExportedText] = useState<string | null>(null);
   const [unassigned, setUnassigned] = useState<Participant[] | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   const [expanded, setExpanded] = useState<string[]>([]);
@@ -343,7 +343,7 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
       }
       await downloadFile(exportFileName(kind, round.name), table);
       setExporting(false);
-      setExportedText(text);
+      toast.success(text);
     } catch (err: unknown) {
       setExportError(errorMessage(err, 'Không xuất được tệp Excel.'));
     } finally {
@@ -470,7 +470,6 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
             title={noTopics ? 'Đợt chưa có đề tài để xuất.' : undefined}
             onClick={() => {
               setExportError(null);
-              setExportedText(null);
               setExporting(true);
             }}
           >
@@ -539,12 +538,6 @@ export const RoundTopicsTab: React.FC<RoundTopicsTabProps> = ({
               ))}
             </ul>
           </details>
-        </div>
-      )}
-
-      {exportedText && (
-        <div role="status" className="rnd-banner rnd-banner-ok">
-          {exportedText}
         </div>
       )}
 

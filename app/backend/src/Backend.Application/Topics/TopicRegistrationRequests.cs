@@ -31,7 +31,7 @@ internal static class RegistrationMapping
         {
             dto.Topic = TopicMapping.ToDto(topic, round, today, viewerIsSupervisor: false,
                 new Dictionary<Guid, ThesisGroup> { [group.Id] = group });
-            dto.CanCancel = open;
+            dto.CanCancel = open && topic.Source == TopicSource.Lecturer && topic.Status == TopicStatus.Registered;
         }
 
         var registrations = await groups.ListRegistrationsAsync(group.Id, cancellationToken);
@@ -151,13 +151,15 @@ public sealed class RegisterTopicHandler(
 }
 
 public sealed class CancelRegistrationHandler(
-    IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, TimeProvider clock)
+    IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, IOutlineRepository outlines, TimeProvider clock)
     : IRequestHandler<CancelRegistrationCommand, TopicResult<MyRegistrationDto>>
 {
     public async Task<TopicResult<MyRegistrationDto>> Handle(CancelRegistrationCommand request, CancellationToken cancellationToken)
     {
         var topic = await topics.GetByIdAsync(request.TopicId, cancellationToken);
         if (topic is null) return Fail(TopicResultStatus.NotFound, TopicRules.NotFoundMessage);
+        if (topic.Source != TopicSource.Lecturer || topic.Status != TopicStatus.Registered)
+            return Fail(TopicResultStatus.Conflict, TopicRules.NotRegisteredMessage);
         var round = (await rounds.GetByIdAsync(topic.RoundId, cancellationToken))!;
         var me = request.StudentId;
         if (!TopicMapping.IsStudentOf(round, me)) return Fail(TopicResultStatus.Forbidden, TopicRules.NotRoundStudentMessage);
@@ -166,7 +168,9 @@ public sealed class CancelRegistrationHandler(
         if (group is null || topic.GroupId != group.Id) return Fail(TopicResultStatus.Conflict, TopicRules.NotRegisteredMessage);
         var today = RoundRules.TodayVietnam(clock);
         if (!TopicRules.RegistrationOpen(round, today)) return Fail(TopicResultStatus.Conflict, TopicRules.RegistrationClosedMessage);
-        // PDR-047 còn yêu cầu "nhóm chưa nộp đề cương": chưa có mô-đun nộp bài (P04), phải chặn thêm tại đây khi có.
+        // PDR-047: chỉ hủy khi nhóm chưa nộp đề cương.
+        if (await outlines.HasOutlineAsync(topic.Id, cancellationToken))
+            return Fail(TopicResultStatus.Conflict, TopicRules.OutlineSubmittedMessage);
 
         var now = clock.GetUtcNow().UtcDateTime;
         var history = TopicMapping.History(topic, me, TopicHistoryCategories.Group, "Hủy ghi danh", now, "Hủy cho cả nhóm; nhóm giữ nguyên thành viên.");

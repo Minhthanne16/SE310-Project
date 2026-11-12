@@ -20,6 +20,11 @@ public class TopicRepository(ApplicationDbContext context) : ITopicRepository
         context.ThesisTopics.Include(t => t.Supervisor).Include(t => t.History).AsSplitQuery()
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
+    public async Task<IReadOnlyList<ThesisTopic>> ListByGroupAsync(Guid groupId, CancellationToken cancellationToken = default) =>
+        await context.ThesisTopics.AsNoTracking().Include(t => t.Supervisor).Include(t => t.History).AsSplitQuery()
+            .Where(t => t.GroupId == groupId && t.Source == TopicSource.StudentProposal)
+            .OrderByDescending(t => t.CreatedAt).ToListAsync(cancellationToken);
+
     public async Task AddAsync(ThesisTopic topic, CancellationToken cancellationToken = default)
     {
         // Số thứ tự = lớn nhất trong đợt + 1; hai GV gửi cùng lúc có thể lấy trùng số nên dựa vào
@@ -48,6 +53,43 @@ public class TopicRepository(ApplicationDbContext context) : ITopicRepository
     {
         context.ThesisTopics.Remove(topic);
         await context.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<bool> UpdatePendingProposalAsync(Guid topicId, Guid supervisorId, string title, string field,
+        string description, string? requirements, DateTime now, TopicHistoryEntry history,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var updated = await context.ThesisTopics
+            .Where(t => t.Id == topicId && t.Source == TopicSource.StudentProposal && t.Status == TopicStatus.PendingApproval)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(t => t.SupervisorId, supervisorId)
+                .SetProperty(t => t.Title, title)
+                .SetProperty(t => t.Field, field)
+                .SetProperty(t => t.Description, description)
+                .SetProperty(t => t.Requirements, requirements)
+                .SetProperty(t => t.UpdatedAt, now), cancellationToken);
+        if (updated == 0) return false;
+
+        context.TopicHistoryEntries.Add(history);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task<bool> TransitionPendingProposalAsync(Guid topicId, TopicStatus nextStatus, DateTime now,
+        TopicHistoryEntry history, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var updated = await context.ThesisTopics
+            .Where(t => t.Id == topicId && t.Source == TopicSource.StudentProposal && t.Status == TopicStatus.PendingApproval)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.Status, nextStatus).SetProperty(t => t.UpdatedAt, now), cancellationToken);
+        if (updated == 0) return false;
+
+        context.TopicHistoryEntries.Add(history);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
     }
 
     public async Task<IReadOnlyDictionary<Guid, string>> GetUserNamesAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default)

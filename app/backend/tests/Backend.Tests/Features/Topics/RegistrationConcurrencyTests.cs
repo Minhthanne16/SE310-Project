@@ -28,7 +28,7 @@ public sealed class PostgresFactAttribute : FactAttribute
     }
 }
 
-// P03-S02 — verification "test tích hợp đồng thời" (PDR-047, PDR-054): nhiều request thật song song
+// P03-S02/P03-S03 — verification "test tích hợp đồng thời" (PDR-012, PDR-047, PDR-054): nhiều request thật song song
 // trên PostgreSQL, mỗi request một DbContext/kết nối riêng, áp dụng đúng migration của ứng dụng.
 public sealed class RegistrationConcurrencyTests : IAsyncLifetime
 {
@@ -57,6 +57,7 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
         services.AddScoped<IRoundRepository, RoundRepository>();
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
+        services.AddScoped<IOutlineRepository, OutlineRepository>();
         _provider = services.BuildServiceProvider();
 
         // Migration thật của ứng dụng (tạo database rồi áp dụng), để kiểm đúng tên chỉ mục duy nhất.
@@ -100,7 +101,7 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
 
     private sealed record Person(Guid Id, string Code);
 
-    private sealed record World(Guid RoundId, Person[] Students, Guid[] Topics);
+    private sealed record World(Guid RoundId, Guid LecturerId, Person[] Students, Guid[] Topics);
 
     private async Task<Person> Seed(UserRole role, string code)
     {
@@ -130,7 +131,7 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
         _clock.Advance(TimeSpan.FromMinutes(1));
         Assert.Equal(RoundResultStatus.Ok, (await Send(new PublishRoundTopicsCommand(round.Id))).Status);
         _clock.Advance(TimeSpan.FromMinutes(1));
-        return new World(round.Id, people.ToArray(), ids.ToArray());
+        return new World(round.Id, lecturer.Id, people.ToArray(), ids.ToArray());
     }
 
     private static RoundMilestonesInputDto Dated()
@@ -156,6 +157,22 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
 
     private Func<Task<TopicResult<MyRegistrationDto>>> Cancel(Person student, Guid topicId) =>
         () => Send(new CancelRegistrationCommand(student.Id, topicId));
+
+    private Func<Task<TopicResult<TopicDto>>> CreateProposal(Person student, Guid roundId, Guid lecturerId, string title) =>
+        () => Send(new CreateProposalCommand(student.Id, new ProposalInputDto
+        {
+            RoundId = roundId,
+            SupervisorId = lecturerId,
+            Title = title,
+            Field = "CNPM",
+            Description = "Mô tả đề xuất"
+        }));
+
+    private Func<Task<TopicResult<TopicDto>>> AcceptProposal(Guid lecturerId, Guid proposalId) =>
+        () => Send(new AcceptProposalCommand(lecturerId, proposalId));
+
+    private Func<Task<TopicResult<TopicDto>>> CancelProposal(Person student, Guid proposalId) =>
+        () => Send(new CancelProposalCommand(student.Id, proposalId));
 
     // Bất biến của PDR-054 sau mọi cuộc đua: một đề tài tối đa một nhóm và một lần ghi danh đang hiệu lực,
     // một sinh viên tối đa một nhóm trong đợt, một nhóm tối đa một đề tài.
@@ -291,5 +308,46 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
         // Ghi danh của nhóm khác thắng hoặc thua tùy thứ tự, nhưng bất biến luôn giữ.
         Assert.Contains(results[1].Status, new[] { TopicResultStatus.Ok, TopicResultStatus.Conflict });
         await AssertInvariants(w.RoundId);
+    }
+
+    [PostgresFact]
+    public async Task AcceptingAndCancellingAProposalAtTheSameTimeAppliesOneDecisionAndOneHistoryEntry()
+    {
+        // Cửa sổ đề xuất chỉ mở sau khi giáo vụ đã công bố danh sách; cần ít nhất một đề tài GV để công bố.
+        var w = await PublishedRound(students: 1, topics: 1);
+        var proposal = (await CreateProposal(w.Students[0], w.RoundId, w.LecturerId, "Đề tài tranh chấp")()).Response.Data!;
+
+        var results = await Race(
+            AcceptProposal(w.LecturerId, proposal.Id),
+            CancelProposal(w.Students[0], proposal.Id));
+
+        Assert.Single(results, result => result.Status == TopicResultStatus.Ok);
+        Assert.Single(results, result => result.Status == TopicResultStatus.Conflict);
+        var saved = await Query(db => db.ThesisTopics.AsNoTracking().SingleAsync(t => t.Id == proposal.Id));
+        Assert.Contains(saved.Status, new[] { TopicStatus.Registered, TopicStatus.Cancelled });
+        Assert.Equal(1, await Query(db => db.TopicHistoryEntries.CountAsync(entry =>
+            entry.TopicId == proposal.Id && (entry.Action == "Chấp nhận đề xuất" || entry.Action == "Hủy đề xuất"))));
+    }
+
+    [PostgresFact]
+    public async Task ConcurrentResubmissionAfterCancellationKeepsOneGroupAndOneActiveProposal()
+    {
+        // Cửa sổ đề xuất chỉ mở sau khi giáo vụ đã công bố danh sách; cần ít nhất một đề tài GV để công bố.
+        var w = await PublishedRound(students: 1, topics: 1);
+        var student = w.Students[0];
+        var first = (await CreateProposal(student, w.RoundId, w.LecturerId, "Đề tài lần một")()).Response.Data!;
+        Assert.Equal(TopicResultStatus.Ok, (await CancelProposal(student, first.Id)()).Status);
+
+        var results = await Race(
+            CreateProposal(student, w.RoundId, w.LecturerId, "Đề tài gửi lại A"),
+            CreateProposal(student, w.RoundId, w.LecturerId, "Đề tài gửi lại B"));
+
+        Assert.Single(results, result => result.Status == TopicResultStatus.Created);
+        Assert.Single(results, result => result.Status == TopicResultStatus.Conflict);
+        Assert.Equal(1, await Query(db => db.ThesisGroups.CountAsync(group => group.RoundId == w.RoundId)));
+        Assert.Equal(1, await Query(db => db.ThesisTopics.CountAsync(topic =>
+            topic.GroupId != null && topic.Status == TopicStatus.PendingApproval)));
+        Assert.Equal(1, await Query(db => db.ThesisTopics.CountAsync(topic =>
+            topic.GroupId != null && topic.Status == TopicStatus.Cancelled)));
     }
 }

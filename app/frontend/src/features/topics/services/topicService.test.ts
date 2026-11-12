@@ -35,10 +35,12 @@ const make = (today = TODAY) => {
 };
 
 describe('seed data', () => {
-  it('covers every status across rounds with one to two students per group', () => {
+  it('covers every ordinary topic status across rounds with one to two students per group', () => {
     const topics = seedTopics();
+    // Đề xuất Đã hủy là bản ghi lịch sử PDR-012 từ API thật, được bao phủ ở
+    // StudentProposalsPage; kho demo này chỉ mô phỏng danh sách đề tài hoạt động.
     expect(new Set(topics.map((t) => t.status))).toEqual(
-      new Set(TOPIC_STATUSES),
+      new Set(TOPIC_STATUSES.filter((status) => status !== 'Đã hủy')),
     );
     const vb1 = topics.filter((t) => t.roundId === VB1);
     expect(vb1.length).toBeGreaterThanOrEqual(15);

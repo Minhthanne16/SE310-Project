@@ -51,8 +51,6 @@ public class TopicSubmissionsDto
     public List<SubmissionKindDto> Kinds { get; set; } = [];
 }
 
-public sealed record SubmissionFile(byte[] Content, string FileName);
-
 public record ListSubmissionsQuery(Guid ViewerId, ViewerRole Role, Guid TopicId) : IRequest<TopicResult<TopicSubmissionsDto>>;
 public record SubmitReportCommand(Guid ViewerId, ViewerRole Role, Guid TopicId, string? Kind, string? FileName, byte[] Content, string? Note)
     : IRequest<TopicResult<TopicSubmissionsDto>>;
@@ -84,14 +82,23 @@ internal static class SubmissionMapping
         return new SubmissionContext(topic, round, access);
     }
 
-    public static TopicSubmissionsDto ToDto(SubmissionContext context, IReadOnlyList<Submission> submissions, DateOnly today) => new()
+    public static async Task<TopicSubmissionsDto> BuildAsync(SubmissionContext context, ISubmissionRepository repository, DateOnly today,
+        CancellationToken cancellationToken)
+    {
+        var list = await repository.ListReportsAsync(context.Topic.Id, cancellationToken);
+        var people = await repository.GetSubmittersAsync(list.Select(s => s.SubmittedById).Distinct().ToList(), cancellationToken);
+        return ToDto(context, list, people, today);
+    }
+
+    private static TopicSubmissionsDto ToDto(SubmissionContext context, IReadOnlyList<TopicSubmission> submissions,
+        IReadOnlyDictionary<Guid, SubmitterInfo> people, DateOnly today) => new()
     {
         TopicId = context.Topic.Id,
         Kinds = SubmissionRules.Kinds.Select(kind =>
         {
             var milestone = context.Round.Milestones.FirstOrDefault(m => m.Key == SubmissionRules.MilestoneOf(kind));
             var blocker = SubmissionRules.Blocker(context.Topic, context.Round, kind, today);
-            var versions = submissions.Where(s => s.Kind == kind).OrderByDescending(s => s.Version).ToList();
+            var versions = submissions.Where(s => s.Kind == kind).OrderByDescending(s => s.VersionNo).ToList();
             return new SubmissionKindDto
             {
                 Kind = SubmissionRules.KindName(kind),
@@ -111,7 +118,7 @@ internal static class SubmissionMapping
                 Versions = versions.Select((s, index) => new SubmissionVersionDto
                 {
                     Id = s.Id,
-                    Version = s.Version,
+                    Version = s.VersionNo,
                     FileName = s.FileName,
                     SizeBytes = s.SizeBytes,
                     Note = s.Note,
@@ -119,10 +126,10 @@ internal static class SubmissionMapping
                     SubmittedBy = new TopicPersonDto
                     {
                         Id = s.SubmittedById,
-                        Code = s.SubmittedBy?.UserCode ?? string.Empty,
-                        Name = s.SubmittedBy?.FullName ?? string.Empty
+                        Code = people.GetValueOrDefault(s.SubmittedById)?.Code ?? string.Empty,
+                        Name = people.GetValueOrDefault(s.SubmittedById)?.Name ?? string.Empty
                     },
-                    IsLate = s.IsLate,
+                    IsLate = s.Late,
                     IsLatest = index == 0,
                     DownloadUrl = $"/api/submissions/{s.Id}/file"
                 }).ToList()
@@ -140,8 +147,7 @@ public sealed class ListSubmissionsHandler(IRoundRepository rounds, ITopicReposi
         var context = await SubmissionMapping.Load(request.TopicId, request.ViewerId, request.Role, topics, rounds, groups, cancellationToken);
         if (context is null || context.Access == SubmissionAccess.None)
             return TopicResult<TopicSubmissionsDto>.Fail(TopicResultStatus.NotFound, SubmissionRules.NotFoundMessage);
-        var list = await submissions.ListByTopicAsync(context.Topic.Id, cancellationToken);
-        return TopicResult<TopicSubmissionsDto>.Ok(SubmissionMapping.ToDto(context, list, RoundRules.TodayVietnam(clock)));
+        return TopicResult<TopicSubmissionsDto>.Ok(await SubmissionMapping.BuildAsync(context, submissions, RoundRules.TodayVietnam(clock), cancellationToken));
     }
 }
 
@@ -173,7 +179,7 @@ public sealed class SubmitReportHandler(IRoundRepository rounds, ITopicRepositor
         var milestone = context.Round.Milestones.FirstOrDefault(m => m.Key == SubmissionRules.MilestoneOf(kind));
         var late = SubmissionRules.Window(milestone, today) == SubmissionWindow.Late;
 
-        var submission = new Submission
+        var submission = new TopicSubmission
         {
             TopicId = context.Topic.Id,
             Kind = kind,
@@ -182,7 +188,7 @@ public sealed class SubmitReportHandler(IRoundRepository rounds, ITopicRepositor
             SizeBytes = request.Content.LongLength,
             Note = note,
             SubmittedById = request.ViewerId,
-            IsLate = late,
+            Late = late,
             CreatedAt = now
         };
         var history = TopicMapping.History(context.Topic, request.ViewerId, TopicHistoryCategories.Submission,
@@ -194,7 +200,7 @@ public sealed class SubmitReportHandler(IRoundRepository rounds, ITopicRepositor
         try
         {
             // Số phiên bản chỉ có sau khi lưu; mục lịch sử lấy số đó trong repository.
-            await submissions.AddAsync(submission, history, cancellationToken);
+            await submissions.AddReportAsync(submission, history, cancellationToken);
         }
         catch
         {
@@ -209,9 +215,8 @@ public sealed class SubmitReportHandler(IRoundRepository rounds, ITopicRepositor
             throw;
         }
 
-        var list = await submissions.ListByTopicAsync(context.Topic.Id, cancellationToken);
-        var message = late ? $"Đã nộp bản {submission.Version} (nộp trễ)." : $"Đã nộp bản {submission.Version}.";
-        return TopicResult<TopicSubmissionsDto>.Created(SubmissionMapping.ToDto(context, list, today), message);
+        var message = late ? $"Đã nộp bản {submission.VersionNo} (nộp trễ)." : $"Đã nộp bản {submission.VersionNo}.";
+        return TopicResult<TopicSubmissionsDto>.Created(await SubmissionMapping.BuildAsync(context, submissions, today, cancellationToken), message);
     }
 }
 
@@ -221,7 +226,7 @@ public sealed class GetSubmissionFileHandler(IRoundRepository rounds, ITopicRepo
 {
     public async Task<TopicResult<SubmissionFile>> Handle(GetSubmissionFileQuery request, CancellationToken cancellationToken)
     {
-        var submission = await submissions.GetByIdAsync(request.SubmissionId, cancellationToken);
+        var submission = await submissions.GetReportAsync(request.SubmissionId, cancellationToken);
         var context = submission is null ? null
             : await SubmissionMapping.Load(submission.TopicId, request.ViewerId, request.Role, topics, rounds, groups, cancellationToken);
         if (submission is null || context is null || context.Access == SubmissionAccess.None)

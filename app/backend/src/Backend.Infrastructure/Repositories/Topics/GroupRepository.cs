@@ -23,7 +23,8 @@ public class GroupRepository(ApplicationDbContext context) : IGroupRepository
     }
 
     public Task<ThesisTopic?> GetTopicOfGroupAsync(Guid groupId, CancellationToken cancellationToken = default) =>
-        context.ThesisTopics.AsNoTracking().Include(t => t.Supervisor).FirstOrDefaultAsync(t => t.GroupId == groupId, cancellationToken);
+        context.ThesisTopics.AsNoTracking().Include(t => t.Supervisor)
+            .FirstOrDefaultAsync(t => t.GroupId == groupId && t.Status != TopicStatus.Cancelled, cancellationToken);
 
     public async Task<IReadOnlyList<(TopicRegistration Registration, ThesisTopic Topic)>> ListRegistrationsAsync(Guid groupId, CancellationToken cancellationToken = default)
     {
@@ -38,6 +39,44 @@ public class GroupRepository(ApplicationDbContext context) : IGroupRepository
     {
         if (groupIds.Count == 0) return new Dictionary<Guid, ThesisGroup>();
         return await WithMembers().Where(g => groupIds.Contains(g.Id)).ToDictionaryAsync(g => g.Id, cancellationToken);
+    }
+
+    public async Task<ProposalCreateOutcome> CreateProposalAsync(ThesisGroup group, bool newGroup, ThesisTopic proposal,
+        CancellationToken cancellationToken = default)
+    {
+        for (var attempt = 1; attempt <= 3; attempt++)
+        {
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                if (newGroup) context.ThesisGroups.Add(group);
+                proposal.Number = (await context.ThesisTopics.Where(t => t.RoundId == proposal.RoundId)
+                    .MaxAsync(t => (int?)t.Number, cancellationToken) ?? 0) + 1;
+                context.ThesisTopics.Add(proposal);
+                await context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                return ProposalCreateOutcome.Created;
+            }
+            catch (DbUpdateException ex) when (UniqueViolation(ex, "IX_GroupMembers_RoundId_StudentId"))
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                Reset();
+                return ProposalCreateOutcome.MemberTaken;
+            }
+            catch (DbUpdateException ex) when (UniqueViolation(ex, "IX_ThesisTopics_ActiveGroupId"))
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                Reset();
+                return ProposalCreateOutcome.GroupHasTopic;
+            }
+            catch (DbUpdateException) when (attempt < 3)
+            {
+                await transaction.RollbackAsync(CancellationToken.None);
+                Reset();
+            }
+        }
+
+        return ProposalCreateOutcome.GroupHasTopic;
     }
 
     public async Task<RegisterOutcome> RegisterAsync(ThesisGroup group, bool newGroup, Guid topicId, TopicRegistration registration,
@@ -81,7 +120,7 @@ public class GroupRepository(ApplicationDbContext context) : IGroupRepository
             Reset();
             return RegisterOutcome.MemberTaken;
         }
-        catch (DbUpdateException ex) when (UniqueViolation(ex, "IX_ThesisTopics_GroupId"))
+        catch (DbUpdateException ex) when (UniqueViolation(ex, "IX_ThesisTopics_ActiveGroupId"))
         {
             await transaction.RollbackAsync(CancellationToken.None);
             Reset();

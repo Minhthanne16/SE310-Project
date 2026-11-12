@@ -68,7 +68,9 @@ docs/
 │   ├── PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md
 │   ├── PDR-054-ghi-danh-nhom-de-tai-cong-bo.md
 │   ├── PDR-055-mat-khau-giang-vien-giao-vu-va-nhap-excel.md
-│   └── PDR-056-nop-bao-cao-giua-ky-cuoi-ky.md
+│   ├── PDR-056-thong-bao-thao-tac-bang-toast.md
+│   ├── PDR-057-de-cuong-va-yeu-cau-chinh-sua.md
+│   └── PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md
 ├── product/
 │   ├── GLOSSARY.md
 │   ├── ROLES.md
@@ -93,6 +95,7 @@ docs/
 ├── CONTENT.md
 ├── FEATURE.md
 ├── NEON.md
+├── DESIGN.md
 ├── OPEN_QUESTIONS.md
 ├── PROJECT_SPEC.md
 ├── README.md
@@ -107,6 +110,7 @@ docs/
 | `architecture/` | Khái niệm miền, tác nhân và ranh giới hệ thống; không phải sơ đồ triển khai chi tiết. |
 | `decisions/` | Các lựa chọn đã có căn cứ rõ ràng, không chứa giả định mới. |
 | `plan/` | Lộ trình phase và điểm cần thảo luận; không tự chốt câu hỏi mở. |
+| `DESIGN.md` | Quy tắc giao diện, bảng token và thành phần dùng chung cho người và AI; đọc trước khi sửa frontend. |
 | `DESIGN/` | Tài liệu bàn giao giao diện hiện có, được giữ tách khỏi yêu cầu nghiệp vụ để tránh nhầm chi tiết UI với quy tắc sản phẩm. |
 | `NEON.md` | Hướng dẫn kỹ thuật hiện có của repo, giữ nguyên vì được README gốc tham chiếu. |
 | `README.md` | Con trỏ ngắn về `CONTENT.md` và vị trí tài liệu thiết kế giao diện. |

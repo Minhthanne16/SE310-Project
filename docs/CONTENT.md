@@ -23,6 +23,7 @@
 | `requirements/` | Luồng cấp cao, quy tắc nghiệp vụ và ràng buộc phi chức năng. |
 | `architecture/` | Bối cảnh hệ thống và mô hình miền ở mức khái niệm. |
 | `decisions/` | Các quyết định đã được nguồn tài liệu hoặc người phụ trách sản phẩm xác nhận, kèm lý do và hệ quả. |
+| [DESIGN.md](DESIGN.md) | **Đọc đầu tiên khi làm giao diện.** Quy tắc bắt buộc, bảng token, thành phần dùng chung và cách kiểm tra để người và AI bám đúng style; nguồn giá trị là `:root` trong `app/frontend/src/index.css`. |
 | `DESIGN/` | Bàn giao giao diện có sẵn, gồm Markdown và sitemap hình ảnh; chỉ là tài liệu bổ sung, không tự thay đổi yêu cầu nghiệp vụ. |
 | [`plan/`](plan/README.md) | Rà soát điểm bất nhất và lộ trình phase đề xuất để hoàn thiện QLKLTN; không thay thế quyết định nghiệp vụ. |
 | [NEON.md](NEON.md) | Hướng dẫn kỹ thuật có sẵn cho PostgreSQL/Neon của repo; không thay thế yêu cầu QLKLTN. |

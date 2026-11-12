@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IRoundRepository, RoundRepository>();
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
+        services.AddScoped<IOutlineRepository, OutlineRepository>();
         services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
@@ -59,14 +60,15 @@ public static class DependencyInjection
                 .WithSSL(storage.UseSsl)
                 .Build());
             services.AddSingleton(storage);
-            services.AddSingleton<MinioAvatarStorage>();
-            services.AddSingleton<IAvatarStorage>(p => p.GetRequiredService<MinioAvatarStorage>());
-            services.AddSingleton<IDocumentStorage>(p => p.GetRequiredService<MinioAvatarStorage>());
+            services.AddSingleton<MinioObjectStorage>();
+            services.AddSingleton<IAvatarStorage>(sp => sp.GetRequiredService<MinioObjectStorage>());
+            services.AddSingleton<IDocumentStorage>(sp => sp.GetRequiredService<MinioObjectStorage>());
         }
         else
         {
-            services.AddSingleton<IAvatarStorage, UnavailableAvatarStorage>();
-            services.AddSingleton<IDocumentStorage, UnavailableAvatarStorage>();
+            services.AddSingleton<UnavailableObjectStorage>();
+            services.AddSingleton<IAvatarStorage>(sp => sp.GetRequiredService<UnavailableObjectStorage>());
+            services.AddSingleton<IDocumentStorage>(sp => sp.GetRequiredService<UnavailableObjectStorage>());
         }
 
         return services;

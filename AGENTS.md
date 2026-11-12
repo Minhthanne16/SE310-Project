@@ -7,6 +7,14 @@
 - Đọc `docs/OPEN_QUESTIONS.md` trước khi code phần liên quan. Nếu còn câu hỏi mở hoặc tài liệu nghiệp vụ và `docs/DESIGN/` mâu thuẫn, dừng việc code để làm rõ/ghi nhận quyết định; không tự chọn một quy tắc.
 - Khi thay đổi làm ảnh hưởng yêu cầu, quy tắc, vai trò, mô hình miền hoặc quyết định đã chốt, cập nhật tài liệu liên quan trong cùng tác vụ trước khi xem thay đổi mã là hoàn thành.
 
+## Quy tắc giao diện (bắt buộc khi sửa frontend)
+
+- Trước khi viết hoặc sửa CSS, class, component giao diện, đọc [docs/DESIGN.md](docs/DESIGN.md) rồi mới tới `docs/DESIGN/02` và `docs/DESIGN/03`. Nguồn giá trị là khối `:root` trong `app/frontend/src/index.css`.
+- Không viết mã hex hay `rgb()` mới trong CSS, không dùng `style={{…}}` cho màu/cỡ chữ/bo góc: dùng `var(--…)` và class. Cần màu hay kích thước mới thì thêm token vào `:root` và cập nhật `docs/DESIGN.md` cùng thay đổi.
+- Tái dùng thành phần `app-*` (nút, chip, bảng, popup, ngăn kéo, trạng thái trống) thay vì tạo bộ lớp mới. Vùng bấm tối thiểu 40px, chip luôn có chữ, popup/lỗi theo ô/thông báo có `role` và `aria-*` như `docs/DESIGN.md` nêu.
+- Sau khi sửa giao diện, chạy các lệnh kiểm tra ở mục cuối `docs/DESIGN.md` (hex còn sót, cỡ chữ ngoài thang, vùng bấm nhỏ) cùng `npm run typecheck`, `npm run lint`, `npm test`.
+- Thông báo kết quả sau thao tác thêm, sửa, xóa, gửi dùng toast (`toast.success/error`); banner `role="note"` chỉ cho ghi chú cần ở lại; lỗi theo ô và lỗi trong form giữ tại chỗ (PDR-058). Không tự dựng kiểu báo thứ ba.
+
 ## Phạm vi và cấu trúc
 
 - File này áp dụng cho toàn bộ repository. Đọc `README.md` và file liên quan trước khi sửa.
@@ -35,7 +43,7 @@ Chỉ dùng skill thực sự phù hợp với tác vụ, theo hướng dẫn c�
 1. **Trước khi code backend**, kiểm tra frontend đang gọi endpoint nào và dùng hợp đồng nào: `app/frontend/src/api/request.ts`, `app/frontend/src/features/*/services/`, `app/frontend/src/types/`, các component gọi service, `app/frontend/next.config.ts` và test liên quan. Ghi lại method, URL, request body, response body, mã trạng thái, lỗi và trường hợp thiếu dữ liệu.
 2. **Trước khi code frontend**, kiểm tra backend thực sự cung cấp gì: controller trong `app/backend/src/Backend.API/`, DTO/validator/handler trong `app/backend/src/Backend.Application/`, `ApiResponse<T>`, middleware lỗi và OpenAPI/Scalar khi API đang chạy. Không suy đoán endpoint từ tên file hoặc chỉ dựa vào type phía frontend.
 3. Mỗi thay đổi hợp đồng API phải đối chiếu **cả hai phía trước khi sửa**, cập nhật cả hai phía trong cùng tác vụ nếu cần, rồi kiểm tra lại bằng test hoặc request thực tế. Không âm thầm đổi tên field, kiểu, nullability, route, status code, cấu trúc lỗi hay quy tắc xác thực.
-4. Quy ước hiện tại: frontend gọi `/api/products`; Next.js proxy đến backend; response thành công dùng `{ success, message, data, errors? }`. `apiRequest<T>` trả `data` và ném lỗi nếu HTTP lỗi hoặc `success=false`. Backend dùng `api/[controller]` với `ProductsController` cho GET/POST/PUT/DELETE. Xác thực dùng JWT trong cookie HttpOnly `qlkltn_access` qua `AuthController` (`/api/auth/*`); endpoint QLKLTN mới phải khai báo `[Authorize]` hoặc `[Authorize(Roles = AppRoles.…)]`, và 401/403 trả `ApiResponse` (xem `docs/decisions/PDR-002-…`). Tệp bài nộp đi qua backend bằng `multipart/form-data` (`/api/topics/{id}/submissions`, `/api/submissions/{id}/file`); frontend không nhận khóa hay URL của object storage (xem `docs/decisions/PDR-056-…`). Kiểm tra mã nguồn hiện tại vì quy ước có thể thay đổi.
+4. Quy ước hiện tại: frontend gọi `/api/products`; Next.js proxy đến backend; response thành công dùng `{ success, message, data, errors? }`. `apiRequest<T>` trả `data` và ném lỗi nếu HTTP lỗi hoặc `success=false`. Backend dùng `api/[controller]` với `ProductsController` cho GET/POST/PUT/DELETE. Xác thực dùng JWT trong cookie HttpOnly `qlkltn_access` qua `AuthController` (`/api/auth/*`); endpoint QLKLTN mới phải khai báo `[Authorize]` hoặc `[Authorize(Roles = AppRoles.…)]`, và 401/403 trả `ApiResponse` (xem `docs/decisions/PDR-002-…`). Tệp bài nộp đi qua backend bằng `multipart/form-data` (`/api/topics/{id}/submissions`, `/api/submissions/{id}/file`); frontend không nhận khóa hay URL của object storage (xem `docs/decisions/PDR-058-…`). Kiểm tra mã nguồn hiện tại vì quy ước có thể thay đổi.
 5. Khi thay đổi entity hoặc DTO có ảnh hưởng database, kiểm tra mapping EF Core và migration; không sửa migration đã áp dụng chỉ để che sai lệch. Xem kỹ SQL/migration trước khi áp dụng lên dữ liệu có thật.
 
 ## Cách làm và kiểm tra

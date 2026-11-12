@@ -22,6 +22,7 @@ public static class TopicRules
     public const string PublishedContentOnlyMessage = "Sau khi công bố chỉ sửa được mô tả và yêu cầu của đề tài.";
     public const string HasGroupMessage = "Đề tài đã có nhóm nên không sửa được.";
     public const string NotPublishedMessage = "Giáo vụ chưa công bố danh sách đề tài của đợt.";
+    public const string OutlineSubmittedMessage = "Nhóm đã nộp đề cương nên không hủy ghi danh được.";
     public const string NoTopicsToPublishMessage = "Đợt chưa có đề tài nào để công bố.";
     public const string RegistrationClosedMessage = "Đã hết thời gian đăng ký đề tài của đợt.";
     public const string TopicTakenMessage = "Đề tài vừa có nhóm khác nhận. Tải lại danh sách và chọn đề tài khác.";
@@ -30,6 +31,8 @@ public static class TopicRules
     public const string FixedMembersMessage = "Nhóm đã có thành viên cố định; không đổi thành viên khi ghi danh lại.";
     public const string NotRegisteredMessage = "Nhóm không còn ghi danh đề tài này.";
     public const string NotPublicTopicMessage = "Chỉ ghi danh được đề tài giảng viên đã công bố.";
+    public const string OnlyProposalRepresentativeMessage = "Chỉ đại diện nhóm được tạo hoặc sửa đề xuất.";
+    public const string ProposalNotPendingMessage = "Đề xuất không còn ở trạng thái Chờ GV duyệt.";
 
     private static readonly Dictionary<TopicStatus, string> StatusLabels = new()
     {
@@ -44,7 +47,8 @@ public static class TopicRules
         [TopicStatus.Confirmed] = "Đã xác nhận",
         [TopicStatus.Completed] = "Đã hoàn tất",
         [TopicStatus.Ineligible] = "Không đủ điều kiện công bố",
-        [TopicStatus.NoGroup] = "Không có nhóm"
+        [TopicStatus.NoGroup] = "Không có nhóm",
+        [TopicStatus.Cancelled] = "Đã hủy"
     };
 
     public static IReadOnlyCollection<string> StatusLabelList => StatusLabels.Values;
@@ -79,11 +83,11 @@ public static class TopicRules
 
     // Không còn chờ kết quả nên không chặn kết thúc đợt (PDR-031, PDR-048).
     public static bool IsSettled(TopicStatus status) =>
-        status is TopicStatus.Completed or TopicStatus.Ineligible or TopicStatus.NoGroup or TopicStatus.Rejected;
+        status is TopicStatus.Completed or TopicStatus.Ineligible or TopicStatus.NoGroup or TopicStatus.Rejected or TopicStatus.Cancelled;
 
     // Số đề tài của GV = đề tài GV gửi + đề xuất SV đã chấp nhận.
     public static bool CountsTowardLoad(ThesisTopic topic) =>
-        topic.Source == TopicSource.Lecturer || topic.Status is not (TopicStatus.PendingApproval or TopicStatus.Rejected);
+        topic.Source == TopicSource.Lecturer || topic.Status is not (TopicStatus.PendingApproval or TopicStatus.Rejected or TopicStatus.Cancelled);
 
     public static LecturerLoadDto Load(Guid lecturerId, IEnumerable<ThesisTopic> roundTopics, ThesisRound round)
     {

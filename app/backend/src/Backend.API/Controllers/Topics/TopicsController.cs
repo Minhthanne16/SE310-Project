@@ -35,6 +35,46 @@ public sealed class TopicsController(ISender sender) : ControllerBase
     public async Task<ActionResult<ApiResponse<MyRegistrationDto>>> MyRegistration([FromQuery] Guid roundId, CancellationToken cancellationToken) =>
         ToAction(await sender.Send(new GetMyRegistrationQuery(CurrentUserId, roundId), cancellationToken));
 
+    [HttpGet("my-proposals")]
+    [Authorize(Roles = AppRoles.Student)]
+    public async Task<ActionResult<ApiResponse<StudentProposalsDto>>> MyProposals([FromQuery] Guid roundId, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new ListMyProposalsQuery(CurrentUserId, roundId), cancellationToken));
+
+    [HttpGet("proposal-supervisors")]
+    [Authorize(Roles = AppRoles.Student)]
+    public async Task<ActionResult<ApiResponse<IReadOnlyList<TopicPersonDto>>>> ProposalSupervisors([FromQuery] Guid roundId, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new ListProposalSupervisorsQuery(CurrentUserId, roundId), cancellationToken));
+
+    [HttpGet("proposals")]
+    [Authorize(Roles = AppRoles.Lecturer)]
+    public async Task<ActionResult<ApiResponse<LecturerProposalsDto>>> Proposals([FromQuery] Guid roundId, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new ListLecturerProposalsQuery(CurrentUserId, roundId), cancellationToken));
+
+    [HttpPost("proposals")]
+    [Authorize(Roles = AppRoles.Student)]
+    public async Task<ActionResult<ApiResponse<TopicDto>>> CreateProposal(ProposalInputDto dto, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new CreateProposalCommand(CurrentUserId, dto), cancellationToken));
+
+    [HttpPut("proposals/{id:guid}")]
+    [Authorize(Roles = AppRoles.Student)]
+    public async Task<ActionResult<ApiResponse<TopicDto>>> UpdateProposal(Guid id, ProposalUpdateDto dto, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new UpdateProposalCommand(CurrentUserId, id, dto), cancellationToken));
+
+    [HttpDelete("proposals/{id:guid}")]
+    [Authorize(Roles = AppRoles.Student)]
+    public async Task<ActionResult<ApiResponse<TopicDto>>> CancelProposal(Guid id, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new CancelProposalCommand(CurrentUserId, id), cancellationToken));
+
+    [HttpPost("proposals/{id:guid}/accept")]
+    [Authorize(Roles = AppRoles.Lecturer)]
+    public async Task<ActionResult<ApiResponse<TopicDto>>> AcceptProposal(Guid id, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new AcceptProposalCommand(CurrentUserId, id), cancellationToken));
+
+    [HttpPost("proposals/{id:guid}/reject")]
+    [Authorize(Roles = AppRoles.Lecturer)]
+    public async Task<ActionResult<ApiResponse<TopicDto>>> RejectProposal(Guid id, RejectProposalDto dto, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new RejectProposalCommand(CurrentUserId, id, dto.Reason), cancellationToken));
+
     // Người gọi là đại diện; memberCodes là mã sinh viên thành viên thứ hai (nếu có).
     [HttpPost("{id:guid}/registration")]
     [Authorize(Roles = AppRoles.Student)]
@@ -81,6 +121,7 @@ public sealed class TopicsController(ISender sender) : ControllerBase
         TopicResultStatus.NotFound => NotFound(result.Response),
         TopicResultStatus.Forbidden => StatusCode(StatusCodes.Status403Forbidden, result.Response),
         TopicResultStatus.Invalid => BadRequest(result.Response),
+        TopicResultStatus.Unavailable => StatusCode(StatusCodes.Status503ServiceUnavailable, result.Response),
         _ => Conflict(result.Response)
     };
 }

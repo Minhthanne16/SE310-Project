@@ -24,7 +24,9 @@ public enum TopicStatus
     Confirmed = 9,
     Completed = 10,
     Ineligible = 11,
-    NoGroup = 12
+    NoGroup = 12,
+    // Chỉ thuộc vòng đời đề xuất của SV (PDR-012), không phải nhánh của đề tài đã đăng ký.
+    Cancelled = 13
 }
 
 // Đề tài khóa luận thuộc một đợt (P03-S01, DESIGN · Đề tài của tôi / Quản lý đề tài).
@@ -44,6 +46,10 @@ public class ThesisTopic : BaseEntity
     public TopicStatus Status { get; set; } = TopicStatus.NotRegistered;
     // Nhóm đang nhận đề tài; duy nhất để một nhóm không giữ hai đề tài (PDR-054).
     public Guid? GroupId { get; set; }
+    // Duyệt đề cương (PDR-013): hoàn tất chặng Đề cương, không đổi trạng thái đề tài (PDR-049).
+    public DateTime? OutlineApprovedAt { get; set; }
+    public Guid? OutlineApprovedById { get; set; }
+    public Guid? OutlineApprovedSubmissionId { get; set; }
     public List<TopicHistoryEntry> History { get; set; } = [];
 
     public string Code => $"DT-{Number:000}";

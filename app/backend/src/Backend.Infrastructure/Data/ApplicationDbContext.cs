@@ -26,7 +26,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<ThesisGroup> ThesisGroups => Set<ThesisGroup>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<TopicRegistration> TopicRegistrations => Set<TopicRegistration>();
-    public DbSet<Submission> Submissions => Set<Submission>();
+    public DbSet<TopicSubmission> TopicSubmissions => Set<TopicSubmission>();
+    public DbSet<RevisionRequest> RevisionRequests => Set<RevisionRequest>();
+    public DbSet<RevisionRequestLink> RevisionRequestLinks => Set<RevisionRequestLink>();
     public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
@@ -161,8 +163,10 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(32);
             entity.HasIndex(e => new { e.RoundId, e.Number }).IsUnique();
             entity.HasIndex(e => e.SupervisorId);
-            // Một nhóm chỉ giữ một đề tài (giá trị null không tính trùng).
-            entity.HasIndex(e => e.GroupId).IsUnique();
+            // Một nhóm chỉ có một đơn/đề tài đang hoạt động. Đề xuất Đã hủy vẫn giữ GroupId để truy vết
+            // nhưng không được chặn đề xuất lại bằng chính nhóm đó (PDR-012).
+            entity.HasIndex(e => e.GroupId).HasDatabaseName("IX_ThesisTopics_ActiveGroupId")
+                .HasFilter("\"GroupId\" IS NOT NULL AND \"Status\" IN ('PendingApproval', 'Registered', 'Rejected')").IsUnique();
             entity.HasOne<ThesisGroup>().WithMany().HasForeignKey(e => e.GroupId).OnDelete(DeleteBehavior.SetNull);
             entity.HasOne<ThesisRound>().WithMany(r => r.Topics).HasForeignKey(e => e.RoundId).OnDelete(DeleteBehavior.Cascade);
             // Tài khoản có đề tài chỉ được vô hiệu hóa, không xóa (BUSINESS_RULES); chặn thêm ở database.
@@ -200,6 +204,41 @@ public class ApplicationDbContext : DbContext
             entity.HasOne<ThesisGroup>().WithMany().HasForeignKey(e => e.GroupId).OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<TopicSubmission>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(16);
+            entity.Property(e => e.ObjectKey).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Note).HasMaxLength(2000);
+            entity.Property(e => e.ReviewComment).HasMaxLength(2000);
+            // Số phiên bản duy nhất trong đề tài và loại bài nộp; chặn hai lần nộp đồng thời cùng số.
+            entity.HasIndex(e => new { e.TopicId, e.Kind, e.VersionNo }).IsUnique();
+            entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.SubmittedById).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RevisionRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(2000);
+            entity.HasIndex(e => new { e.TopicId, e.ResolvedAt });
+            entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
+            // NO ACTION (kiểm cuối câu lệnh): xóa đề tài cascade cả bài nộp lẫn yêu cầu mà không vướng thứ tự.
+            entity.HasOne<TopicSubmission>().WithMany().HasForeignKey(e => e.RaisedOnSubmissionId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.CreatedById).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RevisionRequestLink>(entity =>
+        {
+            entity.HasKey(e => new { e.SubmissionId, e.RequestId });
+            entity.HasIndex(e => e.RequestId);
+            entity.HasOne<TopicSubmission>().WithMany().HasForeignKey(e => e.SubmissionId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<RevisionRequest>().WithMany().HasForeignKey(e => e.RequestId).OnDelete(DeleteBehavior.Cascade);
+        });
+
         modelBuilder.Entity<TopicHistoryEntry>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -209,22 +248,6 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Detail).HasMaxLength(8000);
             entity.HasIndex(e => new { e.TopicId, e.CreatedAt });
-        });
-
-        modelBuilder.Entity<Submission>(entity =>
-        {
-            entity.HasKey(e => e.Id);
-            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(32);
-            entity.Property(e => e.FileName).IsRequired().HasMaxLength(200);
-            entity.Property(e => e.ObjectKey).IsRequired().HasMaxLength(512);
-            entity.Property(e => e.Note).HasMaxLength(500);
-            // Hai thành viên nộp cùng lúc không thể nhận cùng số phiên bản.
-            entity.HasIndex(e => new { e.TopicId, e.Kind, e.Version }).IsUnique();
-            entity.HasIndex(e => e.ObjectKey).IsUnique();
-            // Bài nộp là bằng chứng (PDR-042): không xóa theo đề tài hay tài khoản bằng thao tác thường.
-            // Chỉ đợt Nháp mới xóa được, mà đợt Nháp chưa thể có bài nộp.
-            entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Restrict);
-            entity.HasOne(e => e.SubmittedBy).WithMany().HasForeignKey(e => e.SubmittedById).OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<PasswordResetToken>(entity =>

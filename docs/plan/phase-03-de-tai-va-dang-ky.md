@@ -51,15 +51,17 @@ Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xu�
 **Tham chiếu:** [BUSINESS_RULES](../requirements/BUSINESS_RULES.md), [DESIGN — Đề xuất/Đơn đăng ký](../DESIGN/03-dac-ta-man-hinh.md), OQ-001, R12.
 
 **Công việc:**
-- [ ] Giữ PDR-012: chỉ hủy khi Chờ GV duyệt, lưu đề xuất `Đã hủy` trong lịch sử và ẩn khỏi danh sách chờ; giữ nguyên nhóm, cho đề xuất lại bằng nhóm đó ngay khi đợt còn mở và không có đơn khác đang hoạt động.
-- [ ] Triển khai tạo/sửa/hủy theo quyết định; chỉ GVHD được nêu trong đề xuất chấp nhận/từ chối, từ chối bắt buộc lý do.
-- [ ] Thêm màn GV xử lý và SV theo dõi; ghi lịch sử người/thời điểm/lý do.
+- [x] Giữ PDR-012: chỉ hủy khi Chờ GV duyệt, lưu đề xuất `Đã hủy` trong lịch sử và ẩn khỏi danh sách chờ; giữ nguyên nhóm, cho đề xuất lại bằng nhóm đó ngay khi đợt còn mở và không có đơn khác đang hoạt động.
+- [x] Triển khai tạo/sửa/hủy theo quyết định; chỉ GVHD được nêu trong đề xuất chấp nhận/từ chối, từ chối bắt buộc lý do.
+- [x] Thêm màn GV xử lý và SV theo dõi; ghi lịch sử người/thời điểm/lý do.
 
 **Acceptance criteria:**
-- [ ] Đề xuất được chấp nhận chuyển `Đã đăng ký` đúng một lần; từ chối giữ lý do và lịch sử; người khác không duyệt được.
-- [ ] Hủy khi còn chờ được lưu `Đã hủy` với người/thời điểm; hủy sau khi GV xử lý hoặc hủy lặp bị từ chối; đề xuất lại dùng cùng nhóm/thành viên/đại diện, không sinh nhóm thứ hai.
+- [x] Đề xuất được chấp nhận chuyển `Đã đăng ký` đúng một lần; từ chối giữ lý do và lịch sử; người khác không duyệt được.
+- [x] Hủy khi còn chờ được lưu `Đã hủy` với người/thời điểm; hủy sau khi GV xử lý hoặc hủy lặp bị từ chối; đề xuất lại dùng cùng nhóm/thành viên/đại diện, không sinh nhóm thứ hai.
 
 **Verification:** Test chuỗi tạo → sửa → chấp nhận/từ chối/hủy, quyền sai, xử lý đồng thời và lịch sử GV/Giáo vụ.
+
+*(2026-11-10: API `api/topics/proposals` bảo vệ theo vai trò và kiểm tra GVHD tại handler; chuyển trạng thái có điều kiện trong transaction để chỉ một thao tác thắng. UI: SV `/sv/don-dang-ky`, GV `/gv/de-xuat`; cả hai hiển thị lịch sử. Test handler SQLite bao phủ chuỗi/quyền/lịch sử; test PostgreSQL tùy chọn (`RegistrationConcurrencyTests`) bao phủ đua duyệt–hủy và đề xuất lại đồng thời. Chạy toàn bộ kịch bản PostgreSQL bằng `app/scripts/test-ghi-danh.ps1` khi có Docker.)*
 
 **Dependencies:** `P03-S02`; PDR-012.
 

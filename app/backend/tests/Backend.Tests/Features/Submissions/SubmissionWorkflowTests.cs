@@ -51,6 +51,7 @@ public sealed class SubmissionWorkflowTests : IDisposable
         services.AddScoped<IRoundRepository, RoundRepository>();
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
+        services.AddScoped<IOutlineRepository, OutlineRepository>();
         services.AddScoped<ISubmissionRepository>(p =>
             new FailingRepository(new SubmissionRepository(p.GetRequiredService<ApplicationDbContext>()), () => _failDatabase));
         services.AddSingleton<IDocumentStorage>(_storage);
@@ -139,6 +140,12 @@ public sealed class SubmissionWorkflowTests : IDisposable
         _clock.Advance(TimeSpan.FromMinutes(1));
         Assert.Equal(TopicResultStatus.Ok, (await Send(new RegisterTopicCommand(students[0].Id, ids[0], [students[1].Code]))).Status);
         Assert.Equal(TopicResultStatus.Ok, (await Send(new RegisterTopicCommand(students[2].Id, ids[1], []))).Status);
+        await Db(async db =>
+        {
+            foreach (var id in ids)
+                await db.ThesisTopics.Where(t => t.Id == id).ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.OutlineApprovedAt, DateTime.UtcNow).SetProperty(t => t.OutlineApprovedById, lecturer.Id));
+        });
         _clock.Set(BeforeMidtermDeadline);
         return new World(round.Id, lecturer, other, students, ids[0], ids[1]);
     }
@@ -161,7 +168,7 @@ public sealed class SubmissionWorkflowTests : IDisposable
     private async Task<int> RecordCount()
     {
         var count = 0;
-        await Db(async db => count = await db.Submissions.CountAsync());
+        await Db(async db => count = await db.TopicSubmissions.CountAsync(s => s.Kind == SubmissionKind.Midterm || s.Kind == SubmissionKind.Final));
         return count;
     }
 
@@ -361,6 +368,12 @@ public sealed class SubmissionWorkflowTests : IDisposable
         Assert.Equal(SubmissionRules.NotInProgressMessage, early.Response.Message);
 
         _clock.Set(BeforeMidtermDeadline);
+        await Db(db => db.ThesisTopics.Where(t => t.Id == w.TopicId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.OutlineApprovedAt, (DateTime?)null)));
+        var unapproved = await Submit(w.Students[0], w.TopicId, "midterm", Pdf());
+        Assert.Equal(SubmissionRules.OutlineNotApprovedMessage, unapproved.Response.Message);
+        await Db(db => db.ThesisTopics.Where(t => t.Id == w.TopicId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.OutlineApprovedAt, DateTime.UtcNow)));
         var unknown = await Submit(w.Students[0], w.TopicId, "outline", Pdf());
         Assert.Equal(TopicResultStatus.Invalid, unknown.Status);
         Assert.Empty(_storage.Objects);
@@ -510,11 +523,13 @@ public sealed class SubmissionWorkflowTests : IDisposable
 
     private sealed class FailingRepository(ISubmissionRepository inner, Func<bool> fail) : ISubmissionRepository
     {
-        public Task<IReadOnlyList<Submission>> ListByTopicAsync(Guid topicId, CancellationToken cancellationToken = default) =>
-            inner.ListByTopicAsync(topicId, cancellationToken);
-        public Task<Submission?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) => inner.GetByIdAsync(id, cancellationToken);
-        public Task AddAsync(Submission submission, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
-            fail() ? throw new InvalidOperationException("database down") : inner.AddAsync(submission, history, cancellationToken);
+        public Task<IReadOnlyList<TopicSubmission>> ListReportsAsync(Guid topicId, CancellationToken cancellationToken = default) =>
+            inner.ListReportsAsync(topicId, cancellationToken);
+        public Task<TopicSubmission?> GetReportAsync(Guid id, CancellationToken cancellationToken = default) => inner.GetReportAsync(id, cancellationToken);
+        public Task<IReadOnlyDictionary<Guid, SubmitterInfo>> GetSubmittersAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default) =>
+            inner.GetSubmittersAsync(userIds, cancellationToken);
+        public Task AddReportAsync(TopicSubmission submission, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
+            fail() ? throw new InvalidOperationException("database down") : inner.AddReportAsync(submission, history, cancellationToken);
     }
 }
 

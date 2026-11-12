@@ -69,6 +69,7 @@ public static class SubmissionRules
     public const string OnlyMembersMessage = "Chỉ thành viên nhóm thực hiện đề tài được nộp báo cáo.";
     public const string RoundNotRunningMessage = "Đợt không còn diễn ra nên không nộp được báo cáo.";
     public const string NotInProgressMessage = "Chỉ nộp báo cáo khi đề tài đang thực hiện (sau khi hết thời gian đăng ký).";
+    public const string OutlineNotApprovedMessage = "Chỉ nộp báo cáo sau khi GVHD duyệt đề cương.";
     public const string TopicClosedMessage = "Đề tài đã kết thúc nên không nộp được báo cáo.";
 
     public static readonly IReadOnlyList<SubmissionKind> Kinds = [SubmissionKind.Midterm, SubmissionKind.Final];
@@ -111,6 +112,8 @@ public static class SubmissionRules
         if (status is TopicStatus.Completed or TopicStatus.Ineligible) return TopicClosedMessage;
         if (status is not (TopicStatus.InProgress or TopicStatus.Grading or TopicStatus.Graded or TopicStatus.Deviation or TopicStatus.Confirmed))
             return NotInProgressMessage;
+        // BUSINESS_RULES: duyệt đề cương là điều kiện mở báo cáo giữa kỳ/cuối kỳ.
+        if (topic.OutlineApprovedAt is null) return OutlineNotApprovedMessage;
         var milestone = round.Milestones.FirstOrDefault(m => m.Key == MilestoneOf(kind));
         return Window(milestone, today) == SubmissionWindow.Closed ? ClosedMessage(kind, milestone) : null;
     }

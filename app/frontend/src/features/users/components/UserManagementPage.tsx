@@ -2,6 +2,7 @@
 
 import '@/features/users/users.css';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import toast from 'react-hot-toast';
 import { FileUp, Plus, Search } from 'lucide-react';
 import { ROLE_LABEL } from '@/features/auth/roles';
 import { useSession } from '@/features/auth/session/SessionProvider';
@@ -79,9 +80,29 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
   const [importOpen, setImportOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<Notice | null>(null);
   // Tài khoản vừa tạo trong phiên, tô nền nhạt trong bảng.
   const [freshIds, setFreshIds] = useState<ReadonlySet<string>>(new Set());
+
+  // Kết quả thao tác hiện bằng toast; kết quả nhập có dòng lỗi kèm nút tải báo cáo.
+  const notify = ({ text, errorRows }: Notice) => {
+    if (errorRows && errorRows.length > 0) {
+      toast.success(
+        <span>
+          {text}
+          <button
+            type="button"
+            className="app-toast-action"
+            onClick={() => downloadErrorReport(errorRows)}
+          >
+            Tải báo cáo dòng lỗi (.csv)
+          </button>
+        </span>,
+        { duration: 15000 },
+      );
+    } else {
+      toast.success(text);
+    }
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -165,7 +186,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
     );
     if (mode === 'create') setFreshIds((ids) => new Set(ids).add(saved.id));
     if (!keepOpen) setDrawer(null);
-    setNotice({
+    notify({
       text:
         mode === 'create'
           ? `Đã tạo tài khoản ${saved.userCode}. Mật khẩu ban đầu là mã người dùng.`
@@ -198,12 +219,12 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
       const result = await userService.remove(user.id);
       if (result === 'deleted') {
         setUsers((list) => list.filter((u) => u.id !== user.id));
-        setNotice({ text: `Đã xóa tài khoản ${user.userCode}.` });
+        notify({ text: `Đã xóa tài khoản ${user.userCode}.` });
       } else {
         setUsers((list) =>
           list.map((u) => (u.id === user.id ? { ...u, isActive: false } : u)),
         );
-        setNotice({
+        notify({
           text: `Đã vô hiệu hóa tài khoản ${user.userCode}. Dữ liệu liên quan vẫn được giữ.`,
         });
       }
@@ -215,7 +236,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
     runDialogAction(async () => {
       const updated = await userService.setActive(user.id, true);
       setUsers((list) => list.map((u) => (u.id === user.id ? updated : u)));
-      setNotice({
+      notify({
         text: `Đã kích hoạt lại tài khoản ${user.userCode}. Người dùng đăng nhập lại được bằng mật khẩu hiện tại.`,
       });
       setDialog(null);
@@ -231,11 +252,9 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
   ];
 
   const openAdd = () => {
-    setNotice(null);
     setDrawer({ mode: 'create' });
   };
   const openImport = () => {
-    setNotice(null);
     setImportOpen(true);
   };
 
@@ -271,21 +290,6 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
           </button>
         </div>
       </div>
-
-      {notice && (
-        <div role="status" className="usr-notice">
-          <span>{notice.text}</span>
-          {notice.errorRows && notice.errorRows.length > 0 && (
-            <button
-              type="button"
-              className="usr-link-button"
-              onClick={() => downloadErrorReport(notice.errorRows ?? [])}
-            >
-              Tải báo cáo dòng lỗi (.csv)
-            </button>
-          )}
-        </div>
-      )}
 
       {!loading && !loadError && (
         <div className="usr-stats">
@@ -435,10 +439,9 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
                           className="usr-btn usr-btn-sm"
                           aria-haspopup="dialog"
                           aria-label={`Sửa ${user.fullName}`}
-                          onClick={() => {
-                            setNotice(null);
-                            setDrawer({ mode: 'edit', userId: user.id });
-                          }}
+                          onClick={() =>
+                            setDrawer({ mode: 'edit', userId: user.id })
+                          }
                         >
                           Sửa
                         </button>
@@ -521,7 +524,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
           userService={userService}
           onClose={closeDialog}
           onDone={(custom) => {
-            setNotice({
+            notify({
               text: `Đã đặt lại mật khẩu cho ${dialogUser.fullName}${custom ? '.' : ' về mã người dùng.'}`,
             });
             setUsers((list) =>
@@ -580,7 +583,7 @@ export const UserManagementPage: React.FC<UserManagementPageProps> = ({
           onClose={closeImport}
           onImported={(report, fileName) => {
             const errorRows = report.rows.filter((r) => r.errors.length > 0);
-            setNotice({
+            notify({
               text:
                 `Đã nhập ${report.importedRows} người dùng từ ${fileName}` +
                 (errorRows.length > 0

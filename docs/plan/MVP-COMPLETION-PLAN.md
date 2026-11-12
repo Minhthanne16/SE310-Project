@@ -171,8 +171,8 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G4.1 — Đề cương, yêu cầu sửa và duyệt
 
-- [ ] Version hóa đề cương, yêu cầu chỉnh sửa của GVHD, nộp lại một bản cho các yêu cầu mở và duyệt chuyển `Đang thực hiện`.
-- [ ] Gắn mọi quyết định với người, thời điểm và bản nộp; áp dụng deadline/late-submission từ đợt.
+- [x] Version hóa đề cương, yêu cầu chỉnh sửa của GVHD, nộp lại một bản cho các yêu cầu mở và duyệt (không đổi trạng thái đề tài theo PDR-049; xem [PDR-057](../decisions/PDR-057-de-cuong-va-yeu-cau-chinh-sua.md)).
+- [ ] Gắn mọi quyết định với người, thời điểm và bản nộp; áp dụng deadline/late-submission từ đợt. Đã có người/thời điểm/bản nộp và hạn mốc Đề cương; còn nộp trễ chờ P02 lưu hạn trễ riêng (PDR-041).
 
 **Nghiệm thu:** Còn yêu cầu mở không thể duyệt; phiên bản cũ luôn tra cứu được; GVHD khác không xử lý được.
 
@@ -181,7 +181,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 - [ ] Dùng storage qua backend, chỉ chấp nhận PDF thực sự tối đa 20 MB, kiểm tra quyền xem/tải và giữ tất cả version theo PDR-039–042.
 - [ ] Bảo đảm lỗi storage/database không để record hoặc object mồ côi.
 
-**Nghiệm thu:** File giả PDF/sai quyền/quá dung lượng bị chặn; các mốc đúng hạn, trong hạn trễ và quá hạn cho kết quả đúng. *(2026-11-12: đã triển khai theo [PDR-056](../decisions/PDR-056-nop-bao-cao-giua-ky-cuoi-ky.md), kiểm thử tự động với storage giả; còn thiếu chạy thật trên MinIO và các phần phụ thuộc P04-S01/P05 nên chưa tick.)*
+**Nghiệm thu:** File giả PDF/sai quyền/quá dung lượng bị chặn; các mốc đúng hạn, trong hạn trễ và quá hạn cho kết quả đúng. *(2026-11-12: đã triển khai theo [PDR-058](../decisions/PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md), kiểm thử tự động với storage giả; còn thiếu chạy thật trên MinIO và các phần phụ thuộc P04-S01/P05 nên chưa tick.)*
 
 #### G4.3 — Chốt bản khóa luận cuối và ngoại lệ
 

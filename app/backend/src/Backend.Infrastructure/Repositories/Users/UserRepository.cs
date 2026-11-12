@@ -53,7 +53,7 @@ public class UserRepository : IUserRepository
             .Select(m => m.StudentId)
             .Distinct()
             .ToListAsync(cancellationToken);
-        var submitters = await _context.Submissions
+        var submitters = await _context.TopicSubmissions
             .Where(s => userIds.Contains(s.SubmittedById))
             .Select(s => s.SubmittedById)
             .Distinct()
