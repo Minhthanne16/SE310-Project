@@ -15,10 +15,7 @@ import {
   formatBytes,
   formatSubmittedAt,
 } from '@/features/submissions/submissionUtils';
-import type {
-  SubmissionKindState,
-  TopicSubmissions,
-} from '@/types/submission';
+import type { SubmissionKindState, TopicSubmissions } from '@/types/submission';
 import '@/features/submissions/submissions.css';
 
 interface SubmissionPanelProps {
@@ -182,7 +179,9 @@ const KindSection: React.FC<KindSectionProps> = ({
             </p>
           ) : null}
           <div className="sub-field">
-            <label htmlFor={`${id}-file`}>Tệp báo cáo (PDF, tối đa 20 MB)</label>
+            <label htmlFor={`${id}-file`}>
+              Tệp báo cáo (PDF, tối đa 20 MB)
+            </label>
             <input
               ref={fileInput}
               id={`${id}-file`}

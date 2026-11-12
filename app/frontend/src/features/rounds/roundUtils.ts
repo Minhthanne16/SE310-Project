@@ -120,8 +120,7 @@ export function validateMilestones(milestones: Milestone[]): MilestoneErrors {
     const end = m.endDate.trim();
     const late = m.allowLate === null ? '' : (m.lateEndDate ?? '').trim();
     if (!start && !end) {
-      if (late)
-        errors[m.key] = 'Đặt ngày kết thúc trước khi đặt hạn nộp trễ.';
+      if (late) errors[m.key] = 'Đặt ngày kết thúc trước khi đặt hạn nộp trễ.';
       continue;
     }
     if (!start || !end || !isIsoDate(start) || !isIsoDate(end)) {

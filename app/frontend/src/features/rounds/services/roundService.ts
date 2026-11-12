@@ -426,7 +426,9 @@ export function createRoundService(
                 notifyAudience: next.notifyAudience,
                 allowLate: m.allowLate === null ? null : !!next.allowLate,
                 lateEndDate:
-                  m.allowLate === null ? undefined : (next.lateEndDate ?? '').trim(),
+                  m.allowLate === null
+                    ? undefined
+                    : (next.lateEndDate ?? '').trim(),
               }
             : m;
         }),

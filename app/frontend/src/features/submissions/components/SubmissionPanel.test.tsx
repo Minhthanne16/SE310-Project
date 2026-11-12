@@ -23,7 +23,9 @@ import { SubmissionPanel } from './SubmissionPanel';
 
 afterEach(cleanup);
 
-const version = (overrides: Partial<SubmissionVersion> = {}): SubmissionVersion => ({
+const version = (
+  overrides: Partial<SubmissionVersion> = {},
+): SubmissionVersion => ({
   id: 's1',
   version: 1,
   fileName: 'giua-ky.pdf',
@@ -37,7 +39,9 @@ const version = (overrides: Partial<SubmissionVersion> = {}): SubmissionVersion 
   ...overrides,
 });
 
-const kind = (overrides: Partial<SubmissionKindState> = {}): SubmissionKindState => ({
+const kind = (
+  overrides: Partial<SubmissionKindState> = {},
+): SubmissionKindState => ({
   kind: 'midterm',
   name: 'Báo cáo giữa kỳ',
   deadline: '2026-09-27',
@@ -224,7 +228,9 @@ it('shows versions read-only with the reason when submission is closed', async (
   const midterm = await section('Báo cáo giữa kỳ');
 
   expect(midterm.getByText('Đã hết hạn nộp')).toBeInTheDocument();
-  expect(midterm.getByText(/Đã hết hạn nộp trễ báo cáo giữa kỳ/)).toBeInTheDocument();
+  expect(
+    midterm.getByText(/Đã hết hạn nộp trễ báo cáo giữa kỳ/),
+  ).toBeInTheDocument();
   expect(midterm.queryByLabelText(/Tệp báo cáo/)).not.toBeInTheDocument();
   expect(midterm.getByRole('link', { name: /Tải bản 1/ })).toBeInTheDocument();
 });
@@ -256,8 +262,8 @@ it('describes deadlines and validates files', () => {
   expect(
     fileError({ name: 'a.PDF', size: 20 * 1024 * 1024, type: '' }),
   ).toBeNull();
-  expect(
-    fileError({ name: 'a.pdf', size: 10, type: 'image/png' }),
-  ).toBe('Tệp không phải PDF. Chỉ nhận tệp PDF.');
+  expect(fileError({ name: 'a.pdf', size: 10, type: 'image/png' })).toBe(
+    'Tệp không phải PDF. Chỉ nhận tệp PDF.',
+  );
   expect(formatBytes(1536 * 1024)).toBe('1,5 MB');
 });
