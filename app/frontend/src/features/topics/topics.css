@@ -872,6 +872,10 @@
 
 .tpc-ver-dl {
   justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--btn-h-sm);
+  text-decoration: none;
   padding: 0;
   border: 0;
   background: none;

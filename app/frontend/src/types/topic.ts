@@ -1,6 +1,7 @@
 // Đề tài khóa luận (docs/DESIGN/03: Quản lý đề tài, Chi tiết đề tài của giáo
 // vụ, Đề tài của tôi). API thật /api/topics (PDR-053) trả TopicDto, được chuyển
 // sang Topic ở topicApiService.ts; kho demo dùng thẳng Topic.
+import type { OutlineSummary } from '@/types/outline';
 import type { RoundStatus, TopicStatus } from '@/types/round';
 
 export { TOPIC_STATUSES, type TopicStatus } from '@/types/round';
@@ -45,6 +46,8 @@ export interface TopicMember extends TopicPerson {
 }
 
 export interface TopicSubmission {
+  // Id bài nộp ở API thật (tải tệp); kho demo không có.
+  id?: string;
   versionNo: number;
   kind: SubmissionKind;
   submittedBy: string;
@@ -173,6 +176,22 @@ export interface TopicDto {
   canDelete: boolean;
   // Nhóm đang nhận đề tài, đại diện trước (PDR-054); rỗng khi chưa có nhóm.
   group: TopicMember[];
+  // GVHD duyệt đề cương (PDR-013); không đổi trạng thái đề tài (PDR-049).
+  outlineApprovedAt: string | null;
+  // Chỉ có ở /api/topics/mine (đề tài có nhóm của GVHD); null ở nơi khác.
+  outline?: OutlineSummary | null;
+}
+
+// Phiên bản bài nộp trong chi tiết đề tài (hiện có Đề cương), cũ trước.
+export interface SubmissionSummaryDto {
+  id: string;
+  kind: SubmissionKind;
+  versionNo: number;
+  submittedBy: string;
+  submittedAt: string;
+  late: boolean;
+  fileName: string;
+  note: string | null;
 }
 
 export interface TopicHistoryDto {
@@ -186,6 +205,8 @@ export interface TopicHistoryDto {
 
 export interface TopicDetailDto extends TopicDto {
   history: TopicHistoryDto[];
+  // Giáo vụ, GVHD và thành viên nhóm; người khác nhận mảng rỗng.
+  submissions: SubmissionSummaryDto[];
 }
 
 export interface TopicRoundInfo {

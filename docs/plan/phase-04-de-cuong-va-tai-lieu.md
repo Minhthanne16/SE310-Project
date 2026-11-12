@@ -6,18 +6,27 @@ Nhóm nộp tài liệu theo phiên bản; GVHD nhận xét/duyệt đề cươn
 
 ## Step P04-S01 — Đề cương và yêu cầu chỉnh sửa
 
-**Tham chiếu:** [WORKFLOWS — Thực hiện](../requirements/WORKFLOWS.md), [BUSINESS_RULES — Tài liệu](../requirements/BUSINESS_RULES.md), [PDR-013](../decisions/PDR-013-yeu-cau-chinh-sua-de-cuong.md), [PDR-041](../decisions/PDR-041-han-nop-tre-rieng-tung-moc.md).
+**Tham chiếu:** [WORKFLOWS — Thực hiện](../requirements/WORKFLOWS.md), [BUSINESS_RULES — Tài liệu](../requirements/BUSINESS_RULES.md), [PDR-013](../decisions/PDR-013-yeu-cau-chinh-sua-de-cuong.md), [PDR-041](../decisions/PDR-041-han-nop-tre-rieng-tung-moc.md), [PDR-049](../decisions/PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md), [PDR-057](../decisions/PDR-057-de-cuong-va-yeu-cau-chinh-sua.md).
+
+**Trạng thái (2026-11-12):** đã làm theo [PDR-057](../decisions/PDR-057-de-cuong-va-yeu-cau-chinh-sua.md) (API `api/topics/{id}/outline`, màn `/de-tai/[id]`, `/sv/de-tai`, `/gv/huong-dan`). Còn thiếu nhận nộp trễ của mốc Đề cương vì chưa lưu hạn trễ riêng (PDR-041, phụ thuộc P02).
 
 **Công việc:**
-- [ ] Áp dụng PDR-013: GVHD tạo/đóng từng yêu cầu, nhóm nộp một phiên bản cho cả lần sửa, mốc Đề cương chung; xác định bản hiện hành đang chờ GVHD xử lý.
-- [ ] Triển khai nộp phiên bản, nhận xét, yêu cầu sửa, nộp lại có liên kết yêu cầu và duyệt đề cương; giữ phiên bản cũ.
-- [ ] Chuyển đề tài sang `Đang thực hiện` chỉ khi đề cương được GVHD hợp lệ duyệt.
+- [x] Áp dụng PDR-013: GVHD tạo/đóng từng yêu cầu, nhóm nộp một phiên bản cho cả lần sửa, mốc Đề cương chung; xác định bản hiện hành đang chờ GVHD xử lý.
+- [x] Triển khai nộp phiên bản, nhận xét, yêu cầu sửa, nộp lại có liên kết yêu cầu và duyệt đề cương; giữ phiên bản cũ.
+- [x] ~~Chuyển đề tài sang `Đang thực hiện` chỉ khi đề cương được GVHD hợp lệ duyệt.~~ Thay bằng PDR-049: `Đang thực hiện` bắt đầu khi hết thời gian đăng ký; duyệt đề cương chỉ hoàn tất chặng Đề cương, lưu người/thời điểm/phiên bản duyệt và **không đổi trạng thái** đề tài.
 
 **Acceptance criteria:**
-- [ ] Nộp lại không ghi đè bản cũ; GVHD chỉ duyệt đề cương mình hướng dẫn; SV nhìn được yêu cầu cần xử lý.
-- [ ] Nhóm không tự đóng yêu cầu; một lần nộp lại có thể xử lý nhiều yêu cầu; còn bất kỳ yêu cầu nào mở thì không duyệt hoặc chuyển `Đang thực hiện`.
+- [x] Nộp lại không ghi đè bản cũ; GVHD chỉ duyệt đề cương mình hướng dẫn; SV nhìn được yêu cầu cần xử lý.
+- [x] Nhóm không tự đóng yêu cầu; một lần nộp lại có thể xử lý nhiều yêu cầu; còn bất kỳ yêu cầu nào mở thì không duyệt (trạng thái đề tài không đổi khi duyệt, theo PDR-049).
 
 **Verification:** Test vòng yêu cầu sửa nhiều lần, quyền GV khác, lịch sử phiên bản và trạng thái đề tài.
+
+- Bằng chứng (2026-11-12):
+  - `OutlineWorkflowTests` (17 ca): vòng nhiều yêu cầu, quyền, phiên bản cũ, hạn mốc, duyệt cũ, ghi đồng thời, tóm tắt GVHD.
+  - `TopicApiTests.OutlineEndpointsOverHttp`: multipart, tải PDF, 400/403/404/409.
+  - Test giao diện `OutlineSection`, `SupervisionPage`.
+  - E2E 34/34 trên PostgreSQL + MinIO qua proxy Next.js: tệp 15 MB, hai lần nộp đồng thời, cascade khi xóa đợt.
+  - Kiểm thử trình duyệt 27/27 gồm bề rộng 390px.
 
 **Dependencies:** `CP03`; PDR-013/041 cho yêu cầu sửa và nhánh nộp trễ.
 

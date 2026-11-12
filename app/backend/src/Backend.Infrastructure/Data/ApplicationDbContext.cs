@@ -26,6 +26,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<ThesisGroup> ThesisGroups => Set<ThesisGroup>();
     public DbSet<GroupMember> GroupMembers => Set<GroupMember>();
     public DbSet<TopicRegistration> TopicRegistrations => Set<TopicRegistration>();
+    public DbSet<TopicSubmission> TopicSubmissions => Set<TopicSubmission>();
+    public DbSet<RevisionRequest> RevisionRequests => Set<RevisionRequest>();
+    public DbSet<RevisionRequestLink> RevisionRequestLinks => Set<RevisionRequestLink>();
     public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
@@ -199,6 +202,41 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.TopicId);
             entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
             entity.HasOne<ThesisGroup>().WithMany().HasForeignKey(e => e.GroupId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<TopicSubmission>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(16);
+            entity.Property(e => e.ObjectKey).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Note).HasMaxLength(2000);
+            entity.Property(e => e.ReviewComment).HasMaxLength(2000);
+            // Số phiên bản duy nhất trong đề tài và loại bài nộp; chặn hai lần nộp đồng thời cùng số.
+            entity.HasIndex(e => new { e.TopicId, e.Kind, e.VersionNo }).IsUnique();
+            entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.SubmittedById).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RevisionRequest>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(2000);
+            entity.HasIndex(e => new { e.TopicId, e.ResolvedAt });
+            entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
+            // NO ACTION (kiểm cuối câu lệnh): xóa đề tài cascade cả bài nộp lẫn yêu cầu mà không vướng thứ tự.
+            entity.HasOne<TopicSubmission>().WithMany().HasForeignKey(e => e.RaisedOnSubmissionId).OnDelete(DeleteBehavior.NoAction);
+            entity.HasOne<User>().WithMany().HasForeignKey(e => e.CreatedById).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RevisionRequestLink>(entity =>
+        {
+            entity.HasKey(e => new { e.SubmissionId, e.RequestId });
+            entity.HasIndex(e => e.RequestId);
+            entity.HasOne<TopicSubmission>().WithMany().HasForeignKey(e => e.SubmissionId).OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne<RevisionRequest>().WithMany().HasForeignKey(e => e.RequestId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<TopicHistoryEntry>(entity =>

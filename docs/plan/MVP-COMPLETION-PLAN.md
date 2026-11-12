@@ -171,8 +171,8 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G4.1 — Đề cương, yêu cầu sửa và duyệt
 
-- [ ] Version hóa đề cương, yêu cầu chỉnh sửa của GVHD, nộp lại một bản cho các yêu cầu mở và duyệt chuyển `Đang thực hiện`.
-- [ ] Gắn mọi quyết định với người, thời điểm và bản nộp; áp dụng deadline/late-submission từ đợt.
+- [x] Version hóa đề cương, yêu cầu chỉnh sửa của GVHD, nộp lại một bản cho các yêu cầu mở và duyệt (không đổi trạng thái đề tài theo PDR-049; xem [PDR-057](../decisions/PDR-057-de-cuong-va-yeu-cau-chinh-sua.md)).
+- [ ] Gắn mọi quyết định với người, thời điểm và bản nộp; áp dụng deadline/late-submission từ đợt. Đã có người/thời điểm/bản nộp và hạn mốc Đề cương; còn nộp trễ chờ P02 lưu hạn trễ riêng (PDR-041).
 
 **Nghiệm thu:** Còn yêu cầu mở không thể duyệt; phiên bản cũ luôn tra cứu được; GVHD khác không xử lý được.
 

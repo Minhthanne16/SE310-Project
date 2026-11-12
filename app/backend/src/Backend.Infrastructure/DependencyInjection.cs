@@ -38,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IRoundRepository, RoundRepository>();
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
+        services.AddScoped<IOutlineRepository, OutlineRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IGoogleIdentityVerifier, GoogleIdentityVerifier>();
@@ -57,11 +58,15 @@ public static class DependencyInjection
                 .WithSSL(storage.UseSsl)
                 .Build());
             services.AddSingleton(storage);
-            services.AddSingleton<IAvatarStorage, MinioAvatarStorage>();
+            services.AddSingleton<MinioObjectStorage>();
+            services.AddSingleton<IAvatarStorage>(sp => sp.GetRequiredService<MinioObjectStorage>());
+            services.AddSingleton<IDocumentStorage>(sp => sp.GetRequiredService<MinioObjectStorage>());
         }
         else
         {
-            services.AddSingleton<IAvatarStorage, UnavailableAvatarStorage>();
+            services.AddSingleton<UnavailableObjectStorage>();
+            services.AddSingleton<IAvatarStorage>(sp => sp.GetRequiredService<UnavailableObjectStorage>());
+            services.AddSingleton<IDocumentStorage>(sp => sp.GetRequiredService<UnavailableObjectStorage>());
         }
 
         return services;
