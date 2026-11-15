@@ -478,6 +478,28 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
                           Cho nộp trễ
                         </label>
                       )}
+                      {m.allowLate ? (
+                        <label className="rnd-late-end">
+                          <span>Hạn nộp trễ</span>
+                          <input
+                            type="date"
+                            className="rnd-date"
+                            aria-label={`Hạn nộp trễ ${m.name}`}
+                            value={m.lateEndDate ?? ''}
+                            min={m.endDate || undefined}
+                            disabled={readOnly}
+                            onChange={(e) =>
+                              patch(m.key, { lateEndDate: e.target.value })
+                            }
+                            {...invalidProps}
+                          />
+                          {!readOnly && !(m.lateEndDate ?? '').trim() ? (
+                            <span className="rnd-late-missing">
+                              Chưa đặt: sau hạn thường sẽ không nhận bài.
+                            </span>
+                          ) : null}
+                        </label>
+                      ) : null}
                     </td>
                     <td>
                       <select

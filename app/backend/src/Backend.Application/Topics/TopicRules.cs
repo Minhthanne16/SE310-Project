@@ -22,6 +22,7 @@ public static class TopicRules
     public const string PublishedContentOnlyMessage = "Sau khi công bố chỉ sửa được mô tả và yêu cầu của đề tài.";
     public const string HasGroupMessage = "Đề tài đã có nhóm nên không sửa được.";
     public const string NotPublishedMessage = "Giáo vụ chưa công bố danh sách đề tài của đợt.";
+    public const string OutlineSubmittedMessage = "Nhóm đã nộp đề cương nên không hủy ghi danh được.";
     public const string NoTopicsToPublishMessage = "Đợt chưa có đề tài nào để công bố.";
     public const string RegistrationClosedMessage = "Đã hết thời gian đăng ký đề tài của đợt.";
     public const string TopicTakenMessage = "Đề tài vừa có nhóm khác nhận. Tải lại danh sách và chọn đề tài khác.";

@@ -28,7 +28,7 @@ public sealed class GlobalExceptionMiddleware(RequestDelegate next, ILogger<Glob
         {
             logger.LogError(ex, "Object storage unavailable");
             context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
-            await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail("Chưa xử lý được ảnh đại diện vì kho lưu trữ tệp không sẵn sàng. Thử lại sau."));
+            await context.Response.WriteAsJsonAsync(ApiResponse<object>.Fail("Chưa xử lý được tệp vì kho lưu trữ tệp không sẵn sàng. Thử lại sau."));
         }
         catch (Exception ex)
         {

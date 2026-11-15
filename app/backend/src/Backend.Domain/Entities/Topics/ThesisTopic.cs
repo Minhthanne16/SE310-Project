@@ -46,6 +46,10 @@ public class ThesisTopic : BaseEntity
     public TopicStatus Status { get; set; } = TopicStatus.NotRegistered;
     // Nhóm đang nhận đề tài; duy nhất để một nhóm không giữ hai đề tài (PDR-054).
     public Guid? GroupId { get; set; }
+    // Duyệt đề cương (PDR-013): hoàn tất chặng Đề cương, không đổi trạng thái đề tài (PDR-049).
+    public DateTime? OutlineApprovedAt { get; set; }
+    public Guid? OutlineApprovedById { get; set; }
+    public Guid? OutlineApprovedSubmissionId { get; set; }
     public List<TopicHistoryEntry> History { get; set; } = [];
 
     public string Code => $"DT-{Number:000}";
@@ -67,4 +71,5 @@ public static class TopicHistoryCategories
     public const string Status = "Trạng thái";
     public const string Content = "Nội dung";
     public const string Group = "Nhóm";
+    public const string Submission = "Bài nộp";
 }

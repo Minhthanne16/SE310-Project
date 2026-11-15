@@ -3,7 +3,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { StatusState } from '@/components/ui/StatusState';
+import { SubmissionPanel } from '@/features/submissions/components/SubmissionPanel';
 import '@/features/topics/topics.css';
+import { outlineFileUrl } from '@/features/outline/services/outlineService';
 import { TopicStatusChip } from '@/features/topics/components/TopicChips';
 import {
   TopicNotFoundError,
@@ -33,6 +35,9 @@ import {
 interface TopicDetailPageProps {
   topicId: string;
   topicService?: TopicService;
+  // Đề tài thật (cùng cờ với đợt thật): tab Báo cáo đọc và tải tệp qua
+  // /api/topics/{id}/submissions (PDR-056) thay cho dữ liệu mẫu.
+  liveSubmissions?: boolean;
 }
 
 type TopicTab = 'tong-quan' | 'bao-cao' | 'diem' | 'lich-su';
@@ -171,6 +176,7 @@ function docStatus(
 export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
   topicId,
   topicService = defaultTopicService,
+  liveSubmissions = process.env.NEXT_PUBLIC_ROUNDS_API === 'true',
 }) => {
   const [tabParam, setTabParam] = useUrlParam('tab');
   const tab: TopicTab = isTab(tabParam) ? tabParam : 'tong-quan';
@@ -410,7 +416,12 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
           </div>
         )}
 
+        {tab === 'bao-cao' && liveSubmissions && (
+          <SubmissionPanel topicId={topic.id} />
+        )}
+
         {tab === 'bao-cao' &&
+          !liveSubmissions &&
           (docGroups.length === 0 ? (
             <p className="app-muted">Nhóm chưa nộp bài nào.</p>
           ) : (
@@ -460,16 +471,28 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
                               )
                             )}
                           </span>
-                          <button
-                            type="button"
-                            className="tpc-ver-dl"
-                            aria-disabled="true"
-                            aria-describedby="tpc-dl-note"
-                            aria-label={`Tải ${s.fileName}`}
-                            onClick={(e) => e.preventDefault()}
-                          >
-                            Tải
-                          </button>
+                          {s.id && s.kind === 'Đề cương' ? (
+                            // Đề cương có API tải tệp (P04-S01); các loại khác chưa có.
+                            <a
+                              className="tpc-ver-dl"
+                              href={outlineFileUrl(topic.id, s.id)}
+                              download={s.fileName}
+                              aria-label={`Tải ${s.fileName}`}
+                            >
+                              Tải
+                            </a>
+                          ) : (
+                            <button
+                              type="button"
+                              className="tpc-ver-dl"
+                              aria-disabled="true"
+                              aria-describedby="tpc-dl-note"
+                              aria-label={`Tải ${s.fileName}`}
+                              onClick={(e) => e.preventDefault()}
+                            >
+                              Tải
+                            </button>
+                          )}
                         </li>
                       ))}
                     </ol>

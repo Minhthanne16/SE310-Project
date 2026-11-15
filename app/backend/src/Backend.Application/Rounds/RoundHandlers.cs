@@ -88,7 +88,8 @@ internal static class RoundMapping
             StartDate = RoundRules.FormatDate(m.StartDate),
             EndDate = RoundRules.FormatDate(m.EndDate),
             NotifyAudience = RoundRules.Label(m.NotifyAudience),
-            AllowLate = m.AllowLate
+            AllowLate = m.AllowLate,
+            LateEndDate = RoundRules.FormatDate(m.LateEndDate)
         }).ToList(),
         LecturerIds = IdsOf(round, ParticipantKind.Lecturer),
         StudentIds = IdsOf(round, ParticipantKind.Student),
@@ -268,6 +269,13 @@ public sealed class UpdateRoundMilestonesHandler(IRoundRepository repository, Ti
         });
         var errors = RoundRules.ValidateMilestones(
             RoundRules.OrderedKeys.Select(k => (k, input[k].StartDate, input[k].EndDate)), requireAll: false);
+        // Công tắc không gửi lên thì giữ giá trị đang lưu (mặc định bật), nên kiểm tra theo giá trị sẽ lưu.
+        bool? LateSwitch(MilestoneKey key) => ThesisRound.HasLateToggle(key)
+            ? input[key].AllowLate ?? round.Milestones.FirstOrDefault(m => m.Key == key)?.AllowLate ?? true
+            : null;
+        errors.AddRange(RoundRules.ValidateLateDeadlines(
+            RoundRules.OrderedKeys.Select(k => (k, input[k].EndDate, LateSwitch(k), input[k].LateEndDate)),
+            requireWhenEnabled: round.Status == RoundStatus.Running));
         if (errors.Count > 0)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Invalid, "Có mốc chưa hợp lệ", errors);
 
@@ -279,7 +287,10 @@ public sealed class UpdateRoundMilestonesHandler(IRoundRepository repository, Ti
             milestone.StartDate = RoundRules.TryParseDate(next.StartDate, out var start) ? start : null;
             milestone.EndDate = RoundRules.TryParseDate(next.EndDate, out var end) ? end : null;
             milestone.NotifyAudience = audience;
-            milestone.AllowLate = ThesisRound.HasLateToggle(milestone.Key) ? next.AllowLate ?? milestone.AllowLate ?? true : null;
+            milestone.AllowLate = LateSwitch(milestone.Key);
+            milestone.LateEndDate = ThesisRound.HasLateToggle(milestone.Key) && RoundRules.TryParseDate(next.LateEndDate, out var lateEnd)
+                ? lateEnd
+                : null;
             milestone.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         }
         round.UpdatedAt = clock.GetUtcNow().UtcDateTime;
@@ -304,6 +315,11 @@ public sealed class OpenRoundHandler(IRoundRepository repository, TimeProvider c
             round.Milestones.OrderBy(m => (int)m.Key)
                 .Select(m => (m.Key, (string?)RoundRules.FormatDate(m.StartDate), (string?)RoundRules.FormatDate(m.EndDate))),
             requireAll: true);
+        // PDR-041: mốc bật "Cho nộp trễ" phải có hạn trễ hợp lệ trước khi mở đợt.
+        errors.AddRange(RoundRules.ValidateLateDeadlines(
+            round.Milestones.OrderBy(m => (int)m.Key).Select(m =>
+                (m.Key, (string?)RoundRules.FormatDate(m.EndDate), m.AllowLate, (string?)RoundRules.FormatDate(m.LateEndDate))),
+            requireWhenEnabled: true));
         if (errors.Count > 0)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.MilestonesIncompleteMessage, errors);
 

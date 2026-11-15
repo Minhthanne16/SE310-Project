@@ -81,6 +81,8 @@ public class RoundMilestone : BaseEntity
     public NotifyAudience NotifyAudience { get; set; } = NotifyAudience.All;
     // Chỉ khác null với Đề cương, Giữa kỳ, Cuối kỳ (mặc định true).
     public bool? AllowLate { get; set; }
+    // Hạn nộp trễ riêng của mốc, sau EndDate (PDR-041). Chỉ mở quyền nộp khi AllowLate = true.
+    public DateOnly? LateEndDate { get; set; }
 }
 
 public class RoundParticipant : BaseEntity

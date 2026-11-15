@@ -33,6 +33,8 @@ public sealed class RoundMilestoneDto
     public string NotifyAudience { get; set; } = string.Empty;
     // Chỉ khác null với Đề cương, Giữa kỳ, Cuối kỳ.
     public bool? AllowLate { get; set; }
+    // Hạn nộp trễ riêng của mốc (PDR-041), yyyy-MM-dd; chuỗi rỗng nghĩa là chưa đặt.
+    public string LateEndDate { get; set; } = string.Empty;
 }
 
 // Chưa có bảng đề tài nên mọi số đều 0; khóa là 9 nhãn trạng thái đề tài của frontend.
@@ -76,6 +78,8 @@ public sealed class RoundMilestoneInputDto
     public string? EndDate { get; set; }
     public string NotifyAudience { get; set; } = string.Empty;
     public bool? AllowLate { get; set; }
+    // yyyy-MM-dd; null hoặc rỗng = không đặt hạn trễ.
+    public string? LateEndDate { get; set; }
 }
 
 public sealed class ParticipantDto

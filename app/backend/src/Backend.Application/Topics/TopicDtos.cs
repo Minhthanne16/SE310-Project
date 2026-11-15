@@ -38,6 +38,18 @@ public class TopicDto
     public bool CanDelete { get; set; }
     // Nhóm đang nhận đề tài (đại diện trước). Sinh viên xem danh sách công bố không thấy nhóm khác.
     public List<GroupMemberDto> Group { get; set; } = [];
+    // GVHD duyệt đề cương (PDR-013); không đổi trạng thái đề tài (PDR-049).
+    public DateTime? OutlineApprovedAt { get; set; }
+    // Chỉ có ở danh sách đề tài của GVHD (/api/topics/mine); null ở nơi khác.
+    public OutlineSummaryDto? Outline { get; set; }
+}
+
+public class OutlineSummaryDto
+{
+    public int Versions { get; set; }
+    public int OpenRequests { get; set; }
+    // Phiên bản mới nhất đang chờ GVHD nhận xét, tạo yêu cầu hoặc duyệt (PDR-013).
+    public bool AwaitingReview { get; set; }
 }
 
 public class GroupMemberDto
@@ -144,6 +156,21 @@ public class TopicDetailDto : TopicDto
 {
     // Mới nhất trước; sinh viên không nhận lịch sử.
     public List<TopicHistoryDto> History { get; set; } = [];
+    // Phiên bản bài nộp (hiện có Đề cương), cũ trước, cho Giáo vụ/GVHD/thành viên nhóm.
+    public List<SubmissionSummaryDto> Submissions { get; set; } = [];
+}
+
+public class SubmissionSummaryDto
+{
+    public Guid Id { get; set; }
+    // Đề cương | Giữa kỳ | Cuối kỳ | Bản khóa luận (trùng SUBMISSION_KINDS ở frontend).
+    public string Kind { get; set; } = string.Empty;
+    public int VersionNo { get; set; }
+    public string SubmittedBy { get; set; } = string.Empty;
+    public DateTime SubmittedAt { get; set; }
+    public bool Late { get; set; }
+    public string FileName { get; set; } = string.Empty;
+    public string? Note { get; set; }
 }
 
 public class LecturerLoadDto

@@ -28,6 +28,7 @@ const dto = (overrides: Partial<TopicDto> = {}): TopicDto => ({
   canEdit: 'all',
   canDelete: true,
   group: [],
+  outlineApprovedAt: null,
   ...overrides,
 });
 
@@ -90,6 +91,7 @@ it('lists the round topics, filters on the client and keys loads by lecturer', a
 it('maps the history of one topic and turns 404 into TopicNotFoundError', async () => {
   const detail: TopicDetailDto = {
     ...dto(),
+    submissions: [],
     history: [
       {
         id: 'h1',

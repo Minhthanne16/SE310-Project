@@ -121,6 +121,7 @@ public sealed class TopicsController(ISender sender) : ControllerBase
         TopicResultStatus.NotFound => NotFound(result.Response),
         TopicResultStatus.Forbidden => StatusCode(StatusCodes.Status403Forbidden, result.Response),
         TopicResultStatus.Invalid => BadRequest(result.Response),
+        TopicResultStatus.Unavailable => StatusCode(StatusCodes.Status503ServiceUnavailable, result.Response),
         _ => Conflict(result.Response)
     };
 }

@@ -37,6 +37,8 @@ const proposal = (): TopicDetailDto =>
     updatedAt: null,
     canEdit: 'none',
     canDelete: false,
+    outlineApprovedAt: null,
+    submissions: [],
     group: [
       {
         id: 'sv1',

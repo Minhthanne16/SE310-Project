@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Người dùng | Đại diện Sinh viên, Giảng viên hoặc Giáo vụ | Tham gia nhóm, hướng dẫn/chấm, nhận thông báo, tạo lịch sử. |
 | Đợt khóa luận | Bao bọc mốc và cấu hình cho một chu kỳ khóa luận | Có nhiều đề tài, hội đồng và mẫu phiếu được gán. |
-| Mốc đợt | Khoảng thời gian cho một chặng của đợt | Thuộc đợt; mốc Đề cương/Giữa kỳ/Cuối kỳ có thể bật nộp trễ với hạn riêng sau hạn thường (PDR-041). |
+| Mốc đợt | Khoảng thời gian cho một chặng của đợt | Thuộc đợt; mốc Đề cương/Giữa kỳ/Cuối kỳ có thể bật nộp trễ với hạn riêng sau hạn thường (PDR-041, đã hiện thực theo PDR-058). |
 | Đề tài | Trung tâm của vòng đời khóa luận | Thuộc một đợt, có hướng dẫn viên, nhóm, bài nộp, phân công và lịch sử. |
 | Thành viên đề tài | Liên kết Sinh viên với đề tài | Một đến hai thành viên, có một đại diện. |
 | Bài nộp | Một phiên bản đề cương, báo cáo giữa kỳ/cuối kỳ hoặc khóa luận | Thuộc đề tài, có người nộp, tệp PDF và các nhận xét; mọi phiên bản được giữ sau khi kết thúc đợt (PDR-039/042). |

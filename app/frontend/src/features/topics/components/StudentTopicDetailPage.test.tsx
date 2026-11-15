@@ -63,7 +63,9 @@ const topic = (overrides: Partial<TopicDetailDto> = {}): TopicDetailDto => ({
   canEdit: 'none',
   canDelete: false,
   group: [],
+  outlineApprovedAt: null,
   history: [],
+  submissions: [],
   ...overrides,
 });
 

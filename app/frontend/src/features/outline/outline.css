@@ -1,0 +1,161 @@
+/* Đề cương trong Không gian đề tài (P04-S01). Chỉ dùng token của :root (docs/DESIGN.md). */
+
+.otl-section {
+  gap: 20px;
+}
+
+.otl-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.otl-subtitle {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.otl-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+  background: var(--canvas);
+}
+
+.otl-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.otl-file {
+  padding-top: 8px;
+}
+
+.otl-actions,
+.otl-approve {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.otl-approve {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.otl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  list-style: none;
+}
+
+.otl-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+  background: var(--surface);
+}
+
+.otl-item-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.otl-version {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.otl-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.otl-text {
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.otl-file-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.otl-file-name {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.otl-review {
+  margin: 0;
+  padding: 10px 12px;
+  border-left: 3px solid var(--line-input);
+  border-radius: var(--radius-control-sm);
+  background: var(--surface-2);
+}
+
+.otl-comment-form {
+  width: 100%;
+}
+
+.otl-dialog-title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+/* Trang Không gian đề tài và danh sách nhóm hướng dẫn */
+.otl-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: var(--page-max);
+}
+
+.otl-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 24px;
+}
+
+.otl-overview dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.otl-overview dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.otl-todo {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.otl-nowrap {
+  white-space: nowrap;
+}

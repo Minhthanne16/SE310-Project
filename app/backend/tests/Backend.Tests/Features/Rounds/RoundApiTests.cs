@@ -329,6 +329,9 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
             allowLate = key is "outline" or "midterm" or "final" ? true : null
         }).ToList();
         tweak?.Invoke(list);
+        // PDR-041: mốc bật nộp trễ phải có hạn trễ sau hạn thường; mặc định một ngày sau ngày kết thúc.
+        foreach (var m in list.Where(m => m.allowLate == true && m.lateEndDate is null))
+            if (DateOnly.TryParseExact(m.endDate, "yyyy-MM-dd", out var end)) m.lateEndDate = end.AddDays(1).ToString("yyyy-MM-dd");
         return list;
     }
 
@@ -339,6 +342,7 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
         public string endDate { get; set; } = "";
         public string notifyAudience { get; set; } = "";
         public bool? allowLate { get; set; }
+        public string? lateEndDate { get; set; }
     }
 
     private async Task<string> LoginAs(UserRole role)
