@@ -14,10 +14,10 @@ import {
   resetNavigation,
   setUrl,
 } from '@/test/navigationMock';
-import { createRoundService } from '@/features/rounds/services/roundService';
+import { createRoundService } from '@/features/rounds/services/roundDemoService';
 import { seedRounds } from '@/features/rounds/services/roundSeed';
 import type { EvaluationService } from '@/features/evaluations/services/evaluationService';
-import { createTopicService } from '@/features/topics/services/topicService';
+import { createTopicService } from '@/features/topics/services/topicDemoService';
 import { RoundDetailPage } from './RoundDetailPage';
 
 vi.mock('next/navigation', async () => {

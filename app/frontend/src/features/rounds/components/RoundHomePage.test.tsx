@@ -11,10 +11,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { currentUrl, resetNavigation, setUrl } from '@/test/navigationMock';
 import { SessionProvider } from '@/features/auth/session/SessionProvider';
 import type { AuthService } from '@/features/auth/services/authService';
-import {
-  createRoundService,
-  type RoundService,
-} from '@/features/rounds/services/roundService';
+import { createRoundService } from '@/features/rounds/services/roundDemoService';
+import { type RoundService } from '@/features/rounds/services/roundService';
 import type { CurrentUser } from '@/types/auth';
 import { RoundHomePage } from './RoundHomePage';
 

@@ -315,18 +315,16 @@ it('shows staff the pending decision without submitting on behalf of the group',
     waitingException: true,
     canGrantExtension: true,
   });
-  const grantExtension = vi
-    .fn()
-    .mockResolvedValue(
-      data([
-        {
-          ...thesis,
-          canGrantExtension: false,
-          extensionDeadline: '2026-11-05',
-          extensionReason: 'Lý do hợp lệ',
-        },
-      ]),
-    );
+  const grantExtension = vi.fn().mockResolvedValue(
+    data([
+      {
+        ...thesis,
+        canGrantExtension: false,
+        extensionDeadline: '2026-11-05',
+        extensionReason: 'Lý do hợp lệ',
+      },
+    ]),
+  );
   render(
     <SubmissionPanel
       topicId="t1"

@@ -246,7 +246,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 #### G7.1 — Bốn phiếu điểm và luồng Chủ tịch/Thư ký
 
 - [ ] Nhập HD, PB, CTHĐ, TKHĐ theo từng SV và quyền bối cảnh; ghi snapshot mẫu, người nhập/chấm, lịch sử sửa và audit.
-- [ ] Thư ký nhập/sửa điểm CTHĐ và TKHĐ; Chủ tịch xem điểm hội đồng. Giáo vụ xác nhận kết quả đề tài khi đủ điều kiện, theo PDR-050.
+- [ ] Thư ký nhập/sửa điểm CTHĐ và TKHĐ; Chủ tịch chỉ xem, không có bước xác nhận hay trả lại (PDR-050, thay PDR-006).
 
 #### G7.2 — Công thức, cảnh báo và trạng thái đề tài
 
