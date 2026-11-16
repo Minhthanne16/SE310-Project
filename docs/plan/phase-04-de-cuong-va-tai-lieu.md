@@ -45,7 +45,7 @@ Nhóm nộp tài liệu theo phiên bản; GVHD nhận xét/duyệt đề cươn
 
 **Verification:** Test upload thật trên storage test, quyền tải của SV/GVHD/GVPB/Giáo vụ và tình huống lỗi storage.
 
-*(2026-11-12: backend và giao diện sinh viên/Giáo vụ theo [PDR-058](../decisions/PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md); test handler, test hợp đồng HTTP và test giao diện đều qua với storage giả trong bộ nhớ. Hai tiêu chí nghiệm thu chưa tick vì còn thiếu: upload thật trên MinIO qua proxy Next.js với tệp gần 20 MB chưa chạy; quyền của GV phản biện chờ phân công (P05); điều kiện "đề cương đã duyệt" chờ P04-S01; màn của GVHD chưa có. Xem mục "Chưa làm" của PDR-058.)*
+*(2026-11-16: Hoàn thành Không gian đề tài theo [PDR-059](../decisions/PDR-059-khong-gian-de-tai-khung-va-tab.md); màn hình không gian đề tài dùng chung cho cả 3 vai trò: Sinh viên, Giảng viên hướng dẫn và Giáo vụ (`WorkspacePage`); điều kiện "đề cương đã duyệt" để mở Báo cáo giữa kỳ và Cuối kỳ đã hoàn tất; tiến độ 6 chặng được tính toán thuần túy từ dữ liệu thật. Còn lại: upload thật trên MinIO qua proxy Next.js với tệp gần 20 MB; quyền của GV phản biện chờ P05; nhận xét và checklist yêu cầu cho Giữa kỳ/Cuối kỳ theo A13.)*
 
 **Dependencies:** `P04-S01`, `P02-S02`; PDR-039–042.
 

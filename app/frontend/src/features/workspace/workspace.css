@@ -1,0 +1,677 @@
+/* Không gian đề tài (PDR-059) */
+
+.wsp-page {
+  max-width: var(--page-max);
+  margin: 0 auto;
+}
+
+/* Header */
+.wsp-header {
+  margin-bottom: 20px;
+}
+
+.wsp-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13.5px;
+  text-decoration: none;
+  min-height: 40px;
+  transition: color 0.15s ease;
+}
+
+.wsp-back-link:hover {
+  color: var(--ink);
+}
+
+.wsp-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.wsp-title-group {
+  flex: 1 1 500px;
+  min-width: 0;
+}
+
+.wsp-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+  margin: 0;
+  word-break: break-word;
+}
+
+.wsp-meta-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.wsp-code-chip {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink-2);
+  background-color: var(--surface-2);
+  padding: 4px 8px;
+  border-radius: var(--radius-control-sm);
+  border: 1px solid var(--line);
+}
+
+.wsp-round-chip {
+  font-size: 12.5px;
+  color: var(--muted);
+  background-color: var(--surface-2);
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+}
+
+.wsp-header-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.wsp-header-note {
+  font-size: 12px;
+  color: var(--muted);
+  max-width: 280px;
+  text-align: right;
+}
+
+/* Progress Panel */
+.wsp-progress-card {
+  margin-bottom: 24px;
+  padding: 16px 20px;
+}
+
+.wsp-progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 36px;
+  margin-bottom: 12px;
+}
+
+.wsp-progress-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-2);
+  margin: 0;
+}
+
+.wsp-progress-toggle {
+  background: none;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius-control-sm);
+  padding: 6px 12px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.wsp-progress-toggle:hover {
+  background-color: var(--surface-2);
+  color: var(--ink);
+}
+
+.wsp-progress-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wsp-progress-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.wsp-progress-row-label {
+  width: 90px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.wsp-progress-row-steps {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wsp-step-connector {
+  width: 14px;
+  height: 1px;
+  background-color: var(--line);
+  flex-shrink: 0;
+}
+
+.wsp-step-note {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+/* Step chips */
+.wsp-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12.5px;
+  font-weight: 500;
+  min-height: 32px;
+  line-height: 1.2;
+}
+
+.wsp-step-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+
+.wsp-step--done {
+  background-color: var(--ok-bg);
+  color: var(--ok-ink);
+}
+
+.wsp-step--done .wsp-step-dot {
+  background-color: var(--ok-ink);
+}
+
+.wsp-step--now {
+  background-color: var(--ink);
+  color: var(--surface);
+}
+
+.wsp-step--now .wsp-step-dot {
+  background-color: var(--accent);
+}
+
+.wsp-step--todo {
+  background-color: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.wsp-step--todo .wsp-step-dot {
+  border: 1.5px solid var(--muted-3);
+  background-color: transparent;
+}
+
+.wsp-progress-collapsed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.wsp-no-group-note {
+  padding: 12px 16px;
+  background-color: var(--surface-2);
+  border-radius: var(--radius-control);
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+/* Tabs */
+.wsp-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  gap: 4px;
+  margin-bottom: 24px;
+  overflow-x: auto;
+}
+
+.wsp-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--muted);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  min-height: 44px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.wsp-tab:hover {
+  color: var(--ink);
+}
+
+.wsp-tab[aria-selected="true"] {
+  color: var(--ink);
+  font-weight: 600;
+  border-bottom-color: var(--ink);
+}
+
+.wsp-tab-badge {
+  background-color: var(--accent);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  min-width: 18px;
+  text-align: center;
+}
+
+/* Two-column layout */
+.wsp-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .wsp-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.wsp-main-col {
+  min-width: 0;
+}
+
+/* Aside */
+.wsp-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wsp-aside-card {
+  padding: 16px;
+}
+
+.wsp-aside-heading {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted-2);
+  margin-top: 0;
+  margin-bottom: 12px;
+}
+
+.wsp-person-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.wsp-person-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background-color: var(--surface-2);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid var(--line);
+}
+
+.wsp-person-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.wsp-person-name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+  word-break: break-word;
+}
+
+.wsp-person-meta {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.wsp-person-email {
+  display: inline-block;
+  font-size: 12.5px;
+  color: var(--link);
+  margin-top: 4px;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.wsp-person-email:hover {
+  text-decoration: underline;
+}
+
+.wsp-member-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wsp-aside-note {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.4;
+  margin-top: 4px;
+  margin-bottom: 0;
+}
+
+.wsp-aside-empty-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* Tab: Tổng quan */
+.wsp-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.wsp-overview-cell {
+  background-color: var(--surface-2);
+  padding: 12px 16px;
+  border-radius: var(--radius-control);
+}
+
+.wsp-overview-cell-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted-2);
+  margin-bottom: 4px;
+}
+
+.wsp-overview-cell-value {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.wsp-overview-section {
+  margin-bottom: 24px;
+}
+
+.wsp-overview-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+.wsp-overview-text {
+  font-size: 14.5px;
+  color: var(--ink-2);
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.wsp-requirements-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-2);
+  font-size: 14.5px;
+}
+
+/* Tab: Hoạt động (Accordions) */
+.wsp-activity-accordion {
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.wsp-activity-banner {
+  margin-bottom: 16px;
+}
+
+.wsp-accordion-header {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  min-height: 52px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.wsp-accordion-header:hover {
+  background-color: var(--surface-2);
+}
+
+.wsp-accordion-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wsp-accordion-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.wsp-accordion-content {
+  padding: 0 20px 20px 20px;
+  border-top: 1px solid var(--line);
+}
+
+.wsp-locked-message {
+  padding: 16px 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* Tab: Thông báo */
+.wsp-notice-lead {
+  font-size: 13.5px;
+  color: var(--muted);
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.wsp-notice-card {
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+
+.wsp-notice-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.wsp-notice-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background-color: var(--surface-2);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.wsp-notice-sender-group {
+  flex: 1;
+}
+
+.wsp-notice-sender-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wsp-notice-sender-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.wsp-notice-meta {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+.wsp-notice-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: 0;
+  margin-bottom: 8px;
+}
+
+.wsp-notice-content {
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.5;
+  white-space: pre-line;
+  margin: 0;
+}
+
+/* Tab: Điểm số */
+.wsp-role-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 16px;
+  background-color: var(--surface-2);
+  border-radius: var(--radius-control);
+  margin-bottom: 20px;
+}
+
+.wsp-role-banner-text {
+  font-size: 13.5px;
+  color: var(--ink-2);
+}
+
+.wsp-role-banner-badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background-color: var(--ink);
+  color: var(--surface);
+  padding: 3px 8px;
+  border-radius: var(--radius-control-sm);
+}
+
+.wsp-scores-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wsp-score-card {
+  padding: 16px 20px;
+}
+
+.wsp-score-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.wsp-score-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+
+.wsp-score-card-content {
+  font-size: 13.5px;
+  color: var(--muted);
+}
+
+.wsp-total-scores-card {
+  padding: 16px 20px;
+  background-color: var(--surface-2);
+}
+
+.wsp-member-score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.wsp-member-score-row:last-child {
+  border-bottom: none;
+}
+
+.wsp-member-score-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.wsp-member-score-status {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.wsp-formula-note {
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-top: 10px;
+  margin-bottom: 0;
+}

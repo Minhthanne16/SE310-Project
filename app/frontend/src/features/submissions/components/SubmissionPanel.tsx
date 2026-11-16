@@ -15,12 +15,15 @@ import {
   formatBytes,
   formatSubmittedAt,
 } from '@/features/submissions/submissionUtils';
-import type { SubmissionKindState, TopicSubmissions } from '@/types/submission';
+import type { SubmissionKind, SubmissionKindState, TopicSubmissions } from '@/types/submission';
 import '@/features/submissions/submissions.css';
 
-interface SubmissionPanelProps {
+export interface SubmissionPanelProps {
   topicId: string;
   service?: SubmissionService;
+  kind?: SubmissionKind;
+  data?: TopicSubmissions;
+  onSubmitted?: (data: TopicSubmissions) => void;
 }
 
 type State =
@@ -36,24 +39,39 @@ const errorText = (err: unknown, fallback: string) =>
 export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
   topicId,
   service = defaultService,
+  kind,
+  data,
+  onSubmitted,
 }) => {
-  const [state, setState] = useState<State>({ kind: 'loading' });
+  const [state, setState] = useState<State>(
+    data ? { kind: 'ready', data } : { kind: 'loading' },
+  );
+
+  useEffect(() => {
+    if (data) {
+      setState({ kind: 'ready', data });
+    }
+  }, [data]);
 
   const load = useCallback(async () => {
     setState({ kind: 'loading' });
     try {
-      setState({ kind: 'ready', data: await service.list(topicId) });
+      const result = await service.list(topicId);
+      setState({ kind: 'ready', data: result });
+      onSubmitted?.(result);
     } catch (err: unknown) {
       setState({
         kind: 'error',
         message: errorText(err, 'Không tải được danh sách bài nộp.'),
       });
     }
-  }, [service, topicId]);
+  }, [service, topicId, onSubmitted]);
 
   useEffect(() => {
-    void load();
-  }, [load]);
+    if (!data) {
+      void load();
+    }
+  }, [data, load]);
 
   if (state.kind === 'loading')
     return (
@@ -71,17 +89,24 @@ export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
       </div>
     );
 
+  const kindsToRender = kind
+    ? state.data.kinds.filter((k) => k.kind === kind)
+    : state.data.kinds;
+
   return (
     <div className="sub-panel">
-      {state.data.kinds.map((kind) => (
+      {kindsToRender.map((k) => (
         <KindSection
-          key={kind.kind}
-          kind={kind}
+          key={k.kind}
+          kind={k}
           maxBytes={state.data.maxBytes}
           onSubmit={(file, note) =>
-            service.submit(topicId, kind.kind, file, note)
+            service.submit(topicId, k.kind, file, note)
           }
-          onSubmitted={(data) => setState({ kind: 'ready', data })}
+          onSubmitted={(nextData) => {
+            setState({ kind: 'ready', data: nextData });
+            onSubmitted?.(nextData);
+          }}
         />
       ))}
     </div>
