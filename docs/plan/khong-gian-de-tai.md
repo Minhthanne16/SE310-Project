@@ -386,7 +386,7 @@ Mỗi bước B **chỉ bắt đầu khi phase tương ứng đã có hợp đ�
 - [x] A10 Hủy ghi danh (`CancelRegistrationDialog.tsx`)
 - [x] A11 Điểm vào, điều hướng (cập nhật routes `/de-tai/[id]`, `/sv/de-tai` và nút "Mở không gian đề tài" tại `TopicDetailPage.tsx`)
 - [x] A12 Kiểm tra, tài liệu (tokens chuẩn `docs/DESIGN.md`, `typecheck` 0 lỗi, `lint` 0 warnings, 324 backend tests passed, 501 frontend tests passed)
-- [ ] A13 Nhận xét + checklist yêu cầu cho Giữa kỳ/Cuối kỳ (backend + frontend)
+- [x] A13 Nhận xét + checklist yêu cầu cho Giữa kỳ/Cuối kỳ (backend + frontend)
 - [ ] B1–B5: theo phase sau
 
 **Định nghĩa xong của phần A:** 3 vai trò mở cùng một đề tài thấy đúng tiến độ, 4 tab, aside; thao tác đề cương/báo cáo/hủy ghi danh chạy trên API thật và cập nhật tiến độ ngay; người ngoài nhận 404; không có dữ liệu giả; test frontend/backend và lệnh kiểm tra giao diện xanh; tài liệu đã cập nhật.

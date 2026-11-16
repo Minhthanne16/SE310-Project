@@ -71,7 +71,8 @@ docs/
 │   ├── PDR-056-thong-bao-thao-tac-bang-toast.md
 │   ├── PDR-057-de-cuong-va-yeu-cau-chinh-sua.md
 │   ├── PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md
-│   └── PDR-059-khong-gian-de-tai-khung-va-tab.md
+│   ├── PDR-059-khong-gian-de-tai-khung-va-tab.md
+│   └── PDR-060-nhan-xet-va-yeu-cau-chinh-sua-giua-ky-cuoi-ky.md
 ├── product/
 │   ├── GLOSSARY.md
 │   ├── ROLES.md
