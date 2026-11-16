@@ -30,7 +30,7 @@ public sealed class ThesisFinalizationHandler(IRoundRepository rounds, ITopicRep
     private async Task<TopicResult<TopicSubmissionsDto>> Result(Guid topicId, Guid actorId, ViewerRole role, CancellationToken ct)
     {
         var context = (await Context(topicId, actorId, role, ct))!;
-        return TopicResult<TopicSubmissionsDto>.Ok(await SubmissionMapping.BuildAsync(context, submissions, Today, ct));
+        return TopicResult<TopicSubmissionsDto>.Ok(await SubmissionMapping.BuildAsync(context, submissions, topics, Today, ct));
     }
 
     public async Task<TopicResult<TopicSubmissionsDto>> Handle(GrantThesisExtensionCommand request, CancellationToken ct)
