@@ -36,6 +36,7 @@ export interface TopicPerson {
   id: string;
   code: string;
   name: string;
+  email?: string | null;
 }
 
 export interface TopicMember extends TopicPerson {
@@ -203,7 +204,14 @@ export interface TopicHistoryDto {
   detail: string | null;
 }
 
+export interface TopicDetailRoundDto {
+  id: string;
+  name: string;
+  status: RoundStatus;
+}
+
 export interface TopicDetailDto extends TopicDto {
+  round: TopicDetailRoundDto;
   history: TopicHistoryDto[];
   // Giáo vụ, GVHD và thành viên nhóm; người khác nhận mảng rỗng.
   submissions: SubmissionSummaryDto[];

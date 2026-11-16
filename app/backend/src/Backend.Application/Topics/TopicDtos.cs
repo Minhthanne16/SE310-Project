@@ -15,6 +15,7 @@ public class TopicPersonDto
     public Guid Id { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? Email { get; set; }
 }
 
 public class TopicDto
@@ -59,6 +60,7 @@ public class GroupMemberDto
     public string Name { get; set; } = string.Empty;
     public string ClassName { get; set; } = string.Empty;
     public bool Representative { get; set; }
+    public string? Email { get; set; }
 }
 
 public class GroupDto
@@ -152,8 +154,16 @@ public class TopicHistoryDto
     public string? Detail { get; set; }
 }
 
+public class TopicDetailRoundDto
+{
+    public Guid Id { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string Status { get; set; } = string.Empty;
+}
+
 public class TopicDetailDto : TopicDto
 {
+    public TopicDetailRoundDto Round { get; set; } = new();
     // Mới nhất trước; sinh viên không nhận lịch sử.
     public List<TopicHistoryDto> History { get; set; } = [];
     // Phiên bản bài nộp (hiện có Đề cương), cũ trước, cho Giáo vụ/GVHD/thành viên nhóm.

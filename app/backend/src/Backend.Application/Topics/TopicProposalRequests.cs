@@ -78,6 +78,12 @@ internal static class ProposalMapping
         IReadOnlyDictionary<Guid, ThesisGroup> groups, IReadOnlyDictionary<Guid, string> names)
     {
         var dto = (TopicDetailDto)TopicMapping.Fill(new TopicDetailDto(), topic, round, today, viewerIsSupervisor, groups);
+        dto.Round = new TopicDetailRoundDto
+        {
+            Id = round.Id,
+            Name = round.Name,
+            Status = RoundRules.Label(round.Status)
+        };
         dto.History = History(topic, names);
         return dto;
     }

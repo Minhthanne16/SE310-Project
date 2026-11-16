@@ -354,6 +354,30 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
         // Sinh viên chỉ thấy thành viên khi đề tài là của nhóm mình.
         var detail = (TopicDetailDto)TopicMapping.Fill(new TopicDetailDto(), topic, round, today, isSupervisor,
             request.Role != ViewerRole.Student || ownGroup ? members : null);
+        detail.Round = new TopicDetailRoundDto
+        {
+            Id = round.Id,
+            Name = round.Name,
+            Status = RoundRules.Label(round.Status)
+        };
+        detail.Supervisor.Email = string.IsNullOrWhiteSpace(topic.Supervisor?.Email) ? null : topic.Supervisor.Email;
+        if (topic.GroupId is { } groupId && members.TryGetValue(groupId, out var group))
+        {
+            var studentEmails = group.Members.ToDictionary(
+                m => m.StudentId,
+                m => string.IsNullOrWhiteSpace(m.Student?.Email) ? null : m.Student.Email);
+            foreach (var memberDto in detail.Group)
+            {
+                if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || memberDto.Id == request.ViewerId)
+                {
+                    memberDto.Email = studentEmails.GetValueOrDefault(memberDto.Id);
+                }
+                else
+                {
+                    memberDto.Email = null;
+                }
+            }
+        }
         if (request.Role != ViewerRole.Student || (topic.Source == TopicSource.StudentProposal && ownGroup))
         {
             var names = await topics.GetUserNamesAsync(
