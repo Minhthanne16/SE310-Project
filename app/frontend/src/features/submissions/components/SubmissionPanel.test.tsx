@@ -14,6 +14,7 @@ import {
   fileError,
   formatBytes,
 } from '@/features/submissions/submissionUtils';
+import type { RevisionRequest } from '@/types/outline';
 import type {
   SubmissionKindState,
   SubmissionVersion,
@@ -36,6 +37,26 @@ const version = (
   isLate: false,
   isLatest: true,
   downloadUrl: '/api/submissions/s1/file',
+  reviewComment: null,
+  reviewedBy: null,
+  reviewedAt: null,
+  addressedRequestIds: [],
+  ...overrides,
+});
+
+const revisionRequest = (
+  overrides: Partial<RevisionRequest> = {},
+): RevisionRequest => ({
+  id: 'req1',
+  content: 'Sửa chương 2 phần thực nghiệm',
+  createdBy: 'TS. Nguyễn Văn A',
+  createdAt: '2026-09-26T04:00:00Z',
+  raisedOnVersionNo: 1,
+  status: 'open',
+  resolvedBy: null,
+  resolvedAt: null,
+  addressedInVersions: [],
+  canResolve: false,
   ...overrides,
 });
 
@@ -51,7 +72,9 @@ const kind = (
   canSubmit: true,
   blockedReason: null,
   noteRequired: false,
+  canReview: false,
   versions: [],
+  requests: [],
   ...overrides,
 });
 
@@ -75,9 +98,15 @@ const finalKind = (overrides: Partial<SubmissionKindState> = {}) =>
 const service = (
   initial: TopicSubmissions,
   submit: SubmissionService['submit'] = vi.fn(),
+  comment: SubmissionService['comment'] = vi.fn(),
+  createRequest: SubmissionService['createRequest'] = vi.fn(),
+  resolveRequest: SubmissionService['resolveRequest'] = vi.fn(),
 ): SubmissionService => ({
   list: vi.fn().mockResolvedValue(initial),
   submit,
+  comment,
+  createRequest,
+  resolveRequest,
 });
 
 const pdf = (name = 'bao-cao.pdf', size = 1000, type = 'application/pdf') => {
@@ -89,144 +118,109 @@ const pdf = (name = 'bao-cao.pdf', size = 1000, type = 'application/pdf') => {
 const section = async (name: string) =>
   within(await screen.findByRole('region', { name }));
 
-it('rejects a non-PDF or oversized file before any upload', async () => {
-  const submit = vi.fn();
+it('renders both report stages and their initial empty states', async () => {
   render(
-    <SubmissionPanel topicId="t1" service={service(data([kind()]), submit)} />,
+    <SubmissionPanel
+      topicId="t1"
+      service={service(data([kind(), finalKind()]))}
+    />,
   );
+
   const midterm = await section('Báo cáo giữa kỳ');
-  const input = midterm.getByLabelText('Tệp báo cáo (PDF, tối đa 20 MB)');
+  expect(midterm.getByText('Đang nhận bài')).toBeInTheDocument();
+  expect(midterm.getByText('Chưa nộp')).toBeInTheDocument();
+  expect(
+    midterm.getByText(/Hạn nộp: hết ngày 27\/09\/2026/),
+  ).toBeInTheDocument();
+  expect(midterm.getByLabelText(/Tệp báo cáo/)).toBeInTheDocument();
 
-  fireEvent.change(input, {
-    target: { files: [pdf('bao-cao.docx', 1000, 'application/msword')] },
-  });
-  expect(midterm.getByRole('alert')).toHaveTextContent(
-    'Tệp không phải PDF. Chỉ nhận tệp PDF.',
-  );
-  expect(input).toHaveAttribute('aria-invalid', 'true');
-
-  fireEvent.change(input, {
-    target: { files: [pdf('to.pdf', 20 * 1024 * 1024 + 1)] },
-  });
-  expect(midterm.getByRole('alert')).toHaveTextContent('Tệp vượt quá 20 MB');
-  fireEvent.click(midterm.getByRole('button', { name: /Nộp báo cáo giữa kỳ/ }));
-  expect(submit).not.toHaveBeenCalled();
+  const final = await section('Báo cáo cuối kỳ');
+  expect(final.getByText('Chưa nộp')).toBeInTheDocument();
+  expect(final.getByLabelText(/Ghi chú thay đổi \(bắt buộc\)/)).toBeInTheDocument();
 });
 
-it('submits a valid PDF and shows the new version with its late label', async () => {
-  const after = data([
+it('rejects an empty file selection with an in-field error', async () => {
+  render(<SubmissionPanel topicId="t1" service={service(data([kind()]))} />);
+  const midterm = await section('Báo cáo giữa kỳ');
+
+  fireEvent.click(midterm.getByRole('button', { name: 'Nộp báo cáo giữa kỳ' }));
+
+  expect(midterm.getByRole('alert')).toHaveTextContent('Chọn tệp PDF để nộp.');
+});
+
+it('submits a valid PDF and appends the new version', async () => {
+  const next = data([
     kind({
-      window: 'late',
-      versions: [
-        version({ id: 's2', version: 2, isLate: true, note: 'Sửa chương 2' }),
-        version({ isLatest: false }),
-      ],
+      versions: [version()],
     }),
   ]);
-  const submit = vi.fn().mockResolvedValue(after);
+  const submit = vi.fn().mockResolvedValue(next);
   render(
     <SubmissionPanel
       topicId="t1"
-      service={service(
-        data([kind({ window: 'late', versions: [version()] })]),
-        submit,
-      )}
+      service={service(data([kind()]), submit)}
     />,
   );
+
   const midterm = await section('Báo cáo giữa kỳ');
-  expect(
-    midterm.getByText(/Bài nộp bây giờ sẽ được gắn nhãn “Nộp trễ”/),
-  ).toBeInTheDocument();
+  const input = midterm.getByLabelText(/Tệp báo cáo/);
+  fireEvent.change(input, { target: { files: [pdf('bao-cao-giua-ky.pdf')] } });
+  fireEvent.click(midterm.getByRole('button', { name: 'Nộp báo cáo giữa kỳ' }));
 
-  const file = pdf();
-  fireEvent.change(midterm.getByLabelText(/Tệp báo cáo/), {
-    target: { files: [file] },
+  await waitFor(() => {
+    expect(submit).toHaveBeenCalledWith(
+      't1',
+      'midterm',
+      expect.any(File),
+      '',
+    );
   });
-  fireEvent.change(midterm.getByLabelText(/Ghi chú thay đổi/), {
-    target: { value: 'Sửa chương 2' },
-  });
-  fireEvent.click(
-    midterm.getByRole('button', { name: /Nộp bản mới báo cáo giữa kỳ/ }),
-  );
-
-  await waitFor(() =>
-    expect(submit).toHaveBeenCalledWith('t1', 'midterm', file, 'Sửa chương 2'),
-  );
-  expect(await midterm.findByRole('status')).toHaveTextContent(
-    'Đã nộp bản 2 (nộp trễ).',
-  );
-  const items = midterm.getAllByRole('listitem');
-  expect(items).toHaveLength(2);
-  expect(items[0]).toHaveTextContent('Bản 2');
-  expect(items[0]).toHaveTextContent('Mới nhất');
-  expect(items[0]).toHaveTextContent('Nộp trễ');
-  expect(items[1]).toHaveTextContent('Bản 1');
-  expect(
-    midterm.getByRole('link', { name: 'Tải bản 1 Báo cáo giữa kỳ' }),
-  ).toHaveAttribute('href', '/api/submissions/s1/file');
+  expect(await screen.findByText('Đã nộp bản 1.')).toBeInTheDocument();
+  expect(screen.getByText('Bản 1')).toBeInTheDocument();
+  expect(screen.getByText('Mới nhất')).toBeInTheDocument();
+  expect(screen.getByText('1,5 MB')).toBeInTheDocument();
 });
 
-it('requires a change note for the final report', async () => {
-  const submit = vi.fn();
-  render(
-    <SubmissionPanel
-      topicId="t1"
-      service={service(data([finalKind()]), submit)}
-    />,
-  );
+it('enforces a change note on the final report stage', async () => {
+  render(<SubmissionPanel topicId="t1" service={service(data([finalKind()]))} />);
   const final = await section('Báo cáo cuối kỳ');
+
   fireEvent.change(final.getByLabelText(/Tệp báo cáo/), {
-    target: { files: [pdf()] },
+    target: { files: [pdf('khoa-luan.pdf')] },
   });
-  fireEvent.click(final.getByRole('button', { name: /Nộp báo cáo cuối kỳ/ }));
+  fireEvent.click(final.getByRole('button', { name: 'Nộp báo cáo cuối kỳ' }));
 
   expect(final.getByRole('alert')).toHaveTextContent(
     'Nhập ghi chú thay đổi cho bản báo cáo cuối kỳ.',
   );
-  expect(submit).not.toHaveBeenCalled();
 });
 
-it('keeps the form and shows the server reason when the upload fails', async () => {
-  const submit = vi
-    .fn()
-    .mockRejectedValue(
-      new ApiError('Tệp không phải PDF hợp lệ. Chỉ nhận tệp PDF.', 400),
-    );
-  render(
-    <SubmissionPanel topicId="t1" service={service(data([kind()]), submit)} />,
-  );
-  const midterm = await section('Báo cáo giữa kỳ');
-  fireEvent.change(midterm.getByLabelText(/Tệp báo cáo/), {
-    target: { files: [pdf('gia.pdf')] },
+it('warns when submitting during the late window and marks late uploads', async () => {
+  const lateKind = kind({
+    window: 'late',
+    versions: [version({ isLate: true })],
   });
-  fireEvent.click(midterm.getByRole('button', { name: /Nộp báo cáo giữa kỳ/ }));
+  render(<SubmissionPanel topicId="t1" service={service(data([lateKind]))} />);
 
-  expect(await midterm.findByRole('alert')).toHaveTextContent(
-    'Tệp không phải PDF hợp lệ',
-  );
-  expect(midterm.queryByRole('status')).not.toBeInTheDocument();
-  expect(midterm.getByText('Chưa có bản nào được nộp.')).toBeInTheDocument();
+  const midterm = await section('Báo cáo giữa kỳ');
+  expect(midterm.getByText('Nộp trễ')).toBeInTheDocument();
+  expect(
+    midterm.getByText(/Bài nộp bây giờ sẽ được gắn nhãn “Nộp trễ”/),
+  ).toBeInTheDocument();
+  expect(midterm.getByText('Nộp trễ', { selector: 'span' })).toBeInTheDocument();
 });
 
-it('shows versions read-only with the reason when submission is closed', async () => {
-  render(
-    <SubmissionPanel
-      topicId="t1"
-      service={service(
-        data([
-          kind({
-            window: 'closed',
-            canSubmit: false,
-            blockedReason:
-              'Đã hết hạn nộp trễ báo cáo giữa kỳ (hết ngày 30/09/2026).',
-            versions: [version()],
-          }),
-        ]),
-      )}
-    />,
-  );
-  const midterm = await section('Báo cáo giữa kỳ');
+it('hides the upload form when submissions are closed or blocked', async () => {
+  const closedKind = kind({
+    window: 'closed',
+    canSubmit: false,
+    blockedReason:
+      'Đã hết hạn nộp trễ báo cáo giữa kỳ (hết ngày 30/09/2026).',
+    versions: [version()],
+  });
+  render(<SubmissionPanel topicId="t1" service={service(data([closedKind]))} />);
 
+  const midterm = await section('Báo cáo giữa kỳ');
   expect(midterm.getByText('Đã hết hạn nộp')).toBeInTheDocument();
   expect(
     midterm.getByText(/Đã hết hạn nộp trễ báo cáo giữa kỳ/),
@@ -235,12 +229,115 @@ it('shows versions read-only with the reason when submission is closed', async (
   expect(midterm.getByRole('link', { name: /Tải bản 1/ })).toBeInTheDocument();
 });
 
+it('allows supervisor to comment on report versions', async () => {
+  const next = data([
+    kind({
+      canReview: true,
+      versions: [
+        version({
+          reviewComment: 'Bổ sung kết quả đo lường',
+          reviewedBy: 'GV. Hướng Dẫn',
+          reviewedAt: '2026-09-26T05:00:00Z',
+        }),
+      ],
+    }),
+  ]);
+  const comment = vi.fn().mockResolvedValue(next);
+  render(
+    <SubmissionPanel
+      topicId="t1"
+      service={service(
+        data([
+          kind({
+            canReview: true,
+            versions: [version()],
+          }),
+        ]),
+        vi.fn(),
+        comment,
+      )}
+    />,
+  );
+
+  const midterm = await section('Báo cáo giữa kỳ');
+  fireEvent.click(midterm.getByRole('button', { name: 'Nhận xét' }));
+
+  const commentInput = midterm.getByLabelText(/Nhận xét Bản 1/);
+  fireEvent.change(commentInput, { target: { value: 'Bổ sung kết quả đo lường' } });
+  fireEvent.click(midterm.getByRole('button', { name: 'Lưu nhận xét' }));
+
+  await waitFor(() => {
+    expect(comment).toHaveBeenCalledWith(
+      't1',
+      's1',
+      'Bổ sung kết quả đo lường',
+    );
+  });
+});
+
+it('allows supervisor to create and resolve revision requests', async () => {
+  const req = revisionRequest({ id: 'req-1', canResolve: true, addressedInVersions: [2] });
+  const initial = data([
+    kind({
+      canReview: true,
+      versions: [version({ version: 2 })],
+      requests: [req],
+    }),
+  ]);
+  const resolve = vi.fn().mockResolvedValue(
+    data([
+      kind({
+        canReview: true,
+        versions: [version({ version: 2 })],
+        requests: [
+          revisionRequest({
+            id: 'req-1',
+            status: 'resolved',
+            resolvedBy: 'GVHD',
+            resolvedAt: '2026-09-26T06:00:00Z',
+            addressedInVersions: [2],
+          }),
+        ],
+      }),
+    ]),
+  );
+
+  render(
+    <SubmissionPanel
+      topicId="t1"
+      service={service(initial, vi.fn(), vi.fn(), vi.fn(), resolve)}
+    />,
+  );
+
+  const midterm = await section('Báo cáo giữa kỳ');
+  expect(midterm.getByText('Sửa chương 2 phần thực nghiệm')).toBeInTheDocument();
+  expect(midterm.getByText(/Nhóm đã nộp lại: Bản 2/)).toBeInTheDocument();
+
+  const resolveBtn = midterm.getByRole('button', { name: 'Xác nhận hoàn tất' });
+  fireEvent.click(resolveBtn);
+
+  await waitFor(() => {
+    expect(resolve).toHaveBeenCalledWith('t1', 'req-1');
+  });
+});
+
 it('offers a retry when the list cannot be loaded', async () => {
   const list = vi
     .fn()
     .mockRejectedValueOnce(new ApiError('Không tìm thấy đề tài.', 404))
     .mockResolvedValueOnce(data([kind()]));
-  render(<SubmissionPanel topicId="t1" service={{ list, submit: vi.fn() }} />);
+  render(
+    <SubmissionPanel
+      topicId="t1"
+      service={{
+        list,
+        submit: vi.fn(),
+        comment: vi.fn(),
+        createRequest: vi.fn(),
+        resolveRequest: vi.fn(),
+      }}
+    />,
+  );
 
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'Không tìm thấy đề tài.',

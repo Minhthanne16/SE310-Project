@@ -380,6 +380,13 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.Property<Guid>("CreatedById")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasDefaultValue("Outline");
+
                     b.Property<Guid>("RaisedOnSubmissionId")
                         .HasColumnType("uuid");
 
@@ -402,6 +409,8 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.HasIndex("RaisedOnSubmissionId");
 
                     b.HasIndex("TopicId", "ResolvedAt");
+
+                    b.HasIndex("TopicId", "Kind", "ResolvedAt");
 
                     b.ToTable("RevisionRequests");
                 });

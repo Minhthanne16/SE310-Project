@@ -245,3 +245,128 @@
   color: #3d3d3d;
   overflow-wrap: anywhere;
 }
+
+/* Nhận xét và yêu cầu chỉnh sửa (PDR-060) */
+.sub-review {
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  background: var(--canvas);
+  border-left: 3px solid var(--muted-3);
+  border-radius: var(--radius-control-sm);
+  display: grid;
+  gap: 4px;
+}
+
+.sub-review-head {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sub-review-text {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sub-comment-editor {
+  margin-top: 8px;
+  display: grid;
+  gap: 8px;
+}
+
+.sub-comment-editor textarea {
+  min-height: 80px;
+  padding: 8px 10px;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius-control-sm);
+  background: var(--surface);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.sub-comment-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sub-requests {
+  margin-top: 20px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.sub-requests-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sub-request-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.sub-request-item {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+  background: var(--surface);
+}
+
+.sub-request-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sub-request-content {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.sub-request-meta {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.sub-request-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.sub-add-request-form {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-block);
+  background: var(--canvas);
+  border: 1px solid var(--line);
+}

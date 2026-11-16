@@ -76,11 +76,17 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({
 
   // Chip Giữa kỳ
   const midterm = submissions?.kinds.find((k) => k.kind === 'midterm');
+  const midtermOpenRequests = (midterm?.requests ?? []).filter(
+    (r) => r.status === 'open',
+  ).length;
   let midtermChipText = 'Chưa mở';
   let midtermChipClass = 'app-chip-disabled';
   if (outlineApproved) {
     const vCount = midterm?.versions.length ?? 0;
-    if (vCount > 0) {
+    if (midtermOpenRequests > 0) {
+      midtermChipText = `Cần chỉnh sửa · ${midtermOpenRequests} yêu cầu`;
+      midtermChipClass = 'app-chip-pending';
+    } else if (vCount > 0) {
       midtermChipText = `Đã nộp · ${vCount} phiên bản`;
       midtermChipClass = 'app-chip-active';
     } else if (midterm?.window === 'closed') {
@@ -97,11 +103,17 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({
 
   // Chip Cuối kỳ
   const finalSub = submissions?.kinds.find((k) => k.kind === 'final');
+  const finalOpenRequests = (finalSub?.requests ?? []).filter(
+    (r) => r.status === 'open',
+  ).length;
   let finalChipText = 'Chưa mở';
   let finalChipClass = 'app-chip-disabled';
   if (outlineApproved) {
     const vCount = finalSub?.versions.length ?? 0;
-    if (vCount > 0) {
+    if (finalOpenRequests > 0) {
+      finalChipText = `Cần chỉnh sửa · ${finalOpenRequests} yêu cầu`;
+      finalChipClass = 'app-chip-pending';
+    } else if (vCount > 0) {
       finalChipText = `Đã nộp · ${vCount} phiên bản`;
       finalChipClass = 'app-chip-active';
     } else if (finalSub?.window === 'closed') {

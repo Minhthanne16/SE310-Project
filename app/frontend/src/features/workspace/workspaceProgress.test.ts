@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Outline } from '@/types/outline';
-import type { TopicSubmissions } from '@/types/submission';
+import type { SubmissionVersion, TopicSubmissions } from '@/types/submission';
 import type { TopicDetailDto } from '@/types/topic';
 import { buildProgress, getCurrentStage } from './workspaceProgress';
 
@@ -57,6 +57,24 @@ const mockOutline = (overrides: Partial<Outline> = {}): Outline => ({
   ...overrides,
 });
 
+const mockVersion = (overrides: Partial<SubmissionVersion> = {}): SubmissionVersion => ({
+  id: 'v1',
+  version: 1,
+  fileName: 'bc.pdf',
+  sizeBytes: 2000,
+  note: null,
+  submittedAt: '2026-11-04T00:00:00Z',
+  submittedBy: { id: 'sv1', code: '22520001', name: 'Nguyễn Văn SV' },
+  isLate: false,
+  isLatest: true,
+  downloadUrl: '/api/submissions/v1/file',
+  reviewComment: null,
+  reviewedBy: null,
+  reviewedAt: null,
+  addressedRequestIds: [],
+  ...overrides,
+});
+
 const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmissions => ({
   topicId: 't1',
   maxBytes: 20 * 1024 * 1024,
@@ -71,7 +89,9 @@ const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmis
       canSubmit: true,
       blockedReason: null,
       noteRequired: false,
+      canReview: false,
       versions: [],
+      requests: [],
     },
     {
       kind: 'final',
@@ -83,7 +103,9 @@ const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmis
       canSubmit: true,
       blockedReason: null,
       noteRequired: true,
+      canReview: false,
       versions: [],
+      requests: [],
     },
   ],
   ...overrides,
@@ -242,7 +264,9 @@ describe('workspaceProgress', () => {
           canSubmit: false,
           blockedReason: 'Đã hết hạn nộp',
           noteRequired: false,
+          canReview: false,
           versions: [],
+          requests: [],
         },
         {
           kind: 'final',
@@ -254,7 +278,9 @@ describe('workspaceProgress', () => {
           canSubmit: true,
           blockedReason: null,
           noteRequired: true,
+          canReview: false,
           versions: [],
+          requests: [],
         },
       ],
     });
@@ -292,19 +318,18 @@ describe('workspaceProgress', () => {
           canSubmit: true,
           blockedReason: null,
           noteRequired: false,
+          canReview: false,
+          requests: [],
           versions: [
-            {
+            mockVersion({
               id: 'v1',
               version: 1,
               fileName: 'bcgk.pdf',
-              sizeBytes: 2000,
-              note: null,
               submittedAt: '2026-11-08T00:00:00Z',
-              submittedBy: { id: 'sv1', code: '22520001', name: 'Nguyễn Văn SV' },
               isLate: true,
               isLatest: true,
               downloadUrl: '/api/submissions/v1/file',
-            },
+            }),
           ],
         },
       ],
@@ -332,19 +357,16 @@ describe('workspaceProgress', () => {
           canSubmit: false,
           blockedReason: null,
           noteRequired: false,
+          canReview: false,
+          requests: [],
           versions: [
-            {
+            mockVersion({
               id: 'mv1',
               version: 1,
               fileName: 'bcgk.pdf',
-              sizeBytes: 2000,
-              note: null,
               submittedAt: '2026-11-04T00:00:00Z',
-              submittedBy: { id: 'sv1', code: '22520001', name: 'Nguyễn Văn SV' },
-              isLate: false,
-              isLatest: true,
               downloadUrl: '/api/submissions/mv1/file',
-            },
+            }),
           ],
         },
         {
@@ -357,43 +379,39 @@ describe('workspaceProgress', () => {
           canSubmit: true,
           blockedReason: null,
           noteRequired: true,
+          canReview: false,
+          requests: [],
           versions: [
-            {
+            mockVersion({
               id: 'fv3',
               version: 3,
               fileName: 'bckk_v3.pdf',
               sizeBytes: 3000,
               note: 'Sửa kết luận',
               submittedAt: '2026-12-04T00:00:00Z',
-              submittedBy: { id: 'sv1', code: '22520001', name: 'Nguyễn Văn SV' },
-              isLate: false,
               isLatest: true,
               downloadUrl: '/api/submissions/fv3/file',
-            },
-            {
+            }),
+            mockVersion({
               id: 'fv2',
               version: 2,
               fileName: 'bckk_v2.pdf',
               sizeBytes: 2900,
               note: 'Sửa bảng số liệu',
               submittedAt: '2026-12-02T00:00:00Z',
-              submittedBy: { id: 'sv1', code: '22520001', name: 'Nguyễn Văn SV' },
-              isLate: false,
               isLatest: false,
               downloadUrl: '/api/submissions/fv2/file',
-            },
-            {
+            }),
+            mockVersion({
               id: 'fv1',
               version: 1,
               fileName: 'bckk_v1.pdf',
               sizeBytes: 2800,
               note: 'Bản nộp đầu',
               submittedAt: '2026-12-01T00:00:00Z',
-              submittedBy: { id: 'sv1', code: '22520001', name: 'Nguyễn Văn SV' },
-              isLate: false,
               isLatest: false,
               downloadUrl: '/api/submissions/fv1/file',
-            },
+            }),
           ],
         },
       ],

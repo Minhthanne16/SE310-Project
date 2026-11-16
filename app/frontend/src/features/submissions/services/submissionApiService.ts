@@ -13,6 +13,23 @@ export interface SubmissionService {
     file: File,
     note: string,
   ): Promise<TopicSubmissions>;
+  // PUT /api/topics/{id}/submissions/{subId}/comment
+  comment(
+    topicId: string,
+    submissionId: string,
+    comment: string,
+  ): Promise<TopicSubmissions>;
+  // POST /api/topics/{id}/submissions/requests
+  createRequest(
+    topicId: string,
+    kind: SubmissionKind,
+    content: string,
+  ): Promise<TopicSubmissions>;
+  // POST /api/topics/{id}/submissions/requests/{requestId}/resolve
+  resolveRequest(
+    topicId: string,
+    requestId: string,
+  ): Promise<TopicSubmissions>;
 }
 
 const path = (topicId: string) =>
@@ -31,6 +48,26 @@ export function createSubmissionService(): SubmissionService {
         body,
       });
     },
+    comment: (topicId, submissionId, comment) =>
+      apiRequest<TopicSubmissions>(
+        `${path(topicId)}/${encodeURIComponent(submissionId)}/comment`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ comment }),
+        },
+      ),
+    createRequest: (topicId, kind, content) =>
+      apiRequest<TopicSubmissions>(`${path(topicId)}/requests`, {
+        method: 'POST',
+        body: JSON.stringify({ kind, content }),
+      }),
+    resolveRequest: (topicId, requestId) =>
+      apiRequest<TopicSubmissions>(
+        `${path(topicId)}/requests/${encodeURIComponent(requestId)}/resolve`,
+        {
+          method: 'POST',
+        },
+      ),
   };
 }
 

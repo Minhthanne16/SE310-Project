@@ -67,10 +67,21 @@ public static class SubmissionRules
     public const string SubmissionNotFoundMessage = "Không tìm thấy bài nộp.";
     public const string FileMissingMessage = "Tệp của bài nộp không còn trong kho lưu trữ. Báo Giáo vụ để kiểm tra.";
     public const string OnlyMembersMessage = "Chỉ thành viên nhóm thực hiện đề tài được nộp báo cáo.";
+    public const string OnlySupervisorMessage = "Chỉ GVHD của đề tài mới được thực hiện thao tác này.";
     public const string RoundNotRunningMessage = "Đợt không còn diễn ra nên không nộp được báo cáo.";
+    public const string RoundFinishedMessage = "Đợt đã kết thúc nên không thao tác được.";
     public const string NotInProgressMessage = "Chỉ nộp báo cáo khi đề tài đang thực hiện (sau khi hết thời gian đăng ký).";
     public const string OutlineNotApprovedMessage = "Chỉ nộp báo cáo sau khi GVHD duyệt đề cương.";
     public const string TopicClosedMessage = "Đề tài đã kết thúc nên không nộp được báo cáo.";
+    public const string RequestNotFoundMessage = "Không tìm thấy yêu cầu chỉnh sửa.";
+    public const string ResolvedMessage = "Yêu cầu đã được xác nhận hoàn tất.";
+    public const string NotAddressedMessage = "Nhóm chưa nộp lại phiên bản xử lý yêu cầu này.";
+    public const string EmptyContentMessage = "Nội dung yêu cầu chỉnh sửa không được để trống.";
+    public const string ContentTooLongMessage = "Nội dung yêu cầu tối đa 2000 ký tự.";
+    public const string CommentTooLongMessage = "Nhận xét tối đa 2000 ký tự.";
+
+    public static string NoSubmissionOfKindMessage(SubmissionKind kind) =>
+        $"Nhóm chưa nộp phiên bản {KindLabel(kind).ToLowerInvariant()} nào.";
 
     public static readonly IReadOnlyList<SubmissionKind> Kinds = [SubmissionKind.Midterm, SubmissionKind.Final];
 

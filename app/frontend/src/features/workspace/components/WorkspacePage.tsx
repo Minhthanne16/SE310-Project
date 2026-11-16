@@ -141,11 +141,15 @@ const WorkspaceInner: React.FC<WorkspacePageProps> = ({
   const noGroup = topic.status === 'Không có nhóm';
   const progressRows = buildProgress({ topic, outline, submissions });
 
-  // Số lượng yêu cầu mở trên chặng Đề cương khi chưa duyệt
+  // Tổng số lượng yêu cầu mở trên cả 3 chặng: Đề cương, Giữa kỳ, Cuối kỳ (PDR-060)
   const outlineApproved = Boolean(topic.outlineApprovedAt || outline?.approvedAt);
-  const openRequestsCount = !outlineApproved && outline?.requests
+  const outlineOpenCount = !outlineApproved && outline?.requests
     ? outline.requests.filter((r) => r.status === 'open').length
     : 0;
+  const submissionsOpenCount = (submissions?.kinds ?? []).reduce((acc, k) => {
+    return acc + (k.requests ?? []).filter((r) => r.status === 'open').length;
+  }, 0);
+  const openRequestsCount = outlineOpenCount + submissionsOpenCount;
 
   const handleOutlineReady = (updatedOutline: Outline) => {
     setState((prev) => {

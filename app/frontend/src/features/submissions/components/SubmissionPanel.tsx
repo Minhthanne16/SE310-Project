@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 import { ApiError } from '@/api/request';
 import {
   submissionService as defaultService,
@@ -15,7 +16,14 @@ import {
   formatBytes,
   formatSubmittedAt,
 } from '@/features/submissions/submissionUtils';
-import type { SubmissionKind, SubmissionKindState, TopicSubmissions } from '@/types/submission';
+import { formatDateTime } from '@/features/rounds/roundUtils';
+import type { RevisionRequest } from '@/types/outline';
+import type {
+  SubmissionKind,
+  SubmissionKindState,
+  SubmissionVersion,
+  TopicSubmissions,
+} from '@/types/submission';
 import '@/features/submissions/submissions.css';
 
 export interface SubmissionPanelProps {
@@ -34,8 +42,8 @@ type State =
 const errorText = (err: unknown, fallback: string) =>
   err instanceof ApiError && err.message ? err.message : fallback;
 
-// Báo cáo giữa kỳ/cuối kỳ của một đề tài (P04-S02): thành viên nhóm nộp PDF,
-// người có quyền xem tải lại mọi phiên bản. Quyền và hạn do backend quyết định.
+// Báo cáo giữa kỳ/cuối kỳ của một đề tài (P04-S02, PDR-060): thành viên nhóm nộp PDF,
+// GVHD nhận xét cho từng bản nộp, tạo/đóng checklist yêu cầu chỉnh sửa.
 export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
   topicId,
   service = defaultService,
@@ -98,11 +106,10 @@ export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
       {kindsToRender.map((k) => (
         <KindSection
           key={k.kind}
+          topicId={topicId}
           kind={k}
           maxBytes={state.data.maxBytes}
-          onSubmit={(file, note) =>
-            service.submit(topicId, k.kind, file, note)
-          }
+          service={service}
           onSubmitted={(nextData) => {
             setState({ kind: 'ready', data: nextData });
             onSubmitted?.(nextData);
@@ -114,16 +121,18 @@ export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
 };
 
 interface KindSectionProps {
+  topicId: string;
   kind: SubmissionKindState;
   maxBytes: number;
-  onSubmit: (file: File, note: string) => Promise<TopicSubmissions>;
+  service: SubmissionService;
   onSubmitted: (data: TopicSubmissions) => void;
 }
 
 const KindSection: React.FC<KindSectionProps> = ({
+  topicId,
   kind,
   maxBytes,
-  onSubmit,
+  service,
   onSubmitted,
 }) => {
   const id = useId();
@@ -135,6 +144,10 @@ const KindSection: React.FC<KindSectionProps> = ({
   const [failure, setFailure] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+
+  // Thêm yêu cầu chỉnh sửa
+  const [requestText, setRequestText] = useState('');
+  const [requestSending, setRequestSending] = useState(false);
 
   const pick = (next: File | null) => {
     setFile(next);
@@ -157,24 +170,69 @@ const KindSection: React.FC<KindSectionProps> = ({
     setFailure(null);
     setDone(null);
     try {
-      const data = await onSubmit(file, note);
+      const data = await service.submit(topicId, kind.kind, file, note);
       const latest = data.kinds.find((k) => k.kind === kind.kind)?.versions[0];
       setFile(null);
       setNote('');
       if (fileInput.current) fileInput.current.value = '';
-      setDone(
-        latest
-          ? `Đã nộp bản ${latest.version}${latest.isLate ? ' (nộp trễ)' : ''}.`
-          : 'Đã nộp.',
-      );
+      const msg = latest
+        ? `Đã nộp bản ${latest.version}${latest.isLate ? ' (nộp trễ)' : ''}.`
+        : 'Đã nộp.';
+      setDone(msg);
+      toast.success(msg);
       onSubmitted(data);
     } catch (err: unknown) {
-      // Không báo thành công khi chưa lưu được; tệp đã chọn được giữ để thử lại.
       setFailure(errorText(err, 'Chưa nộp được. Thử lại sau.'));
     } finally {
       setSending(false);
     }
   };
+
+  const handleComment = async (submissionId: string, comment: string) => {
+    try {
+      const nextData = await service.comment(topicId, submissionId, comment);
+      toast.success('Đã lưu nhận xét.');
+      onSubmitted(nextData);
+      return true;
+    } catch (err: unknown) {
+      toast.error(errorText(err, 'Không lưu được nhận xét.'));
+      return false;
+    }
+  };
+
+  const handleCreateRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!requestText.trim() || requestSending) return;
+    setRequestSending(true);
+    try {
+      const nextData = await service.createRequest(
+        topicId,
+        kind.kind,
+        requestText.trim(),
+      );
+      toast.success('Đã gửi yêu cầu chỉnh sửa cho nhóm.');
+      setRequestText('');
+      onSubmitted(nextData);
+    } catch (err: unknown) {
+      toast.error(errorText(err, 'Không gửi được yêu cầu chỉnh sửa.'));
+    } finally {
+      setRequestSending(false);
+    }
+  };
+
+  const handleResolveRequest = async (requestId: string) => {
+    try {
+      const nextData = await service.resolveRequest(topicId, requestId);
+      toast.success('Đã xác nhận hoàn tất yêu cầu.');
+      onSubmitted(nextData);
+    } catch (err: unknown) {
+      toast.error(errorText(err, 'Không thể xác nhận hoàn tất yêu cầu.'));
+    }
+  };
+
+  const openRequestsCount = (kind.requests ?? []).filter(
+    (r) => r.status === 'open',
+  ).length;
 
   const chipClass =
     kind.window === 'onTime'
@@ -193,6 +251,11 @@ const KindSection: React.FC<KindSectionProps> = ({
             ? 'Chưa nộp'
             : `${kind.versions.length} phiên bản`}
         </span>
+        {openRequestsCount > 0 ? (
+          <span className="app-chip app-chip-pending">
+            {`${openRequestsCount} yêu cầu cần sửa`}
+          </span>
+        ) : null}
       </header>
       <p className="sub-muted">{deadlineText(kind)}</p>
 
@@ -201,6 +264,11 @@ const KindSection: React.FC<KindSectionProps> = ({
           {kind.window === 'late' ? (
             <p className="sub-banner sub-banner-warn">
               Đã qua hạn thường. Bài nộp bây giờ sẽ được gắn nhãn “Nộp trễ”.
+            </p>
+          ) : null}
+          {openRequestsCount > 0 ? (
+            <p className="sub-banner sub-banner-warn" role="note">
+              {`Phiên bản nộp mới sẽ liên kết và xử lý cho cả ${openRequestsCount} yêu cầu chỉnh sửa đang mở.`}
             </p>
           ) : null}
           <div className="sub-field">
@@ -286,35 +354,284 @@ const KindSection: React.FC<KindSectionProps> = ({
       ) : (
         <ul className="sub-versions" aria-label={`Các phiên bản ${kind.name}`}>
           {kind.versions.map((v) => (
-            <li key={v.id} className="sub-version">
-              <div className="sub-version-main">
-                <strong>Bản {v.version}</strong>
-                {v.isLatest ? (
-                  <span className="sub-chip sub-chip-info">Mới nhất</span>
-                ) : null}
-                {v.isLate ? (
-                  <span className="sub-chip sub-chip-warn">Nộp trễ</span>
-                ) : null}
-                <span className="sub-file">{v.fileName}</span>
-                <span className="sub-muted">{formatBytes(v.sizeBytes)}</span>
-              </div>
-              <div className="sub-muted">
-                {v.submittedBy.name} ({v.submittedBy.code}) nộp lúc{' '}
-                {formatSubmittedAt(v.submittedAt)}
-              </div>
-              {v.note ? <div className="sub-note">{v.note}</div> : null}
-              <a
-                className="sub-btn"
-                href={v.downloadUrl}
-                download={v.fileName}
-                aria-label={`Tải bản ${v.version} ${kind.name}`}
-              >
-                Tải
-              </a>
-            </li>
+            <VersionItem
+              key={v.id}
+              version={v}
+              kindName={kind.name}
+              canReview={kind.canReview}
+              onComment={(comment) => handleComment(v.id, comment)}
+            />
+          ))}
+        </ul>
+      )}
+
+      {/* Checklist yêu cầu chỉnh sửa */}
+      <RevisionRequestsSection
+        kind={kind}
+        canReview={kind.canReview}
+        requestText={requestText}
+        requestSending={requestSending}
+        onRequestTextChange={setRequestText}
+        onCreateRequest={handleCreateRequest}
+        onResolveRequest={handleResolveRequest}
+      />
+    </section>
+  );
+};
+
+interface VersionItemProps {
+  version: SubmissionVersion;
+  kindName: string;
+  canReview: boolean;
+  onComment: (comment: string) => Promise<boolean>;
+}
+
+const VersionItem: React.FC<VersionItemProps> = ({
+  version: v,
+  kindName,
+  canReview,
+  onComment,
+}) => {
+  const [editingComment, setEditingComment] = useState(false);
+  const [commentDraft, setCommentDraft] = useState(v.reviewComment ?? '');
+  const [savingComment, setSavingComment] = useState(false);
+
+  const saveComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSavingComment(true);
+    const ok = await onComment(commentDraft.trim());
+    setSavingComment(false);
+    if (ok) setEditingComment(false);
+  };
+
+  return (
+    <li className="sub-version">
+      <div className="sub-version-main">
+        <strong>Bản {v.version}</strong>
+        {v.isLatest ? (
+          <span className="sub-chip sub-chip-info">Mới nhất</span>
+        ) : null}
+        {v.isLate ? (
+          <span className="sub-chip sub-chip-warn">Nộp trễ</span>
+        ) : null}
+        <span className="sub-file">{v.fileName}</span>
+        <span className="sub-muted">{formatBytes(v.sizeBytes)}</span>
+      </div>
+      <div className="sub-muted">
+        {v.submittedBy.name} ({v.submittedBy.code}) nộp lúc{' '}
+        {formatSubmittedAt(v.submittedAt)}
+      </div>
+      {v.note ? <div className="sub-note">{v.note}</div> : null}
+
+      {v.addressedRequestIds?.length > 0 ? (
+        <div className="sub-muted">
+          {`Xử lý ${v.addressedRequestIds.length} yêu cầu chỉnh sửa đang mở lúc nộp.`}
+        </div>
+      ) : null}
+
+      {v.reviewComment ? (
+        <blockquote className="sub-review">
+          <div className="sub-review-head">
+            <span>
+              {`Nhận xét của ${v.reviewedBy ?? 'GVHD'}${v.reviewedAt ? ` · ${formatDateTime(v.reviewedAt)}` : ''}`}
+            </span>
+          </div>
+          <p className="sub-review-text">{v.reviewComment}</p>
+        </blockquote>
+      ) : null}
+
+      {canReview && !editingComment ? (
+        <div>
+          <button
+            type="button"
+            className="app-button app-button-small"
+            onClick={() => {
+              setCommentDraft(v.reviewComment ?? '');
+              setEditingComment(true);
+            }}
+          >
+            {v.reviewComment ? 'Sửa nhận xét' : 'Nhận xét'}
+          </button>
+        </div>
+      ) : null}
+
+      {canReview && editingComment ? (
+        <form className="sub-comment-editor" onSubmit={saveComment}>
+          <label htmlFor={`comment-${v.id}`} className="sub-muted">
+            {`Nhận xét Bản ${v.version} (tối đa 2000 ký tự)`}
+          </label>
+          <textarea
+            id={`comment-${v.id}`}
+            rows={3}
+            maxLength={2000}
+            value={commentDraft}
+            onChange={(e) => setCommentDraft(e.target.value)}
+          />
+          <div className="sub-comment-actions">
+            <button
+              type="submit"
+              className="app-button app-button-primary app-button-small"
+              disabled={savingComment}
+            >
+              {savingComment ? 'Đang lưu…' : 'Lưu nhận xét'}
+            </button>
+            <button
+              type="button"
+              className="app-button app-button-small"
+              onClick={() => setEditingComment(false)}
+            >
+              Hủy
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      <a
+        className="sub-btn"
+        href={v.downloadUrl}
+        download={v.fileName}
+        aria-label={`Tải bản ${v.version} ${kindName}`}
+      >
+        Tải
+      </a>
+    </li>
+  );
+};
+
+interface RevisionRequestsSectionProps {
+  kind: SubmissionKindState;
+  canReview: boolean;
+  requestText: string;
+  requestSending: boolean;
+  onRequestTextChange: (text: string) => void;
+  onCreateRequest: (e: React.FormEvent) => Promise<void>;
+  onResolveRequest: (id: string) => Promise<void>;
+}
+
+const RevisionRequestsSection: React.FC<RevisionRequestsSectionProps> = ({
+  kind,
+  canReview,
+  requestText,
+  requestSending,
+  onRequestTextChange,
+  onCreateRequest,
+  onResolveRequest,
+}) => {
+  const requests = kind.requests ?? [];
+  const openCount = requests.filter((r) => r.status === 'open').length;
+
+  return (
+    <section
+      className="sub-requests"
+      aria-label={`Yêu cầu chỉnh sửa ${kind.name}`}
+    >
+      <h3 className="sub-requests-title">
+        <span>Yêu cầu chỉnh sửa</span>
+        {requests.length > 0 ? (
+          <span className="sub-muted">
+            {`(${openCount} đang mở / ${requests.length} tổng cộng)`}
+          </span>
+        ) : null}
+      </h3>
+
+      {/* Form thêm yêu cầu chỉnh sửa cho GVHD */}
+      {canReview && kind.versions.length > 0 ? (
+        <form className="sub-add-request-form" onSubmit={onCreateRequest}>
+          <label htmlFor={`req-${kind.kind}`} className="sub-muted">
+            Thêm yêu cầu chỉnh sửa cho nhóm sinh viên (tối đa 2000 ký tự)
+          </label>
+          <textarea
+            id={`req-${kind.kind}`}
+            rows={2}
+            maxLength={2000}
+            placeholder="Nhập nội dung cần chỉnh sửa, bổ sung…"
+            value={requestText}
+            disabled={requestSending}
+            onChange={(e) => onRequestTextChange(e.target.value)}
+          />
+          <div>
+            <button
+              type="submit"
+              className="app-button app-button-primary app-button-small"
+              disabled={requestSending || !requestText.trim()}
+            >
+              {requestSending ? 'Đang gửi…' : 'Gửi yêu cầu chỉnh sửa'}
+            </button>
+          </div>
+        </form>
+      ) : null}
+
+      {requests.length === 0 ? (
+        <p className="sub-muted">Chưa có yêu cầu chỉnh sửa nào.</p>
+      ) : (
+        <ul className="sub-request-list">
+          {requests.map((r) => (
+            <RequestItem
+              key={r.id}
+              request={r}
+              canReview={canReview}
+              onResolve={() => onResolveRequest(r.id)}
+            />
           ))}
         </ul>
       )}
     </section>
+  );
+};
+
+interface RequestItemProps {
+  request: RevisionRequest;
+  canReview: boolean;
+  onResolve: () => void;
+}
+
+const RequestItem: React.FC<RequestItemProps> = ({
+  request: r,
+  canReview,
+  onResolve,
+}) => {
+  const open = r.status === 'open';
+
+  return (
+    <li className="sub-request-item">
+      <div className="sub-request-head">
+        <span
+          className={`app-chip ${open ? 'app-chip-pending' : 'app-chip-active'}`}
+        >
+          {open ? 'Đang mở' : 'Đã hoàn tất'}
+        </span>
+        <span className="sub-request-meta">
+          {`${r.createdBy} · ${formatDateTime(r.createdAt)} · trên Bản ${r.raisedOnVersionNo}`}
+        </span>
+      </div>
+      <p className="sub-request-content">{r.content}</p>
+      <div className="sub-request-meta">
+        {r.addressedInVersions?.length > 0
+          ? `Nhóm đã nộp lại: Bản ${r.addressedInVersions.join(', Bản ')}`
+          : 'Nhóm chưa nộp lại phiên bản xử lý yêu cầu này.'}
+        {!open && r.resolvedAt
+          ? ` · Đóng bởi ${r.resolvedBy ?? 'GVHD'} lúc ${formatDateTime(r.resolvedAt)}`
+          : null}
+      </div>
+
+      {canReview && open ? (
+        <div className="sub-request-actions">
+          <button
+            type="button"
+            className="app-button app-button-small"
+            disabled={!r.canResolve}
+            aria-describedby={r.canResolve ? undefined : `sub-req-${r.id}-why`}
+            onClick={onResolve}
+          >
+            Xác nhận hoàn tất
+          </button>
+          {!r.canResolve ? (
+            <span id={`sub-req-${r.id}-why`} className="sub-request-meta">
+              Chờ nhóm nộp lại phiên bản mới.
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+    </li>
   );
 };

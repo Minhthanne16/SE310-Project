@@ -168,7 +168,9 @@ const mockSubmissions: TopicSubmissions = {
       canSubmit: true,
       blockedReason: null,
       noteRequired: false,
+      canReview: false,
       versions: [],
+      requests: [],
     },
     {
       kind: 'final',
@@ -180,7 +182,9 @@ const mockSubmissions: TopicSubmissions = {
       canSubmit: false,
       blockedReason: null,
       noteRequired: false,
+      canReview: false,
       versions: [],
+      requests: [],
     },
   ],
 };

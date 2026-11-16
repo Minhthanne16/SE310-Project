@@ -33,6 +33,7 @@ public class SubmissionRepository(ApplicationDbContext context) : ISubmissionRep
         // nên dựa vào chỉ mục duy nhất (TopicId, Kind, VersionNo) và thử lại với số mới.
         for (var attempt = 1; ; attempt++)
         {
+            await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
             submission.VersionNo = (await context.TopicSubmissions
                 .Where(s => s.TopicId == submission.TopicId && s.Kind == submission.Kind)
                 .MaxAsync(s => (int?)s.VersionNo, cancellationToken) ?? 0) + 1;
@@ -40,18 +41,76 @@ public class SubmissionRepository(ApplicationDbContext context) : ISubmissionRep
             if (submission.Late) detail += " · Nộp trễ";
             if (submission.Note is not null) detail += $" · {submission.Note}";
             history.Detail = detail;
+
+            // Một lần nộp cho cả lần sửa: liên kết mọi yêu cầu đang mở của loại này (PDR-013, PDR-060).
+            var open = await context.RevisionRequests
+                .Where(r => r.TopicId == submission.TopicId && r.Kind == submission.Kind && r.ResolvedAt == null)
+                .Select(r => r.Id).ToListAsync(cancellationToken);
             context.TopicSubmissions.Add(submission);
+            context.RevisionRequestLinks.AddRange(open.Select(id => new RevisionRequestLink { SubmissionId = submission.Id, RequestId = id }));
             context.TopicHistoryEntries.Add(history);
             try
             {
                 await context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
                 return;
             }
             catch (DbUpdateException) when (attempt < MaxVersionAttempts)
             {
-                context.Entry(submission).State = EntityState.Detached;
-                context.Entry(history).State = EntityState.Detached;
+                await transaction.RollbackAsync(CancellationToken.None);
+                context.ChangeTracker.Clear();
             }
         }
+    }
+
+    public async Task<IReadOnlyList<RevisionRequest>> ListRequestsAsync(Guid topicId, CancellationToken cancellationToken = default) =>
+        await context.RevisionRequests.AsNoTracking()
+            .Where(r => r.TopicId == topicId && (r.Kind == SubmissionKind.Midterm || r.Kind == SubmissionKind.Final))
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<RevisionRequestLink>> ListLinksAsync(Guid topicId, CancellationToken cancellationToken = default) =>
+        await context.RevisionRequestLinks.AsNoTracking()
+            .Where(l => context.RevisionRequests.Any(r => r.Id == l.RequestId && r.TopicId == topicId && (r.Kind == SubmissionKind.Midterm || r.Kind == SubmissionKind.Final)))
+            .ToListAsync(cancellationToken);
+
+    public Task<RevisionRequest?> GetRequestAsync(Guid requestId, CancellationToken cancellationToken = default) =>
+        context.RevisionRequests.AsNoTracking().FirstOrDefaultAsync(
+            r => r.Id == requestId && (r.Kind == SubmissionKind.Midterm || r.Kind == SubmissionKind.Final), cancellationToken);
+
+    public async Task AddRequestAsync(RevisionRequest request, TopicHistoryEntry history, IReadOnlyCollection<Notification> notifications, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        context.RevisionRequests.Add(request);
+        context.TopicHistoryEntries.Add(history);
+        context.Notifications.AddRange(notifications);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
+    public async Task<bool> ResolveRequestAsync(Guid requestId, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        var resolved = await context.RevisionRequests
+            .Where(r => r.Id == requestId && r.ResolvedAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.ResolvedAt, now).SetProperty(r => r.ResolvedById, actorId), cancellationToken);
+        if (resolved == 0) return false;
+        context.TopicHistoryEntries.Add(history);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return true;
+    }
+
+    public async Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        await context.TopicSubmissions
+            .Where(s => s.Id == submissionId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(x => x.ReviewComment, comment)
+                .SetProperty(x => x.ReviewedById, actorId)
+                .SetProperty(x => x.ReviewedAt, now), cancellationToken);
+        context.TopicHistoryEntries.Add(history);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 }
