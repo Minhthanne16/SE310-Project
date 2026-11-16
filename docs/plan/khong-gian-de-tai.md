@@ -437,3 +437,17 @@ Review bản Gemini đã code: backend đạt, frontend còn 2 việc cần sử
 
 - Ví dụ `"status": "Running"` trong PDR-061 là đúng, vì đó là giá trị enum của `RoundStatus` trong API.
 - Các chiều cao 32px/36px trong `workspace.css` thuộc chip, avatar và tiêu đề không bấm được. Chỉ cần ≥40px nếu sau này chúng thành nút.
+
+---
+
+## Phụ lục: Quyết định giữ `Thesis` như main (16/11/2026)
+
+Sau khi gộp PR #38 của main ([PDR-059 — chốt bản khóa luận cuối](../decisions/PDR-059-chot-ban-khoa-luan-cuoi.md)), người dùng chốt **giữ như main**: vẫn có loại nộp `Thesis` (`SubmissionKind.Thesis`), nhóm chốt bằng `POST /api/topics/{id}/thesis/lock`, Giáo vụ cấp hạn bổ sung hoặc đánh dấu không đủ điều kiện. **Quyết định Q1 (bỏ `Thesis`, chốt bản cuối bằng một phiên bản Báo cáo cuối kỳ) không còn hiệu lực.** PDR Không gian đề tài nay là [PDR-061](../decisions/PDR-061-khong-gian-de-tai-khung-va-tab.md) vì PDR-059 đã dùng.
+
+### R3. B1 chặn chốt khi còn yêu cầu chỉnh sửa Cuối kỳ mở (việc cho Gemini)
+
+- Quy tắc Q2b vẫn giữ: còn yêu cầu chỉnh sửa **mở** ở Báo cáo cuối kỳ thì nhóm không được chốt bản khóa luận. GVHD xác nhận hoàn tất thì mới chốt được. Hệ thống tự chốt khi hết hạn (PDR-011) vẫn chạy, chỉ ghi lịch sử.
+- Backend: trong handler `LockThesisCommand` (nhóm chốt, `actorId != null`), kiểm tra `RevisionRequests` có `Kind == Final` và `ResolvedAt == null` của đề tài; còn thì trả lỗi nghiệp vụ, thêm thông báo vào `SubmissionRules`. Trong `SubmissionRequests.cs`, `CanLock` của bản `Thesis` cũng phải `false` khi còn yêu cầu mở và `BlockedReason` nêu số yêu cầu. Đường tự chốt khi hết hạn (`actorId == null`) không kiểm tra.
+- Frontend: nút "Chốt bản k" ở `SubmissionPanel` dùng `kind.canLock`, nên chỉ cần đọc `blockedReason` để báo lý do. Thêm test ở `SubmissionPanel.test.tsx` và test backend.
+- Cập nhật PDR-060 (mục Q2b) cho khớp: chốt qua `Thesis`, không phải "chọn một phiên bản Cuối kỳ".
+
