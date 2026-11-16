@@ -14,6 +14,7 @@ DESIGN có công tắc “Cho nộp trễ” ở các mốc Đề cương, Giữ
 - Đến hết hạn thông thường, bài nộp hợp lệ tính đúng hạn; sau đó đến hết hạn trễ, bài nộp hợp lệ được nhận và gắn nhãn `Nộp trễ`. Sau hạn trễ, hệ thống từ chối nộp theo chính sách chung. Khi tắt “Cho nộp trễ”, hạn trễ của mốc không mở quyền nộp.
 - Không được bật “Cho nộp trễ” mà thiếu hạn trễ hợp lệ; khi mở đợt phải kiểm tra cấu hình này cùng chín mốc bắt buộc. Hạn trễ và thay đổi của nó phải hiển thị cho nhóm liên quan và được lưu lịch sử.
 - Hạn bổ sung riêng cho một nhóm chưa có bản khóa luận theo PDR-011 vẫn được ưu tiên cho đúng nhóm trong phạm vi hạn được cấp, kể cả khi công tắc nộp trễ chung tắt hoặc đã hết hạn trễ chung.
+- Bổ sung 2026-11-15 theo [PDR-059](PDR-059-chot-ban-khoa-luan-cuoi.md): mốc 9 “Chốt bản cuối · công bố” có công tắc và hạn trễ riêng cho `Thesis` (mặc định tắt). Mốc 5 vẫn chỉ dùng cho báo cáo cuối kỳ.
 
 ## Hệ quả
 

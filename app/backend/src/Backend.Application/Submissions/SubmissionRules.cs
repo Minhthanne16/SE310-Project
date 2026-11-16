@@ -20,7 +20,7 @@ public static class SubmissionPolicy
     public const string NotPdfMessage = "Tệp không phải PDF hợp lệ. Chỉ nhận tệp PDF.";
     public const string NoteRequiredMessage = "Nhập ghi chú thay đổi cho bản báo cáo cuối kỳ.";
     public static readonly string NoteTooLongMessage = $"Ghi chú thay đổi tối đa {MaxNoteLength} ký tự.";
-    public const string InvalidKindMessage = "Loại báo cáo phải là midterm hoặc final.";
+    public const string InvalidKindMessage = "Loại bài nộp phải là midterm, final hoặc thesis.";
 
     // Đặc tả PDF cho phép phần đầu tệp lệch vài byte và phần kết nằm trong 1024 byte cuối.
     private const int HeaderWindow = 1024;
@@ -83,18 +83,18 @@ public static class SubmissionRules
     public static string NoSubmissionOfKindMessage(SubmissionKind kind) =>
         $"Nhóm chưa nộp phiên bản {KindLabel(kind).ToLowerInvariant()} nào.";
 
-    public static readonly IReadOnlyList<SubmissionKind> Kinds = [SubmissionKind.Midterm, SubmissionKind.Final];
+    public static readonly IReadOnlyList<SubmissionKind> Kinds = [SubmissionKind.Midterm, SubmissionKind.Final, SubmissionKind.Thesis];
 
-    public static string KindName(SubmissionKind kind) => kind == SubmissionKind.Midterm ? "midterm" : "final";
-    public static string KindLabel(SubmissionKind kind) => kind == SubmissionKind.Midterm ? "Báo cáo giữa kỳ" : "Báo cáo cuối kỳ";
-    public static MilestoneKey MilestoneOf(SubmissionKind kind) => kind == SubmissionKind.Midterm ? MilestoneKey.Midterm : MilestoneKey.Final;
+    public static string KindName(SubmissionKind kind) => kind switch { SubmissionKind.Midterm => "midterm", SubmissionKind.Final => "final", _ => "thesis" };
+    public static string KindLabel(SubmissionKind kind) => kind switch { SubmissionKind.Midterm => "Báo cáo giữa kỳ", SubmissionKind.Final => "Báo cáo cuối kỳ", _ => "Bản khóa luận" };
+    public static MilestoneKey MilestoneOf(SubmissionKind kind) => kind switch { SubmissionKind.Midterm => MilestoneKey.Midterm, SubmissionKind.Final => MilestoneKey.Final, _ => MilestoneKey.Finalize };
     // Mỗi bản báo cáo cuối kỳ kèm ghi chú thay đổi bắt buộc (DESIGN · Không gian đề tài).
     public static bool NoteRequired(SubmissionKind kind) => kind == SubmissionKind.Final;
 
     public static bool TryParseKind(string? value, out SubmissionKind kind)
     {
-        kind = value == "final" ? SubmissionKind.Final : SubmissionKind.Midterm;
-        return value is "midterm" or "final";
+        kind = value switch { "final" => SubmissionKind.Final, "thesis" => SubmissionKind.Thesis, _ => SubmissionKind.Midterm };
+        return value is "midterm" or "final" or "thesis";
     }
 
     // Hạn trễ chỉ có hiệu lực khi công tắc bật và hạn nằm sau hạn thường.
@@ -105,6 +105,13 @@ public static class SubmissionRules
     {
         if (milestone?.EndDate is not { } end || today <= end) return SubmissionWindow.OnTime;
         return LateDeadline(milestone) is { } late && today <= late ? SubmissionWindow.Late : SubmissionWindow.Closed;
+    }
+
+    public static SubmissionWindow Window(ThesisTopic topic, RoundMilestone? milestone, SubmissionKind kind, DateOnly today)
+    {
+        if (kind != SubmissionKind.Thesis || topic.ThesisExtensionEnd is not { } extension) return Window(milestone, today);
+        if (milestone?.EndDate is not { } end || today <= end) return SubmissionWindow.OnTime;
+        return today <= extension ? SubmissionWindow.Late : SubmissionWindow.Closed;
     }
 
     public static string ClosedMessage(SubmissionKind kind, RoundMilestone? milestone)
@@ -121,12 +128,17 @@ public static class SubmissionRules
         if (round.Status != RoundStatus.Running) return RoundNotRunningMessage;
         var status = TopicRules.Effective(topic, round, today);
         if (status is TopicStatus.Completed or TopicStatus.Ineligible) return TopicClosedMessage;
+        if (kind == SubmissionKind.Thesis && topic.FinalThesisSubmissionId is not null) return "Bản khóa luận cuối đã chốt nên không nộp thêm được.";
         if (status is not (TopicStatus.InProgress or TopicStatus.Grading or TopicStatus.Graded or TopicStatus.Deviation or TopicStatus.Confirmed))
             return NotInProgressMessage;
         // BUSINESS_RULES: duyệt đề cương là điều kiện mở báo cáo giữa kỳ/cuối kỳ.
         if (topic.OutlineApprovedAt is null) return OutlineNotApprovedMessage;
         var milestone = round.Milestones.FirstOrDefault(m => m.Key == MilestoneOf(kind));
-        return Window(milestone, today) == SubmissionWindow.Closed ? ClosedMessage(kind, milestone) : null;
+        return Window(topic, milestone, kind, today) == SubmissionWindow.Closed
+            ? kind == SubmissionKind.Thesis && topic.ThesisExtensionEnd is { } extension
+                ? $"Đã hết hạn bổ sung bản khóa luận (hết ngày {Format(extension)})."
+                : ClosedMessage(kind, milestone)
+            : null;
     }
 
     private static string Format(DateOnly? date) => date?.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture) ?? "chưa đặt";

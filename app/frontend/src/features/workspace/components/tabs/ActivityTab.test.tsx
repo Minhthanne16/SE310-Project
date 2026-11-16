@@ -7,7 +7,9 @@ import { ActivityTab } from './ActivityTab';
 
 afterEach(cleanup);
 
-const mockTopic = (overrides: Partial<TopicDetailDto> = {}): TopicDetailDto => ({
+const mockTopic = (
+  overrides: Partial<TopicDetailDto> = {},
+): TopicDetailDto => ({
   id: 't1',
   roundId: 'r1',
   round: { id: 'r1', name: 'Đợt 1', status: 'Đang diễn ra' },
@@ -16,7 +18,12 @@ const mockTopic = (overrides: Partial<TopicDetailDto> = {}): TopicDetailDto => (
   field: 'CNPM',
   description: 'Mô tả',
   requirements: null,
-  supervisor: { id: 'gv1', code: 'GV001', name: 'Trần Văn GV', email: 'gv@test.com' },
+  supervisor: {
+    id: 'gv1',
+    code: 'GV001',
+    name: 'Trần Văn GV',
+    email: 'gv@test.com',
+  },
   source: 'GV công bố',
   status: 'Đang thực hiện',
   createdAt: '2026-10-01T00:00:00Z',
@@ -51,7 +58,9 @@ const mockOutline = (overrides: Partial<Outline> = {}): Outline => ({
   ...overrides,
 });
 
-const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmissions => ({
+const mockSubmissions = (
+  overrides: Partial<TopicSubmissions> = {},
+): TopicSubmissions => ({
   topicId: 't1',
   maxBytes: 20 * 1024 * 1024,
   kinds: [
@@ -66,6 +75,13 @@ const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmis
       blockedReason: null,
       noteRequired: false,
       canReview: false,
+      canLock: false,
+      extensionDeadline: '',
+      extensionReason: null,
+      waitingException: false,
+      canGrantExtension: false,
+      canMarkIneligible: false,
+      ineligibleReason: null,
       versions: [],
       requests: [],
     },
@@ -80,6 +96,13 @@ const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmis
       blockedReason: null,
       noteRequired: true,
       canReview: false,
+      canLock: false,
+      extensionDeadline: '',
+      extensionReason: null,
+      waitingException: false,
+      canGrantExtension: false,
+      canMarkIneligible: false,
+      ineligibleReason: null,
       versions: [],
       requests: [],
     },
@@ -94,22 +117,24 @@ describe('ActivityTab', () => {
     const submissions = mockSubmissions();
 
     render(
-      <ActivityTab
-        topic={topic}
-        outline={outline}
-        submissions={submissions}
-      />,
+      <ActivityTab topic={topic} outline={outline} submissions={submissions} />,
     );
 
     // Mặc định khối Đề cương mở khi chưa duyệt
-    expect(screen.getByRole('heading', { name: 'Đề cương' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'Đề cương' }),
+    ).toBeInTheDocument();
 
     // Mở accordion Giữa kỳ
-    const midtermButton = screen.getByRole('button', { name: /Báo cáo giữa kỳ/ });
+    const midtermButton = screen.getByRole('button', {
+      name: /Báo cáo giữa kỳ/,
+    });
     fireEvent.click(midtermButton);
 
     expect(
-      screen.getByText(/Mục nộp báo cáo giữa kỳ mở sau khi giảng viên hướng dẫn duyệt đề cương/),
+      screen.getByText(
+        /Mục nộp báo cáo giữa kỳ mở sau khi giảng viên hướng dẫn duyệt đề cương/,
+      ),
     ).toBeInTheDocument();
   });
 
@@ -129,6 +154,13 @@ describe('ActivityTab', () => {
           blockedReason: null,
           noteRequired: false,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           versions: [
             {
               id: 'v1',
@@ -140,6 +172,7 @@ describe('ActivityTab', () => {
               submittedBy: { id: 'sv1', code: 'SV01', name: 'Sinh viên' },
               isLate: false,
               isLatest: true,
+              isFinal: false,
               downloadUrl: '/api/submissions/v1/file',
               reviewComment: null,
               reviewedBy: null,
@@ -185,6 +218,13 @@ describe('ActivityTab', () => {
           blockedReason: null,
           noteRequired: true,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           versions: [],
           requests: [],
         },
@@ -192,11 +232,7 @@ describe('ActivityTab', () => {
     });
 
     render(
-      <ActivityTab
-        topic={topic}
-        outline={outline}
-        submissions={submissions}
-      />,
+      <ActivityTab topic={topic} outline={outline} submissions={submissions} />,
     );
 
     // Chip giữa kỳ hiển thị: "Cần chỉnh sửa · 2 yêu cầu"
@@ -209,11 +245,7 @@ describe('ActivityTab', () => {
     const submissions = mockSubmissions();
 
     render(
-      <ActivityTab
-        topic={topic}
-        outline={outline}
-        submissions={submissions}
-      />,
+      <ActivityTab topic={topic} outline={outline} submissions={submissions} />,
     );
 
     const outlineHeaderBtn = screen.getByRole('button', { name: /Đề cương/ });

@@ -169,6 +169,13 @@ const mockSubmissions: TopicSubmissions = {
       blockedReason: null,
       noteRequired: false,
       canReview: false,
+      canLock: false,
+      extensionDeadline: '',
+      extensionReason: null,
+      waitingException: false,
+      canGrantExtension: false,
+      canMarkIneligible: false,
+      ineligibleReason: null,
       versions: [],
       requests: [],
     },
@@ -183,13 +190,22 @@ const mockSubmissions: TopicSubmissions = {
       blockedReason: null,
       noteRequired: false,
       canReview: false,
+      canLock: false,
+      extensionDeadline: '',
+      extensionReason: null,
+      waitingException: false,
+      canGrantExtension: false,
+      canMarkIneligible: false,
+      ineligibleReason: null,
       versions: [],
       requests: [],
     },
   ],
 };
 
-function createMockService(overrides?: Partial<WorkspaceData>): WorkspaceService {
+function createMockService(
+  overrides?: Partial<WorkspaceData>,
+): WorkspaceService {
   const data: WorkspaceData = {
     topic: mockTopic,
     outline: mockApprovedOutline,
@@ -302,7 +318,7 @@ describe('WorkspacePage', () => {
     const activeTab = screen.getByRole('tab', { name: /Hoạt động/ });
     expect(activeTab).toHaveAttribute('aria-selected', 'true');
 
-    // Cột phụ aside ở tab Hoạt động hiển thị GVPB và Hội đồng (GVHD ở tab Tổng quan theo PDR-059)
+    // Cột phụ aside ở tab Hoạt động hiển thị GVPB và Hội đồng (GVHD ở tab Tổng quan theo PDR-061)
     expect(screen.getByText('ThS. Trần Thị C')).toBeInTheDocument();
     expect(screen.getByText('Hội đồng KTPM 01')).toBeInTheDocument();
   });
@@ -487,9 +503,7 @@ describe('WorkspacePage', () => {
       name: 'Hệ thống Quản lý Khóa luận Tốt nghiệp',
     });
 
-    expect(
-      screen.queryByText(/SINH VIÊN KHÔNG THẤY/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/SINH VIÊN KHÔNG THẤY/i)).not.toBeInTheDocument();
   });
 
   it('tab Điểm số: Giảng viên và Giáo vụ thấy banner SINH VIÊN KHÔNG THẤY và 3 thẻ chấm điểm', async () => {

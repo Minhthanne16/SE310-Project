@@ -84,7 +84,9 @@ export function toTopic(dto: TopicDto | TopicDetailDto): Topic {
     council: null,
     defense: null,
     outlineApprovedAt: dto.outlineApprovedAt ?? null,
-    finalLockedVersionNo: null,
+    finalLockedVersionNo: dto.finalLockedVersionNo ?? null,
+    thesisVersionCount: dto.thesisVersionCount,
+    thesisWaitingException: dto.thesisWaitingException,
     submissions:
       'submissions' in dto
         ? dto.submissions.map((s) => ({

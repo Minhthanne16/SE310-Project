@@ -1,4 +1,4 @@
-# PDR-059: Không gian đề tài — Khung tiến độ và các tab (P04-S02 / P04-S03)
+# PDR-061: Không gian đề tài — Khung tiến độ và các tab (P04-S02 / P04-S03)
 
 ## Trạng thái
 
@@ -67,7 +67,7 @@ Theo quy tắc ưu tiên tài liệu, không làm theo canvas ở các điểm �
 | Badge "Bản chính thức" | Chưa có cho tới khi hoàn thiện chốt bản cuối (P04-S03). |
 | Chip trạng thái đề tài lấy theo `phase` | Trạng thái hiển thị theo `topic.status` chuẩn của backend (PDR-049). Duyệt đề cương không đổi trạng thái đề tài. |
 | Ô "CÔNG NGHỆ" trong lưới sự kiện | Không có trường dữ liệu này trong mô hình; bỏ ô này khỏi giao diện. |
-| Email GV/SV trong aside | Hiển thị: Email GVHD cho tất cả người xem; Email thành viên nhóm hiển thị cho GVHD, Giáo vụ và chính sinh viên đó (PDR-059). |
+| Email GV/SV trong aside | Hiển thị: Email GVHD cho tất cả người xem; Email thành viên nhóm hiển thị cho GVHD, Giáo vụ và chính sinh viên đó (PDR-061). |
 
 ### 6. Tab Điểm số và Tab Thông báo
 

@@ -55,8 +55,8 @@ Mọi endpoint yêu cầu đăng nhập với một trong ba vai trò; lỗi dù
 - **Quyền của Giảng viên phản biện và hội đồng:** chưa có dữ liệu phân công (P05/P06) nên hiện chỉ nhóm, GVHD và Giáo vụ đọc được. Thêm ở `SubmissionMapping.Load` khi có phân công.
 - **Danh sách Nhóm hướng dẫn** chưa hiện cột báo cáo giữa kỳ/cuối kỳ; GVHD xem và tải báo cáo trong Không gian đề tài `/de-tai/[id]`.
 - **Lịch sử thay đổi hạn trễ** của mốc (PDR-041): đợt chưa có bảng lịch sử cấu hình nên chưa ghi; nhóm thấy hạn hiện hành trên màn nộp bài.
-- **Hạn bổ sung riêng cho nhóm** (PDR-011) và chốt bản cuối: thuộc P04-S03. **Nhận xét và yêu cầu chỉnh sửa cho Giữa kỳ và Cuối kỳ**: đã giải quyết theo [PDR-060](PDR-060-nhan-xet-va-yeu-cau-chinh-sua-giua-ky-cuoi-ky.md).
-- **Mốc Đề cương** dùng cùng hạn trễ riêng: P04-S01 nay nhận bài trong hạn trễ, gắn `Late` và trả `lateDeadline` (thay cho "sau hạn thường là đóng" của PDR-057). Theo quyết định 2026-11-16 (Q1, [PDR-060](PDR-060-nhan-xet-va-yeu-cau-chinh-sua-giua-ky-cuoi-ky.md)), không có loại nộp riêng `Thesis`; chốt bản cuối là đánh dấu một phiên bản `Final` làm bản khóa luận chính thức.
+- **Hạn bổ sung riêng cho nhóm** (PDR-011) và chốt bản cuối: triển khai ở P04-S03 theo [PDR-059](PDR-059-chot-ban-khoa-luan-cuoi.md). **Nhận xét và yêu cầu chỉnh sửa cho Giữa kỳ và Cuối kỳ**: đã giải quyết theo [PDR-060](PDR-060-nhan-xet-va-yeu-cau-chinh-sua-giua-ky-cuoi-ky.md).
+- **Mốc Đề cương** dùng cùng hạn trễ riêng: P04-S01 nay nhận bài trong hạn trễ, gắn `Late` và trả `lateDeadline` (thay cho "sau hạn thường là đóng" của PDR-057). **Bản khóa luận** (P04-S03) dùng chung bảng `TopicSubmission` với `Kind = Thesis`.
 - **Kiểm thử trên MinIO thật:** test tự động dùng storage giả trong bộ nhớ; luồng UI → proxy Next.js → API → MinIO với tệp gần 20 MB chưa được chạy.
 
 ## Hệ quả

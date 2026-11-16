@@ -164,7 +164,7 @@ it('shows document group status chips and a disabled download action', async () 
     screen.getByRole('heading', { name }).closest('section')!;
   expect(group('Đề cương')).toHaveTextContent(/Đã duyệt \d\d\/\d\d/);
   expect(group('Báo cáo giữa kỳ')).toHaveTextContent('1 phiên bản');
-  expect(group('Báo cáo cuối kỳ')).toHaveTextContent('Đã chốt Bản 1');
+  expect(group('Bản khóa luận')).toHaveTextContent('Đã chốt Bản 1');
   const dl = within(group('Báo cáo cuối kỳ')).getByRole('button', {
     name: /^Tải .*\.pdf$/,
   });
@@ -179,7 +179,7 @@ it('shows document group status chips and a disabled download action', async () 
   // Đã cho điểm nhưng chưa chốt bản cuối.
   await renderDetail('t-vb1-25-03');
   tab('Báo cáo và phiên bản');
-  expect(group('Báo cáo cuối kỳ')).toHaveTextContent(
+  expect(group('Bản khóa luận')).toHaveTextContent(
     '1 phiên bản · chưa chốt bản cuối',
   );
 });

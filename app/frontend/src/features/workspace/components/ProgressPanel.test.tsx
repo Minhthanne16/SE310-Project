@@ -53,7 +53,9 @@ describe('ProgressPanel', () => {
   it('renders all rows when expanded and supports toggle collapse/expand', () => {
     render(<ProgressPanel rows={mockRows} />);
 
-    expect(screen.getByRole('heading', { name: 'TIẾN ĐỘ' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'TIẾN ĐỘ' }),
+    ).toBeInTheDocument();
     const toggleButton = screen.getByRole('button', { name: /thu gọn/i });
     expect(toggleButton).toHaveAttribute('aria-expanded', 'true');
 
@@ -82,6 +84,8 @@ describe('ProgressPanel', () => {
 
     const note = screen.getByRole('note');
     expect(note).toHaveTextContent('Đề tài không có nhóm sau hạn đăng ký.');
-    expect(screen.queryByRole('button', { name: /thu gọn/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /thu gọn/i }),
+    ).not.toBeInTheDocument();
   });
 });

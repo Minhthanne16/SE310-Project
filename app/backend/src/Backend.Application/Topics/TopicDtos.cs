@@ -41,6 +41,9 @@ public class TopicDto
     public List<GroupMemberDto> Group { get; set; } = [];
     // GVHD duyệt đề cương (PDR-013); không đổi trạng thái đề tài (PDR-049).
     public DateTime? OutlineApprovedAt { get; set; }
+    public int ThesisVersionCount { get; set; }
+    public int? FinalLockedVersionNo { get; set; }
+    public bool ThesisWaitingException { get; set; }
     // Chỉ có ở danh sách đề tài của GVHD (/api/topics/mine); null ở nơi khác.
     public OutlineSummaryDto? Outline { get; set; }
 }

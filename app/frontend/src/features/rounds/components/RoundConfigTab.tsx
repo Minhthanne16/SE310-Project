@@ -57,8 +57,8 @@ function validateLoad(min: string, max: string): string | null {
 
 // Tab Cấu hình (artboard GiaoVu-DotKhoaLuan): thông tin đợt, mức đề tài mỗi
 // giảng viên, 9 mốc với ngày bắt
-// đầu/kết thúc, "Thông báo cho", công tắc "Cho nộp trễ" (chỉ Đề cương, Giữa
-// kỳ, Cuối kỳ). Kiểm tra thứ tự mốc ngay khi gõ.
+// đầu/kết thúc, "Thông báo cho", công tắc "Cho nộp trễ" ở các mốc nhận bài.
+// Kiểm tra thứ tự mốc ngay khi gõ.
 export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   round,
   roundService,
@@ -418,6 +418,12 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
                         {m.key === 'grading' && (
                           <span className="rnd-ms-hint">
                             Chỉ để nhắc, không khóa phiếu chấm.
+                          </span>
+                        )}
+                        {m.key === 'finalize' && (
+                          <span className="rnd-ms-hint">
+                            Bản khóa luận; hạn bổ sung riêng của nhóm ưu tiên
+                            hạn trễ chung.
                           </span>
                         )}
                         {error && (

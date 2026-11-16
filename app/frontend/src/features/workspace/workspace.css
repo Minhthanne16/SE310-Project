@@ -1,4 +1,4 @@
-/* Không gian đề tài (PDR-059) */
+/* Không gian đề tài (PDR-061) */
 
 .wsp-page {
   max-width: var(--page-max);
@@ -269,7 +269,7 @@
   color: var(--ink);
 }
 
-.wsp-tab[aria-selected="true"] {
+.wsp-tab[aria-selected='true'] {
   color: var(--ink);
   font-weight: 600;
   border-bottom-color: var(--ink);

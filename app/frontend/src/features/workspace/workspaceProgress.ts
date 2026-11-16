@@ -11,7 +11,8 @@ export interface ProgressStep {
 }
 
 export interface ProgressRow {
-  key: 'registration' | 'outline' | 'midterm' | 'final' | 'evaluation' | 'result';
+  key:
+    'registration' | 'outline' | 'midterm' | 'final' | 'evaluation' | 'result';
   label: string;
   steps: ProgressStep[];
   note?: string;
@@ -46,9 +47,7 @@ export function buildProgress(input: BuildProgressInput): ProgressRow[] {
 
   // 1. ĐĂNG KÝ
   const isProposal = topic.source === 'SV đề xuất';
-  const regStepText = isProposal
-    ? 'Đề xuất được chấp nhận'
-    : 'Đã ghi danh';
+  const regStepText = isProposal ? 'Đề xuất được chấp nhận' : 'Đã ghi danh';
   const regDone = topic.group && topic.group.length > 0;
   rows.push({
     key: 'registration',
@@ -63,8 +62,12 @@ export function buildProgress(input: BuildProgressInput): ProgressRow[] {
 
   // 2. ĐỀ CƯƠNG
   const outlineSubmissions = outline?.submissions ?? [];
-  const outlineApproved = Boolean(topic.outlineApprovedAt || outline?.approvedAt);
-  const openRequests = (outline?.requests ?? []).filter((r) => r.status === 'open');
+  const outlineApproved = Boolean(
+    topic.outlineApprovedAt || outline?.approvedAt,
+  );
+  const openRequests = (outline?.requests ?? []).filter(
+    (r) => r.status === 'open',
+  );
 
   if (outlineSubmissions.length === 0) {
     const deadlineNote = outline?.deadline
@@ -159,7 +162,9 @@ export function buildProgress(input: BuildProgressInput): ProgressRow[] {
 
     // Bước 2: GVHD nhận xét (A13)
     let step2: ProgressStep;
-    const openMidtermRequests = (midterm?.requests ?? []).filter((r) => r.status === 'open');
+    const openMidtermRequests = (midterm?.requests ?? []).filter(
+      (r) => r.status === 'open',
+    );
     if (versions.length === 0) {
       step2 = {
         text: 'GVHD nhận xét',
@@ -237,7 +242,9 @@ export function buildProgress(input: BuildProgressInput): ProgressRow[] {
 
     // Bước 2: Chốt bản cuối (hoặc cần chỉnh sửa nếu còn yêu cầu mở)
     let step2: ProgressStep;
-    const openFinalRequests = (finalSub?.requests ?? []).filter((r) => r.status === 'open');
+    const openFinalRequests = (finalSub?.requests ?? []).filter(
+      (r) => r.status === 'open',
+    );
     if (openFinalRequests.length > 0) {
       step2 = {
         text: `Cần chỉnh sửa · ${openFinalRequests.length} yêu cầu`,
@@ -334,11 +341,14 @@ const STAGE_NAME_MAP: Record<string, string> = {
   result: 'Kết quả',
 };
 
-export function getCurrentStage(rows: ProgressRow[]): CurrentStageSummary | null {
+export function getCurrentStage(
+  rows: ProgressRow[],
+): CurrentStageSummary | null {
   for (const row of rows) {
     const isRowDone = row.steps.every((s) => s.kind === 'done');
     if (!isRowDone) {
-      const waitingStep = row.steps.find((s) => s.kind !== 'done') ?? row.steps[0];
+      const waitingStep =
+        row.steps.find((s) => s.kind !== 'done') ?? row.steps[0];
       const stageName = STAGE_NAME_MAP[row.key] || row.label;
       return {
         rowKey: row.key,

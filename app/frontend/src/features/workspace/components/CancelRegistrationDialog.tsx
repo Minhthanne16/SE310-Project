@@ -12,11 +12,9 @@ interface CancelRegistrationDialogProps {
   onConfirmCancel: (topicId: string) => Promise<void>;
 }
 
-export const CancelRegistrationDialog: React.FC<CancelRegistrationDialogProps> = ({
-  topic,
-  onCancel,
-  onConfirmCancel,
-}) => {
+export const CancelRegistrationDialog: React.FC<
+  CancelRegistrationDialogProps
+> = ({ topic, onCancel, onConfirmCancel }) => {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);

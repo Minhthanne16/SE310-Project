@@ -26,7 +26,10 @@ export const WorkspaceAside: React.FC<WorkspaceAsideProps> = ({
     .defense;
 
   return (
-    <aside className="wsp-aside" aria-label="Thông tin người tham gia và phân công">
+    <aside
+      className="wsp-aside"
+      aria-label="Thông tin người tham gia và phân công"
+    >
       {/* 1. Chỉ hiện ở tab Tổng quan: Giảng viên hướng dẫn & Nhóm */}
       {isOverview && (
         <>
@@ -65,7 +68,8 @@ export const WorkspaceAside: React.FC<WorkspaceAsideProps> = ({
                     <div className="wsp-person-info">
                       <div className="wsp-person-name">{m.name}</div>
                       <div className="wsp-person-meta">
-                        {m.representative ? 'Đại diện' : 'Thành viên'} · {m.code}
+                        {m.representative ? 'Đại diện' : 'Thành viên'} ·{' '}
+                        {m.code}
                         {m.className ? ` · ${m.className}` : ''}
                       </div>
                       {m.email && (
@@ -114,8 +118,8 @@ export const WorkspaceAside: React.FC<WorkspaceAsideProps> = ({
           <>
             <div className="wsp-aside-empty-label">Chưa phân công</div>
             <p className="wsp-aside-note">
-              Giáo vụ phân công giảng viên phản biện sau khi đề tài được duyệt đề
-              cương.
+              Giáo vụ phân công giảng viên phản biện sau khi đề tài được duyệt
+              đề cương.
             </p>
           </>
         )}

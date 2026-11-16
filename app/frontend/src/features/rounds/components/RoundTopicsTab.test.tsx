@@ -11,6 +11,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { resetNavigation } from '@/test/navigationMock';
 import { createRoundService } from '@/features/rounds/services/roundDemoService';
 import { createTopicService } from '@/features/topics/services/topicDemoService';
+import { seedTopics } from '@/features/topics/services/topicSeed';
 import type { XlsxTable } from '@/lib/xlsx';
 import type { Round } from '@/types/round';
 import { RoundTopicsTab } from './RoundTopicsTab';
@@ -41,10 +42,25 @@ const setup = async (
   limits?: { min: number; max: number },
 ) => {
   const roundService = createRoundService({ today });
+  const topics = seedTopics();
+  // Chỉ fixture của màn công bố: có bản Thesis riêng đã chốt, độc lập báo cáo cuối kỳ.
+  const publishable = topics.find((topic) => topic.code === 'VB1-16')!;
+  const thesisVersion = publishable.submissions.length + 1;
+  publishable.submissions.push({
+    kind: 'Bản khóa luận',
+    versionNo: thesisVersion,
+    submittedBy: publishable.group[0].name,
+    submittedAt: `${today}T09:00:00`,
+    late: false,
+    fileName: 'khoa-luan.pdf',
+    note: 'Bản cuối',
+  });
+  publishable.finalLockedVersionNo = thesisVersion;
   const topicService = createTopicService({
     today,
     roundService,
     loadLimits: limits,
+    topics,
   });
   const downloadFile =
     vi.fn<(name: string, table: XlsxTable) => Promise<void>>();
@@ -409,7 +425,7 @@ it('never reports full success when a publish batch skips a topic', async () => 
   expect(report).toHaveTextContent(
     'Công bố kết quả: 1 thành công, 1 bị bỏ qua',
   );
-  expect(report).toHaveTextContent('Nhóm chưa chốt bản cuối');
+  expect(report).toHaveTextContent('chưa nộp bản khóa luận');
   expect(within(rowOf('VB1-16')).getByText('Đã hoàn tất')).toBeInTheDocument();
   expect(within(rowOf('VB1-15')).getByText('Đã xác nhận')).toBeInTheDocument();
 });
@@ -495,7 +511,7 @@ it('requires a reason to unconfirm and blocks publishing without a final lock', 
   });
   expect(publish).toBeDisabled();
   expect(panel).toHaveTextContent(
-    'Nhóm chưa chốt bản cuối và chưa hết hạn chốt.',
+    'Nhóm chưa nộp bản khóa luận; chờ Giáo vụ xử lý ngoại lệ.',
   );
 
   fireEvent.click(within(panel).getByRole('button', { name: 'Hủy xác nhận' }));

@@ -45,7 +45,7 @@ Nhóm nộp tài liệu theo phiên bản; GVHD nhận xét/duyệt đề cươn
 
 **Verification:** Test upload thật trên storage test, quyền tải của SV/GVHD/GVPB/Giáo vụ và tình huống lỗi storage.
 
-*(2026-11-16: Hoàn thành Không gian đề tài theo [PDR-059](../decisions/PDR-059-khong-gian-de-tai-khung-va-tab.md); màn hình không gian đề tài dùng chung cho cả 3 vai trò: Sinh viên, Giảng viên hướng dẫn và Giáo vụ (`WorkspacePage`); điều kiện "đề cương đã duyệt" để mở Báo cáo giữa kỳ và Cuối kỳ đã hoàn tất; tiến độ 6 chặng được tính toán thuần túy từ dữ liệu thật. Còn lại: upload thật trên MinIO qua proxy Next.js với tệp gần 20 MB; quyền của GV phản biện chờ P05; nhận xét và checklist yêu cầu cho Giữa kỳ/Cuối kỳ theo A13.)*
+*(2026-11-16: Hoàn thành Không gian đề tài theo [PDR-061](../decisions/PDR-061-khong-gian-de-tai-khung-va-tab.md); màn hình không gian đề tài dùng chung cho cả 3 vai trò: Sinh viên, Giảng viên hướng dẫn và Giáo vụ (`WorkspacePage`); điều kiện "đề cương đã duyệt" để mở Báo cáo giữa kỳ và Cuối kỳ đã hoàn tất; tiến độ 6 chặng được tính toán thuần túy từ dữ liệu thật. Còn lại: upload thật trên MinIO qua proxy Next.js với tệp gần 20 MB; quyền của GV phản biện chờ P05; nhận xét và checklist yêu cầu cho Giữa kỳ/Cuối kỳ theo A13.)*
 
 **Dependencies:** `P04-S01`, `P02-S02`; PDR-039–042.
 
@@ -54,19 +54,19 @@ Nhóm nộp tài liệu theo phiên bản; GVHD nhận xét/duyệt đề cươn
 **Tham chiếu:** [BUSINESS_RULES — Chấm điểm](../requirements/BUSINESS_RULES.md), [DESIGN — Không gian đề tài/Kết quả](../DESIGN/03-dac-ta-man-hinh.md), OQ-002/R01.
 
 **Công việc:**
-- [ ] Giữ PDR-011: không có bản nào lúc hết hạn → chờ ngoại lệ; Giáo vụ cấp hạn bổ sung riêng **một lần** ưu tiên cấu hình nộp trễ chung; nhóm tự chốt hoặc hệ thống chốt bản mới nhất khi hết hạn; nếu vẫn không có bản, Giáo vụ kết thúc đề tài ở trạng thái riêng `Không đủ điều kiện công bố` có lý do, không tự đánh không đạt và không mở lại bằng thao tác thường.
-- [ ] Triển khai chốt thủ công/tự động theo quyết định; idempotent để job chạy lặp không tạo nhiều bản cuối.
-- [ ] Hiển thị trạng thái bản cuối và trường hợp chờ xử lý ngoại lệ cho Giáo vụ.
+- [x] Giữ PDR-011: không có bản nào lúc hết hạn → chờ ngoại lệ; Giáo vụ cấp hạn bổ sung riêng **một lần** ưu tiên cấu hình nộp trễ chung; nhóm tự chốt hoặc hệ thống chốt bản mới nhất khi hết hạn; nếu vẫn không có bản, Giáo vụ kết thúc đề tài ở trạng thái riêng `Không đủ điều kiện công bố` có lý do, không tự đánh không đạt và không mở lại bằng thao tác thường.
+- [x] Triển khai chốt thủ công/tự động theo quyết định; idempotent để job chạy lặp không tạo nhiều bản cuối.
+- [x] Hiển thị trạng thái bản cuối và trường hợp chờ xử lý ngoại lệ cho Giáo vụ.
 
 **Acceptance criteria:**
-- [ ] Chỉ một phiên bản được đánh dấu bản cuối; bản trước còn tra cứu được; trường hợp không có bản được xử lý rõ theo OQ-002.
-- [ ] Hạn bổ sung của một nhóm không mở quyền nộp cho nhóm khác; nhóm được cấp hạn nhìn thấy thời điểm kết thúc và lý do.
-- [ ] Nếu nhóm đã nộp trong hạn bổ sung nhưng chưa tự chốt, hệ thống chốt đúng bản mới nhất khi hết hạn; job chạy lại không đổi bản cuối hoặc nhân đôi lịch sử.
-- [ ] Khi hết hạn bổ sung mà vẫn không có bản, hệ thống không tự kết thúc; chỉ Giáo vụ được ghi quyết định “Không đủ điều kiện công bố”, có lý do và lịch sử, không xuất thành điểm không đạt.
-- [ ] Quyết định kết thúc đưa đề tài vào trạng thái riêng, không vào `Đã hoàn tất`; hạn riêng cho đúng nhóm vẫn nhận nộp khi cấu hình nộp trễ chung tắt.
-- [ ] Sau khi đã cấp hạn bổ sung một lần, yêu cầu cấp lần hai cho cùng nhóm/đề tài bị từ chối và lịch sử lần đầu vẫn còn.
-- [ ] Đề tài đã kết thúc `Không đủ điều kiện công bố` không nhận nộp/chấm tiếp hoặc mở lại bằng thao tác thông thường.
-- [ ] Điều kiện công bố được Phase 07 dùng đúng, không tự coi hết hạn là có bản cuối nếu quyết định không cho.
+- [x] Chỉ một phiên bản được đánh dấu bản cuối; bản trước còn tra cứu được; trường hợp không có bản được xử lý rõ theo OQ-002.
+- [x] Hạn bổ sung của một nhóm không mở quyền nộp cho nhóm khác; nhóm được cấp hạn nhìn thấy thời điểm kết thúc và lý do.
+- [x] Nếu nhóm đã nộp trong hạn bổ sung nhưng chưa tự chốt, hệ thống chốt đúng bản mới nhất khi hết hạn; job chạy lại không đổi bản cuối hoặc nhân đôi lịch sử.
+- [x] Khi hết hạn bổ sung mà vẫn không có bản, hệ thống không tự kết thúc; chỉ Giáo vụ được ghi quyết định “Không đủ điều kiện công bố”, có lý do và lịch sử, không xuất thành điểm không đạt.
+- [x] Quyết định kết thúc đưa đề tài vào trạng thái riêng, không vào `Đã hoàn tất`; hạn riêng cho đúng nhóm vẫn nhận nộp khi cấu hình nộp trễ chung tắt.
+- [x] Sau khi đã cấp hạn bổ sung một lần, yêu cầu cấp lần hai cho cùng nhóm/đề tài bị từ chối và lịch sử lần đầu vẫn còn.
+- [x] Đề tài đã kết thúc `Không đủ điều kiện công bố` không nhận nộp/chấm tiếp hoặc mở lại bằng thao tác thông thường.
+- [x] Điều kiện công bố được Phase 07 dùng đúng, không tự coi hết hạn là có bản cuối nếu quyết định không cho.
 
 **Verification:** Test không có bản, một bản, nhiều bản, chốt lặp và job sau hạn.
 

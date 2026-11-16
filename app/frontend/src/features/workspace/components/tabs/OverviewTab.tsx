@@ -23,7 +23,8 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ topic }) => {
       const reg = topic.history.find(
         (h) =>
           h.action === 'Ghi danh đề tài' ||
-          (h.category === 'Nhóm' && h.action.toLowerCase().includes('ghi danh')),
+          (h.category === 'Nhóm' &&
+            h.action.toLowerCase().includes('ghi danh')),
       );
       if (reg) {
         sourceText = `Giảng viên gửi · nhóm ghi danh ${formatDate(reg.at.slice(0, 10))}`;

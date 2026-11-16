@@ -1,7 +1,9 @@
 # Kế hoạch hoàn tất MVP QLKLTN
 
-**Trạng thái:** Sẵn sàng để thực hiện sau khi được duyệt  
-**Cập nhật:** 2026-11-01  
+**Trạng thái:** Đang triển khai; chưa đạt nghiệm thu MVP
+
+**Cập nhật:** 2026-11-16 (đối chiếu codebase, test và các PDR đã chốt)
+
 **Mục đích:** Biến nền kỹ thuật và các màn hình hiện có thành MVP quản lý khóa luận tốt nghiệp có thể vận hành trọn một đợt trên dữ liệu thật.
 
 ## 1. Căn cứ và ranh giới
@@ -121,9 +123,11 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G2.1 — Vòng đời đợt và chín mốc
 
-- [ ] Tạo entity/migration/API/UI cho Nháp, Đang diễn ra, Đã kết thúc, sao chép và xóa đúng điều kiện.
-- [ ] Lưu chín mốc, validation thứ tự ngày/giờ, hạn nộp trễ riêng PDR-041 và Gantt dữ liệu thật.
-- [ ] Mở đợt bắt buộc đủ mốc; thiếu người chỉ cảnh báo; kết thúc bị chặn nếu còn đề tài chưa ở trạng thái cuối hợp lệ.
+- [x] Tạo entity/migration/API/UI cho Nháp, Đang diễn ra, Đã kết thúc, sao chép và xóa đúng điều kiện.
+- [x] Lưu chín mốc, validation thứ tự ngày/giờ, hạn nộp trễ riêng PDR-041 và Gantt dữ liệu thật.
+- [x] Mở đợt bắt buộc đủ mốc; thiếu người chỉ cảnh báo; kết thúc bị chặn nếu còn đề tài chưa ở trạng thái cuối hợp lệ.
+
+*(Đối chiếu code 2026-11-16: `RoundHandlers`, `RoundsController`, `RoundRepository`, `RoundRules`, `CreateRoundDialog`, `RoundLifecycleDialog`, `RoundGantt` và `RoundHomePage`; `RoundWorkflowTests` cùng test UI xác nhận sao chép, chín mốc, cảnh báo thiếu người và các điều kiện chuyển trạng thái. Khi chạy frontend cần bật `NEXT_PUBLIC_ROUNDS_API=true` để lấy dữ liệu thật. Mục G2.2 vẫn chưa hoàn tất vì thao tác đồng thời có thể vượt bước kiểm tra trùng SV, chưa ghi đủ history khi gỡ người và cấu hình mặc định còn dùng demo.)*
 
 **Nghiệm thu:** Sao chép chỉ mang khung cấu hình theo PDR-034; các ca sai mốc, mốc giáp ranh và deadline trễ đều có test.
 
@@ -155,12 +159,16 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 - [x] Dùng ràng buộc DB + transaction cho tranh chấp hai nhóm nhận một đề tài và idempotency. *(backend, PDR-054)*
 - [ ] Thực hiện hủy theo PDR-047, giữ nhóm/đại diện/lịch sử để ghi danh lại.
 
+*(Rà soát 2026-11-15: `CancelRegistrationHandler` đã chặn hủy sau khi nộp đề cương, có test tại `OutlineWorkflowTests`; tuy nhiên `RegistrationMapping.BuildAsync` chưa tính điều kiện này vào `canCancel`, nên UI vẫn có thể hiện nút hủy không hợp lệ. Giữ mục này chưa hoàn tất đến khi đồng bộ trạng thái nút với quyền thực tế.)*
+
 **Nghiệm thu:** Một trong hai yêu cầu đồng thời thắng; hủy ở mốc không hợp lệ bị chặn và thao tác lặp không làm sai trạng thái.
 
 #### G3.3 — Đề xuất đề tài và quyết định GVHD
 
-- [ ] Tạo/sửa/hủy đề xuất chờ, duyệt/từ chối bắt buộc lý do và lịch sử.
-- [ ] Áp dụng PDR-012: chỉ hủy khi chờ GV, đề xuất lại dùng nguyên nhóm và không tạo nhóm thứ hai.
+- [x] Tạo/sửa/hủy đề xuất chờ, duyệt/từ chối bắt buộc lý do và lịch sử.
+- [x] Áp dụng PDR-012: chỉ hủy khi chờ GV, đề xuất lại dùng nguyên nhóm và không tạo nhóm thứ hai.
+
+*(Đối chiếu 2026-11-15: `TopicProposalRequests`, API đề xuất, màn `/sv/don-dang-ky` và `/gv/de-xuat`; `TopicWorkflowTests`, `RegistrationConcurrencyTests` và test giao diện. PostgreSQL concurrency test cần chạy lại trên DB test khi nghiệm thu E2E.)*
 
 **Checkpoint G3:** Nhóm 1 SV và 2 SV hoàn thành đầy đủ ghi danh hoặc đề xuất trên UI/API thật, gồm ca cạnh tranh.
 
@@ -185,8 +193,10 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G4.3 — Chốt bản khóa luận cuối và ngoại lệ
 
-- [ ] Chốt thủ công/tự động idempotent; hỗ trợ hạn bổ sung một lần theo PDR-011.
-- [ ] Giáo vụ mới được kết thúc `Không đủ điều kiện công bố` có lý do nếu vẫn không có bản; trạng thái này không tự thành điểm không đạt.
+- [x] Chốt thủ công/tự động idempotent; hỗ trợ hạn bổ sung một lần theo PDR-011.
+- [x] Giáo vụ mới được kết thúc `Không đủ điều kiện công bố` có lý do nếu vẫn không có bản; trạng thái này không tự thành điểm không đạt.
+
+*(Đối chiếu 2026-11-15: [PDR-059](../decisions/PDR-059-chot-ban-khoa-luan-cuoi.md), `ThesisFinalizationRequests`, `ThesisFinalizationJob`, migration `AddThesisFinalization`, API `/api/topics/{id}/thesis/*`, `SubmissionPanel` và test handler/UI. Đã hoàn thiện đường code và test tự động; **chưa nghiệm thu** job trên PostgreSQL + MinIO thật, migration trên DB test và build frontend production.)*
 
 **Checkpoint G4:** Một nhóm có lịch sử nộp nhiều bản và nhóm không nộp được xử lý đúng, dữ liệu/tệp vẫn truy vết được sau restart.
 
@@ -235,20 +245,20 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G7.1 — Bốn phiếu điểm và luồng Chủ tịch/Thư ký
 
-- [ ] Nhập HD, PB, CTHĐ, TKHĐ theo từng SV và quyền bối cảnh; ghi snapshot mẫu, người nhập/chấm và audit.
-- [ ] Thư ký nhập điểm CTHĐ và TKHĐ; Chủ tịch chỉ xem, không có bước xác nhận hay trả lại (PDR-050, thay PDR-006).
+- [ ] Nhập HD, PB, CTHĐ, TKHĐ theo từng SV và quyền bối cảnh; ghi snapshot mẫu, người nhập/chấm, lịch sử sửa và audit.
+- [ ] Thư ký nhập/sửa điểm CTHĐ và TKHĐ; Chủ tịch chỉ xem, không có bước xác nhận hay trả lại (PDR-050, thay PDR-006).
 
-#### G7.2 — Công thức, cảnh báo và trạng thái từng SV
+#### G7.2 — Công thức, cảnh báo và trạng thái đề tài
 
 - [ ] Tính `(CTHĐ + TKHĐ + 2×CBHD + 2×CBPB) / 6`, làm tròn số học hai chữ số.
-- [ ] Cảnh báo bốn cặp chéo chênh từ 2,00 trở lên mà không chặn lưu; chỉ tính tổng khi đủ bốn điểm.
+- [ ] Cảnh báo bốn cặp chéo chênh từ 2,00 trở lên, vẫn cho lưu điểm nhưng chặn Giáo vụ xác nhận đề tài khi còn lệch; chỉ tính tổng khi đủ bốn điểm (PDR-049).
 
 #### G7.3 — Xác nhận/công bố đơn lẻ và theo lô
 
-- [ ] Xử lý lô theo từng SV, báo lý do từng người bỏ qua; mở lại trước công bố cần lý do/history và khóa sau công bố.
+- [ ] Xác nhận/công bố theo từng đề tài hoặc lô đề tài, báo lý do từng đề tài bỏ qua; hủy xác nhận trước công bố cần lý do/history và khóa sau công bố (PDR-049).
 - [ ] Không công bố khi thiếu điều kiện bản cuối; chỉ SV liên quan xem điểm sau công bố.
 
-**Nghiệm thu:** Đề tài 2 SV có thể có trạng thái/điểm khác nhau; các mốc 1,99/2,00 và giá trị làm tròn giữa có test ở API/UI/export.
+**Nghiệm thu:** Đề tài 2 SV có điểm riêng từng người nhưng dùng trạng thái xác nhận/công bố chung của đề tài; các mốc 1,99/2,00 và giá trị làm tròn giữa có test ở API/UI/export.
 
 **Checkpoint G7:** Hai kịch bản 1 SV, 2 SV hoàn thành chấm → xác nhận → công bố không dùng dữ liệu demo.
 
@@ -274,6 +284,58 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 - [ ] Loại kho demo/stub khỏi tất cả màn nghiệp vụ được gắn mốc MVP; giữ Products legacy theo PDR-002.
 
 **Checkpoint G8 / Definition of Done:** Mọi tiêu chí tại mục 2 có bằng chứng test hoặc thao tác thực tế trên môi trường test cô lập; không còn lỗi Critical/High chưa có quyết định chấp nhận rủi ro bằng văn bản.
+
+### Rà soát codebase ngày 2026-11-16 — tiến độ và kịch bản demo
+
+Đếm **55 checkbox triển khai** ở G0–G8 (không tính bốn checkbox phê duyệt ở mục 9): **19/55 = 34,5%**. Đây là **tỷ lệ đầu việc được đánh dấu theo code và test**, không phải phần trăm MVP đủ điều kiện vận hành; các checkpoint E2E và cổng release chưa đạt.
+
+| Nhóm | Đã đánh dấu / tổng | Phần có thể chứng minh | Phần chưa đủ để nghiệm thu |
+| --- | ---: | --- | --- |
+| G0 | 0/6 | Tài liệu PDR làm căn cứ | Ma trận quyền, quy trình DB test, review migration toàn hệ |
+| G1 | 7/9 | Quản trị tài khoản, reset, hồ sơ, avatar, thông báo nền | Hai mục kiểm chứng auth/CSV và gỡ demo toàn luồng |
+| G2 | 3/6 | Vòng đời/sao chép/xóa đợt, chín mốc và Gantt từ dữ liệu API; kiểm tra mở/kết thúc | Race condition khi hai đợt mở cùng SV, history gỡ người và nguồn demo mặc định |
+| G3 | 6/7 | Đề tài, công bố, ghi danh, đề xuất và quyết định GV | `canCancel` lệch điều kiện đã nộp đề cương; checkpoint E2E nhóm 1/2 SV |
+| G4 | 3/6 | Đề cương và chốt bản khóa luận cuối có code/test | Hạn trễ đề cương; upload thật MinIO, quyền GV phản biện và recovery |
+| G5 | 0/4 | API/UI mẫu phiếu là nền ban đầu | Mẫu đủ ba vai trò, snapshot, phân công phản biện |
+| G6 | 0/4 | Một số màn hình demo | API và quy tắc hội đồng, lịch, va chạm và công bố |
+| G7 | 0/6 | Một số màn hình demo | Bốn phiếu điểm, tính điểm, xác nhận và công bố thật |
+| G8 | 0/7 | Có thông báo và một số audit theo module | Thông báo xuyên quy trình, báo cáo/export, E2E và release gate |
+
+**Các lỗi và lệch luồng cần xử lý tiếp (đối chiếu mã nguồn):**
+
+1. **Ưu tiên cao — trùng SV khi mở đợt đồng thời.** `OpenRoundHandler` kiểm tra xung đột trước khi cập nhật trạng thái, nhưng chưa có khóa/ràng buộc DB bảo vệ hai yêu cầu mở cùng lúc (`RoundHandlers.cs`, đoạn TODO tại 337–338). Cần thử bằng PostgreSQL concurrency test.
+2. **Ưu tiên cao — tiến độ bài nộp có thể sai.** `TopicDetailPage.progressSteps` lấy Giữa kỳ/Cuối kỳ từ `topic.submissions`, trong khi `GetTopicHandler` hiện chỉ điền các phiên bản Đề cương vào mảng này; báo cáo thật được lấy riêng qua API bài nộp. Sau khi nộp báo cáo, dòng tiến độ có thể vẫn hiện `Chưa nộp`.
+3. **Ưu tiên cao — thao tác kết thúc ngoại lệ thiếu xác nhận.** Nút `Không đủ điều kiện công bố` trong `SubmissionPanel` gọi trực tiếp `decide('ineligible')`. Cần xác nhận rõ đề tài/lý do trước khi chuyển trạng thái cuối, nhất là khi trình diễn.
+4. **Ưu tiên vừa — quyền hủy ghi danh hiển thị sai.** `RegistrationMapping.BuildAsync` còn báo `canCancel=true` dù nhóm đã nộp Đề cương; `CancelRegistrationHandler` từ chối hành động này. Giữ G3.2 chưa đánh dấu.
+5. **Ưu tiên vừa — điều kiện công bố trên UI dùng thiếu dữ liệu.** `publishResultBlocker` đọc `topic.submissions` dù danh sách đề tài từ API chỉ cung cấp số phiên bản/chốt bản cuối. Đồng thời các lệnh xác nhận, hủy xác nhận, công bố và nhắc lệch điểm ở `topicApiService` còn là stub; giữ G7 chưa đánh dấu.
+6. **Ưu tiên vừa — điều kiện cấp hạn bổ sung.** `SubmissionRequests.ToDto` có thể bật `CanGrantExtension` khi đề tài chưa có nhóm, trong khi `GrantThesisExtensionCommand` từ chối đề tài không có `GroupId`. Đồng bộ điều kiện hiển thị để tránh thao tác 409.
+7. **Ưu tiên vừa — phạm vi dữ liệu người tham gia đợt.** `RoundMapping.ToDto` luôn trả `LecturerIds`, `StudentIds`, `LockedStudentIds` qua cả API GET danh sách/chi tiết cho GV/SV đã tham gia (`RoundHandlers.cs`, `RoundsController.cs`). Đối chiếu `docs/product/ROLES.md` về nguyên tắc SV chỉ xem dữ liệu thuộc về mình hoặc thông tin công bố chung; cần xác nhận danh sách ID này có được công bố cho toàn đợt hay phải giới hạn theo vai trò. Thêm kiểm thử phân quyền phản hồi API sau khi chốt quy tắc.
+
+**Điều kiện chạy demo:** Dùng **database test cô lập**, backend, PostgreSQL, MinIO và frontend cùng hoạt động; cập nhật các migration đã review trên **DB test**; chuẩn bị tài khoản đủ ba vai trò, một đợt với chín mốc, 1 nhóm một SV, 1 nhóm hai SV, giảng viên hướng dẫn và vài PDF hợp lệ. Bật `NEXT_PUBLIC_ROUNDS_API=true` khi chạy frontend để các màn đợt/đề tài dùng API thật. Chọn ngày mốc phù hợp với từng hành động; không sửa đồng hồ/migration của DB dùng chung. Luôn reload sau thao tác để xác nhận dữ liệu thật được lưu.
+
+1. **Giáo vụ — tài khoản và hồ sơ:** `/login` → `/giao-vu/nguoi-dung` (tìm, tạo/import CSV, khóa/mở, reset) → `/ho-so` (sửa hồ sơ/avatar, đổi mật khẩu). Kiểm tra bằng tài khoản SV không truy cập trang Giáo vụ được.
+2. **Giáo vụ — đợt:** `/giao-vu/dot` → tạo Nháp, sao chép đợt mẫu (chỉ sao chép khung cấu hình), nhập đủ chín mốc và hạn nộp trễ, thêm SV/GV, thử mở khi thiếu mốc để thấy lỗi rồi sửa và mở thành công. Kiểm tra cảnh báo thiếu người không khóa mở. Tải lại trang, mở chi tiết đợt và xem Gantt từ dữ liệu vừa lưu. Thử xóa một đợt Nháp riêng; xác nhận đợt đang diễn ra không cho xóa. Không thử mở song song hai đợt cùng một SV vì còn lỗi đồng thời.
+3. **Giảng viên → Giáo vụ → Sinh viên — đề tài:** `/gv/de-tai` tạo/sửa đề tài → `/giao-vu/de-tai` công bố → `/sv/dang-ky` và `/sv/dang-ky/[id]` xem và ghi danh nhóm 1/2 SV. Xác nhận nhóm thứ hai không ghi danh được đề tài vừa bị nhận; hủy/ghi danh lại khi hợp lệ và xem lịch sử.
+4. **Sinh viên ↔ Giảng viên — đề xuất:** `/sv/don-dang-ky` tạo/sửa/hủy đề xuất chờ → `/gv/de-xuat` từ chối có lý do hoặc chấp nhận → SV kiểm tra lịch sử và đề xuất lại bằng **cùng nhóm**. Dùng hai đề xuất để demo cả nhánh chấp nhận và từ chối.
+5. **Sinh viên ↔ GVHD — đề cương:** `/sv/de-tai` hoặc `/de-tai/[id]` nộp PDF đề cương nhiều phiên bản → `/gv/huong-dan` vào không gian đề tài, nhận xét/yêu cầu sửa/duyệt → SV tải lại các bản và thấy trạng thái; kiểm tra không duyệt khi còn yêu cầu mở.
+6. **Nhóm → Giáo vụ — tài liệu và bản khóa luận:** `/de-tai/[id]` nộp báo cáo giữa kỳ/cuối kỳ và `Bản khóa luận`, tải các phiên bản, tự chốt một bản. Xem lịch sử/phiên bản ngay trong panel bài nộp; phần tiến độ tổng quan đang có lỗi đồng bộ dữ liệu nêu trên. Trên **nhóm thử riêng** đã quá hạn và chưa nộp bản khóa luận, Giáo vụ cấp hạn bổ sung một lần hoặc kết thúc `Không đủ điều kiện công bố` với lý do; thao tác kết thúc này hiện thiếu hộp xác nhận nên phải kiểm tra kỹ trước khi nhấn trên DB thử. Job chốt tự động chỉ demo sau khi đã xác thực trên DB test.
+7. **Giáo vụ — mẫu đánh giá:** `/giao-vu/phieu-danh-gia` xem danh mục/tạo mẫu ở mức hiện có. **Không demo** phân công phản biện, hội đồng, bốn điểm, xác nhận/công bố kết quả như tính năng thật vì thiếu API end-to-end G5–G7.
+
+**Điểm kiểm chứng trực tiếp trong buổi demo:**
+
+| Chặng | Kết quả cần quan sát | Cách xác minh |
+| --- | --- | --- |
+| Tài khoản | Tài khoản mới đăng nhập đúng vai trò; tài khoản SV không vào được màn Giáo vụ | Đăng xuất, đăng nhập lại, mở URL role bị cấm |
+| Tạo/sao chép đợt | Bản sao chỉ mang khung, không mang người/ngày; đợt gốc vẫn nguyên | Mở hai bản ghi song song, tải lại trang |
+| Mốc/mở đợt | Thiếu mốc bị chặn; đủ mốc mở được dù thiếu người, có cảnh báo | Thử lỗi trước khi sửa, reload và xem Gantt |
+| Ghi danh nhóm | Một đề tài chỉ nhận được một nhóm hợp lệ, nhóm 1/2 SV hiện đúng | Đăng nhập hai nhóm lần lượt, kiểm tra lịch sử đề tài |
+| Đề xuất GVHD | Đề xuất được từ chối có lý do hoặc duyệt, nhóm giữ nguyên khi đề xuất lại | Đổi vai trò SV/GV, tải lại lịch sử |
+| Đề cương | Có nhiều phiên bản, GVHD yêu cầu sửa và duyệt sau khi đóng yêu cầu | SV nộp lần hai, GV duyệt, reload |
+| Báo cáo/bản khóa luận | API bài nộp trả đúng phiên bản và tệp, bản đã chốt hiển thị đúng | Tải lại tệp, kiểm tra panel sau reload |
+| Ngoại lệ không nộp | Chỉ Giáo vụ xử lý hạn bổ sung và lý do kết thúc; không sinh điểm | Dùng nhóm thử riêng trên DB test |
+| Mẫu phiếu đánh giá | Tạo hoặc xem mẫu đã lưu, làm rõ giới hạn hiện tại của G5 | Tải lại danh mục và kiểm tra thông tin mẫu |
+
+**Bằng chứng kiểm tra tại ngày rà soát:** `dotnet test Backend.sln --no-restore` **329 pass, 7 skip** (các ca PostgreSQL cần môi trường); frontend `npm.cmd run typecheck` **pass**, `npm.cmd run lint` **pass** (1 cảnh báo unused import), `npm.cmd test` **471 pass / 48 files**. `npm.cmd run build` **không thành công do mạng không tải được** Be Vietnam Pro/JetBrains Mono từ Google Fonts qua `next/font`. Đã phát hiện lệch `canCancel` so với quy tắc hủy sau khi nộp đề cương, nguy cơ race condition khi mở đồng thời hai đợt có chung SV, và các thao tác kết quả G7 còn stub. Đã sửa mô tả backlog G7 theo PDR-049/050. Chưa thực hiện E2E đầy đủ với PostgreSQL/MinIO/SMTP thật, migration lên DB test hoặc đánh giá an toàn triển khai; vì vậy **chưa đạt G8**.
 
 ## 6. Chuẩn kiểm thử bắt buộc cho từng lát cắt
 

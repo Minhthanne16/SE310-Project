@@ -109,7 +109,7 @@ public sealed class SubmissionWorkflowTests : IDisposable
                 EndDate = start.AddDays(i * 7 + 5).ToString("yyyy-MM-dd"),
                 NotifyAudience = "Tất cả",
                 // Cuối kỳ tắt nộp trễ; Đề cương và Giữa kỳ có hạn trễ 3 ngày sau hạn thường.
-                AllowLate = ThesisRound.HasLateToggle(key) ? key != MilestoneKey.Final : null,
+                AllowLate = ThesisRound.HasLateToggle(key) ? key is not (MilestoneKey.Final or MilestoneKey.Finalize) : null,
                 LateEndDate = key is MilestoneKey.Outline or MilestoneKey.Midterm ? start.AddDays(i * 7 + 8).ToString("yyyy-MM-dd") : null
             }).ToList()
         };
@@ -170,6 +170,103 @@ public sealed class SubmissionWorkflowTests : IDisposable
         var count = 0;
         await Db(async db => count = await db.TopicSubmissions.CountAsync(s => s.Kind == SubmissionKind.Midterm || s.Kind == SubmissionKind.Final));
         return count;
+    }
+
+    [Fact]
+    public async Task ExtensionIsPrivateOneTimeAndAutoLocksLatestExactlyOnce()
+    {
+        var w = await RunningTopic();
+        _clock.Set(new DateTimeOffset(2026, 11, 2, 3, 0, 0, TimeSpan.Zero));
+        var empty = Kind((await List(w.Students[0], w.TopicId)).Response.Data!, "thesis");
+        Assert.True(empty.WaitingException);
+        Assert.False(empty.CanSubmit);
+        var waiting = (await Send(new ListRoundTopicsQuery(w.RoundId))).Response.Data!.Items.Single(t => t.Id == w.TopicId);
+        Assert.True(waiting.ThesisWaitingException);
+        Assert.Equal(0, waiting.ThesisVersionCount);
+        var grant = await Send(new GrantThesisExtensionCommand(w.Lecturer.Id, w.TopicId, "2026-11-05", "Cho nhóm nộp bổ sung"));
+        Assert.Equal(TopicResultStatus.Ok, grant.Status);
+        Assert.Equal("2026-11-05", Kind(grant.Response.Data!, "thesis").ExtensionDeadline);
+        Assert.Equal(TopicResultStatus.Conflict, (await Send(new GrantThesisExtensionCommand(w.Lecturer.Id, w.TopicId,
+            "2026-11-10", "Lần hai"))).Status);
+        var extensionView = Kind((await List(w.Students[0], w.TopicId)).Response.Data!, "thesis");
+        Assert.True(extensionView.CanSubmit);
+        Assert.False(extensionView.WaitingException);
+        Assert.False(Kind((await List(w.Students[2], w.OtherTopicId)).Response.Data!, "thesis").CanSubmit);
+
+        var first = await Submit(w.Students[0], w.TopicId, "thesis", Pdf("v1"));
+        var second = await Submit(w.Students[1], w.TopicId, "thesis", Pdf("v2"));
+        Assert.Equal(TopicResultStatus.Created, first.Status);
+        Assert.Equal(TopicResultStatus.Created, second.Status);
+        var latestId = Kind(second.Response.Data!, "thesis").Versions[0].Id;
+        _clock.Set(new DateTimeOffset(2026, 11, 6, 3, 0, 0, TimeSpan.Zero));
+        Assert.Equal(1, await Send(new FinalizeExpiredThesesCommand()));
+        Assert.Equal(0, await Send(new FinalizeExpiredThesesCommand()));
+        var final = Kind((await List(w.Students[0], w.TopicId)).Response.Data!, "thesis");
+        Assert.Equal(latestId, final.Versions.Single(v => v.IsFinal).Id);
+        Assert.Equal(2, final.Versions.Count);
+        Assert.False(final.CanSubmit);
+        var summary = (await Send(new ListRoundTopicsQuery(w.RoundId))).Response.Data!.Items.Single(t => t.Id == w.TopicId);
+        Assert.False(summary.ThesisWaitingException);
+        Assert.Equal(2, summary.ThesisVersionCount);
+        Assert.Equal(2, summary.FinalLockedVersionNo);
+        await Db(async db => Assert.Single(await db.TopicHistoryEntries.Where(h => h.TopicId == w.TopicId &&
+            h.Action == "Hệ thống chốt bản khóa luận cuối").ToListAsync()));
+    }
+
+    [Fact]
+    public async Task NoSubmissionWaitsForStaffDecisionAfterExtension()
+    {
+        var w = await RunningTopic();
+        _clock.Set(new DateTimeOffset(2026, 11, 2, 3, 0, 0, TimeSpan.Zero));
+        Assert.Equal(TopicResultStatus.Ok, (await Send(new GrantThesisExtensionCommand(w.Lecturer.Id, w.TopicId,
+            "2026-11-05", "Ngoại lệ"))).Status);
+        _clock.Set(new DateTimeOffset(2026, 11, 6, 3, 0, 0, TimeSpan.Zero));
+        Assert.Equal(0, await Send(new FinalizeExpiredThesesCommand()));
+        Assert.Equal(TopicResultStatus.Invalid, (await Send(new MarkThesisIneligibleCommand(w.Lecturer.Id, w.TopicId, " "))).Status);
+        var marked = await Send(new MarkThesisIneligibleCommand(w.Lecturer.Id, w.TopicId, "Không nộp bản khóa luận"));
+        Assert.Equal(TopicResultStatus.Ok, marked.Status);
+        Assert.Equal("Không nộp bản khóa luận", Kind(marked.Response.Data!, "thesis").IneligibleReason);
+        Assert.Equal(TopicResultStatus.Conflict, (await Submit(w.Students[0], w.TopicId, "thesis", Pdf())).Status);
+        Assert.Equal(TopicResultStatus.Conflict, (await Send(new GrantThesisExtensionCommand(w.Lecturer.Id, w.TopicId,
+            "2026-11-10", "Lần hai"))).Status);
+        await Db(async db =>
+        {
+            var topic = await db.ThesisTopics.FindAsync(w.TopicId);
+            Assert.Equal(TopicStatus.Ineligible, topic!.Status);
+            Assert.Null(topic.FinalThesisSubmissionId);
+            Assert.Single(await db.TopicHistoryEntries.Where(h => h.TopicId == w.TopicId && h.Action == "Không đủ điều kiện công bố").ToListAsync());
+        });
+    }
+
+    [Fact]
+    public async Task MemberLocksOneThesisVersionAndKeepsOlderVersionsReadable()
+    {
+        var w = await RunningTopic();
+        _clock.Set(new DateTimeOffset(2026, 10, 30, 3, 0, 0, TimeSpan.Zero));
+        var first = await Submit(w.Students[0], w.TopicId, "thesis", Pdf("v1"));
+        var second = await Submit(w.Students[1], w.TopicId, "thesis", Pdf("v2"));
+        var versions = Kind(second.Response.Data!, "thesis").Versions;
+        var chosen = versions[1].Id;
+        Assert.Equal(TopicResultStatus.Ok, (await Send(new LockThesisCommand(w.Students[0].Id, w.TopicId, chosen))).Status);
+        Assert.Equal(TopicResultStatus.Conflict, (await Send(new LockThesisCommand(w.Students[1].Id, w.TopicId, versions[0].Id))).Status);
+        Assert.Equal(TopicResultStatus.Conflict, (await Submit(w.Students[1], w.TopicId, "thesis", Pdf("v3"))).Status);
+        var state = Kind((await List(w.Students[0], w.TopicId)).Response.Data!, "thesis");
+        Assert.Equal(chosen, state.Versions.Single(v => v.IsFinal).Id);
+        Assert.Equal(2, state.Versions.Count);
+        Assert.Equal(TopicResultStatus.Ok, (await Download(w.Students[0], versions[0].Id)).Status);
+        Assert.Equal(TopicResultStatus.Ok, (await Download(w.Students[0], versions[1].Id)).Status);
+    }
+
+    [Fact]
+    public async Task OriginalDeadlineAlsoLocksTheLatestThesisWhenNoExtensionExists()
+    {
+        var w = await RunningTopic();
+        _clock.Set(new DateTimeOffset(2026, 10, 30, 3, 0, 0, TimeSpan.Zero));
+        await Submit(w.Students[0], w.TopicId, "thesis", Pdf("v1"));
+        var latest = Kind((await Submit(w.Students[0], w.TopicId, "thesis", Pdf("v2"))).Response.Data!, "thesis").Versions[0].Id;
+        _clock.Set(new DateTimeOffset(2026, 11, 2, 3, 0, 0, TimeSpan.Zero));
+        Assert.Equal(1, await Send(new FinalizeExpiredThesesCommand()));
+        Assert.Equal(latest, Kind((await List(w.Students[0], w.TopicId)).Response.Data!, "thesis").Versions.Single(v => v.IsFinal).Id);
     }
 
     [Fact]
@@ -525,6 +622,8 @@ public sealed class SubmissionWorkflowTests : IDisposable
     {
         public Task<IReadOnlyList<TopicSubmission>> ListReportsAsync(Guid topicId, CancellationToken cancellationToken = default) =>
             inner.ListReportsAsync(topicId, cancellationToken);
+        public Task<IReadOnlyList<TopicSubmission>> ListThesesForTopicsAsync(IReadOnlyCollection<Guid> topicIds, CancellationToken cancellationToken = default) =>
+            inner.ListThesesForTopicsAsync(topicIds, cancellationToken);
         public Task<TopicSubmission?> GetReportAsync(Guid id, CancellationToken cancellationToken = default) => inner.GetReportAsync(id, cancellationToken);
         public Task<IReadOnlyDictionary<Guid, SubmitterInfo>> GetSubmittersAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default) =>
             inner.GetSubmittersAsync(userIds, cancellationToken);
@@ -543,6 +642,14 @@ public sealed class SubmissionWorkflowTests : IDisposable
             inner.ResolveRequestAsync(requestId, actorId, now, history, cancellationToken);
         public Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
             inner.SaveCommentAsync(submissionId, comment, actorId, now, history, cancellationToken);
+        public Task<bool> GrantThesisExtensionAsync(Guid topicId, DateOnly end, string reason, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
+            inner.GrantThesisExtensionAsync(topicId, end, reason, actorId, now, history, cancellationToken);
+        public Task<bool> LockThesisAsync(Guid topicId, Guid submissionId, Guid? actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
+            inner.LockThesisAsync(topicId, submissionId, actorId, now, history, cancellationToken);
+        public Task<bool> MarkIneligibleAsync(Guid topicId, string reason, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
+            inner.MarkIneligibleAsync(topicId, reason, actorId, now, history, cancellationToken);
+        public Task<IReadOnlyList<Guid>> GetExpiredThesisTopicsAsync(DateOnly today, CancellationToken cancellationToken = default) =>
+            inner.GetExpiredThesisTopicsAsync(today, cancellationToken);
     }
 }
 

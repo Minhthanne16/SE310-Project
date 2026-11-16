@@ -154,7 +154,7 @@ Mỗi bước là một commit (hoặc vài commit nhỏ). Commit message tiến
 
 ### A1. Ghi quyết định trước khi code (docs)
 
-Tạo `docs/decisions/PDR-059-khong-gian-de-tai-khung-va-tab.md` (định dạng như PDR-057: Trạng thái / Bối cảnh / Quyết định / Hợp đồng API / Giao diện / Hệ quả), ghi:
+Tạo `docs/decisions/PDR-061-khong-gian-de-tai-khung-va-tab.md` (định dạng như PDR-057: Trạng thái / Bối cảnh / Quyết định / Hợp đồng API / Giao diện / Hệ quả), ghi:
 
 - Một route `/de-tai/[id]` cho 3 vai trò; vai trò từ máy chủ.
 - Tab giữ trong `?tab=` với giá trị `tong-quan | thong-bao | hoat-dong | diem-so`; mặc định `hoat-dong` cho mọi vai trò hiện có (phần B: `diem-so` cho phản biện/hội đồng). Giá trị lạ → mặc định.
@@ -164,9 +164,9 @@ Tạo `docs/decisions/PDR-059-khong-gian-de-tai-khung-va-tab.md` (định dạng
 - Thêm trường `round` vào `TopicDetailDto` (A2).
 - Tab Thông báo và phần điểm chưa có dữ liệu: hiện trạng thái trống, không dữ liệu giả.
 
-Sửa `docs/DESIGN/03-dac-ta-man-hinh.md`: thay hai ghi chú triển khai 2026-11-12 của Không gian đề tài bằng ghi chú mới trỏ tới PDR-059. Thêm PDR-059 vào bảng/mục lục nếu `docs/STRUCTURE.md` có liệt kê PDR.
+Sửa `docs/DESIGN/03-dac-ta-man-hinh.md`: thay hai ghi chú triển khai 2026-11-12 của Không gian đề tài bằng ghi chú mới trỏ tới PDR-061. Thêm PDR-061 vào bảng/mục lục nếu `docs/STRUCTURE.md` có liệt kê PDR.
 
-**Xong khi:** PDR-059 tồn tại, DESIGN/03 không còn câu "Chưa có: khung tiến độ 6 chặng, các tab…".
+**Xong khi:** PDR-061 tồn tại, DESIGN/03 không còn câu "Chưa có: khung tiến độ 6 chặng, các tab…".
 
 ### A2. Backend: thêm thông tin đợt vào chi tiết đề tài
 
@@ -291,7 +291,7 @@ Quy tắc (chỉ dùng dữ liệu có thật):
 - `/gv/huong-dan`: nút "Mở" đã trỏ `/de-tai/[id]`; giữ.
 - Chi tiết đề tài Giáo vụ `/giao-vu/de-tai/[id]` (`features/topics/components/TopicDetailPage.tsx`): thêm liên kết phụ "Mở không gian đề tài" tới `/de-tai/[id]` ở hàng tiêu đề, chỉ khi đề tài có nhóm.
 - Ghi nhớ quy tắc dự án: từ Trang chủ trong một đợt sang Đề tài/Đề xuất phải áp sẵn bộ lọc đợt. Màn này không phải trang danh sách nên không có bộ lọc; chỉ giữ `?dot=` trên liên kết quay lại nếu trang đích dùng tham số đó.
-- Chuông thông báo (PDR-057) đã có `href=/de-tai/{id}`; không đổi. Có thể nối thêm `?tab=hoat-dong` khi tạo thông báo nộp/duyệt, nhưng đó là đổi backend: làm trong cùng commit, cập nhật PDR-059.
+- Chuông thông báo (PDR-057) đã có `href=/de-tai/{id}`; không đổi. Có thể nối thêm `?tab=hoat-dong` khi tạo thông báo nộp/duyệt, nhưng đó là đổi backend: làm trong cùng commit, cập nhật PDR-061.
 
 **Xong khi:** đi được từ 3 vai trò vào màn và quay lại đúng trang.
 
@@ -314,7 +314,7 @@ Mỗi bước B **chỉ bắt đầu khi phase tương ứng đã có hợp đ�
 
 **Quyết định của người dùng (2026-11-16):** GVHD nhận xét được cả ba mục Đề cương, Báo cáo giữa kỳ, Báo cáo cuối kỳ, và Giữa kỳ/Cuối kỳ có checklist yêu cầu chỉnh sửa giống Đề cương. Bước này cần backend mới, làm sau A12 và trước B1.
 
-1. **Docs trước:** ghi quyết định vào PDR-059 (hoặc PDR riêng PDR-060 nếu PDR-059 đã đóng), sửa `docs/requirements/BUSINESS_RULES.md` mục Tài liệu, ghi chú ở DESIGN/03 và mục "Chưa làm" của PDR-058.
+1. **Docs trước:** ghi quyết định vào PDR-061 (hoặc PDR riêng PDR-060 nếu PDR-061 đã đóng), sửa `docs/requirements/BUSINESS_RULES.md` mục Tài liệu, ghi chú ở DESIGN/03 và mục "Chưa làm" của PDR-058.
 2. **Quy tắc, lấy theo PDR-057 trừ phần duyệt:**
    - Nhận xét gắn với từng phiên bản, chỉ GVHD viết/sửa, ≤ 2000 ký tự, rỗng để xóa; không chặn gì.
    - Yêu cầu chỉnh sửa: chỉ GVHD tạo (cần đã có ít nhất một phiên bản của **đúng loại** đó), ghi phiên bản đang xem; trạng thái `open`/`resolved`.
@@ -374,7 +374,7 @@ Mỗi bước B **chỉ bắt đầu khi phase tương ứng đã có hợp đ�
 ## 8. Checklist tiến độ (Gemini tick khi xong, kèm commit)
 
 - [x] A0 Chuẩn bị, baseline (commit `9ef806a` merged main, test baseline xanh)
-- [x] A1 PDR-059 + DESIGN/03 (commit `a21340f`)
+- [x] A1 PDR-061 + DESIGN/03 (commit `a21340f`)
 - [x] A2 `round` trong `TopicDetailDto` (commit `529974a`)
 - [x] A3 Module `features/workspace`, tải dữ liệu (`workspaceService.ts`, `workspaceProgress.ts`)
 - [x] A4 Khung tiến độ + test (`workspace.css`, `ProgressPanel.tsx`, `workspaceProgress.test.ts`)
@@ -427,13 +427,13 @@ Review bản Gemini đã code: backend đạt, frontend còn 2 việc cần sử
 
 ### R2. Đường dẫn chuyển hướng theo vai trò · [Đã hoàn thành 16/11/2026]
 
-- `CancelRegistrationDialog.tsx` chuyển về `/sv/dang-ky`, nhưng PDR-059 ghi `/sv/de-tai`. Thống nhất theo PDR-059 (hoặc sửa PDR nếu `/sv/dang-ky` mới đúng, ghi rõ lý do).
+- `CancelRegistrationDialog.tsx` chuyển về `/sv/dang-ky`, nhưng PDR-061 ghi `/sv/de-tai`. Thống nhất theo PDR-061 (hoặc sửa PDR nếu `/sv/dang-ky` mới đúng, ghi rõ lý do).
 - Màn "không tìm thấy đề tài" luôn trỏ link về route của sinh viên. GVHD phải về danh sách đề tài của giảng viên, Giáo vụ về danh sách đề tài của giáo vụ.
 - **Kết quả thực hiện:**
-  - `CancelRegistrationDialog.tsx`: Đã chuyển hướng về `/sv/de-tai` theo chuẩn PDR-059.
+  - `CancelRegistrationDialog.tsx`: Đã chuyển hướng về `/sv/de-tai` theo chuẩn PDR-061.
   - `WorkspacePage.tsx`: Nhận diện vai trò người dùng (qua pathname `/gv/*`, `/giao-vu/*` hoặc session role) để điều hướng chính xác về `/gv/huong-dan` (GVHD), `/giao-vu/de-tai` (Giáo vụ) hoặc `/sv/dang-ky` (Sinh viên); kèm theo tests trong `WorkspacePage.test.tsx`.
 
 ### Không cần sửa
 
-- Ví dụ `"status": "Running"` trong PDR-059 là đúng, vì đó là giá trị enum của `RoundStatus` trong API.
+- Ví dụ `"status": "Running"` trong PDR-061 là đúng, vì đó là giá trị enum của `RoundStatus` trong API.
 - Các chiều cao 32px/36px trong `workspace.css` thuộc chip, avatar và tiêu đề không bấm được. Chỉ cần ≥40px nếu sau này chúng thành nút.

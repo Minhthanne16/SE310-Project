@@ -1,5 +1,6 @@
 using Backend.Application.Common;
 using Backend.Application.Rounds;
+using Backend.Application.Submissions;
 using Backend.Domain.Entities;
 using Backend.Domain.Interfaces;
 using FluentValidation;
@@ -59,6 +60,19 @@ public sealed class UpdateTopicValidator : AbstractValidator<UpdateTopicCommand>
 
 internal static class TopicMapping
 {
+    public static TopicDto FillThesis(TopicDto dto, ThesisTopic topic, ThesisRound round, DateOnly today,
+        IEnumerable<TopicSubmission> theses)
+    {
+        var versions = theses.ToList();
+        dto.ThesisVersionCount = versions.Count;
+        dto.FinalLockedVersionNo = versions.FirstOrDefault(s => s.Id == topic.FinalThesisSubmissionId)?.VersionNo;
+        dto.ThesisWaitingException = topic.GroupId is not null && versions.Count == 0 &&
+            topic.Status is not (TopicStatus.Ineligible or TopicStatus.Completed) &&
+            round.Milestones.FirstOrDefault(m => m.Key == MilestoneKey.Finalize) is { EndDate: { } } milestone &&
+            SubmissionRules.Window(topic, milestone, SubmissionKind.Thesis, today) == SubmissionWindow.Closed;
+        return dto;
+    }
+
     public static TopicDto Fill(TopicDto dto, ThesisTopic topic, ThesisRound round, DateOnly today, bool viewerIsSupervisor,
         IReadOnlyDictionary<Guid, ThesisGroup>? groups = null)
     {
@@ -279,7 +293,8 @@ public sealed class DeleteTopicHandler(IRoundRepository rounds, ITopicRepository
     }
 }
 
-public sealed class ListRoundTopicsHandler(IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, TimeProvider clock)
+public sealed class ListRoundTopicsHandler(IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups,
+    ISubmissionRepository submissions, TimeProvider clock)
     : IRequestHandler<ListRoundTopicsQuery, TopicResult<RoundTopicsDto>>
 {
     public async Task<TopicResult<RoundTopicsDto>> Handle(ListRoundTopicsQuery request, CancellationToken cancellationToken)
@@ -291,10 +306,13 @@ public sealed class ListRoundTopicsHandler(IRoundRepository rounds, ITopicReposi
         var all = await topics.ListByRoundAsync(round.Id, cancellationToken: cancellationToken);
         var visible = all.Where(t => t.Status != TopicStatus.Cancelled).ToList();
         var members = await groups.MembersOf(visible, cancellationToken);
+        var theses = (await submissions.ListThesesForTopicsAsync(visible.Select(t => t.Id).ToList(), cancellationToken))
+            .ToLookup(s => s.TopicId);
         return TopicResult<RoundTopicsDto>.Ok(new RoundTopicsDto
         {
             Round = TopicRules.RoundInfo(round, today, forLecturer: false),
-            Items = visible.Select(t => TopicMapping.ToDto(t, round, today, viewerIsSupervisor: false, members)).ToList(),
+            Items = visible.Select(t => TopicMapping.FillThesis(
+                TopicMapping.ToDto(t, round, today, viewerIsSupervisor: false, members), t, round, today, theses[t.Id])).ToList(),
             Loads = RoundMapping.IdsOf(round, ParticipantKind.Lecturer).Select(id => TopicRules.Load(id, all, round)).ToList()
         });
     }
@@ -326,7 +344,7 @@ public sealed class ListPublishedTopicsHandler(IRoundRepository rounds, ITopicRe
 }
 
 public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups,
-    IOutlineRepository outlines, TimeProvider clock)
+    IOutlineRepository outlines, ISubmissionRepository submissions, TimeProvider clock)
     : IRequestHandler<GetTopicQuery, TopicResult<TopicDetailDto>>
 {
     public async Task<TopicResult<TopicDetailDto>> Handle(GetTopicQuery request, CancellationToken cancellationToken)
@@ -378,6 +396,9 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
                 }
             }
         }
+        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || ownGroup)
+            TopicMapping.FillThesis(detail, topic, round, today,
+                (await submissions.ListReportsAsync(topic.Id, cancellationToken)).Where(s => s.Kind == SubmissionKind.Thesis));
         if (request.Role != ViewerRole.Student || (topic.Source == TopicSource.StudentProposal && ownGroup))
         {
             var names = await topics.GetUserNamesAsync(

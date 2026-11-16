@@ -3,10 +3,7 @@
 import React, { useRef } from 'react';
 
 export type WorkspaceTabKey =
-  | 'tong-quan'
-  | 'thong-bao'
-  | 'hoat-dong'
-  | 'diem-so';
+  'tong-quan' | 'thong-bao' | 'hoat-dong' | 'diem-so';
 
 export interface TabItem {
   key: WorkspaceTabKey;
@@ -55,7 +52,11 @@ export const WorkspaceTabs: React.FC<WorkspaceTabsProps> = ({
   };
 
   return (
-    <div className="wsp-tabs" role="tablist" aria-label="Các mục của không gian đề tài">
+    <div
+      className="wsp-tabs"
+      role="tablist"
+      aria-label="Các mục của không gian đề tài"
+    >
       {WORKSPACE_TABS.map((tab, idx) => {
         const isSelected = activeTab === tab.key;
         const count = tab.key === 'hoat-dong' ? openRequestsCount : 0;

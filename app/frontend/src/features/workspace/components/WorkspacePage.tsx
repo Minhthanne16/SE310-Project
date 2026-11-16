@@ -123,9 +123,7 @@ const WorkspaceInner: React.FC<WorkspacePageProps> = ({
     return (
       <section className="status-state app-empty">
         <h2>Không tìm thấy đề tài</h2>
-        <p>
-          Đề tài không tồn tại hoặc bạn không có quyền xem đề tài này.
-        </p>
+        <p>Đề tài không tồn tại hoặc bạn không có quyền xem đề tài này.</p>
         <Link href={notFoundHref} className="status-state-action">
           {notFoundLabel}
         </Link>
@@ -164,10 +162,13 @@ const WorkspaceInner: React.FC<WorkspacePageProps> = ({
   const progressRows = buildProgress({ topic, outline, submissions });
 
   // Tổng số lượng yêu cầu mở trên cả 3 chặng: Đề cương, Giữa kỳ, Cuối kỳ (PDR-060)
-  const outlineApproved = Boolean(topic.outlineApprovedAt || outline?.approvedAt);
-  const outlineOpenCount = !outlineApproved && outline?.requests
-    ? outline.requests.filter((r) => r.status === 'open').length
-    : 0;
+  const outlineApproved = Boolean(
+    topic.outlineApprovedAt || outline?.approvedAt,
+  );
+  const outlineOpenCount =
+    !outlineApproved && outline?.requests
+      ? outline.requests.filter((r) => r.status === 'open').length
+      : 0;
   const submissionsOpenCount = (submissions?.kinds ?? []).reduce((acc, k) => {
     return acc + (k.requests ?? []).filter((r) => r.status === 'open').length;
   }, 0);

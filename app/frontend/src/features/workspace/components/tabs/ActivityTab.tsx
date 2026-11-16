@@ -32,23 +32,24 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({
   onOutlineReady,
   onSubmissionsChanged,
 }) => {
-  const outlineApproved = Boolean(topic.outlineApprovedAt || outline?.approvedAt);
+  const outlineApproved = Boolean(
+    topic.outlineApprovedAt || outline?.approvedAt,
+  );
 
   // Mặc định mở khối của chặng hiện tại
   const [openOutline, setOpenOutline] = useState(!outlineApproved);
   const [openMidterm, setOpenMidterm] = useState(
     outlineApproved &&
       (!submissions ||
-        (submissions.kinds?.find((k) => k.kind === 'midterm')?.versions.length ??
-          0) === 0),
+        (submissions.kinds?.find((k) => k.kind === 'midterm')?.versions
+          .length ?? 0) === 0),
   );
   const [openFinal, setOpenFinal] = useState(
     outlineApproved &&
       Boolean(
-        submissions?.kinds?.find((k) => k.kind === 'midterm')?.versions
-          .length,
+        submissions?.kinds?.find((k) => k.kind === 'midterm')?.versions.length,
       ) &&
-      (!submissions?.kinds?.find((k) => k.kind === 'final')?.versions.length),
+      !submissions?.kinds?.find((k) => k.kind === 'final')?.versions.length,
   );
 
   const outlineContentId = useId();
@@ -226,9 +227,7 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({
           onClick={() => setOpenFinal((prev) => !prev)}
         >
           <div className="wsp-accordion-header-left">
-            <h2 className="wsp-accordion-title">
-              Báo cáo cuối kỳ · khóa luận
-            </h2>
+            <h2 className="wsp-accordion-title">Báo cáo cuối kỳ · khóa luận</h2>
             <span className={`app-chip ${finalChipClass}`}>
               {finalChipText}
             </span>

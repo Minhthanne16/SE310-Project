@@ -4,7 +4,9 @@ import type { SubmissionVersion, TopicSubmissions } from '@/types/submission';
 import type { TopicDetailDto } from '@/types/topic';
 import { buildProgress, getCurrentStage } from './workspaceProgress';
 
-const mockOutlineSubmission = (overrides: Partial<OutlineSubmission> = {}): OutlineSubmission => ({
+const mockOutlineSubmission = (
+  overrides: Partial<OutlineSubmission> = {},
+): OutlineSubmission => ({
   id: 'sub1',
   versionNo: 1,
   submittedAt: '2026-10-24T00:00:00Z',
@@ -20,7 +22,9 @@ const mockOutlineSubmission = (overrides: Partial<OutlineSubmission> = {}): Outl
   ...overrides,
 });
 
-const mockTopic = (overrides: Partial<TopicDetailDto> = {}): TopicDetailDto => ({
+const mockTopic = (
+  overrides: Partial<TopicDetailDto> = {},
+): TopicDetailDto => ({
   id: 't1',
   roundId: 'r1',
   round: { id: 'r1', name: 'Đợt 1', status: 'Đang diễn ra' },
@@ -29,7 +33,12 @@ const mockTopic = (overrides: Partial<TopicDetailDto> = {}): TopicDetailDto => (
   field: 'Trí tuệ nhân tạo',
   description: 'Mô tả',
   requirements: null,
-  supervisor: { id: 'gv1', code: 'GV0001', name: 'Trần Văn GV', email: 'gv@test.com' },
+  supervisor: {
+    id: 'gv1',
+    code: 'GV0001',
+    name: 'Trần Văn GV',
+    email: 'gv@test.com',
+  },
   source: 'GV công bố',
   status: 'Đang thực hiện',
   createdAt: '2026-10-01T00:00:00Z',
@@ -73,7 +82,9 @@ const mockOutline = (overrides: Partial<Outline> = {}): Outline => ({
   ...overrides,
 });
 
-const mockVersion = (overrides: Partial<SubmissionVersion> = {}): SubmissionVersion => ({
+const mockVersion = (
+  overrides: Partial<SubmissionVersion> = {},
+): SubmissionVersion => ({
   id: 'v1',
   version: 1,
   fileName: 'bc.pdf',
@@ -83,6 +94,7 @@ const mockVersion = (overrides: Partial<SubmissionVersion> = {}): SubmissionVers
   submittedBy: { id: 'sv1', code: '22520001', name: 'Nguyễn Văn SV' },
   isLate: false,
   isLatest: true,
+  isFinal: false,
   downloadUrl: '/api/submissions/v1/file',
   reviewComment: null,
   reviewedBy: null,
@@ -91,7 +103,9 @@ const mockVersion = (overrides: Partial<SubmissionVersion> = {}): SubmissionVers
   ...overrides,
 });
 
-const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmissions => ({
+const mockSubmissions = (
+  overrides: Partial<TopicSubmissions> = {},
+): TopicSubmissions => ({
   topicId: 't1',
   maxBytes: 20 * 1024 * 1024,
   kinds: [
@@ -106,6 +120,13 @@ const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmis
       blockedReason: null,
       noteRequired: false,
       canReview: false,
+      canLock: false,
+      extensionDeadline: '',
+      extensionReason: null,
+      waitingException: false,
+      canGrantExtension: false,
+      canMarkIneligible: false,
+      ineligibleReason: null,
       versions: [],
       requests: [],
     },
@@ -120,6 +141,13 @@ const mockSubmissions = (overrides: Partial<TopicSubmissions> = {}): TopicSubmis
       blockedReason: null,
       noteRequired: true,
       canReview: false,
+      canLock: false,
+      extensionDeadline: '',
+      extensionReason: null,
+      waitingException: false,
+      canGrantExtension: false,
+      canMarkIneligible: false,
+      ineligibleReason: null,
       versions: [],
       requests: [],
     },
@@ -281,6 +309,13 @@ describe('workspaceProgress', () => {
           blockedReason: 'Đã hết hạn nộp',
           noteRequired: false,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           versions: [],
           requests: [],
         },
@@ -295,6 +330,13 @@ describe('workspaceProgress', () => {
           blockedReason: null,
           noteRequired: true,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           versions: [],
           requests: [],
         },
@@ -335,6 +377,13 @@ describe('workspaceProgress', () => {
           blockedReason: null,
           noteRequired: false,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           requests: [],
           versions: [
             mockVersion({
@@ -344,6 +393,7 @@ describe('workspaceProgress', () => {
               submittedAt: '2026-11-08T00:00:00Z',
               isLate: true,
               isLatest: true,
+              isFinal: false,
               downloadUrl: '/api/submissions/v1/file',
             }),
           ],
@@ -374,6 +424,13 @@ describe('workspaceProgress', () => {
           blockedReason: null,
           noteRequired: false,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           requests: [],
           versions: [
             mockVersion({
@@ -396,6 +453,13 @@ describe('workspaceProgress', () => {
           blockedReason: null,
           noteRequired: true,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           requests: [],
           versions: [
             mockVersion({
@@ -406,6 +470,7 @@ describe('workspaceProgress', () => {
               note: 'Sửa kết luận',
               submittedAt: '2026-12-04T00:00:00Z',
               isLatest: true,
+              isFinal: false,
               downloadUrl: '/api/submissions/fv3/file',
             }),
             mockVersion({
@@ -441,7 +506,10 @@ describe('workspaceProgress', () => {
   });
 
   it('7. Trạng thái "Đã xác nhận": Đánh giá done, Kết quả có 2 bước done', () => {
-    const topic = mockTopic({ status: 'Đã xác nhận', outlineApprovedAt: '2026-10-25T00:00:00Z' });
+    const topic = mockTopic({
+      status: 'Đã xác nhận',
+      outlineApprovedAt: '2026-10-25T00:00:00Z',
+    });
     const outline = mockOutline({ approvedAt: '2026-10-25T00:00:00Z' });
     const submissions = mockSubmissions();
 
@@ -463,7 +531,10 @@ describe('workspaceProgress', () => {
   });
 
   it('8. Trạng thái "Đã hoàn tất": Toàn bộ các bước kết quả done', () => {
-    const topic = mockTopic({ status: 'Đã hoàn tất', outlineApprovedAt: '2026-10-25T00:00:00Z' });
+    const topic = mockTopic({
+      status: 'Đã hoàn tất',
+      outlineApprovedAt: '2026-10-25T00:00:00Z',
+    });
     const outline = mockOutline({ approvedAt: '2026-10-25T00:00:00Z' });
     const submissions = mockSubmissions();
 
@@ -525,6 +596,13 @@ describe('workspaceProgress', () => {
           blockedReason: null,
           noteRequired: false,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           requests: [],
           versions: [
             mockVersion({
@@ -549,6 +627,13 @@ describe('workspaceProgress', () => {
           blockedReason: null,
           noteRequired: true,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           requests: [],
           versions: [],
         },
@@ -587,6 +672,13 @@ describe('workspaceProgress', () => {
           blockedReason: null,
           noteRequired: false,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           versions: [
             mockVersion({
               id: 'mv1',
@@ -655,6 +747,13 @@ describe('workspaceProgress', () => {
           blockedReason: null,
           noteRequired: false,
           canReview: false,
+          canLock: false,
+          extensionDeadline: '',
+          extensionReason: null,
+          waitingException: false,
+          canGrantExtension: false,
+          canMarkIneligible: false,
+          ineligibleReason: null,
           requests: [],
           versions: [
             mockVersion({

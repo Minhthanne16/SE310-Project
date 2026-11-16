@@ -3,12 +3,8 @@ import {
   OutlineNotFoundError,
   outlineService,
 } from '@/features/outline/services/outlineService';
-import {
-  submissionService,
-} from '@/features/submissions/services/submissionApiService';
-import {
-  studentTopicService,
-} from '@/features/topics/services/topicApiService';
+import { submissionService } from '@/features/submissions/services/submissionApiService';
+import { studentTopicService } from '@/features/topics/services/topicApiService';
 import type { Outline, OutlineViewerRole } from '@/types/outline';
 import type { TopicSubmissions } from '@/types/submission';
 import type { TopicDetailDto } from '@/types/topic';
@@ -53,10 +49,12 @@ export function createWorkspaceService(
     ((topicId: string) =>
       apiRequest<TopicDetailDto>(`/topics/${encodeURIComponent(topicId)}`));
 
-  const getOutline = deps.getOutline ?? ((topicId: string) => outlineService.get(topicId));
+  const getOutline =
+    deps.getOutline ?? ((topicId: string) => outlineService.get(topicId));
 
   const getSubmissions =
-    deps.getSubmissions ?? ((topicId: string) => submissionService.list(topicId));
+    deps.getSubmissions ??
+    ((topicId: string) => submissionService.list(topicId));
 
   const getMyReg =
     deps.myRegistration ??
@@ -86,15 +84,17 @@ export function createWorkspaceService(
         throw err;
       });
 
-      const submissionsPromise = getSubmissions(topicId).catch((err: unknown) => {
-        // Lỗi 503 hoặc lỗi storage không làm hỏng cả trang Không gian đề tài
-        return {
-          error:
-            err instanceof Error && err.message
-              ? err.message
-              : 'Không tải được danh sách bài nộp.',
-        };
-      });
+      const submissionsPromise = getSubmissions(topicId).catch(
+        (err: unknown) => {
+          // Lỗi 503 hoặc lỗi storage không làm hỏng cả trang Không gian đề tài
+          return {
+            error:
+              err instanceof Error && err.message
+                ? err.message
+                : 'Không tải được danh sách bài nộp.',
+          };
+        },
+      );
 
       const [topic, outlineResult, submissionsResult] = await Promise.all([
         topicPromise,

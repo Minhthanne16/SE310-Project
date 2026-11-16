@@ -9,7 +9,7 @@
   - [PDR-056 — Hợp đồng nộp báo cáo giữa kỳ và cuối kỳ](PDR-056-hop-dong-nop-bao-cao-giua-ky-cuoi-ky.md)
   - [PDR-057 — Đề cương và yêu cầu chỉnh sửa](PDR-057-de-cuong-va-yeu-cau-chinh-sua.md)
   - [PDR-058 — Nộp báo cáo giữa kỳ và cuối kỳ](PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md)
-  - [PDR-059 — Không gian đề tài, khung và tab](PDR-059-khong-gian-de-tai-khung-va-tab.md)
+  - [PDR-061 — Không gian đề tài, khung và tab](PDR-061-khong-gian-de-tai-khung-va-tab.md)
   - [docs/plan/khong-gian-de-tai.md](../plan/khong-gian-de-tai.md) (mục A13, Q2, Q2b, Q6)
   - [docs/requirements/BUSINESS_RULES.md](../requirements/BUSINESS_RULES.md) (mục Tài liệu)
   - [docs/DESIGN/03-dac-ta-man-hinh.md](../DESIGN/03-dac-ta-man-hinh.md)

@@ -111,8 +111,10 @@ export interface Topic {
   defense: TopicDefense | null;
   // Thời điểm duyệt đề cương (yyyy-MM-ddTHH:mm:ss); null khi chưa duyệt.
   outlineApprovedAt: string | null;
-  // versionNo của bản Cuối kỳ đã chốt; null khi chưa chốt bản cuối.
+  // versionNo của bản khóa luận đã chốt; null khi chưa chốt.
   finalLockedVersionNo: number | null;
+  thesisVersionCount?: number;
+  thesisWaitingException?: boolean;
   // Phiên bản cũ trước, mới sau.
   submissions: TopicSubmission[];
   scores: StudentScore[];
@@ -179,6 +181,9 @@ export interface TopicDto {
   group: TopicMember[];
   // GVHD duyệt đề cương (PDR-013); không đổi trạng thái đề tài (PDR-049).
   outlineApprovedAt: string | null;
+  thesisVersionCount?: number;
+  finalLockedVersionNo?: number | null;
+  thesisWaitingException?: boolean;
   // Chỉ có ở /api/topics/mine (đề tài có nhóm của GVHD); null ở nơi khác.
   outline?: OutlineSummary | null;
 }

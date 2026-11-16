@@ -45,7 +45,7 @@ CRUD sản phẩm chạy qua MediatR và EF Core PostgreSQL. Đã có API đăng
 - **Mặc định khi dùng Compose:** mail đi vào Mailpit, xem tại <http://localhost:8025>. Không cần cấu hình gì thêm.
 - **Gửi thật qua Gmail:** bật xác minh 2 bước cho tài khoản Gmail, tạo App Password tại <https://myaccount.google.com/apppasswords>, rồi điền vào `app/backend/.env`: `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_USE_STARTTLS=true`, `SMTP_USER=<gmail>`, `SMTP_PASSWORD=<App Password>`, `SMTP_FROM=QLKLTN <gmail>`. Không dùng mật khẩu Gmail thật và không commit `.env`. Khi chạy `dotnet run`, dùng các biến `Email__Host`, `Email__Port`, `Email__UseStartTls`, `Email__Username`, `Email__Password`, `Email__From`.
 
-API bắt buộc có `Authentication__Jwt__SigningKey` (tối thiểu 32 byte, ví dụ `openssl rand -base64 48`), nếu thiếu sẽ không khởi động. Với Compose, đặt `JWT_SIGNING_KEY` trong `app/backend/.env`.
+API bắt buộc có `Authentication__Jwt__SigningKey` (tối thiểu 32 byte), nếu thiếu sẽ không khởi động. Khi chạy trực tiếp, lưu khóa local một lần bằng .NET User Secrets; với Compose, đặt `JWT_SIGNING_KEY` trong `app/backend/.env`.
 
 ## Chạy bằng Docker Compose
 
@@ -69,6 +69,8 @@ Yêu cầu Node.js 24, .NET SDK 10 và PostgreSQL. Khai báo biến môi trườ
 cd app/backend
 dotnet restore Backend.sln --locked-mode
 dotnet tool restore
+$jwtKey = [guid]::NewGuid().ToString('N') + [guid]::NewGuid().ToString('N')
+dotnet user-secrets set "Authentication:Jwt:SigningKey" $jwtKey --project src/Backend.API
 dotnet tool run dotnet-ef database update --project src/Backend.Infrastructure --startup-project src/Backend.API
 dotnet run --project src/Backend.API
 ```

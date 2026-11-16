@@ -26,10 +26,14 @@ export interface SubmissionService {
     content: string,
   ): Promise<TopicSubmissions>;
   // POST /api/topics/{id}/submissions/requests/{requestId}/resolve
-  resolveRequest(
+  resolveRequest(topicId: string, requestId: string): Promise<TopicSubmissions>;
+  grantExtension(
     topicId: string,
-    requestId: string,
+    endDate: string,
+    reason: string,
   ): Promise<TopicSubmissions>;
+  lock(topicId: string, submissionId: string): Promise<TopicSubmissions>;
+  markIneligible(topicId: string, reason: string): Promise<TopicSubmissions>;
 }
 
 const path = (topicId: string) =>
@@ -67,6 +71,21 @@ export function createSubmissionService(): SubmissionService {
         {
           method: 'POST',
         },
+      ),
+    grantExtension: (topicId, endDate, reason) =>
+      apiRequest<TopicSubmissions>(
+        `/topics/${encodeURIComponent(topicId)}/thesis/extension`,
+        { method: 'POST', body: JSON.stringify({ endDate, reason }) },
+      ),
+    lock: (topicId, submissionId) =>
+      apiRequest<TopicSubmissions>(
+        `/topics/${encodeURIComponent(topicId)}/thesis/lock`,
+        { method: 'POST', body: JSON.stringify({ submissionId }) },
+      ),
+    markIneligible: (topicId, reason) =>
+      apiRequest<TopicSubmissions>(
+        `/topics/${encodeURIComponent(topicId)}/thesis/ineligible`,
+        { method: 'POST', body: JSON.stringify({ reason }) },
       ),
   };
 }

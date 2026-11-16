@@ -32,7 +32,10 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
   const currentStage = getCurrentStage(rows);
 
   return (
-    <section className="app-card wsp-progress-card" aria-label="Tiến độ thực hiện đề tài">
+    <section
+      className="app-card wsp-progress-card"
+      aria-label="Tiến độ thực hiện đề tài"
+    >
       <div className="wsp-progress-header">
         <h2 className="wsp-progress-title">TIẾN ĐỘ</h2>
         <button
@@ -64,7 +67,10 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
                   {row.steps.map((step, idx) => (
                     <React.Fragment key={idx}>
                       {idx > 0 && !row.parallel && (
-                        <div className="wsp-step-connector" aria-hidden="true" />
+                        <div
+                          className="wsp-step-connector"
+                          aria-hidden="true"
+                        />
                       )}
                       <span className={`wsp-step wsp-step--${step.kind}`}>
                         <span className="wsp-step-dot" aria-hidden="true" />
@@ -72,7 +78,9 @@ export const ProgressPanel: React.FC<ProgressPanelProps> = ({
                       </span>
                     </React.Fragment>
                   ))}
-                  {row.note && <span className="wsp-step-note">({row.note})</span>}
+                  {row.note && (
+                    <span className="wsp-step-note">({row.note})</span>
+                  )}
                 </div>
               </div>
             ))}

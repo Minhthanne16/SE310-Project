@@ -31,6 +31,25 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
     private sealed record Account(string Cookie, Guid Id, string Code, string Email);
 
     [Fact]
+    public async Task ThesisDecisionsRequireTheCorrectRoleOverHttp()
+    {
+        var staff = await Login(UserRole.AcademicAffairs);
+        var lecturer = await Login(UserRole.Lecturer);
+        var student = await Login(UserRole.Student);
+        var id = Guid.NewGuid();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await Send(HttpMethod.Post, $"/api/topics/{id}/thesis/extension", null,
+            new { endDate = "2026-12-01", reason = "Ngoại lệ" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Post, $"/api/topics/{id}/thesis/extension", student,
+            new { endDate = "2026-12-01", reason = "Ngoại lệ" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Post, $"/api/topics/{id}/thesis/ineligible", lecturer,
+            new { reason = "Không nộp" })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Post, $"/api/topics/{id}/thesis/lock", staff,
+            new { submissionId = Guid.NewGuid() })).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await Send(HttpMethod.Post, $"/api/topics/{id}/thesis/extension", staff,
+            new { endDate = "2026-12-01", reason = "Ngoại lệ" })).StatusCode);
+    }
+
+    [Fact]
     public async Task LecturerSubmitsStaffPublishesStudentSees()
     {
         var staff = await Login(UserRole.AcademicAffairs);
@@ -140,7 +159,7 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
         Assert.Equal("Đã đăng ký", data.GetProperty("topic").GetProperty("status").GetString());
         Assert.True(data.GetProperty("canCancel").GetBoolean());
 
-        // PDR-059: Kiểm tra round và email trong TopicDetailDto cho các vai trò
+        // PDR-061: Kiểm tra round và email trong TopicDetailDto cho các vai trò
         var repTopic = (await ReadJson(await Send(HttpMethod.Get, $"/api/topics/{topicId}", rep))).GetProperty("data");
         Assert.Equal(roundId, repTopic.GetProperty("round").GetProperty("id").GetGuid());
         Assert.StartsWith("Đợt đề tài ", repTopic.GetProperty("round").GetProperty("name").GetString());
