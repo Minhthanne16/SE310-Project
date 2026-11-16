@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ApiError } from '@/api/request';
 import {
   submissionService as defaultService,
@@ -82,6 +84,11 @@ export const SubmissionPanel: React.FC<SubmissionPanelProps> = ({
             service.submit(topicId, kind.kind, file, note)
           }
           onSubmitted={(data) => setState({ kind: 'ready', data })}
+          onLock={(id) => service.lock(topicId, id)}
+          onGrant={(end, reason) =>
+            service.grantExtension(topicId, end, reason)
+          }
+          onIneligible={(reason) => service.markIneligible(topicId, reason)}
         />
       ))}
     </div>
@@ -93,6 +100,9 @@ interface KindSectionProps {
   maxBytes: number;
   onSubmit: (file: File, note: string) => Promise<TopicSubmissions>;
   onSubmitted: (data: TopicSubmissions) => void;
+  onLock: (id: string) => Promise<TopicSubmissions>;
+  onGrant: (end: string, reason: string) => Promise<TopicSubmissions>;
+  onIneligible: (reason: string) => Promise<TopicSubmissions>;
 }
 
 const KindSection: React.FC<KindSectionProps> = ({
@@ -100,6 +110,9 @@ const KindSection: React.FC<KindSectionProps> = ({
   maxBytes,
   onSubmit,
   onSubmitted,
+  onLock,
+  onGrant,
+  onIneligible,
 }) => {
   const id = useId();
   const fileInput = useRef<HTMLInputElement>(null);
@@ -108,14 +121,15 @@ const KindSection: React.FC<KindSectionProps> = ({
   const [fileProblem, setFileProblem] = useState<string | null>(null);
   const [noteProblem, setNoteProblem] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [locking, setLocking] = useState<string | null>(null);
+  const [extensionEnd, setExtensionEnd] = useState('');
+  const [decisionReason, setDecisionReason] = useState('');
 
   const pick = (next: File | null) => {
     setFile(next);
     setFileProblem(next ? fileError(next, maxBytes) : null);
     setFailure(null);
-    setDone(null);
   };
 
   const submit = async (event: React.FormEvent) => {
@@ -130,22 +144,67 @@ const KindSection: React.FC<KindSectionProps> = ({
 
     setSending(true);
     setFailure(null);
-    setDone(null);
     try {
       const data = await onSubmit(file, note);
       const latest = data.kinds.find((k) => k.kind === kind.kind)?.versions[0];
       setFile(null);
       setNote('');
       if (fileInput.current) fileInput.current.value = '';
-      setDone(
+      onSubmitted(data);
+      toast.success(
         latest
           ? `Đã nộp bản ${latest.version}${latest.isLate ? ' (nộp trễ)' : ''}.`
           : 'Đã nộp.',
       );
-      onSubmitted(data);
     } catch (err: unknown) {
       // Không báo thành công khi chưa lưu được; tệp đã chọn được giữ để thử lại.
       setFailure(errorText(err, 'Chưa nộp được. Thử lại sau.'));
+      toast.error(errorText(err, 'Chưa nộp được. Thử lại sau.'));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const decide = async (action: 'grant' | 'ineligible') => {
+    if (!decisionReason.trim() || (action === 'grant' && !extensionEnd)) {
+      setFailure(
+        action === 'grant'
+          ? 'Nhập hạn bổ sung và lý do quyết định.'
+          : 'Nhập lý do quyết định.',
+      );
+      return;
+    }
+    setSending(true);
+    setFailure(null);
+    try {
+      const data =
+        action === 'grant'
+          ? await onGrant(extensionEnd, decisionReason.trim())
+          : await onIneligible(decisionReason.trim());
+      onSubmitted(data);
+      setDecisionReason('');
+      toast.success(
+        action === 'grant' ? 'Đã cấp hạn bổ sung.' : 'Đã kết thúc đề tài.',
+      );
+    } catch (error) {
+      setFailure(errorText(error, 'Không lưu được quyết định.'));
+      toast.error(errorText(error, 'Không lưu được quyết định.'));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const lock = async () => {
+    if (!locking) return;
+    setSending(true);
+    setFailure(null);
+    try {
+      onSubmitted(await onLock(locking));
+      setLocking(null);
+      toast.success('Đã chốt bản khóa luận cuối.');
+    } catch (error) {
+      setFailure(errorText(error, 'Không chốt được bản cuối.'));
+      toast.error(errorText(error, 'Không chốt được bản cuối.'));
     } finally {
       setSending(false);
     }
@@ -170,6 +229,101 @@ const KindSection: React.FC<KindSectionProps> = ({
         </span>
       </header>
       <p className="sub-muted">{deadlineText(kind)}</p>
+      {kind.kind === 'thesis' && kind.extensionDeadline ? (
+        <p className="sub-banner sub-banner-warn" role="note">
+          Hạn bổ sung riêng: hết ngày{' '}
+          {kind.extensionDeadline.split('-').reverse().join('/')} · Lý do:{' '}
+          {kind.extensionReason}
+        </p>
+      ) : null}
+      {kind.waitingException ? (
+        <p className="sub-banner sub-banner-warn" role="note">
+          Chưa có bản khóa luận; chờ Giáo vụ xử lý ngoại lệ.
+        </p>
+      ) : null}
+      {kind.ineligibleReason ? (
+        <p className="sub-banner sub-banner-bad" role="note">
+          Không đủ điều kiện công bố · Lý do: {kind.ineligibleReason}
+        </p>
+      ) : null}
+      {kind.kind === 'thesis' && kind.versions.some((v) => v.isFinal) ? (
+        <span className="sub-chip sub-chip-ok">Đã chốt bản cuối</span>
+      ) : null}
+      {kind.canGrantExtension || kind.canMarkIneligible ? (
+        <div className="sub-form">
+          {kind.canGrantExtension ? (
+            <div className="sub-field">
+              <label htmlFor={`${id}-end`}>Hạn bổ sung</label>
+              <input
+                id={`${id}-end`}
+                type="date"
+                value={extensionEnd}
+                aria-invalid={
+                  failure?.startsWith('Nhập hạn bổ sung') && !extensionEnd
+                    ? true
+                    : undefined
+                }
+                aria-describedby={
+                  failure?.startsWith('Nhập hạn bổ sung') && !extensionEnd
+                    ? `${id}-decision-error`
+                    : undefined
+                }
+                onChange={(e) => setExtensionEnd(e.target.value)}
+              />
+            </div>
+          ) : null}
+          <div className="sub-field">
+            <label htmlFor={`${id}-reason`}>Lý do quyết định</label>
+            <textarea
+              id={`${id}-reason`}
+              maxLength={800}
+              value={decisionReason}
+              aria-invalid={
+                failure?.startsWith('Nhập ') && !decisionReason.trim()
+                  ? true
+                  : undefined
+              }
+              aria-describedby={
+                failure?.startsWith('Nhập ') && !decisionReason.trim()
+                  ? `${id}-decision-error`
+                  : undefined
+              }
+              onChange={(e) => setDecisionReason(e.target.value)}
+            />
+          </div>
+          <div>
+            {kind.canGrantExtension ? (
+              <button
+                type="button"
+                className="app-button"
+                disabled={sending}
+                onClick={() => void decide('grant')}
+              >
+                Cấp hạn bổ sung
+              </button>
+            ) : null}
+            {kind.canMarkIneligible ? (
+              <button
+                type="button"
+                className="app-button app-button-danger"
+                disabled={sending}
+                onClick={() => void decide('ineligible')}
+              >
+                Không đủ điều kiện công bố
+              </button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+      {failure ? (
+        <p
+          id={`${id}-decision-error`}
+          className="sub-banner sub-banner-bad"
+          role="alert"
+        >
+          {failure}
+        </p>
+      ) : null}
 
       {kind.canSubmit ? (
         <form className="sub-form" onSubmit={submit} noValidate>
@@ -227,11 +381,6 @@ const KindSection: React.FC<KindSectionProps> = ({
               </span>
             ) : null}
           </div>
-          {failure ? (
-            <p className="sub-banner sub-banner-bad" role="alert">
-              {failure}
-            </p>
-          ) : null}
           <div>
             <button
               type="submit"
@@ -250,12 +399,6 @@ const KindSection: React.FC<KindSectionProps> = ({
         <p className="sub-banner">{kind.blockedReason}</p>
       ) : null}
 
-      {done ? (
-        <p className="sub-banner sub-banner-ok" role="status">
-          {done}
-        </p>
-      ) : null}
-
       {kind.versions.length === 0 ? (
         <p className="sub-empty">Chưa có bản nào được nộp.</p>
       ) : (
@@ -266,6 +409,9 @@ const KindSection: React.FC<KindSectionProps> = ({
                 <strong>Bản {v.version}</strong>
                 {v.isLatest ? (
                   <span className="sub-chip sub-chip-info">Mới nhất</span>
+                ) : null}
+                {v.isFinal ? (
+                  <span className="sub-chip sub-chip-ok">Bản cuối</span>
                 ) : null}
                 {v.isLate ? (
                   <span className="sub-chip sub-chip-warn">Nộp trễ</span>
@@ -286,10 +432,31 @@ const KindSection: React.FC<KindSectionProps> = ({
               >
                 Tải
               </a>
+              {kind.canLock ? (
+                <button
+                  type="button"
+                  className="app-button"
+                  disabled={sending}
+                  onClick={() => setLocking(v.id)}
+                >
+                  Chốt bản {v.version}
+                </button>
+              ) : null}
             </li>
           ))}
         </ul>
       )}
+      {locking ? (
+        <ConfirmDialog
+          title="Chốt bản khóa luận cuối"
+          description="Sau khi chốt, nhóm không thể nộp thêm hoặc chọn lại bản khác."
+          cancelLabel="Giữ chưa chốt"
+          confirmLabel="Chốt bản cuối"
+          busy={sending}
+          onCancel={() => setLocking(null)}
+          onConfirm={() => void lock()}
+        />
+      ) : null}
     </section>
   );
 };

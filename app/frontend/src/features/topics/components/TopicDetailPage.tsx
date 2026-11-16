@@ -155,7 +155,7 @@ function docStatus(
           className: 'tpc-chip-ok',
         }
       : { text: 'Chờ duyệt', className: '' };
-  if (group.kinds[0] === 'Cuối kỳ') {
+  if (group.kinds[0] === 'Bản khóa luận') {
     const locked = group.versions.findIndex(
       (v) => v.versionNo === topic.finalLockedVersionNo,
     );

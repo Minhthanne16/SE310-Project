@@ -159,6 +159,8 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Field).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Description).IsRequired().HasMaxLength(4000);
             entity.Property(e => e.Requirements).HasMaxLength(2000);
+            entity.Property(e => e.ThesisExtensionReason).HasMaxLength(800);
+            entity.Property(e => e.IneligibleReason).HasMaxLength(800);
             entity.Property(e => e.Source).HasConversion<string>().HasMaxLength(32);
             entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(32);
             entity.HasIndex(e => new { e.RoundId, e.Number }).IsUnique();

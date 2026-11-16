@@ -101,12 +101,17 @@ it('builds the thesis cell, abbreviated names and initials', () => {
   const none = topics.find((t) => t.submissions.length === 0)!;
   expect(thesisCell(none)).toEqual({
     label: 'Chưa nộp',
-    sub: 'Chưa có phiên bản',
+    sub: 'Chưa có bản khóa luận',
     tone: 'none',
   });
+  expect(thesisCell({ ...none, thesisWaitingException: true }).label).toBe(
+    'Chờ ngoại lệ',
+  );
   const done = topics.find((t) => t.status === 'Đã hoàn tất')!;
   expect(thesisCell(done).label).toBe('Chốt bản cuối');
-  expect(thesisCell(done).sub).toBe(`${done.submissions.length} phiên bản`);
+  expect(thesisCell(done).sub).toBe(
+    `${done.submissions.filter((s) => s.kind === 'Bản khóa luận').length} phiên bản`,
+  );
   expect(shortName('Nguyễn Văn An')).toBe('N.V. An');
   expect(avatarInitials('TS. Trần Minh Khoa')).toBe('TK');
   expect(avatarInitials('Nguyễn Thị Hương')).toBe('NH');
@@ -217,11 +222,32 @@ it('explains why a result cannot be confirmed, published or reminded', () => {
     'Đã xác nhận rồi.',
   );
 
-  const confirmed = graded([good, good], 'Đã xác nhận');
+  const confirmed = {
+    ...graded([good, good], 'Đã xác nhận'),
+    submissions: [
+      {
+        versionNo: 1,
+        kind: 'Bản khóa luận' as const,
+        submittedBy: 'SV',
+        submittedAt: '2026-10-01T00:00:00',
+        late: false,
+        fileName: 'thesis.pdf',
+        note: '',
+      },
+    ],
+  };
   expect(publishResultBlocker(confirmed, false)).toBe(
-    'Nhóm chưa chốt bản cuối và chưa hết hạn chốt.',
+    'Nhóm chưa có bản khóa luận cuối đã chốt.',
   );
-  expect(publishResultBlocker(confirmed, true)).toBeNull();
+  expect(publishResultBlocker(confirmed, true)).toBe(
+    'Nhóm chưa có bản khóa luận cuối đã chốt.',
+  );
+  expect(
+    publishResultBlocker(
+      { ...confirmed, submissions: [], finalLockedVersionNo: null },
+      true,
+    ),
+  ).toBe('Nhóm chưa nộp bản khóa luận; chờ Giáo vụ xử lý ngoại lệ.');
   expect(
     publishResultBlocker({ ...confirmed, finalLockedVersionNo: 3 }, false),
   ).toBeNull();

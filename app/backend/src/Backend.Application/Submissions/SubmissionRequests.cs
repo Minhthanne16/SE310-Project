@@ -21,6 +21,7 @@ public class SubmissionVersionDto
     public TopicPersonDto SubmittedBy { get; set; } = new();
     public bool IsLate { get; set; }
     public bool IsLatest { get; set; }
+    public bool IsFinal { get; set; }
     // Đường dẫn API có kiểm tra quyền; không phải địa chỉ của object storage.
     public string DownloadUrl { get; set; } = string.Empty;
 }
@@ -40,6 +41,13 @@ public class SubmissionKindDto
     public bool CanSubmit { get; set; }
     public string? BlockedReason { get; set; }
     public bool NoteRequired { get; set; }
+    public bool CanLock { get; set; }
+    public string ExtensionDeadline { get; set; } = string.Empty;
+    public string? ExtensionReason { get; set; }
+    public bool WaitingException { get; set; }
+    public bool CanGrantExtension { get; set; }
+    public bool CanMarkIneligible { get; set; }
+    public string? IneligibleReason { get; set; }
     // Mới nhất trước.
     public List<SubmissionVersionDto> Versions { get; set; } = [];
 }
@@ -58,7 +66,7 @@ public record GetSubmissionFileQuery(Guid ViewerId, ViewerRole Role, Guid Submis
 
 internal enum SubmissionAccess { None, Reader, Member }
 
-internal sealed record SubmissionContext(ThesisTopic Topic, ThesisRound Round, SubmissionAccess Access);
+internal sealed record SubmissionContext(ThesisTopic Topic, ThesisRound Round, SubmissionAccess Access, ViewerRole Role);
 
 internal static class SubmissionMapping
 {
@@ -79,7 +87,7 @@ internal static class SubmissionMapping
                 ? SubmissionAccess.Member
                 : SubmissionAccess.None
         };
-        return new SubmissionContext(topic, round, access);
+        return new SubmissionContext(topic, round, access, role);
     }
 
     public static async Task<TopicSubmissionsDto> BuildAsync(SubmissionContext context, ISubmissionRepository repository, DateOnly today,
@@ -98,15 +106,21 @@ internal static class SubmissionMapping
         {
             var milestone = context.Round.Milestones.FirstOrDefault(m => m.Key == SubmissionRules.MilestoneOf(kind));
             var blocker = SubmissionRules.Blocker(context.Topic, context.Round, kind, today);
+            var window = SubmissionRules.Window(context.Topic, milestone, kind, today);
             var versions = submissions.Where(s => s.Kind == kind).OrderByDescending(s => s.VersionNo).ToList();
+            var isThesis = kind == SubmissionKind.Thesis;
+            var originalExpired = milestone?.EndDate is { } end && today > end;
+            var waiting = isThesis && window == SubmissionWindow.Closed && versions.Count == 0 && context.Topic.FinalThesisSubmissionId is null &&
+                context.Topic.Status != TopicStatus.Ineligible && context.Topic.Status != TopicStatus.Completed;
             return new SubmissionKindDto
             {
                 Kind = SubmissionRules.KindName(kind),
                 Name = SubmissionRules.KindLabel(kind),
                 Deadline = RoundRules.FormatDate(milestone?.EndDate),
-                AllowLate = milestone?.AllowLate == true,
-                LateDeadline = RoundRules.FormatDate(SubmissionRules.LateDeadline(milestone)),
-                Window = SubmissionRules.Window(milestone, today) switch
+                AllowLate = milestone?.AllowLate == true || isThesis && context.Topic.ThesisExtensionEnd is not null,
+                LateDeadline = RoundRules.FormatDate(isThesis && context.Topic.ThesisExtensionEnd is { } extension
+                    ? extension : SubmissionRules.LateDeadline(milestone)),
+                Window = window switch
                 {
                     SubmissionWindow.OnTime => "onTime",
                     SubmissionWindow.Late => "late",
@@ -115,6 +129,17 @@ internal static class SubmissionMapping
                 CanSubmit = context.Access == SubmissionAccess.Member && blocker is null,
                 BlockedReason = blocker,
                 NoteRequired = SubmissionRules.NoteRequired(kind),
+                CanLock = isThesis && context.Access == SubmissionAccess.Member && versions.Count > 0 &&
+                    context.Topic.FinalThesisSubmissionId is null && blocker is null,
+                ExtensionDeadline = isThesis ? RoundRules.FormatDate(context.Topic.ThesisExtensionEnd) : string.Empty,
+                ExtensionReason = isThesis ? context.Topic.ThesisExtensionReason : null,
+                WaitingException = waiting,
+                CanGrantExtension = isThesis && originalExpired && versions.Count == 0 &&
+                    context.Role == ViewerRole.AcademicAffairs && context.Topic.ThesisExtensionEnd is null &&
+                    context.Topic.Status is not (TopicStatus.Ineligible or TopicStatus.Completed),
+                CanMarkIneligible = waiting && context.Role == ViewerRole.AcademicAffairs &&
+                    context.Topic.ThesisExtensionEnd is { } expired && today > expired,
+                IneligibleReason = isThesis ? context.Topic.IneligibleReason : null,
                 Versions = versions.Select((s, index) => new SubmissionVersionDto
                 {
                     Id = s.Id,
@@ -131,6 +156,7 @@ internal static class SubmissionMapping
                     },
                     IsLate = s.Late,
                     IsLatest = index == 0,
+                    IsFinal = isThesis && s.Id == context.Topic.FinalThesisSubmissionId,
                     DownloadUrl = $"/api/submissions/{s.Id}/file"
                 }).ToList()
             };
@@ -177,7 +203,7 @@ public sealed class SubmitReportHandler(IRoundRepository rounds, ITopicRepositor
         var today = RoundRules.TodayVietnam(clock);
         if (SubmissionRules.Blocker(context.Topic, context.Round, kind, today) is { } blocker) return Fail(TopicResultStatus.Conflict, blocker);
         var milestone = context.Round.Milestones.FirstOrDefault(m => m.Key == SubmissionRules.MilestoneOf(kind));
-        var late = SubmissionRules.Window(milestone, today) == SubmissionWindow.Late;
+        var late = SubmissionRules.Window(context.Topic, milestone, kind, today) == SubmissionWindow.Late;
 
         var submission = new TopicSubmission
         {
@@ -202,7 +228,7 @@ public sealed class SubmitReportHandler(IRoundRepository rounds, ITopicRepositor
             // Số phiên bản chỉ có sau khi lưu; mục lịch sử lấy số đó trong repository.
             await submissions.AddReportAsync(submission, history, cancellationToken);
         }
-        catch
+        catch (Exception error)
         {
             try
             {
@@ -212,6 +238,8 @@ public sealed class SubmitReportHandler(IRoundRepository rounds, ITopicRepositor
             {
                 logger.LogError(cleanup, "Could not remove orphan submission object {ObjectKey}", submission.ObjectKey);
             }
+            if (error is ThesisSubmissionClosedException)
+                return Fail(TopicResultStatus.Conflict, "Bản khóa luận cuối đã chốt hoặc đề tài đã kết thúc.");
             throw;
         }
 

@@ -71,7 +71,17 @@ const rounds = {} as RoundService;
 it('lists the round topics, filters on the client and keys loads by lecturer', async () => {
   const fetchMock = ok({
     round: roundInfo,
-    items: [dto(), dto({ id: 't2', code: 'DT-002', title: 'Mạng nơ-ron' })],
+    items: [
+      dto(),
+      dto({
+        id: 't2',
+        code: 'DT-002',
+        title: 'Mạng nơ-ron',
+        thesisVersionCount: 0,
+        thesisWaitingException: true,
+        finalLockedVersionNo: null,
+      }),
+    ],
     loads: [{ lecturerId: 'gv1', count: 2, min: 1, max: 3, level: 'ok' }],
   });
 
@@ -84,6 +94,8 @@ it('lists the round topics, filters on the client and keys loads by lecturer', a
   expect(list.roundTotal).toBe(2);
   expect(list.items.map((t) => t.code)).toEqual(['DT-002']);
   expect(list.items[0].group).toEqual([]);
+  expect(list.items[0].thesisWaitingException).toBe(true);
+  expect(list.items[0].thesisVersionCount).toBe(0);
   expect(list.loads.gv1.level).toBe('ok');
   expect(list.round.roundStatus).toBe('Đang diễn ra');
 });

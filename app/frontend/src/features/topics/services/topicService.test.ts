@@ -199,7 +199,7 @@ describe('seed data', () => {
       'Đề cương': 'outline',
       'Giữa kỳ': 'midterm',
       'Cuối kỳ': 'final',
-      'Bản khóa luận': 'final',
+      'Bản khóa luận': 'finalize',
     };
     for (const t of seedTopics()) {
       const round = rounds.find((r) => r.id === t.roundId)!;
@@ -420,7 +420,7 @@ describe('results (PDR-049)', () => {
     expect((await s.unconfirmResult(idOf('VB1-08'), 'x')).ok).toBe(false);
   });
 
-  it('publishes only confirmed topics with a final lock or past the lock deadline', async () => {
+  it('does not publish a topic with no thesis even after the lock deadline', async () => {
     const { service: s } = make();
     const out = await s.publishResults([
       idOf('VB1-16'),
@@ -428,23 +428,20 @@ describe('results (PDR-049)', () => {
       idOf('VB1-08'),
     ]);
     expect(out.map((o) => [o.code, o.ok])).toEqual([
-      ['VB1-16', true],
+      ['VB1-16', false],
       ['VB1-15', false],
       ['VB1-08', false],
     ]);
-    expect(out[1].message).toContain('chưa chốt bản cuối');
+    expect(out[1].message).toContain('chưa nộp bản khóa luận');
     expect(out[2].message).toContain('Chưa xác nhận kết quả');
-    expect((await s.get(idOf('VB1-16'))).status).toBe('Đã hoàn tất');
+    expect((await s.get(idOf('VB1-16'))).status).toBe('Đã xác nhận');
     expect((await s.get(idOf('VB1-15'))).status).toBe('Đã xác nhận');
 
     const late = await s.publishResults([idOf('VB1-15')], AFTER_LOCK);
-    expect(late[0].ok).toBe(true);
-    expect((await s.get(idOf('VB1-15'))).history[0].action).toBe(
-      'Công bố kết quả',
-    );
+    expect(late[0].ok).toBe(false);
+    expect(late[0].message).toContain('chưa nộp bản khóa luận');
     // Đã hoàn tất không công bố lại, không hủy xác nhận.
     expect((await s.publishResults([idOf('VB1-16')]))[0].ok).toBe(false);
-    expect((await s.unconfirmResult(idOf('VB1-16'), 'x')).ok).toBe(false);
   });
 
   it('reminds only the lecturers of deviating groups and logs it', async () => {

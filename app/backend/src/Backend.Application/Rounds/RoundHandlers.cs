@@ -152,7 +152,7 @@ internal static class RoundMapping
                 RoundId = round.Id,
                 Key = key,
                 NotifyAudience = old?.NotifyAudience ?? NotifyAudience.All,
-                AllowLate = ThesisRound.HasLateToggle(key) ? old?.AllowLate ?? true : null
+                AllowLate = ThesisRound.HasLateToggle(key) ? old?.AllowLate ?? (key != MilestoneKey.Finalize) : null
             };
         }).ToList();
         return round;
@@ -271,7 +271,7 @@ public sealed class UpdateRoundMilestonesHandler(IRoundRepository repository, Ti
             RoundRules.OrderedKeys.Select(k => (k, input[k].StartDate, input[k].EndDate)), requireAll: false);
         // Công tắc không gửi lên thì giữ giá trị đang lưu (mặc định bật), nên kiểm tra theo giá trị sẽ lưu.
         bool? LateSwitch(MilestoneKey key) => ThesisRound.HasLateToggle(key)
-            ? input[key].AllowLate ?? round.Milestones.FirstOrDefault(m => m.Key == key)?.AllowLate ?? true
+            ? input[key].AllowLate ?? round.Milestones.FirstOrDefault(m => m.Key == key)?.AllowLate ?? (key != MilestoneKey.Finalize)
             : null;
         errors.AddRange(RoundRules.ValidateLateDeadlines(
             RoundRules.OrderedKeys.Select(k => (k, input[k].EndDate, LateSwitch(k), input[k].LateEndDate)),

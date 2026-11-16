@@ -11,6 +11,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddHostedService<Backend.API.ThesisFinalizationJob>();
 builder.Services.AddControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddJwtCookieAuthentication(builder.Configuration);

@@ -35,6 +35,7 @@ const version = (
   submittedBy: { id: 'sv1', code: '22520001', name: 'Nguyễn Văn An' },
   isLate: false,
   isLatest: true,
+  isFinal: false,
   downloadUrl: '/api/submissions/s1/file',
   ...overrides,
 });
@@ -51,6 +52,13 @@ const kind = (
   canSubmit: true,
   blockedReason: null,
   noteRequired: false,
+  canLock: false,
+  extensionDeadline: '',
+  extensionReason: null,
+  waitingException: false,
+  canGrantExtension: false,
+  canMarkIneligible: false,
+  ineligibleReason: null,
   versions: [],
   ...overrides,
 });
@@ -78,6 +86,9 @@ const service = (
 ): SubmissionService => ({
   list: vi.fn().mockResolvedValue(initial),
   submit,
+  grantExtension: vi.fn(),
+  lock: vi.fn(),
+  markIneligible: vi.fn(),
 });
 
 const pdf = (name = 'bao-cao.pdf', size = 1000, type = 'application/pdf') => {
@@ -152,7 +163,7 @@ it('submits a valid PDF and shows the new version with its late label', async ()
   await waitFor(() =>
     expect(submit).toHaveBeenCalledWith('t1', 'midterm', file, 'Sửa chương 2'),
   );
-  expect(await midterm.findByRole('status')).toHaveTextContent(
+  expect(await screen.findByRole('status')).toHaveTextContent(
     'Đã nộp bản 2 (nộp trễ).',
   );
   const items = midterm.getAllByRole('listitem');
@@ -240,7 +251,9 @@ it('offers a retry when the list cannot be loaded', async () => {
     .fn()
     .mockRejectedValueOnce(new ApiError('Không tìm thấy đề tài.', 404))
     .mockResolvedValueOnce(data([kind()]));
-  render(<SubmissionPanel topicId="t1" service={{ list, submit: vi.fn() }} />);
+  render(
+    <SubmissionPanel topicId="t1" service={{ ...service(data([])), list }} />,
+  );
 
   expect(await screen.findByRole('alert')).toHaveTextContent(
     'Không tìm thấy đề tài.',
@@ -249,6 +262,91 @@ it('offers a retry when the list cannot be loaded', async () => {
   expect(
     await screen.findByRole('region', { name: 'Báo cáo giữa kỳ' }),
   ).toBeInTheDocument();
+});
+
+it('shows the private extension and confirms the chosen thesis version', async () => {
+  const thesis = kind({
+    kind: 'thesis',
+    name: 'Bản khóa luận',
+    deadline: '2026-11-01',
+    extensionDeadline: '2026-11-05',
+    extensionReason: 'Cho nhóm nộp bổ sung',
+    lateDeadline: '2026-11-05',
+    window: 'late',
+    canLock: true,
+    versions: [
+      version({ id: 'thesis-2', version: 2, fileName: 'khoa-luan.pdf' }),
+      version({ id: 'thesis-1', isLatest: false }),
+    ],
+  });
+  const locked = data([
+    {
+      ...thesis,
+      canLock: false,
+      versions: thesis.versions.map((v) => ({
+        ...v,
+        isFinal: v.id === 'thesis-1',
+      })),
+    },
+  ]);
+  const lock = vi.fn().mockResolvedValue(locked);
+  render(
+    <SubmissionPanel
+      topicId="t1"
+      service={{ ...service(data([thesis])), lock }}
+    />,
+  );
+  const area = await section('Bản khóa luận');
+  expect(area.getByRole('note')).toHaveTextContent('05/11/2026');
+  expect(area.getByRole('note')).toHaveTextContent('Cho nhóm nộp bổ sung');
+  fireEvent.click(area.getByRole('button', { name: 'Chốt bản 1' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Chốt bản cuối' }));
+  await waitFor(() => expect(lock).toHaveBeenCalledWith('t1', 'thesis-1'));
+  expect(await area.findByText('Bản cuối')).toBeInTheDocument();
+});
+
+it('shows staff the pending decision without submitting on behalf of the group', async () => {
+  const thesis = kind({
+    kind: 'thesis',
+    name: 'Bản khóa luận',
+    deadline: '2026-11-01',
+    window: 'closed',
+    canSubmit: false,
+    waitingException: true,
+    canGrantExtension: true,
+  });
+  const grantExtension = vi.fn().mockResolvedValue(
+    data([
+      {
+        ...thesis,
+        canGrantExtension: false,
+        extensionDeadline: '2026-11-05',
+        extensionReason: 'Lý do hợp lệ',
+      },
+    ]),
+  );
+  render(
+    <SubmissionPanel
+      topicId="t1"
+      service={{ ...service(data([thesis])), grantExtension }}
+    />,
+  );
+  const area = await section('Bản khóa luận');
+  expect(area.getByRole('note')).toHaveTextContent('chờ Giáo vụ');
+  fireEvent.change(area.getByLabelText('Hạn bổ sung'), {
+    target: { value: '2026-11-05' },
+  });
+  fireEvent.change(area.getByLabelText('Lý do quyết định'), {
+    target: { value: 'Lý do hợp lệ' },
+  });
+  fireEvent.click(area.getByRole('button', { name: 'Cấp hạn bổ sung' }));
+  await waitFor(() =>
+    expect(grantExtension).toHaveBeenCalledWith(
+      't1',
+      '2026-11-05',
+      'Lý do hợp lệ',
+    ),
+  );
 });
 
 it('describes deadlines and validates files', () => {

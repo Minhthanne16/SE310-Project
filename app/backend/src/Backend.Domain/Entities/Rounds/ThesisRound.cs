@@ -67,9 +67,9 @@ public class ThesisRound : BaseEntity
 
     public static string NormalizeName(string name) => name.Trim().ToLowerInvariant();
 
-    // Chỉ ba mốc báo cáo có công tắc "Cho nộp trễ".
+    // Ba mốc báo cáo và mốc bản khóa luận có công tắc "Cho nộp trễ".
     public static bool HasLateToggle(MilestoneKey key) =>
-        key is MilestoneKey.Outline or MilestoneKey.Midterm or MilestoneKey.Final;
+        key is MilestoneKey.Outline or MilestoneKey.Midterm or MilestoneKey.Final or MilestoneKey.Finalize;
 }
 
 public class RoundMilestone : BaseEntity
@@ -79,7 +79,7 @@ public class RoundMilestone : BaseEntity
     public DateOnly? StartDate { get; set; }
     public DateOnly? EndDate { get; set; }
     public NotifyAudience NotifyAudience { get; set; } = NotifyAudience.All;
-    // Chỉ khác null với Đề cương, Giữa kỳ, Cuối kỳ (mặc định true).
+    // Chỉ khác null với Đề cương, Giữa kỳ, Cuối kỳ và Chốt bản cuối.
     public bool? AllowLate { get; set; }
     // Hạn nộp trễ riêng của mốc, sau EndDate (PDR-041). Chỉ mở quyền nộp khi AllowLate = true.
     public DateOnly? LateEndDate { get; set; }

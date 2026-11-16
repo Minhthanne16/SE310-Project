@@ -268,7 +268,7 @@ const vb1: Body[] = [
     reviewer: 'CB103',
     council: 'Hội đồng 1',
     defense: HD_VB1,
-    // Chưa nộp Cuối kỳ nên chưa chốt bản cuối: chưa công bố được.
+    // Chưa nộp bản khóa luận nên chưa chốt bản cuối: chưa công bố được.
     subs: [['Đề cương', 35, false]],
     scoreAt: 47,
     scores: [
@@ -404,7 +404,7 @@ const OLD_SUBS: SubSpec[] = [
   ['Đề cương', 30, false],
   ['Giữa kỳ', 60, false],
   ['Cuối kỳ', 97, false],
-  ['Bản khóa luận', 101, false],
+  ['Bản khóa luận', 140, false],
 ];
 
 // Hội đồng 1: một phòng, các suất liên tiếp bắt đầu từ 1 (mỗi suất một giờ).
@@ -669,7 +669,7 @@ function buildTopic(
       : null;
   const lockedFinal =
     spec.status === 'Đã hoàn tất' || spec.status === 'Đã xác nhận'
-      ? submissions.findLast((s) => s.kind === 'Cuối kỳ')
+      ? submissions.findLast((s) => s.kind === 'Bản khóa luận')
       : undefined;
   scores.forEach((s, i) => {
     const filled = SCORE_ROLES.filter((r) => s.scores[r] !== null);
@@ -711,7 +711,7 @@ function buildTopic(
       'Đã xác nhận cho cả nhóm.',
     );
   if (spec.status === 'Đã hoàn tất')
-    log(at(135), STAFF, 'Trạng thái', 'Công bố kết quả', 'Đã hoàn tất');
+    log(at(143), STAFF, 'Trạng thái', 'Công bố kết quả', 'Đã hoàn tất');
   // Đăng ký tự đóng cuối ngày kết thúc mốc đăng ký (offset 25 ngày kể từ mốc đầu).
   if (spec.status === 'Không có nhóm')
     log(
