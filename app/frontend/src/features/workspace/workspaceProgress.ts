@@ -158,10 +158,29 @@ export function buildProgress(input: BuildProgressInput): ProgressRow[] {
     }
 
     // Bước 2: GVHD nhận xét (A13)
-    const step2: ProgressStep = {
-      text: 'GVHD nhận xét',
-      kind: 'todo',
-    };
+    let step2: ProgressStep;
+    const openMidtermRequests = (midterm?.requests ?? []).filter((r) => r.status === 'open');
+    if (versions.length === 0) {
+      step2 = {
+        text: 'GVHD nhận xét',
+        kind: 'todo',
+      };
+    } else if (openMidtermRequests.length > 0) {
+      step2 = {
+        text: `Cần chỉnh sửa · ${openMidtermRequests.length} yêu cầu`,
+        kind: 'now',
+      };
+    } else if (versions[0].reviewComment) {
+      step2 = {
+        text: 'GVHD đã nhận xét',
+        kind: 'done',
+      };
+    } else {
+      step2 = {
+        text: 'GVHD nhận xét',
+        kind: 'todo',
+      };
+    }
 
     rows.push({
       key: 'midterm',
@@ -216,11 +235,25 @@ export function buildProgress(input: BuildProgressInput): ProgressRow[] {
       }
     }
 
-    // Bước 2: Chốt bản cuối
-    const step2: ProgressStep = {
-      text: 'Chốt bản cuối',
-      kind: 'todo',
-    };
+    // Bước 2: Chốt bản cuối (hoặc cần chỉnh sửa nếu còn yêu cầu mở)
+    let step2: ProgressStep;
+    const openFinalRequests = (finalSub?.requests ?? []).filter((r) => r.status === 'open');
+    if (openFinalRequests.length > 0) {
+      step2 = {
+        text: `Cần chỉnh sửa · ${openFinalRequests.length} yêu cầu`,
+        kind: 'now',
+      };
+    } else if (EVALUATION_SETTLED_STATUSES.includes(topic.status)) {
+      step2 = {
+        text: 'Chốt bản cuối',
+        kind: 'done',
+      };
+    } else {
+      step2 = {
+        text: 'Chốt bản cuối',
+        kind: 'todo',
+      };
+    }
 
     rows.push({
       key: 'final',

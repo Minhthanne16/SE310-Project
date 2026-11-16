@@ -27,7 +27,7 @@ export const CancelRegistrationDialog: React.FC<CancelRegistrationDialogProps> =
     try {
       await onConfirmCancel(topic.id);
       toast.success(`Đã hủy ghi danh đề tài ${topic.code}.`);
-      router.replace('/sv/dang-ky');
+      router.replace('/sv/de-tai');
     } catch (err: unknown) {
       setError(
         err instanceof Error && err.message

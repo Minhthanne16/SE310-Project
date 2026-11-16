@@ -2,11 +2,13 @@
 
 import React, { Suspense, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import '@/features/workspace/workspace.css';
 import '@/features/topics/topics.css';
 import '@/features/outline/outline.css';
 import '@/features/submissions/submissions.css';
 import { useUrlParam } from '@/lib/useUrlParam';
+import { useOptionalSession } from '@/features/auth/session/SessionProvider';
 import {
   type WorkspaceData,
   type WorkspaceService,
@@ -89,6 +91,26 @@ const WorkspaceInner: React.FC<WorkspacePageProps> = ({
     void loadData();
   }, [loadData]);
 
+  const sessionContext = useOptionalSession();
+  const currentUser =
+    sessionContext?.session.status === 'authenticated'
+      ? sessionContext.session.user
+      : null;
+  const pathname = usePathname() ?? '';
+
+  let notFoundHref = '/sv/dang-ky';
+  let notFoundLabel = 'Về trang danh sách đề tài';
+  if (currentUser?.role === 'Lecturer' || pathname.startsWith('/gv')) {
+    notFoundHref = '/gv/huong-dan';
+    notFoundLabel = 'Về trang nhóm hướng dẫn';
+  } else if (
+    currentUser?.role === 'AcademicAffairs' ||
+    pathname.startsWith('/giao-vu')
+  ) {
+    notFoundHref = '/giao-vu/de-tai';
+    notFoundLabel = 'Về danh sách đề tài';
+  }
+
   if (state.kind === 'loading') {
     return (
       <p role="status" className="app-muted">
@@ -104,8 +126,8 @@ const WorkspaceInner: React.FC<WorkspacePageProps> = ({
         <p>
           Đề tài không tồn tại hoặc bạn không có quyền xem đề tài này.
         </p>
-        <Link href="/sv/dang-ky" className="status-state-action">
-          Về trang danh sách đề tài
+        <Link href={notFoundHref} className="status-state-action">
+          {notFoundLabel}
         </Link>
       </section>
     );

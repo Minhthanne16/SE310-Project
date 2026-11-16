@@ -406,3 +406,34 @@ Mỗi bước B **chỉ bắt đầu khi phase tương ứng đã có hợp đ�
 | Q6 | Ai đóng yêu cầu chỉnh sửa? | A13 | **Đã chốt 2026-11-16:** giữ PDR-013/057: GVHD xác nhận hoàn tất sau khi nhóm nộp lại; nhóm không tự tick. Áp cho cả 3 mục. |
 
 Tất cả Q1–Q6 đã chốt ngày 2026-11-16. Câu hỏi mới phát sinh khi code: thêm dòng vào bảng này và dừng phần liên quan.
+
+---
+
+## Phụ lục: Việc cần sửa sau review (16/11/2026)
+
+Review bản Gemini đã code: backend đạt, frontend còn 2 việc cần sửa dưới đây. Các lỗi nhỏ (class `app-banner` không tồn tại, inline style ở ScoresTab) đã được sửa. Khi sửa xong, chạy `npm test`, `npm run lint`, `npm run typecheck` và `dotnet test`.
+
+### R1. Tiến độ Giữa kỳ bị kẹt ở bước "GVHD nhận xét" (quan trọng) · [Đã hoàn thành 16/11/2026]
+
+- Vị trí: `app/frontend/src/features/workspace/workspaceProgress.ts`, bước 2 của chặng Giữa kỳ đang gán cứng `{ text: 'GVHD nhận xét', kind: 'todo' }`.
+- Hậu quả: chặng hiện tại luôn kẹt ở Giữa kỳ, không bao giờ sang Cuối kỳ.
+- Cần làm (theo A13): lấy bản nộp mới nhất của Báo cáo giữa kỳ.
+  - Có `reviewComment` và không còn yêu cầu chỉnh sửa mở: bước `done`.
+  - Còn k yêu cầu mở: bước `now`, chữ "Cần chỉnh sửa · k yêu cầu".
+  - Chưa có nhận xét: `todo`.
+- Làm tương tự cho chặng Cuối kỳ nếu đang gán cứng.
+- Thêm test cho 3 trường hợp trong `workspaceProgress.test.ts`.
+- **Kết quả thực hiện:** Đã cập nhật `workspaceProgress.ts` tính đúng trạng thái bước 2 cho cả Giữa kỳ và Cuối kỳ; bổ sung đầy đủ unit tests trong `workspaceProgress.test.ts` (14/14 tests passed).
+
+### R2. Đường dẫn chuyển hướng theo vai trò · [Đã hoàn thành 16/11/2026]
+
+- `CancelRegistrationDialog.tsx` chuyển về `/sv/dang-ky`, nhưng PDR-059 ghi `/sv/de-tai`. Thống nhất theo PDR-059 (hoặc sửa PDR nếu `/sv/dang-ky` mới đúng, ghi rõ lý do).
+- Màn "không tìm thấy đề tài" luôn trỏ link về route của sinh viên. GVHD phải về danh sách đề tài của giảng viên, Giáo vụ về danh sách đề tài của giáo vụ.
+- **Kết quả thực hiện:**
+  - `CancelRegistrationDialog.tsx`: Đã chuyển hướng về `/sv/de-tai` theo chuẩn PDR-059.
+  - `WorkspacePage.tsx`: Nhận diện vai trò người dùng (qua pathname `/gv/*`, `/giao-vu/*` hoặc session role) để điều hướng chính xác về `/gv/huong-dan` (GVHD), `/giao-vu/de-tai` (Giáo vụ) hoặc `/sv/dang-ky` (Sinh viên); kèm theo tests trong `WorkspacePage.test.tsx`.
+
+### Không cần sửa
+
+- Ví dụ `"status": "Running"` trong PDR-059 là đúng, vì đó là giá trị enum của `RoundStatus` trong API.
+- Các chiều cao 32px/36px trong `workspace.css` thuộc chip, avatar và tiêu đề không bấm được. Chỉ cần ≥40px nếu sau này chúng thành nút.

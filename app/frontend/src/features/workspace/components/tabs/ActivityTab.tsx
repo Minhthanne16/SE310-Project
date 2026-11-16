@@ -135,7 +135,7 @@ export const ActivityTab: React.FC<ActivityTabProps> = ({
       aria-labelledby="wsp-tab-hoat-dong"
     >
       {submissionsError && (
-        <aside className="app-banner wsp-activity-banner" role="note">
+        <aside className="wsp-activity-banner" role="note">
           <p>{submissionsError}</p>
         </aside>
       )}

@@ -245,6 +245,38 @@ describe('WorkspacePage', () => {
     ).toHaveAttribute('href', '/sv/dang-ky');
   });
 
+  it('R2: hiển thị link về trang nhóm hướng dẫn khi giảng viên gặp màn không tìm thấy đề tài', async () => {
+    setUrl('/gv/huong-dan/top-unknown');
+    const service: WorkspaceService = {
+      load: vi.fn().mockRejectedValue(new WorkspaceNotFoundError()),
+      cancelRegistration: vi.fn(),
+    };
+
+    render(<WorkspacePage topicId="top-unknown" service={service} />);
+    expect(
+      await screen.findByRole('heading', { name: 'Không tìm thấy đề tài' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Về trang nhóm hướng dẫn' }),
+    ).toHaveAttribute('href', '/gv/huong-dan');
+  });
+
+  it('R2: hiển thị link về danh sách đề tài khi giáo vụ gặp màn không tìm thấy đề tài', async () => {
+    setUrl('/giao-vu/de-tai/top-unknown');
+    const service: WorkspaceService = {
+      load: vi.fn().mockRejectedValue(new WorkspaceNotFoundError()),
+      cancelRegistration: vi.fn(),
+    };
+
+    render(<WorkspacePage topicId="top-unknown" service={service} />);
+    expect(
+      await screen.findByRole('heading', { name: 'Không tìm thấy đề tài' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Về danh sách đề tài' }),
+    ).toHaveAttribute('href', '/giao-vu/de-tai');
+  });
+
   it('tải thành công và mặc định hiển thị tab Hoạt động', async () => {
     const service = createMockService();
     render(<WorkspacePage topicId="top-1" service={service} />);
@@ -307,7 +339,7 @@ describe('WorkspacePage', () => {
       expect(toast.success).toHaveBeenCalledWith(
         'Đã hủy ghi danh đề tài SE101.',
       );
-      expect(replace).toHaveBeenCalledWith('/sv/dang-ky');
+      expect(replace).toHaveBeenCalledWith('/sv/de-tai');
     });
   });
 

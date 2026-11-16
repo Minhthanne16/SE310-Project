@@ -464,6 +464,14 @@
 
 .wsp-activity-banner {
   margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: var(--radius-md, 8px);
+  background: var(--danger-bg);
+  color: var(--danger-ink, var(--ink));
+}
+
+.wsp-member-scores-list {
+  margin-top: 12px;
 }
 
 .wsp-accordion-header {

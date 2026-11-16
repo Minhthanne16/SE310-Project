@@ -104,7 +104,7 @@ export const ScoresTab: React.FC<ScoresTabProps> = ({ topic, viewerRole }) => {
           <h2 className="wsp-score-card-title">
             Điểm khóa luận (tạm tính) · theo từng sinh viên
           </h2>
-          <div className="wsp-member-scores-list" style={{ marginTop: '12px' }}>
+          <div className="wsp-member-scores-list">
             {topic.group && topic.group.length > 0 ? (
               topic.group.map((m) => (
                 <div key={m.id} className="wsp-member-score-row">

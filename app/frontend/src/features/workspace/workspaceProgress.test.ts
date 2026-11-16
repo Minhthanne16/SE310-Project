@@ -1,8 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import type { Outline } from '@/types/outline';
+import type { Outline, OutlineSubmission } from '@/types/outline';
 import type { SubmissionVersion, TopicSubmissions } from '@/types/submission';
 import type { TopicDetailDto } from '@/types/topic';
 import { buildProgress, getCurrentStage } from './workspaceProgress';
+
+const mockOutlineSubmission = (overrides: Partial<OutlineSubmission> = {}): OutlineSubmission => ({
+  id: 'sub1',
+  versionNo: 1,
+  submittedAt: '2026-10-24T00:00:00Z',
+  submittedBy: 'sv1',
+  fileName: 'decuong.pdf',
+  sizeBytes: 1000,
+  note: null,
+  late: false,
+  reviewComment: null,
+  reviewedAt: null,
+  reviewedBy: null,
+  addressedRequestIds: [],
+  ...overrides,
+});
 
 const mockTopic = (overrides: Partial<TopicDetailDto> = {}): TopicDetailDto => ({
   id: 't1',
@@ -488,5 +504,179 @@ describe('workspaceProgress', () => {
     expect(rows[0].steps).toEqual([
       { text: 'Đề xuất được chấp nhận', kind: 'done' },
     ]);
+  });
+
+  it('12. R1: Giữa kỳ đã nhận xét và không còn yêu cầu mở: bước 2 done, tiến độ chuyển sang Cuối kỳ', () => {
+    const topic = mockTopic({ outlineApprovedAt: '2026-10-25T00:00:00Z' });
+    const outline = mockOutline({
+      approvedAt: '2026-10-25T00:00:00Z',
+      submissions: [mockOutlineSubmission()],
+    });
+    const submissions = mockSubmissions({
+      kinds: [
+        {
+          kind: 'midterm',
+          name: 'Báo cáo giữa kỳ',
+          deadline: '2026-11-05',
+          allowLate: false,
+          lateDeadline: '',
+          window: 'closed',
+          canSubmit: false,
+          blockedReason: null,
+          noteRequired: false,
+          canReview: false,
+          requests: [],
+          versions: [
+            mockVersion({
+              id: 'mv1',
+              version: 1,
+              fileName: 'bcgk.pdf',
+              submittedAt: '2026-11-04T00:00:00Z',
+              reviewComment: 'Báo cáo đạt yêu cầu',
+              reviewedBy: 'GVHD',
+              reviewedAt: '2026-11-05T00:00:00Z',
+            }),
+          ],
+        },
+        {
+          kind: 'final',
+          name: 'Báo cáo cuối kỳ',
+          deadline: '2026-12-05',
+          allowLate: false,
+          lateDeadline: '',
+          window: 'onTime',
+          canSubmit: true,
+          blockedReason: null,
+          noteRequired: true,
+          canReview: false,
+          requests: [],
+          versions: [],
+        },
+      ],
+    });
+
+    const rows = buildProgress({ topic, outline, submissions });
+    // Giữa kỳ: cả 2 bước đều done
+    expect(rows[2].steps).toEqual([
+      { text: 'Đã nộp · bản 1', kind: 'done' },
+      { text: 'GVHD đã nhận xét', kind: 'done' },
+    ]);
+
+    // Chặng hiện tại không bị kẹt ở Giữa kỳ mà đã sang Cuối kỳ
+    const stage = getCurrentStage(rows);
+    expect(stage?.rowKey).toBe('final');
+    expect(stage?.collapsedText).toBe('Cuối kỳ · Chưa nộp');
+  });
+
+  it('13. R1: Giữa kỳ còn yêu cầu chỉnh sửa mở: bước 2 now với nhãn Cần chỉnh sửa', () => {
+    const topic = mockTopic({ outlineApprovedAt: '2026-10-25T00:00:00Z' });
+    const outline = mockOutline({
+      approvedAt: '2026-10-25T00:00:00Z',
+      submissions: [mockOutlineSubmission()],
+    });
+    const submissions = mockSubmissions({
+      kinds: [
+        {
+          kind: 'midterm',
+          name: 'Báo cáo giữa kỳ',
+          deadline: '2026-11-05',
+          allowLate: false,
+          lateDeadline: '',
+          window: 'onTime',
+          canSubmit: true,
+          blockedReason: null,
+          noteRequired: false,
+          canReview: false,
+          versions: [
+            mockVersion({
+              id: 'mv1',
+              version: 1,
+              fileName: 'bcgk.pdf',
+              submittedAt: '2026-11-04T00:00:00Z',
+            }),
+          ],
+          requests: [
+            {
+              id: 'r1',
+              content: 'Sửa phương pháp',
+              createdBy: 'GVHD',
+              createdAt: '2026-11-05T00:00:00Z',
+              raisedOnVersionNo: 1,
+              status: 'open',
+              resolvedBy: null,
+              resolvedAt: null,
+              addressedInVersions: [],
+              canResolve: false,
+            },
+            {
+              id: 'r2',
+              content: 'Bổ sung kết quả',
+              createdBy: 'GVHD',
+              createdAt: '2026-11-05T00:00:00Z',
+              raisedOnVersionNo: 1,
+              status: 'open',
+              resolvedBy: null,
+              resolvedAt: null,
+              addressedInVersions: [],
+              canResolve: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    const rows = buildProgress({ topic, outline, submissions });
+    expect(rows[2].steps).toEqual([
+      { text: 'Đã nộp · bản 1', kind: 'done' },
+      { text: 'Cần chỉnh sửa · 2 yêu cầu', kind: 'now' },
+    ]);
+
+    const stage = getCurrentStage(rows);
+    expect(stage?.rowKey).toBe('midterm');
+    expect(stage?.collapsedText).toBe('Giữa kỳ · Cần chỉnh sửa · 2 yêu cầu');
+  });
+
+  it('14. R1: Giữa kỳ đã nộp nhưng chưa có nhận xét: bước 2 todo', () => {
+    const topic = mockTopic({ outlineApprovedAt: '2026-10-25T00:00:00Z' });
+    const outline = mockOutline({
+      approvedAt: '2026-10-25T00:00:00Z',
+      submissions: [mockOutlineSubmission()],
+    });
+    const submissions = mockSubmissions({
+      kinds: [
+        {
+          kind: 'midterm',
+          name: 'Báo cáo giữa kỳ',
+          deadline: '2026-11-05',
+          allowLate: false,
+          lateDeadline: '',
+          window: 'onTime',
+          canSubmit: true,
+          blockedReason: null,
+          noteRequired: false,
+          canReview: false,
+          requests: [],
+          versions: [
+            mockVersion({
+              id: 'mv1',
+              version: 1,
+              fileName: 'bcgk.pdf',
+              submittedAt: '2026-11-04T00:00:00Z',
+              reviewComment: null,
+            }),
+          ],
+        },
+      ],
+    });
+
+    const rows = buildProgress({ topic, outline, submissions });
+    expect(rows[2].steps).toEqual([
+      { text: 'Đã nộp · bản 1', kind: 'done' },
+      { text: 'GVHD nhận xét', kind: 'todo' },
+    ]);
+
+    const stage = getCurrentStage(rows);
+    expect(stage?.rowKey).toBe('midterm');
+    expect(stage?.collapsedText).toBe('Giữa kỳ · GVHD nhận xét');
   });
 });
