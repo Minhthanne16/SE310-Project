@@ -16,11 +16,11 @@ public class OutlineRepository(ApplicationDbContext context) : IOutlineRepositor
         await Outlines(topicId).OrderByDescending(s => s.VersionNo).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<RevisionRequest>> ListRequestsAsync(Guid topicId, CancellationToken cancellationToken = default) =>
-        await context.RevisionRequests.AsNoTracking().Where(r => r.TopicId == topicId).ToListAsync(cancellationToken);
+        await context.RevisionRequests.AsNoTracking().Where(r => r.TopicId == topicId && r.Kind == SubmissionKind.Outline).ToListAsync(cancellationToken);
 
     public async Task<IReadOnlyList<RevisionRequestLink>> ListLinksAsync(Guid topicId, CancellationToken cancellationToken = default) =>
         await context.RevisionRequestLinks.AsNoTracking()
-            .Where(l => context.RevisionRequests.Any(r => r.Id == l.RequestId && r.TopicId == topicId))
+            .Where(l => context.RevisionRequests.Any(r => r.Id == l.RequestId && r.TopicId == topicId && r.Kind == SubmissionKind.Outline))
             .ToListAsync(cancellationToken);
 
     public Task<TopicSubmission?> GetSubmissionAsync(Guid submissionId, CancellationToken cancellationToken = default) =>
@@ -38,7 +38,7 @@ public class OutlineRepository(ApplicationDbContext context) : IOutlineRepositor
             .GroupBy(s => s.TopicId).Select(g => new { g.Key, Count = g.Count(), Latest = g.Max(s => s.CreatedAt) })
             .ToDictionaryAsync(x => x.Key, cancellationToken);
         var open = await context.RevisionRequests
-            .Where(r => topicIds.Contains(r.TopicId) && r.ResolvedAt == null)
+            .Where(r => topicIds.Contains(r.TopicId) && r.Kind == SubmissionKind.Outline && r.ResolvedAt == null)
             .GroupBy(r => r.TopicId).Select(g => new { g.Key, Count = g.Count(), Newest = g.Max(r => r.CreatedAt) })
             .ToDictionaryAsync(x => x.Key, cancellationToken);
         return topicIds.Distinct().ToDictionary(id => id, id =>
@@ -66,7 +66,7 @@ public class OutlineRepository(ApplicationDbContext context) : IOutlineRepositor
             history.Action = $"Nộp đề cương lần {submission.VersionNo}";
             // Một lần nộp cho cả lần sửa: liên kết mọi yêu cầu đang mở (PDR-013).
             var open = await context.RevisionRequests
-                .Where(r => r.TopicId == submission.TopicId && r.ResolvedAt == null)
+                .Where(r => r.TopicId == submission.TopicId && r.Kind == SubmissionKind.Outline && r.ResolvedAt == null)
                 .Select(r => r.Id).ToListAsync(cancellationToken);
             context.TopicSubmissions.Add(submission);
             context.RevisionRequestLinks.AddRange(open.Select(id => new RevisionRequestLink { SubmissionId = submission.Id, RequestId = id }));
@@ -92,6 +92,7 @@ public class OutlineRepository(ApplicationDbContext context) : IOutlineRepositor
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         if (await context.ThesisTopics.AnyAsync(t => t.Id == request.TopicId && t.OutlineApprovedAt != null, cancellationToken))
             return OutlineWriteOutcome.AlreadyApproved;
+        request.Kind = SubmissionKind.Outline;
         context.RevisionRequests.Add(request);
         context.TopicHistoryEntries.Add(history);
         context.Notifications.AddRange(notifications);

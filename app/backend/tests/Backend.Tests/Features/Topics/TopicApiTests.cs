@@ -159,6 +159,35 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
         Assert.Equal("Đã đăng ký", data.GetProperty("topic").GetProperty("status").GetString());
         Assert.True(data.GetProperty("canCancel").GetBoolean());
 
+        // PDR-061: Kiểm tra round và email trong TopicDetailDto cho các vai trò
+        var repTopic = (await ReadJson(await Send(HttpMethod.Get, $"/api/topics/{topicId}", rep))).GetProperty("data");
+        Assert.Equal(roundId, repTopic.GetProperty("round").GetProperty("id").GetGuid());
+        Assert.StartsWith("Đợt đề tài ", repTopic.GetProperty("round").GetProperty("name").GetString());
+        Assert.Equal("Đang diễn ra", repTopic.GetProperty("round").GetProperty("status").GetString());
+        Assert.Equal(lecturer.Email, repTopic.GetProperty("supervisor").GetProperty("email").GetString());
+        var repMembers = repTopic.GetProperty("group").EnumerateArray().ToList();
+        var repInRepView = repMembers.Single(m => m.GetProperty("id").GetGuid() == rep.Id);
+        var partnerInRepView = repMembers.Single(m => m.GetProperty("id").GetGuid() == partner.Id);
+        Assert.Equal(rep.Email, repInRepView.GetProperty("email").GetString());
+        Assert.Equal(JsonValueKind.Null, partnerInRepView.GetProperty("email").ValueKind);
+
+        var partnerTopic = (await ReadJson(await Send(HttpMethod.Get, $"/api/topics/{topicId}", partner))).GetProperty("data");
+        var partnerMembers = partnerTopic.GetProperty("group").EnumerateArray().ToList();
+        var repInPartnerView = partnerMembers.Single(m => m.GetProperty("id").GetGuid() == rep.Id);
+        var partnerInPartnerView = partnerMembers.Single(m => m.GetProperty("id").GetGuid() == partner.Id);
+        Assert.Equal(JsonValueKind.Null, repInPartnerView.GetProperty("email").ValueKind);
+        Assert.Equal(partner.Email, partnerInPartnerView.GetProperty("email").GetString());
+
+        var supervisorTopic = (await ReadJson(await Send(HttpMethod.Get, $"/api/topics/{topicId}", lecturer))).GetProperty("data");
+        var supervisorMembers = supervisorTopic.GetProperty("group").EnumerateArray().ToList();
+        Assert.Equal(rep.Email, supervisorMembers.Single(m => m.GetProperty("id").GetGuid() == rep.Id).GetProperty("email").GetString());
+        Assert.Equal(partner.Email, supervisorMembers.Single(m => m.GetProperty("id").GetGuid() == partner.Id).GetProperty("email").GetString());
+
+        var staffTopicDetail = (await ReadJson(await Send(HttpMethod.Get, $"/api/topics/{topicId}", staff))).GetProperty("data");
+        var staffMembers = staffTopicDetail.GetProperty("group").EnumerateArray().ToList();
+        Assert.Equal(rep.Email, staffMembers.Single(m => m.GetProperty("id").GetGuid() == rep.Id).GetProperty("email").GetString());
+        Assert.Equal(partner.Email, staffMembers.Single(m => m.GetProperty("id").GetGuid() == partner.Id).GetProperty("email").GetString());
+
         var taken = await Send(HttpMethod.Post, $"/api/topics/{topicId}/registration", other, new { memberCodes = Array.Empty<string>() });
         Assert.Equal(HttpStatusCode.Conflict, taken.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Post, $"/api/topics/{topicId}/registration", lecturer, new { })).StatusCode);

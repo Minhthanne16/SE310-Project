@@ -50,6 +50,7 @@ const partner = member('sv2', '22520002', 'Lê Thị Bích');
 const topic = (overrides: Partial<TopicDetailDto> = {}): TopicDetailDto => ({
   id: 't1',
   roundId: 'r1',
+  round: { id: 'r1', name: 'Đợt 1 2026', status: 'Đang diễn ra' },
   code: 'DT-001',
   title: 'Hệ thống gợi ý khóa học',
   field: 'Trí tuệ nhân tạo',

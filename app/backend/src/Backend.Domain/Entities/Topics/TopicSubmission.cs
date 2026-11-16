@@ -33,13 +33,14 @@ public class TopicSubmission : BaseEntity
     public DateTime? ReviewedAt { get; set; }
 }
 
-// Yêu cầu chỉnh sửa đề cương của GVHD (PDR-013). Chỉ GVHD tạo và xác nhận hoàn tất.
+// Yêu cầu chỉnh sửa của GVHD cho đề cương hoặc báo cáo giữa kỳ/cuối kỳ (PDR-013, PDR-060). Chỉ GVHD tạo và xác nhận hoàn tất.
 public class RevisionRequest : BaseEntity
 {
     public Guid TopicId { get; set; }
+    public SubmissionKind Kind { get; set; } = SubmissionKind.Outline;
     public string Content { get; set; } = string.Empty;
     public Guid CreatedById { get; set; }
-    // Phiên bản đề cương GVHD đang xem khi tạo yêu cầu.
+    // Phiên bản bài nộp GVHD đang xem khi tạo yêu cầu.
     public Guid RaisedOnSubmissionId { get; set; }
     public Guid? ResolvedById { get; set; }
     public DateTime? ResolvedAt { get; set; }

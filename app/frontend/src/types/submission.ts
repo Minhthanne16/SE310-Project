@@ -1,4 +1,6 @@
-// Hợp đồng của GET|POST /api/topics/{id}/submissions (PDR-056). Tệp nằm trong
+import type { RevisionRequest } from './outline';
+
+// Hợp đồng của GET|POST /api/topics/{id}/submissions (PDR-056, PDR-060). Tệp nằm trong
 // object storage riêng tư của backend; frontend chỉ nhận đường dẫn API.
 export type SubmissionKind = 'midterm' | 'final' | 'thesis';
 export type SubmissionWindow = 'onTime' | 'late' | 'closed';
@@ -17,6 +19,10 @@ export interface SubmissionVersion {
   isFinal: boolean;
   // /api/submissions/{id}/file, có kiểm tra quyền ở backend.
   downloadUrl: string;
+  reviewComment: string | null;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  addressedRequestIds: string[];
 }
 
 export interface SubmissionKindState {
@@ -32,7 +38,10 @@ export interface SubmissionKindState {
   canSubmit: boolean;
   blockedReason: string | null;
   noteRequired: boolean;
+  canReview: boolean;
   canLock: boolean;
+  // Lý do chưa chốt được bản cuối: còn yêu cầu chỉnh sửa Cuối kỳ mở (PDR-060).
+  lockBlockedReason: string | null;
   extensionDeadline: string;
   extensionReason: string | null;
   waitingException: boolean;
@@ -41,6 +50,8 @@ export interface SubmissionKindState {
   ineligibleReason: string | null;
   // Mới nhất trước.
   versions: SubmissionVersion[];
+  // Yêu cầu mở trước, rồi theo thời điểm tạo mới nhất.
+  requests: RevisionRequest[];
 }
 
 export interface TopicSubmissions {

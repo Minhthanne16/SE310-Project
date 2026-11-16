@@ -95,3 +95,7 @@ export function useSession(): SessionContextValue {
   if (!value) throw new Error('useSession phải nằm trong SessionProvider');
   return value;
 }
+
+export function useOptionalSession(): SessionContextValue | null {
+  return useContext(SessionContext);
+}

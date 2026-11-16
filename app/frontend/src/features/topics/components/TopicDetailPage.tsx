@@ -295,9 +295,16 @@ export const TopicDetailPage: React.FC<TopicDetailPageProps> = ({
             </span>
           </div>
         </div>
-        <Link className="tpc-btn" href="/giao-vu/ket-qua">
-          Xem ở trang Kết quả
-        </Link>
+        <div className="tpc-actions">
+          {topic.group.length > 0 && (
+            <Link className="tpc-btn" href={`/de-tai/${topic.id}`}>
+              Mở không gian đề tài
+            </Link>
+          )}
+          <Link className="tpc-btn" href="/giao-vu/ket-qua">
+            Xem ở trang Kết quả
+          </Link>
+        </div>
       </div>
 
       <div className="tpc-tabs" role="tablist" aria-label="Chi tiết đề tài">

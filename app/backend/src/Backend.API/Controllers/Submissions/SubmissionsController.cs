@@ -57,6 +57,23 @@ public sealed class SubmissionsController(ISender sender) : ControllerBase
         return File(result.Response.Data!.Content, MediaTypeNames.Application.Pdf, result.Response.Data.FileName);
     }
 
+    [HttpPut("api/topics/{topicId:guid}/submissions/{submissionId:guid}/comment")]
+    [Authorize(Roles = AppRoles.Lecturer)]
+    public async Task<ActionResult<ApiResponse<TopicSubmissionsDto>>> Comment(Guid topicId, Guid submissionId,
+        [FromBody] SubmissionCommentInputDto dto, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new CommentSubmissionCommand(CurrentUserId, topicId, submissionId, dto.Comment), cancellationToken));
+
+    [HttpPost("api/topics/{topicId:guid}/submissions/requests")]
+    [Authorize(Roles = AppRoles.Lecturer)]
+    public async Task<ActionResult<ApiResponse<TopicSubmissionsDto>>> CreateRequest(Guid topicId,
+        [FromBody] SubmissionRevisionRequestInputDto dto, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new CreateSubmissionRevisionRequestCommand(CurrentUserId, topicId, dto.Kind, dto.Content), cancellationToken));
+
+    [HttpPost("api/topics/{topicId:guid}/submissions/requests/{requestId:guid}/resolve")]
+    [Authorize(Roles = AppRoles.Lecturer)]
+    public async Task<ActionResult<ApiResponse<TopicSubmissionsDto>>> Resolve(Guid topicId, Guid requestId,
+        CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new ResolveSubmissionRevisionRequestCommand(CurrentUserId, topicId, requestId), cancellationToken));
     [HttpPost("api/topics/{topicId:guid}/thesis/extension")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<TopicSubmissionsDto>>> GrantExtension(Guid topicId, ExtensionInput input, CancellationToken ct) =>

@@ -35,6 +35,7 @@ const proposal = (overrides: Partial<TopicDetailDto> = {}): TopicDetailDto =>
   ({
     id: 'p1',
     roundId: 'r1',
+    round: { id: 'r1', name: 'Văn bằng 1 · HK1', status: 'Đang diễn ra' },
     code: 'DX-001',
     title: 'Đề tài đang chờ',
     field: 'Kỹ thuật phần mềm',

@@ -226,7 +226,9 @@ public class ApplicationDbContext : DbContext
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).ValueGeneratedNever();
             entity.Property(e => e.Content).IsRequired().HasMaxLength(2000);
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(16).HasDefaultValue(SubmissionKind.Outline);
             entity.HasIndex(e => new { e.TopicId, e.ResolvedAt });
+            entity.HasIndex(e => new { e.TopicId, e.Kind, e.ResolvedAt });
             entity.HasOne<ThesisTopic>().WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
             // NO ACTION (kiểm cuối câu lệnh): xóa đề tài cascade cả bài nộp lẫn yêu cầu mà không vướng thứ tự.
             entity.HasOne<TopicSubmission>().WithMany().HasForeignKey(e => e.RaisedOnSubmissionId).OnDelete(DeleteBehavior.NoAction);

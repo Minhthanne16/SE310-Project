@@ -629,6 +629,19 @@ public sealed class SubmissionWorkflowTests : IDisposable
             inner.GetSubmittersAsync(userIds, cancellationToken);
         public Task AddReportAsync(TopicSubmission submission, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
             fail() ? throw new InvalidOperationException("database down") : inner.AddReportAsync(submission, history, cancellationToken);
+
+        public Task<IReadOnlyList<RevisionRequest>> ListRequestsAsync(Guid topicId, CancellationToken cancellationToken = default) =>
+            inner.ListRequestsAsync(topicId, cancellationToken);
+        public Task<IReadOnlyList<RevisionRequestLink>> ListLinksAsync(Guid topicId, CancellationToken cancellationToken = default) =>
+            inner.ListLinksAsync(topicId, cancellationToken);
+        public Task<RevisionRequest?> GetRequestAsync(Guid requestId, CancellationToken cancellationToken = default) =>
+            inner.GetRequestAsync(requestId, cancellationToken);
+        public Task AddRequestAsync(RevisionRequest request, TopicHistoryEntry history, IReadOnlyCollection<Notification> notifications, CancellationToken cancellationToken = default) =>
+            inner.AddRequestAsync(request, history, notifications, cancellationToken);
+        public Task<bool> ResolveRequestAsync(Guid requestId, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
+            inner.ResolveRequestAsync(requestId, actorId, now, history, cancellationToken);
+        public Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
+            inner.SaveCommentAsync(submissionId, comment, actorId, now, history, cancellationToken);
         public Task<bool> GrantThesisExtensionAsync(Guid topicId, DateOnly end, string reason, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
             inner.GrantThesisExtensionAsync(topicId, end, reason, actorId, now, history, cancellationToken);
         public Task<bool> LockThesisAsync(Guid topicId, Guid submissionId, Guid? actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>

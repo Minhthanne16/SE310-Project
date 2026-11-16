@@ -103,6 +103,7 @@ it('lists the round topics, filters on the client and keys loads by lecturer', a
 it('maps the history of one topic and turns 404 into TopicNotFoundError', async () => {
   const detail: TopicDetailDto = {
     ...dto(),
+    round: { id: 'r1', name: 'Đợt 1', status: 'Đang diễn ra' },
     submissions: [],
     history: [
       {
