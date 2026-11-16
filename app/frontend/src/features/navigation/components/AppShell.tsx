@@ -12,7 +12,6 @@ import {
   useSession,
 } from '@/features/auth/session/SessionProvider';
 import { findNavItem } from '@/features/navigation/menuConfig';
-import { initials } from '@/features/navigation/initials';
 import type { UserRole } from '@/types/auth';
 import { NotificationBell } from './NotificationBell';
 import { Sidebar } from './Sidebar';

@@ -9,8 +9,7 @@ Mỗi SV nhận bốn thành phần điểm độc lập; kết quả được t
 **Tham chiếu:** [BUSINESS_RULES — Chấm điểm](../requirements/BUSINESS_RULES.md), [ROLES](../product/ROLES.md), [PDR-006](../decisions/PDR-006-xac-nhan-diem-chu-tich-hoi-dong.md), [PDR-022](../decisions/PDR-022-dieu-kien-nhap-diem-phan-bien.md), [PDR-023](../decisions/PDR-023-khoa-thay-giang-vien-phan-bien-sau-phieu.md), [PDR-024](../decisions/PDR-024-mau-hoi-dong-chung-phieu-diem-rieng.md), [PDR-035](../decisions/PDR-035-cong-diem-tieu-chi-cap-cuoi.md), [DESIGN — Không gian đề tài GV](../DESIGN/03-dac-ta-man-hinh.md#không-gian-đề-tài-góc-nhìn-giảng-viên), R03/R05.
 
 **Công việc:**
-- [ ] Thiết kế phiếu theo SV, vai trò chấm, người nhập/người xác nhận và phiên bản mẫu; áp dụng PDR-006 cho điểm CTHĐ và PDR-024 cho hai phiếu hội đồng độc lập cùng mẫu.
-- [ ] Bổ sung luồng Chủ tịch trả lại có lý do → Thư ký sửa → trình Chủ tịch xác nhận lại; giữ lịch sử từng lần.
+- [ ] Thiết kế phiếu theo SV, vai trò chấm, người nhập và phiên bản mẫu; Thư ký nhập điểm CTHĐ và TKHĐ theo PDR-050 (thay PDR-006) và PDR-024 cho hai phiếu hội đồng độc lập cùng mẫu.
 - [ ] Triển khai nhập/sửa điểm HD, PB, CTHĐ, TKHĐ theo quyền ngữ cảnh; chỉ cho nhập điểm PB sau báo cáo cuối kỳ theo PDR-022, khóa thay PB từ phiếu đầu tiên theo PDR-023; tính tổng điểm cấp cuối theo PDR-035.
 - [ ] Khóa sửa khi đã xác nhận theo quyết định; ghi mọi lần thay đổi điểm.
 
@@ -20,9 +19,7 @@ Mỗi SV nhận bốn thành phần điểm độc lập; kết quả được t
 - [ ] Trên mỗi phiếu biết rõ ai chấm, ai nhập, thời điểm và bản mẫu dùng để chấm.
 - [ ] Với mỗi Sinh viên, phiếu CTHĐ và TKHĐ có thể có điểm khác nhau, tham chiếu cùng phiên bản mẫu hội đồng và không được gộp thành một phiếu.
 - [ ] Điểm phiếu bằng tổng điểm các tiêu chí cấp cuối đã chấm, trong khoảng 0–10; thiếu tiêu chí hoặc vượt mức làm phiếu chưa hợp lệ, tiêu chí cha không cộng trùng.
-- [ ] Chủ tịch xác nhận điểm CTHĐ của từng SV trước Giáo vụ; nếu Thư ký sửa điểm đó, xác nhận cũ mất hiệu lực; không thể coi im lặng là đã xác nhận.
-- [ ] Điểm CTHĐ bị trả lại giữ trạng thái chưa xác nhận; Giáo vụ không xác nhận kết quả cho SV đó; lý do và các lần trình lại tra cứu được.
-- [ ] Không tự khóa phiếu CTHĐ bị trả lại khi hết mốc cho điểm; việc cần xử lý còn hiển thị đến khi Chủ tịch xác nhận.
+- [ ] Thư ký nhập và sửa điểm CTHĐ, TKHĐ cho tới khi Giáo vụ xác nhận kết quả; Chủ tịch chỉ xem, không có thao tác xác nhận hay trả lại (PDR-050).
 
 **Verification:** Test ma trận bốn vai trò, một/hai SV, thiếu điểm, trả lại có/không lý do, sửa rồi xác nhận lại, sai hội đồng và truy vết.
 

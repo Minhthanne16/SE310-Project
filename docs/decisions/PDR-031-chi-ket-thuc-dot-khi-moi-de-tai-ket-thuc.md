@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28.
+Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28. Mở rộng 2026-11-03: `Không có nhóm` cũng là trạng thái kết thúc và `Bị từ chối` không tính là chưa kết thúc (mục 5 của [PDR-048](PDR-048-cong-bo-de-tai-o-chi-tiet-dot.md)).
 
 ## Bối cảnh
 

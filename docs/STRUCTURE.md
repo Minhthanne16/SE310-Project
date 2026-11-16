@@ -77,6 +77,7 @@ docs/
 │   ├── SCOPE.md
 │   └── VISION.md
 ├── plan/
+│   ├── MVP-COMPLETION-PLAN.md
 │   ├── README.md
 │   ├── REVIEW.md
 │   ├── phase-00-chot-nghiep-vu.md

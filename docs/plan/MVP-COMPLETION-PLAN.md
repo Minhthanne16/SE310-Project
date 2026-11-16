@@ -235,8 +235,8 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G7.1 — Bốn phiếu điểm và luồng Chủ tịch/Thư ký
 
-- [ ] Nhập HD, PB, CTHĐ, TKHĐ theo từng SV và quyền bối cảnh; ghi snapshot mẫu, người nhập/chấm/xác nhận và audit.
-- [ ] Xây trả lại có lý do → Thư ký sửa → trình lại → Chủ tịch xác nhận; không coi im lặng là xác nhận.
+- [ ] Nhập HD, PB, CTHĐ, TKHĐ theo từng SV và quyền bối cảnh; ghi snapshot mẫu, người nhập/chấm và audit.
+- [ ] Thư ký nhập điểm CTHĐ và TKHĐ; Chủ tịch chỉ xem, không có bước xác nhận hay trả lại (PDR-050, thay PDR-006).
 
 #### G7.2 — Công thức, cảnh báo và trạng thái từng SV
 

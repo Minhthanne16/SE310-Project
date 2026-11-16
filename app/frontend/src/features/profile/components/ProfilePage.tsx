@@ -18,6 +18,7 @@ import {
   profileService as defaultProfileService,
   type ProfileService,
 } from '@/features/profile/services/profileService';
+import { formatDateOrDash } from '@/lib/date';
 import type { CurrentUser } from '@/types/auth';
 import type { ProfileInput, UserProfile } from '@/types/profile';
 import '@/features/profile/profile.css';
@@ -25,12 +26,6 @@ import '@/features/profile/profile.css';
 interface ProfilePageProps {
   profileService?: ProfileService;
 }
-
-const formatDate = (iso: string | null): string => {
-  if (!iso) return '—';
-  const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
-};
 
 const formatDateTime = (iso: string): string =>
   new Date(iso).toLocaleString('vi-VN');
@@ -461,7 +456,7 @@ const ProfileContent: React.FC<{
                   <>
                     <Row label="Họ tên">{displayName}</Row>
                     <Row label="Ngày sinh">
-                      {formatDate(profile.dateOfBirth)}
+                      {formatDateOrDash(profile.dateOfBirth)}
                     </Row>
                     <Row label="Số điện thoại">{profile.phone || '—'}</Row>
                     <Row label="Email liên hệ phụ">

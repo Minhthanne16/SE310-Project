@@ -104,8 +104,6 @@ services:
       dockerfile: frontend/Dockerfile
       args:
         API_INTERNAL_URL: http://api:8080
-        # Màn đợt khóa luận lưu vào PostgreSQL qua /api/rounds; đặt false để quay về kho demo.
-        NEXT_PUBLIC_ROUNDS_API: ${NEXT_PUBLIC_ROUNDS_API:-true}
     depends_on:
       - api
     ports:

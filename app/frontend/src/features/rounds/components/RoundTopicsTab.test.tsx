@@ -9,8 +9,8 @@ import {
 import React, { useState } from 'react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { resetNavigation } from '@/test/navigationMock';
-import { createRoundService } from '@/features/rounds/services/roundService';
-import { createTopicService } from '@/features/topics/services/topicService';
+import { createRoundService } from '@/features/rounds/services/roundDemoService';
+import { createTopicService } from '@/features/topics/services/topicDemoService';
 import type { XlsxTable } from '@/lib/xlsx';
 import type { Round } from '@/types/round';
 import { RoundTopicsTab } from './RoundTopicsTab';

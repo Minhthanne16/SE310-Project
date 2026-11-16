@@ -8,7 +8,7 @@ import {
 } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { resetNavigation } from '@/test/navigationMock';
-import { createRoundService } from '@/features/rounds/services/roundService';
+import { createRoundService } from '@/features/rounds/services/roundDemoService';
 import {
   DuplicateTemplateNameError,
   TemplateInUseError,
