@@ -75,6 +75,7 @@ const kind = (
   noteRequired: false,
   canReview: false,
   canLock: false,
+  lockBlockedReason: null,
   extensionDeadline: '',
   extensionReason: null,
   waitingException: false,
@@ -376,6 +377,7 @@ it('shows the private extension and confirms the chosen thesis version', async (
     {
       ...thesis,
       canLock: false,
+      lockBlockedReason: null,
       versions: thesis.versions.map((v) => ({
         ...v,
         isFinal: v.id === 'thesis-1',
@@ -440,6 +442,23 @@ it('shows staff the pending decision without submitting on behalf of the group',
       'Lý do hợp lệ',
     ),
   );
+});
+
+it('explains why the thesis cannot be locked while final requests are open', async () => {
+  const thesis = kind({
+    kind: 'thesis',
+    name: 'Bản khóa luận',
+    canLock: false,
+    lockBlockedReason:
+      'Còn 1 yêu cầu chỉnh sửa của báo cáo cuối kỳ chưa được GVHD xác nhận hoàn tất nên chưa chốt được bản cuối.',
+    versions: [version({ id: 'thesis-1' })],
+  });
+  render(<SubmissionPanel topicId="t1" service={service(data([thesis]))} />);
+  const area = await section('Bản khóa luận');
+  expect(area.getByRole('note')).toHaveTextContent('Còn 1 yêu cầu chỉnh sửa');
+  expect(
+    area.queryByRole('button', { name: 'Chốt bản 1' }),
+  ).not.toBeInTheDocument();
 });
 
 it('describes deadlines and validates files', () => {

@@ -237,4 +237,41 @@ public sealed class SubmissionReviewWorkflowTests : IDisposable
         Assert.Contains(midterm.Requests[0].Id, v2Mid.AddressedRequestIds);
         Assert.DoesNotContain(final.Requests[0].Id, v2Mid.AddressedRequestIds);
     }
+
+    [Fact]
+    public async Task OpenFinalRequestBlocksThesisLockUntilSupervisorResolves()
+    {
+        var world = await RunningTopic();
+        await Send(new SubmitReportCommand(world.Students[0].Id, ViewerRole.Student, world.TopicId,
+            "final", "ck.pdf", SubmissionWorkflowTests.Pdf("ck"), "Bản 1"));
+        var created = await Send(new CreateSubmissionRevisionRequestCommand(world.Lecturer.Id, world.TopicId, "final", "Sửa kết luận"));
+        Assert.Equal(TopicResultStatus.Ok, created.Status);
+        var requestId = created.Response.Data!.Kinds.Single(k => k.Kind == "final").Requests[0].Id;
+
+        _clock.Set(new DateTimeOffset(2026, 10, 30, 3, 0, 0, TimeSpan.Zero));
+        var thesis = await Send(new SubmitReportCommand(world.Students[0].Id, ViewerRole.Student, world.TopicId,
+            "thesis", "kl.pdf", SubmissionWorkflowTests.Pdf("kl"), null));
+        Assert.Equal(TopicResultStatus.Created, thesis.Status);
+        var kind = thesis.Response.Data!.Kinds.Single(k => k.Kind == "thesis");
+        Assert.False(kind.CanLock);
+        Assert.Contains("1 yêu cầu", kind.LockBlockedReason);
+        var versionId = kind.Versions[0].Id;
+
+        // Nhóm không chốt được khi còn yêu cầu chỉnh sửa Cuối kỳ mở.
+        Assert.Equal(TopicResultStatus.Conflict,
+            (await Send(new LockThesisCommand(world.Students[0].Id, world.TopicId, versionId))).Status);
+
+        // GVHD xác nhận hoàn tất thì chốt được.
+        await Db(async db =>
+        {
+            await db.RevisionRequests.Where(r => r.Id == requestId).ExecuteUpdateAsync(set => set
+                .SetProperty(r => r.ResolvedAt, DateTime.UtcNow).SetProperty(r => r.ResolvedById, world.Lecturer.Id));
+        });
+        var after = await Send(new ListSubmissionsQuery(world.Students[0].Id, ViewerRole.Student, world.TopicId));
+        var unblocked = after.Response.Data!.Kinds.Single(k => k.Kind == "thesis");
+        Assert.True(unblocked.CanLock);
+        Assert.Null(unblocked.LockBlockedReason);
+        Assert.Equal(TopicResultStatus.Ok,
+            (await Send(new LockThesisCommand(world.Students[0].Id, world.TopicId, versionId))).Status);
+    }
 }

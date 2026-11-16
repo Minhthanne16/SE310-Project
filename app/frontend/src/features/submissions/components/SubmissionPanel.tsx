@@ -491,6 +491,12 @@ const KindSection: React.FC<KindSectionProps> = ({
         <p className="sub-banner">{kind.blockedReason}</p>
       ) : null}
 
+      {kind.lockBlockedReason ? (
+        <p className="sub-banner sub-banner-warn" role="note">
+          {kind.lockBlockedReason}
+        </p>
+      ) : null}
+
       {kind.versions.length === 0 ? (
         <p className="sub-empty">Chưa có bản nào được nộp.</p>
       ) : (

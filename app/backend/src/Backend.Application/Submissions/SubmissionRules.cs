@@ -80,6 +80,10 @@ public static class SubmissionRules
     public const string ContentTooLongMessage = "Nội dung yêu cầu tối đa 2000 ký tự.";
     public const string CommentTooLongMessage = "Nhận xét tối đa 2000 ký tự.";
 
+    // Chốt bản khóa luận chỉ được khi GVHD đã xác nhận hoàn tất mọi yêu cầu chỉnh sửa của Báo cáo cuối kỳ (PDR-060).
+    public static string OpenFinalRequestsMessage(int count) =>
+        $"Còn {count} yêu cầu chỉnh sửa của báo cáo cuối kỳ chưa được GVHD xác nhận hoàn tất nên chưa chốt được bản cuối.";
+
     public static string NoSubmissionOfKindMessage(SubmissionKind kind) =>
         $"Nhóm chưa nộp phiên bản {KindLabel(kind).ToLowerInvariant()} nào.";
 

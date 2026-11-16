@@ -48,6 +48,8 @@ public class SubmissionKindDto
     public bool NoteRequired { get; set; }
     public bool CanReview { get; set; }
     public bool CanLock { get; set; }
+    // Lý do chưa chốt được bản cuối (còn yêu cầu chỉnh sửa Cuối kỳ mở); null nếu không bị chặn vì lý do này.
+    public string? LockBlockedReason { get; set; }
     public string ExtensionDeadline { get; set; } = string.Empty;
     public string? ExtensionReason { get; set; }
     public bool WaitingException { get; set; }
@@ -172,6 +174,7 @@ internal static class SubmissionMapping
                 }).ToList();
 
             var isThesis = kind == SubmissionKind.Thesis;
+            var openFinalRequests = requests.Count(r => r.Kind == SubmissionKind.Final && r.ResolvedAt is null);
             var originalExpired = milestone?.EndDate is { } end && today > end;
             var waiting = isThesis && window == SubmissionWindow.Closed && versions.Count == 0 && context.Topic.FinalThesisSubmissionId is null &&
                 context.Topic.Status != TopicStatus.Ineligible && context.Topic.Status != TopicStatus.Completed;
@@ -194,7 +197,10 @@ internal static class SubmissionMapping
                 NoteRequired = SubmissionRules.NoteRequired(kind),
                 CanReview = canReview,
                 CanLock = isThesis && context.Access == SubmissionAccess.Member && versions.Count > 0 &&
-                    context.Topic.FinalThesisSubmissionId is null && blocker is null,
+                    context.Topic.FinalThesisSubmissionId is null && blocker is null && openFinalRequests == 0,
+                LockBlockedReason = isThesis && context.Access == SubmissionAccess.Member && versions.Count > 0 &&
+                    context.Topic.FinalThesisSubmissionId is null && blocker is null && openFinalRequests > 0
+                    ? SubmissionRules.OpenFinalRequestsMessage(openFinalRequests) : null,
                 ExtensionDeadline = isThesis ? RoundRules.FormatDate(context.Topic.ThesisExtensionEnd) : string.Empty,
                 ExtensionReason = isThesis ? context.Topic.ThesisExtensionReason : null,
                 WaitingException = waiting,

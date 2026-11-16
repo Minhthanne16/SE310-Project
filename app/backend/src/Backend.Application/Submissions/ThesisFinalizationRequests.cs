@@ -64,6 +64,10 @@ public sealed class ThesisFinalizationHandler(IRoundRepository rounds, ITopicRep
             return TopicResult<TopicSubmissionsDto>.Fail(TopicResultStatus.NotFound, SubmissionRules.NotFoundMessage);
         if (SubmissionRules.Blocker(context.Topic, context.Round, SubmissionKind.Thesis, Today) is { } blocker)
             return TopicResult<TopicSubmissionsDto>.Fail(TopicResultStatus.Conflict, blocker);
+        var openFinalRequests = (await submissions.ListRequestsAsync(request.TopicId, ct))
+            .Count(r => r.Kind == SubmissionKind.Final && r.ResolvedAt is null);
+        if (openFinalRequests > 0)
+            return TopicResult<TopicSubmissionsDto>.Fail(TopicResultStatus.Conflict, SubmissionRules.OpenFinalRequestsMessage(openFinalRequests));
         var version = await submissions.GetReportAsync(request.SubmissionId, ct);
         if (version is null || version.TopicId != request.TopicId || version.Kind != SubmissionKind.Thesis)
             return TopicResult<TopicSubmissionsDto>.Fail(TopicResultStatus.Invalid, "Chọn một phiên bản khóa luận của nhóm.");

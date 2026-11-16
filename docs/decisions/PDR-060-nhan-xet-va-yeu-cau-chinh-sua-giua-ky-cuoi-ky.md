@@ -30,7 +30,7 @@ Tuy nhiên, Báo cáo giữa kỳ và Cuối kỳ có sự khác biệt quan tr�
 - **Tạo yêu cầu không mở thêm hạn nộp**: Thời gian nộp vẫn tuân thủ cửa sổ nộp cấu hình của mốc đợt (PDR-041/058).
 - **Điều kiện chặn**:
   - Yêu cầu chỉnh sửa mở ở Giữa kỳ **không chặn** nộp cuối kỳ hay các bước tiếp theo.
-  - Yêu cầu chỉnh sửa mở ở Cuối kỳ **chặn hành động "Chốt bản cuối"** của nhóm sinh viên (Q2b): Nhóm chỉ chốt bản cuối được khi mọi yêu cầu chỉnh sửa của Báo cáo cuối kỳ đã được GVHD xác nhận hoàn tất.
+  - Yêu cầu chỉnh sửa mở ở Cuối kỳ **chặn hành động "Chốt bản cuối"** của nhóm sinh viên (Q2b): Nhóm chỉ chốt bản cuối được khi mọi yêu cầu chỉnh sửa của Báo cáo cuối kỳ đã được GVHD xác nhận hoàn tất. Hành động chốt là `POST /api/topics/{id}/thesis/lock` của [PDR-059](PDR-059-chot-ban-khoa-luan-cuoi.md): backend từ chối (409) khi còn yêu cầu mở; `SubmissionKindDto.CanLock` của bản `Thesis` là `false` và `LockBlockedReason` nêu số yêu cầu còn mở. Chốt tự động khi hết hạn vẫn chạy.
   - Hệ thống tự chốt bản cuối lúc hết hạn (PDR-011) vẫn hoạt động kể cả khi còn yêu cầu mở (ghi nhận lịch sử).
 
 ---

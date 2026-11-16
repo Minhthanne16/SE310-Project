@@ -40,6 +40,8 @@ export interface SubmissionKindState {
   noteRequired: boolean;
   canReview: boolean;
   canLock: boolean;
+  // Lý do chưa chốt được bản cuối: còn yêu cầu chỉnh sửa Cuối kỳ mở (PDR-060).
+  lockBlockedReason: string | null;
   extensionDeadline: string;
   extensionReason: string | null;
   waitingException: boolean;
