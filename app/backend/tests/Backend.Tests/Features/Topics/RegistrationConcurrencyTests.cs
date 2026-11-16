@@ -5,6 +5,7 @@ using Backend.Domain.Entities;
 using Backend.Domain.Interfaces;
 using Backend.Infrastructure.Data;
 using Backend.Infrastructure.Repositories.Rounds;
+using Backend.Infrastructure.Repositories.Submissions;
 using Backend.Infrastructure.Repositories.Topics;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -58,6 +59,7 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IOutlineRepository, OutlineRepository>();
+        services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         _provider = services.BuildServiceProvider();
 
         // Migration thật của ứng dụng (tạo database rồi áp dụng), để kiểm đúng tên chỉ mục duy nhất.

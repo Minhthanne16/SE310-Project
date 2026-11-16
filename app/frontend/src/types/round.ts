@@ -59,7 +59,7 @@ export const NOTIFY_AUDIENCES = ['Sinh viên', 'Giảng viên', 'Tất cả'] as
 export type NotifyAudience = (typeof NOTIFY_AUDIENCES)[number];
 
 // 9 mốc theo thứ tự trong 03-dac-ta-man-hinh.md. Dấu "·" nối các phần của MỘT
-// mốc. Chỉ ba mốc báo cáo có công tắc "Cho nộp trễ".
+// mốc. Ba mốc báo cáo và mốc khóa luận có công tắc "Cho nộp trễ".
 export const MILESTONE_DEFS: {
   key: MilestoneKey;
   name: string;
@@ -81,7 +81,7 @@ export const MILESTONE_DEFS: {
   {
     key: 'finalize',
     name: 'Chốt bản cuối · công bố',
-    hasLateToggle: false,
+    hasLateToggle: true,
   },
 ];
 
@@ -94,7 +94,7 @@ export interface Milestone {
   startDate: string;
   endDate: string;
   notifyAudience: NotifyAudience;
-  // Chỉ có ý nghĩa với Đề cương, Giữa kỳ, Cuối kỳ (mặc định true, theo
+  // Chỉ có ý nghĩa với Đề cương, Giữa kỳ, Cuối kỳ và Chốt bản cuối (mặc định true trừ Chốt bản cuối, theo
   // period_milestones.allow_late); null với các mốc còn lại.
   allowLate: boolean | null;
   // Hạn nộp trễ riêng của mốc (PDR-041), yyyy-MM-dd, sau endDate; rỗng hoặc

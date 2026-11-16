@@ -7,6 +7,7 @@ using Backend.Domain.Entities;
 using Backend.Domain.Interfaces;
 using Backend.Infrastructure.Data;
 using Backend.Infrastructure.Repositories.Rounds;
+using Backend.Infrastructure.Repositories.Submissions;
 using Backend.Infrastructure.Repositories.Topics;
 using MediatR;
 using Microsoft.Data.Sqlite;
@@ -43,6 +44,7 @@ public sealed class OutlineWorkflowTests : IDisposable
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IOutlineRepository, OutlineRepository>();
+        services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         services.AddSingleton<IDocumentStorage>(_files);
         _provider = services.BuildServiceProvider();
         using var scope = _provider.CreateScope();
@@ -112,7 +114,7 @@ public sealed class OutlineWorkflowTests : IDisposable
                 EndDate = start.AddDays(i * 7 + 5).ToString("yyyy-MM-dd"),
                 NotifyAudience = "Tất cả",
                 // Đề cương tắt nộp trễ; các mốc báo cáo bật nộp trễ và có hạn trễ riêng (PDR-041).
-                AllowLate = ThesisRound.HasLateToggle(key) ? key != MilestoneKey.Outline : null,
+                AllowLate = ThesisRound.HasLateToggle(key) ? key is not (MilestoneKey.Outline or MilestoneKey.Finalize) : null,
                 LateEndDate = key is MilestoneKey.Midterm or MilestoneKey.Final ? start.AddDays(i * 7 + 6).ToString("yyyy-MM-dd") : null
             }).ToList()
         };

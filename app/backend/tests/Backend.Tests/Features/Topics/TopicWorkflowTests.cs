@@ -5,6 +5,7 @@ using Backend.Domain.Entities;
 using Backend.Domain.Interfaces;
 using Backend.Infrastructure.Data;
 using Backend.Infrastructure.Repositories.Rounds;
+using Backend.Infrastructure.Repositories.Submissions;
 using Backend.Infrastructure.Repositories.Topics;
 using FluentValidation;
 using MediatR;
@@ -40,6 +41,7 @@ public sealed class TopicWorkflowTests : IDisposable
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IOutlineRepository, OutlineRepository>();
+        services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         _provider = services.BuildServiceProvider();
         using var scope = _provider.CreateScope();
         scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().Database.EnsureCreated();

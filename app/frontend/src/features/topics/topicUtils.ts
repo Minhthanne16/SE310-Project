@@ -215,11 +215,18 @@ export function thesisCell(topic: Topic): {
   sub: string;
   tone: ThesisTone;
 } {
-  const count = topic.submissions.length;
+  const count =
+    topic.thesisVersionCount ??
+    topic.submissions.filter(
+      (submission) => submission.kind === 'Bản khóa luận',
+    ).length;
   if (count === 0)
-    return { label: 'Chưa nộp', sub: 'Chưa có phiên bản', tone: 'none' };
-  const final =
-    topic.status === 'Đã hoàn tất' || topic.finalLockedVersionNo !== null;
+    return {
+      label: topic.thesisWaitingException ? 'Chờ ngoại lệ' : 'Chưa nộp',
+      sub: 'Chưa có bản khóa luận',
+      tone: 'none',
+    };
+  const final = topic.finalLockedVersionNo !== null;
   return {
     label: final ? 'Chốt bản cuối' : 'Đã nộp',
     sub: `${count} phiên bản`,
@@ -356,11 +363,10 @@ export function confirmResultBlocker(topic: Topic): string | null {
   }
 }
 
-// Lý do không công bố được: phải Đã xác nhận và nhóm đã chốt bản cuối hoặc đã
-// hết hạn chốt (finalLockClosed).
+// Lý do không công bố được: phải Đã xác nhận và có bản khóa luận đã chốt.
 export function publishResultBlocker(
   topic: Topic,
-  finalLockClosed: boolean,
+  _finalLockClosed: boolean,
 ): string | null {
   if (topic.status === 'Đã hoàn tất') return 'Đã công bố.';
   if (topic.status !== 'Đã xác nhận') {
@@ -369,9 +375,13 @@ export function publishResultBlocker(
       ? 'Chưa xác nhận kết quả. Xác nhận trước rồi mới công bố.'
       : `Chưa xác nhận kết quả. ${why}`;
   }
-  return topic.finalLockedVersionNo !== null || finalLockClosed
+  if (
+    !topic.submissions.some((submission) => submission.kind === 'Bản khóa luận')
+  )
+    return 'Nhóm chưa nộp bản khóa luận; chờ Giáo vụ xử lý ngoại lệ.';
+  return topic.finalLockedVersionNo !== null
     ? null
-    : 'Nhóm chưa chốt bản cuối và chưa hết hạn chốt.';
+    : 'Nhóm chưa có bản khóa luận cuối đã chốt.';
 }
 
 // Lý do không gửi nhắc được (null = gửi được): chỉ khi đủ điểm mà còn lệch.

@@ -4,6 +4,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>se310-backend-api-local</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

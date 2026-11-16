@@ -15,6 +15,9 @@ namespace Backend.API.Controllers.Submissions;
 [Authorize(Roles = $"{AppRoles.AcademicAffairs},{AppRoles.Lecturer},{AppRoles.Student}")]
 public sealed class SubmissionsController(ISender sender) : ControllerBase
 {
+    public sealed record ExtensionInput(string? EndDate, string? Reason);
+    public sealed record LockInput(Guid SubmissionId);
+    public sealed record IneligibleInput(string? Reason);
     // Phần đệm cho ranh giới multipart và các trường chữ; giới hạn tệp thật nằm ở SubmissionPolicy.
     private const long MaxRequestBytes = SubmissionPolicy.MaxBytes + 256 * 1024;
 
@@ -53,6 +56,21 @@ public sealed class SubmissionsController(ISender sender) : ControllerBase
         Response.Headers.ContentSecurityPolicy = "default-src 'none'; sandbox";
         return File(result.Response.Data!.Content, MediaTypeNames.Application.Pdf, result.Response.Data.FileName);
     }
+
+    [HttpPost("api/topics/{topicId:guid}/thesis/extension")]
+    [Authorize(Roles = AppRoles.AcademicAffairs)]
+    public async Task<ActionResult<ApiResponse<TopicSubmissionsDto>>> GrantExtension(Guid topicId, ExtensionInput input, CancellationToken ct) =>
+        ToAction(await sender.Send(new GrantThesisExtensionCommand(CurrentUserId, topicId, input.EndDate, input.Reason), ct));
+
+    [HttpPost("api/topics/{topicId:guid}/thesis/lock")]
+    [Authorize(Roles = AppRoles.Student)]
+    public async Task<ActionResult<ApiResponse<TopicSubmissionsDto>>> Lock(Guid topicId, LockInput input, CancellationToken ct) =>
+        ToAction(await sender.Send(new LockThesisCommand(CurrentUserId, topicId, input.SubmissionId), ct));
+
+    [HttpPost("api/topics/{topicId:guid}/thesis/ineligible")]
+    [Authorize(Roles = AppRoles.AcademicAffairs)]
+    public async Task<ActionResult<ApiResponse<TopicSubmissionsDto>>> MarkIneligible(Guid topicId, IneligibleInput input, CancellationToken ct) =>
+        ToAction(await sender.Send(new MarkThesisIneligibleCommand(CurrentUserId, topicId, input.Reason), ct));
 
     private Guid CurrentUserId => Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value);
 

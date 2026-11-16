@@ -611,8 +611,27 @@ namespace Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<DateTime?>("FinalThesisLockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("FinalThesisLockedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("FinalThesisSubmissionId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("GroupId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("IneligibleAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("IneligibleById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("IneligibleReason")
+                        .HasMaxLength(800)
+                        .HasColumnType("character varying(800)");
 
                     b.Property<int>("Number")
                         .HasColumnType("integer");
@@ -645,6 +664,19 @@ namespace Backend.Infrastructure.Data.Migrations
 
                     b.Property<Guid>("SupervisorId")
                         .HasColumnType("uuid");
+
+                    b.Property<DateOnly?>("ThesisExtensionEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("ThesisExtensionGrantedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ThesisExtensionGrantedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ThesisExtensionReason")
+                        .HasMaxLength(800)
+                        .HasColumnType("character varying(800)");
 
                     b.Property<string>("Title")
                         .IsRequired()

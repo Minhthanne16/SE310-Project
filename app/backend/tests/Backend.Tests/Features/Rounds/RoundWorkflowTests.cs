@@ -173,7 +173,7 @@ public sealed class RoundWorkflowTests : IDisposable
             Assert.Equal("", m.EndDate);
             Assert.Equal("Tất cả", m.NotifyAudience);
         });
-        Assert.Equal([null, null, true, true, true, null, null, null, null], round.Milestones.Select(m => m.AllowLate));
+        Assert.Equal([null, null, true, true, true, null, null, null, false], round.Milestones.Select(m => m.AllowLate));
         Assert.Equal("Đề cương", round.Milestones[2].Name);
         Assert.Empty(round.LecturerIds);
         Assert.Equal(12, round.TopicSummary.ByStatus.Count);

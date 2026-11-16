@@ -26,9 +26,9 @@ export function buildMilestones(dates: DatePair[]): Milestone[] {
     startDate: dates[index]?.[0] ?? '',
     endDate: dates[index]?.[1] ?? '',
     notifyAudience: 'Tất cả',
-    allowLate: def.hasLateToggle ? true : null,
+    allowLate: def.hasLateToggle ? def.key !== 'finalize' : null,
     // PDR-041: mốc bật nộp trễ có hạn trễ riêng, ở dữ liệu mẫu là 3 ngày sau hạn thường.
-    ...(def.hasLateToggle && dates[index]?.[1]
+    ...(def.hasLateToggle && def.key !== 'finalize' && dates[index]?.[1]
       ? { lateEndDate: addDays(dates[index]![1], 3) }
       : {}),
   }));

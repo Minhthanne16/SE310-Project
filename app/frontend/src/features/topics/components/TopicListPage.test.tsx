@@ -82,7 +82,7 @@ it('defaults to the first running round, 8 per page, with all columns', async ()
     .getByText('Hệ thống quản lý phòng khám nhỏ')
     .closest('tr')!;
   expect(within(free).getByText(/VB1-01 · Chưa có nhóm/)).toBeInTheDocument();
-  expect(within(free).getByText('Chưa có phiên bản')).toBeInTheDocument();
+  expect(within(free).getByText('Chưa có bản khóa luận')).toBeInTheDocument();
 
   fireEvent.click(screen.getByRole('button', { name: 'Trang sau' }));
   expect(screen.getByText(/Hiển thị 9–16 trên 18 đề tài/)).toBeInTheDocument();

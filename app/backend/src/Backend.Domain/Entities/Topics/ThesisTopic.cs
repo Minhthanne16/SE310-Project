@@ -50,6 +50,18 @@ public class ThesisTopic : BaseEntity
     public DateTime? OutlineApprovedAt { get; set; }
     public Guid? OutlineApprovedById { get; set; }
     public Guid? OutlineApprovedSubmissionId { get; set; }
+    // PDR-011: một hạn bổ sung cho đúng nhóm/đề tài, giữ cả khi đã hết hạn.
+    public DateOnly? ThesisExtensionEnd { get; set; }
+    public string? ThesisExtensionReason { get; set; }
+    public Guid? ThesisExtensionGrantedById { get; set; }
+    public DateTime? ThesisExtensionGrantedAt { get; set; }
+    // Con trỏ duy nhất tới phiên bản khóa luận đã chốt; null nghĩa là chưa có bản cuối.
+    public Guid? FinalThesisSubmissionId { get; set; }
+    public DateTime? FinalThesisLockedAt { get; set; }
+    public Guid? FinalThesisLockedById { get; set; }
+    public string? IneligibleReason { get; set; }
+    public DateTime? IneligibleAt { get; set; }
+    public Guid? IneligibleById { get; set; }
     public List<TopicHistoryEntry> History { get; set; } = [];
 
     public string Code => $"DT-{Number:000}";

@@ -174,10 +174,10 @@ it('validates milestone order live and saves a valid configuration', async () =>
   });
 });
 
-it('only offers the late switch for the three report milestones', async () => {
+it('offers the late switch for the three reports and thesis milestone', async () => {
   await renderDetail();
   tab('Cấu hình');
-  expect(screen.getAllByRole('switch')).toHaveLength(3);
+  expect(screen.getAllByRole('switch')).toHaveLength(4);
   expect(
     screen.getByRole('switch', { name: 'Cho nộp trễ Đề cương' }),
   ).toBeChecked();
@@ -188,8 +188,44 @@ it('only offers the late switch for the three report milestones', async () => {
     screen.getByRole('switch', { name: 'Cho nộp trễ Báo cáo cuối kỳ' }),
   ).toBeChecked();
   expect(
+    screen.getByRole('switch', { name: 'Cho nộp trễ Chốt bản cuối · công bố' }),
+  ).not.toBeChecked();
+  expect(
     screen.getByText('Chỉ để nhắc, không khóa phiếu chấm.'),
   ).toBeInTheDocument();
+});
+
+it('configures a separate thesis late deadline and explains group priority', async () => {
+  const service = await renderDetail();
+  tab('Cấu hình');
+  expect(
+    screen.getByText(
+      'Bản khóa luận; hạn bổ sung riêng của nhóm ưu tiên hạn trễ chung.',
+    ),
+  ).toBeInTheDocument();
+  const before = await service.get('r-vb1-hk1');
+  const finalReport = before.milestones.find((m) => m.key === 'final');
+  const thesisSwitch = screen.getByRole('switch', {
+    name: 'Cho nộp trễ Chốt bản cuối · công bố',
+  });
+  fireEvent.click(thesisSwitch);
+  fireEvent.change(
+    screen.getByLabelText('Hạn nộp trễ Chốt bản cuối · công bố'),
+    { target: { value: '2027-01-18' } },
+  );
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Lưu và thông báo thay đổi' }),
+  );
+  await waitFor(async () => {
+    const saved = await service.get('r-vb1-hk1');
+    expect(saved.milestones.find((m) => m.key === 'finalize')).toMatchObject({
+      allowLate: true,
+      lateEndDate: '2027-01-18',
+    });
+    expect(saved.milestones.find((m) => m.key === 'final')).toEqual(
+      finalReport,
+    );
+  });
 });
 
 it('adds students by code and shows mixed check results before adding', async () => {

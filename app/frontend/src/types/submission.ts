@@ -1,6 +1,6 @@
 // Hợp đồng của GET|POST /api/topics/{id}/submissions (PDR-056). Tệp nằm trong
 // object storage riêng tư của backend; frontend chỉ nhận đường dẫn API.
-export type SubmissionKind = 'midterm' | 'final';
+export type SubmissionKind = 'midterm' | 'final' | 'thesis';
 export type SubmissionWindow = 'onTime' | 'late' | 'closed';
 
 export interface SubmissionVersion {
@@ -14,6 +14,7 @@ export interface SubmissionVersion {
   submittedBy: { id: string; code: string; name: string };
   isLate: boolean;
   isLatest: boolean;
+  isFinal: boolean;
   // /api/submissions/{id}/file, có kiểm tra quyền ở backend.
   downloadUrl: string;
 }
@@ -31,6 +32,13 @@ export interface SubmissionKindState {
   canSubmit: boolean;
   blockedReason: string | null;
   noteRequired: boolean;
+  canLock: boolean;
+  extensionDeadline: string;
+  extensionReason: string | null;
+  waitingException: boolean;
+  canGrantExtension: boolean;
+  canMarkIneligible: boolean;
+  ineligibleReason: string | null;
   // Mới nhất trước.
   versions: SubmissionVersion[];
 }
