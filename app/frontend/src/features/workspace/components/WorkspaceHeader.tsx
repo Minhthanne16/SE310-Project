@@ -23,6 +23,7 @@ const BACK_LINKS: Record<
   member: { href: () => '/sv/de-tai', label: 'Đề tài của tôi' },
   supervisor: { href: () => '/gv/huong-dan', label: 'Nhóm hướng dẫn' },
   reviewer: { href: () => '/gv/phan-bien', label: 'Đề tài phản biện' },
+  council: { href: () => '/gv/hoi-dong', label: 'Hội đồng bảo vệ' },
   staff: {
     href: (id) => `/giao-vu/de-tai/${encodeURIComponent(id)}`,
     label: 'Chi tiết đề tài',

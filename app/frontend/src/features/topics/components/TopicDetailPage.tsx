@@ -67,6 +67,7 @@ const CATEGORY_CLASS: Record<HistoryCategory, string> = {
   Nhóm: 'tpc-cat-group',
   'Bài nộp': '',
   'Phân công': 'tpc-cat-assign',
+  'Lịch bảo vệ': 'tpc-cat-assign',
   Điểm: 'tpc-cat-score',
 };
 

@@ -4,7 +4,8 @@ import React from 'react';
 import { initials } from '@/features/navigation/initials';
 import type { WorkspaceTabKey } from '@/features/workspace/components/WorkspaceTabs';
 import type { OutlineViewerRole } from '@/types/outline';
-import type { TopicDefense, TopicDetailDto, TopicPerson } from '@/types/topic';
+import { formatDefenseStart } from '@/features/topics/topicUtils';
+import type { TopicDetailDto, TopicPerson } from '@/types/topic';
 
 interface WorkspaceAsideProps {
   topic: TopicDetailDto;
@@ -22,8 +23,7 @@ export const WorkspaceAside: React.FC<WorkspaceAsideProps> = ({
     viewerRole === 'supervisor' ? 'Hướng dẫn · bạn' : 'Hướng dẫn';
   const reviewer = (topic as unknown as { reviewer?: TopicPerson | null })
     .reviewer;
-  const defense = (topic as unknown as { defense?: TopicDefense | null })
-    .defense;
+  const defense = topic.defense ?? null;
 
   return (
     <aside
@@ -129,7 +129,13 @@ export const WorkspaceAside: React.FC<WorkspaceAsideProps> = ({
         <h2 className="wsp-aside-heading">HỘI ĐỒNG · LỊCH BẢO VỆ</h2>
         {defense ? (
           <div className="wsp-defense-info">
-            <div className="wsp-defense-name">{defense.council}</div>
+            <div className="wsp-defense-name">
+              {defense.council}
+              {!defense.councilPublished && ' · Nháp (chưa công bố)'}
+            </div>
+            <div className="wsp-aside-note">
+              {`${formatDefenseStart(defense.start)}${defense.end ? `–${defense.end.slice(11, 16)}` : ''}`}
+            </div>
             <div className="wsp-aside-note">
               {defense.chair && `Chủ tịch: ${defense.chair}`}
               {defense.secretary && ` · Thư ký: ${defense.secretary}`}
@@ -140,6 +146,15 @@ export const WorkspaceAside: React.FC<WorkspaceAsideProps> = ({
                 {defense.order ? ` · Thứ tự: ${defense.order}` : ''}
               </div>
             )}
+            {(defense.corrections ?? []).map((c) => (
+              <div
+                key={`${c.at}-${c.content}`}
+                role="note"
+                className="wsp-aside-note"
+              >
+                {`Đính chính: ${c.content}${c.reason ? ` (${c.reason})` : ''}`}
+              </div>
+            ))}
           </div>
         ) : (
           <>
