@@ -27,9 +27,8 @@ const enc = encodeURIComponent;
 // Khai báo hàm (không phải const) vì roundService.ts và file này import nhau:
 // roundService gọi createApiRoundService khi nạp module.
 function localToday(): string {
-  const d = new Date();
-  const p = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  // Cùng múi giờ UTC+7 với RoundRules.TodayVietnam ở backend.
+  return new Date(Date.now() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
 // Tính khi gọi (không ở mức module) vì roundService.ts và file này import nhau.
@@ -70,7 +69,9 @@ async function call<T>(
 // đặt ứng dụng dùng, xem roundService.ts.
 export function createApiRoundService(): RoundService {
   const service: RoundService = {
-    today: localToday(),
+    get today() {
+      return localToday();
+    },
 
     list(filters: RoundFilters = {}) {
       const params: string[] = [];
