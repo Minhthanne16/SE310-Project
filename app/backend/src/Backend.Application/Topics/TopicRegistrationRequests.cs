@@ -103,8 +103,14 @@ public sealed class RegisterTopicHandler(
             }
             if (partners.Count > 0 &&
                 (await groups.GetGroupedStudentIdsAsync(round.Id, partners.Select(p => p.Id).ToList(), cancellationToken)) is { Count: > 0 } grouped)
+            {
+                // Bấm đúp ghi danh hai đề tài: request kia của chính người này vừa tạo nhóm (gồm cả thành viên) giữa hai lần
+                // đọc. Đó là xung đột của cùng nhóm (409), không phải lỗi nhập mã thành viên (400).
+                if (await groups.GetByStudentAsync(round.Id, me, cancellationToken) is not null)
+                    return Fail(TopicResultStatus.Conflict, TopicRules.GroupHasTopicMessage);
                 return Fail(TopicResultStatus.Invalid,
                     $"Sinh viên {partners.First(p => grouped.Contains(p.Id)).UserCode} đã có nhóm trong đợt.");
+            }
 
             group = new ThesisGroup { RoundId = round.Id, RepresentativeId = me, CreatedAt = now };
             foreach (var studentId in partners.Select(p => p.Id).Prepend(me))
