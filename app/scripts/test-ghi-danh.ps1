@@ -59,7 +59,7 @@ try {
 
     $env:QLKLTN_TEST_POSTGRES = "Host=127.0.0.1;Port=$Port;Username=postgres;Password=$password"
 
-    $filter = 'FullyQualifiedName~Backend.Tests.GroupRegistrationTests|FullyQualifiedName~Backend.Tests.RegistrationConcurrencyTests|FullyQualifiedName~Backend.Tests.TopicApiTests|FullyQualifiedName~Backend.Tests.TopicWorkflowTests'
+    $filter = 'FullyQualifiedName~Backend.Tests.GroupRegistrationTests|FullyQualifiedName~Backend.Tests.RegistrationConcurrencyTests|FullyQualifiedName~Backend.Tests.TopicApiTests|FullyQualifiedName~Backend.Tests.TopicWorkflowTests|FullyQualifiedName~Backend.Tests.Council'
     Push-Location (Join-Path $appDir 'backend')
     try {
         Invoke-Step 'Backend: restore' { dotnet restore Backend.sln --locked-mode --verbosity quiet }
