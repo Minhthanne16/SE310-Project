@@ -173,6 +173,8 @@ public class TopicDetailDto : TopicDto
     public List<TopicHistoryDto> History { get; set; } = [];
     // Phiên bản bài nộp (hiện có Đề cương), cũ trước, cho Giáo vụ/GVHD/thành viên nhóm.
     public List<SubmissionSummaryDto> Submissions { get; set; } = [];
+    // Lịch bảo vệ có hiệu lực (P06): người liên quan thấy khi đã công bố; Giáo vụ thấy cả lịch Nháp. null = chưa xếp.
+    public Backend.Application.Councils.TopicDefenseDto? Defense { get; set; }
 }
 
 public class SubmissionSummaryDto

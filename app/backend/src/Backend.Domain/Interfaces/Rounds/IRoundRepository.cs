@@ -30,6 +30,8 @@ public interface IRoundRepository
     Task<IReadOnlyList<User>> GetActiveUsersByCodesOrEmailsAsync(UserRole role, IReadOnlyCollection<string> codes, CancellationToken cancellationToken = default);
     // Trong các sinh viên đã cho, những ai đang ở đợt Đang diễn ra khác đợt exceptRoundId.
     Task<IReadOnlyList<RoundConflict>> FindRunningRoundConflictsAsync(Guid exceptRoundId, IReadOnlyCollection<Guid> studentIds, CancellationToken cancellationToken = default);
+    // Giảng viên là Chủ tịch/Thư ký của hội đồng chưa hủy trong đợt (PDR-030: không gỡ khỏi đợt).
+    Task<bool> IsCouncilMemberAsync(Guid roundId, Guid lecturerId, CancellationToken cancellationToken = default);
 }
 
 public sealed class DuplicateRoundNameException(Exception? inner = null)

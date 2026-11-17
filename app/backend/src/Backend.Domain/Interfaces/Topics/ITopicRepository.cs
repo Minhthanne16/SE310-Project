@@ -20,4 +20,8 @@ public interface ITopicRepository
     Task<bool> TransitionPendingProposalAsync(Guid topicId, TopicStatus nextStatus, DateTime now,
         TopicHistoryEntry history, CancellationToken cancellationToken = default);
     Task<IReadOnlyDictionary<Guid, string>> GetUserNamesAsync(IReadOnlyCollection<Guid> userIds, CancellationToken cancellationToken = default);
+    // Lượt bảo vệ có hiệu lực của đề tài (PDR-016) kèm hội đồng, Chủ tịch, Thư ký; null khi chưa xếp hoặc hội đồng đã hủy.
+    Task<DefenseSlot?> GetActiveDefenseAsync(Guid topicId, CancellationToken cancellationToken = default);
+    // Đính chính của hội đồng (PDR-018), cũ trước.
+    Task<IReadOnlyList<DefenseCouncilLog>> ListDefenseCorrectionsAsync(Guid councilId, CancellationToken cancellationToken = default);
 }

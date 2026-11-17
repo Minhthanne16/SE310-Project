@@ -94,6 +94,10 @@ public class RoundRepository(ApplicationDbContext context) : IRoundRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<bool> IsCouncilMemberAsync(Guid roundId, Guid lecturerId, CancellationToken cancellationToken = default) =>
+        context.DefenseCouncils.AnyAsync(c => c.RoundId == roundId && c.Status != CouncilStatus.Cancelled
+            && (c.ChairId == lecturerId || c.SecretaryId == lecturerId), cancellationToken);
+
     private static bool IsDuplicateName(DbUpdateException ex) =>
         ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: { } name }
         && name.Contains("NormalizedName", StringComparison.Ordinal);

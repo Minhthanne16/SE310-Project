@@ -98,4 +98,15 @@ public class TopicRepository(ApplicationDbContext context) : ITopicRepository
         return await context.Users.AsNoTracking().Where(u => userIds.Contains(u.Id))
             .ToDictionaryAsync(u => u.Id, u => u.FullName, cancellationToken);
     }
+
+    public Task<DefenseSlot?> GetActiveDefenseAsync(Guid topicId, CancellationToken cancellationToken = default) =>
+        context.DefenseSlots.AsNoTracking()
+            .Include(s => s.Council).ThenInclude(c => c!.Chair)
+            .Include(s => s.Council).ThenInclude(c => c!.Secretary)
+            .FirstOrDefaultAsync(s => s.TopicId == topicId && s.Status == DefenseSlotStatus.Active, cancellationToken);
+
+    public async Task<IReadOnlyList<DefenseCouncilLog>> ListDefenseCorrectionsAsync(Guid councilId, CancellationToken cancellationToken = default) =>
+        await context.DefenseCouncilLogs.AsNoTracking()
+            .Where(l => l.CouncilId == councilId && l.Action == DefenseCouncilActions.Correction)
+            .OrderBy(l => l.CreatedAt).ToListAsync(cancellationToken);
 }

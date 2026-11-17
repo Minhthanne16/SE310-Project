@@ -591,6 +591,10 @@ public sealed class RemoveParticipantHandler(IRoundRepository repository, TimePr
         if (kind == ParticipantKind.Lecturer && round.Topics.Any(t => t.ReviewerId == request.UserId))
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
                 "Giảng viên đang phản biện đề tài trong đợt nên không gỡ được khỏi đợt.");
+        // PDR-030, PDR-063: GV là Chủ tịch/Thư ký của hội đồng chưa hủy trong đợt cũng không gỡ được.
+        if (kind == ParticipantKind.Lecturer && await repository.IsCouncilMemberAsync(round.Id, request.UserId, cancellationToken))
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
+                "Giảng viên đang thuộc hội đồng bảo vệ trong đợt nên không gỡ được khỏi đợt.");
         if (kind == ParticipantKind.Student && round.GroupMembers.Any(m => m.StudentId == request.UserId))
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
                 "Sinh viên đã có nhóm trong đợt nên không gỡ được khỏi đợt.");

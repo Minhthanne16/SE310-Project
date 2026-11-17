@@ -92,4 +92,6 @@ public static class TopicHistoryCategories
     public const string Group = "Nhóm";
     public const string Submission = "Bài nộp";
     public const string Assignment = "Phân công";
+    // Công bố, đổi, hủy, đính chính lịch bảo vệ (P06, PDR-063).
+    public const string Defense = "Lịch bảo vệ";
 }

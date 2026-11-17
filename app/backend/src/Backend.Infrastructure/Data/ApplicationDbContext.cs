@@ -31,6 +31,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<RevisionRequestLink> RevisionRequestLinks => Set<RevisionRequestLink>();
     public DbSet<PasswordResetRequest> PasswordResetRequests => Set<PasswordResetRequest>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<DefenseCouncil> DefenseCouncils => Set<DefenseCouncil>();
+    public DbSet<DefenseSlot> DefenseSlots => Set<DefenseSlot>();
+    public DbSet<DefenseCouncilLog> DefenseCouncilLogs => Set<DefenseCouncilLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -256,6 +259,53 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Action).IsRequired().HasMaxLength(100);
             entity.Property(e => e.Detail).HasMaxLength(8000);
             entity.HasIndex(e => new { e.TopicId, e.CreatedAt });
+        });
+
+        // Hội đồng và lịch bảo vệ (P06, PDR-014–020, PDR-063).
+        modelBuilder.Entity<DefenseCouncil>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Room).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.NormalizedRoom).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.CancelReason).HasMaxLength(800);
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(16);
+            entity.HasIndex(e => e.RoundId);
+            // Kiểm trùng phòng/giảng viên theo ngày, kể cả giữa các đợt (PDR-014/015).
+            entity.HasIndex(e => e.DefenseDate);
+            entity.HasOne<ThesisRound>().WithMany().HasForeignKey(e => e.RoundId).OnDelete(DeleteBehavior.Cascade);
+            // Thành viên hội đồng là tài khoản có phân công nên chỉ được vô hiệu hóa, không xóa.
+            entity.HasOne(e => e.Chair).WithMany().HasForeignKey(e => e.ChairId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.Secretary).WithMany().HasForeignKey(e => e.SecretaryId).OnDelete(DeleteBehavior.Restrict);
+            // Một giảng viên chỉ giữ một vai trò trong cùng hội đồng (ROLES).
+            entity.ToTable(t => t.HasCheckConstraint("CK_DefenseCouncils_ChairNotSecretary", "\"ChairId\" <> \"SecretaryId\""));
+            entity.HasMany(e => e.Slots).WithOne(s => s.Council).HasForeignKey(s => s.CouncilId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DefenseSlot>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(16);
+            // PDR-016: mỗi đề tài tối đa một lượt có hiệu lực, kể cả khi hai Giáo vụ xếp đồng thời.
+            entity.HasIndex(e => e.TopicId).HasDatabaseName("IX_DefenseSlots_ActiveTopic")
+                .HasFilter("\"Status\" = 'Active'").IsUnique();
+            entity.HasIndex(e => new { e.CouncilId, e.Order });
+            entity.HasOne(e => e.Topic).WithMany().HasForeignKey(e => e.TopicId).OnDelete(DeleteBehavior.Cascade);
+            // Giờ kết thúc phải sau giờ bắt đầu (PDR-017).
+            entity.ToTable(t => t.HasCheckConstraint("CK_DefenseSlots_EndAfterStart", "\"EndTime\" > \"StartTime\""));
+        });
+
+        modelBuilder.Entity<DefenseCouncilLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).ValueGeneratedNever();
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.Reason).HasMaxLength(800);
+            entity.Property(e => e.Detail).HasMaxLength(8000);
+            entity.HasIndex(e => new { e.CouncilId, e.CreatedAt });
+            entity.HasOne<DefenseCouncil>().WithMany().HasForeignKey(e => e.CouncilId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<PasswordResetToken>(entity =>

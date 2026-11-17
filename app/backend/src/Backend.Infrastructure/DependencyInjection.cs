@@ -3,6 +3,7 @@ using Backend.Application.Common.Security;
 using Backend.Application.Common.Storage;
 using Backend.Domain.Interfaces;
 using Backend.Infrastructure.Data;
+using Backend.Infrastructure.Repositories.Councils;
 using Backend.Infrastructure.Repositories.Evaluations;
 using Backend.Infrastructure.Repositories.Notifications;
 using Backend.Infrastructure.Repositories.Products;
@@ -41,6 +42,7 @@ public static class DependencyInjection
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IOutlineRepository, OutlineRepository>();
         services.AddScoped<IReviewerRepository, ReviewerRepository>();
+        services.AddScoped<ICouncilRepository, CouncilRepository>();
         services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
