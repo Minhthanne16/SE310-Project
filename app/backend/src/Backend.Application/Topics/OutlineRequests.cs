@@ -292,7 +292,7 @@ public sealed class SubmitOutlineHandler(ITopicRepository topics, IRoundReposito
         (OutlineWriteOutcome Outcome, TopicSubmission Submission, int LinkedRequests) saved;
         try
         {
-            saved = await outlines.AddSubmissionAsync(submission, history, [notice], cancellationToken);
+            saved = await outlines.AddSubmissionAsync(submission, topic.GroupId!.Value, history, [notice], cancellationToken);
         }
         catch
         {
@@ -302,7 +302,8 @@ public sealed class SubmitOutlineHandler(ITopicRepository topics, IRoundReposito
         if (saved.Outcome != OutlineWriteOutcome.Done)
         {
             await DeleteQuietly(objectKey);
-            return Fail(TopicResultStatus.Conflict, OutlineRules.AlreadyApprovedMessage);
+            return Fail(TopicResultStatus.Conflict, saved.Outcome == OutlineWriteOutcome.NoGroup
+                ? OutlineRules.NotWorkingMessage : OutlineRules.AlreadyApprovedMessage);
         }
 
         var dto = await OutlineAccess.BuildAsync(context, outlines, topics, today, cancellationToken);

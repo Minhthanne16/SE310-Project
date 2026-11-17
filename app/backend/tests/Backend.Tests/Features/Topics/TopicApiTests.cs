@@ -31,6 +31,81 @@ public sealed class TopicApiTests : IClassFixture<TopicApiTests.Factory>
     private sealed record Account(string Cookie, Guid Id, string Code, string Email);
 
     [Fact]
+    public async Task StatisticsAndAllExportsRequireAcademicAffairsOverHttp()
+    {
+        var staff = await Login(UserRole.AcademicAffairs);
+        var lecturer = await Login(UserRole.Lecturer);
+        var student = await Login(UserRole.Student);
+        var roundId = await RunningRound(staff, [lecturer.Code], [student.Code]);
+
+        foreach (var suffix in new[] { "", "/topics.csv", "/registrations.csv", "/grades.csv" })
+        {
+            var url = $"/api/statistics/{roundId}{suffix}";
+            Assert.Equal(HttpStatusCode.Unauthorized, (await Send(HttpMethod.Get, url, null)).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Get, url, student)).StatusCode);
+            Assert.Equal(HttpStatusCode.Forbidden, (await Send(HttpMethod.Get, url, lecturer)).StatusCode);
+        }
+
+        var snapshot = (await ReadJson(await Send(HttpMethod.Get, $"/api/statistics/{roundId}", staff)))
+            .GetProperty("data");
+        Assert.Empty(snapshot.GetProperty("items").EnumerateArray());
+        Assert.Equal(1, snapshot.GetProperty("students").GetArrayLength());
+        Assert.Equal(1, snapshot.GetProperty("loads").GetArrayLength());
+        Assert.False(snapshot.GetProperty("gradesAvailable").GetBoolean());
+        Assert.Equal(HttpStatusCode.Conflict,
+            (await Send(HttpMethod.Get, $"/api/statistics/{roundId}/grades.csv", staff)).StatusCode);
+    }
+
+    [Fact]
+    public async Task StatisticsTotalsAndCsvMatchPersistedGroupsAndFilters()
+    {
+        var staff = await Login(UserRole.AcademicAffairs);
+        var lecturer = await Login(UserRole.Lecturer);
+        var rep = await Login(UserRole.Student);
+        var partner = await Login(UserRole.Student);
+        var unassigned = await Login(UserRole.Student);
+        var roundId = await RunningRound(staff, [lecturer.Code], [rep.Code, partner.Code, unassigned.Code]);
+        var first = (await ReadJson(await Send(HttpMethod.Post, "/api/topics", lecturer,
+            NewTopic(roundId, title: "Đề tài nhóm hai SV")))).GetProperty("data").GetProperty("id").GetGuid();
+        Assert.Equal(HttpStatusCode.Created, (await Send(HttpMethod.Post, "/api/topics", lecturer,
+            NewTopic(roundId, title: "Đề tài chưa đăng ký"))).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await Send(HttpMethod.Post, $"/api/rounds/{roundId}/topics/publish", staff)).StatusCode);
+        Assert.Equal(HttpStatusCode.OK,
+            (await Send(HttpMethod.Post, $"/api/topics/{first}/registration", rep,
+                new { memberCodes = new[] { partner.Code } })).StatusCode);
+
+        var payload = (await ReadJson(await Send(HttpMethod.Get, $"/api/statistics/{roundId}", staff)))
+            .GetProperty("data");
+        var items = payload.GetProperty("items").EnumerateArray().ToList();
+        Assert.Equal(2, items.Count);
+        Assert.Equal(3, payload.GetProperty("students").GetArrayLength());
+        Assert.Equal(2, payload.GetProperty("loads")[0].GetProperty("count").GetInt32());
+        var grouped = Assert.Single(items, item => item.GetProperty("topic").GetProperty("id").GetGuid() == first);
+        Assert.Equal(2, grouped.GetProperty("topic").GetProperty("group").GetArrayLength());
+        Assert.True(grouped.GetProperty("stages")[0].GetBoolean());
+        Assert.Equal(1, items.Count(item => item.GetProperty("stages")[0].GetBoolean()));
+
+        var status = grouped.GetProperty("topic").GetProperty("status").GetString()!;
+        var filteredCsv = await Send(HttpMethod.Get,
+            $"/api/statistics/{roundId}/topics.csv?status={Uri.EscapeDataString(status)}&search={Uri.EscapeDataString("nhóm hai")}", staff);
+        Assert.Equal(HttpStatusCode.OK, filteredCsv.StatusCode);
+        var csv = await filteredCsv.Content.ReadAsStringAsync();
+        Assert.Equal(2, csv.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.Contains("Đề tài nhóm hai SV", csv);
+        Assert.DoesNotContain("Đề tài chưa đăng ký", csv);
+
+        var registrations = await Send(HttpMethod.Get, $"/api/statistics/{roundId}/registrations.csv", staff);
+        Assert.Equal(HttpStatusCode.OK, registrations.StatusCode);
+        var registrationCsv = await registrations.Content.ReadAsStringAsync();
+        Assert.Equal(4, registrationCsv.Split('\n', StringSplitOptions.RemoveEmptyEntries).Length);
+        Assert.Contains(rep.Code, registrationCsv);
+        Assert.Contains(partner.Code, registrationCsv);
+        Assert.Contains($"{unassigned.Code},", registrationCsv);
+        Assert.Contains("Chưa có đề tài", registrationCsv);
+    }
+
+    [Fact]
     public async Task ThesisDecisionsRequireTheCorrectRoleOverHttp()
     {
         var staff = await Login(UserRole.AcademicAffairs);

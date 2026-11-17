@@ -204,7 +204,7 @@ internal static class SubmissionMapping
                 ExtensionDeadline = isThesis ? RoundRules.FormatDate(context.Topic.ThesisExtensionEnd) : string.Empty,
                 ExtensionReason = isThesis ? context.Topic.ThesisExtensionReason : null,
                 WaitingException = waiting,
-                CanGrantExtension = isThesis && originalExpired && versions.Count == 0 &&
+                CanGrantExtension = isThesis && originalExpired && versions.Count == 0 && context.Topic.GroupId is not null &&
                     context.Role == ViewerRole.AcademicAffairs && context.Topic.ThesisExtensionEnd is null &&
                     context.Topic.Status is not (TopicStatus.Ineligible or TopicStatus.Completed),
                 CanMarkIneligible = waiting && context.Role == ViewerRole.AcademicAffairs &&
@@ -402,7 +402,12 @@ public sealed class CommentSubmissionHandler(ITopicRepository topics, IRoundRepo
         var label = SubmissionRules.KindLabel(submission.Kind).ToLowerInvariant();
         var history = TopicMapping.History(context.Topic, request.LecturerId, TopicHistoryCategories.Submission,
             $"Nhận xét {label} lần {submission.VersionNo}", now, comment);
-        await Submissions.SaveCommentAsync(submission.Id, comment, request.LecturerId, now, history, cancellationToken);
+        var group = context.Topic.GroupId is { } groupId ? (await Groups.GetGroupsAsync([groupId], cancellationToken)).GetValueOrDefault(groupId) : null;
+        var batch = Guid.NewGuid();
+        var notices = (group?.Members ?? []).Select(m => SubmissionMapping.Notify(m.StudentId, request.LecturerId, NotificationKinds.Comment,
+            $"GVHD đã nhận xét {label} lần {submission.VersionNo} của đề tài {context.Topic.Code}: {comment ?? "Đã xóa nhận xét"}",
+            context.Topic.Id, batch, now)).ToList();
+        await Submissions.SaveCommentAsync(submission.Id, comment, request.LecturerId, now, history, notices, cancellationToken);
         return await OkAsync(context, "Đã lưu nhận xét", cancellationToken);
     }
 }

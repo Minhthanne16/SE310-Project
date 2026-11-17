@@ -125,7 +125,8 @@ public class SubmissionRepository(ApplicationDbContext context) : ISubmissionRep
         return true;
     }
 
-    public async Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default)
+    public async Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history,
+        IReadOnlyCollection<Notification> notifications, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
         await context.TopicSubmissions
@@ -135,6 +136,7 @@ public class SubmissionRepository(ApplicationDbContext context) : ISubmissionRep
                 .SetProperty(x => x.ReviewedById, actorId)
                 .SetProperty(x => x.ReviewedAt, now), cancellationToken);
         context.TopicHistoryEntries.Add(history);
+        context.Notifications.AddRange(notifications);
         await context.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
     }

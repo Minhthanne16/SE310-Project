@@ -129,6 +129,12 @@ public sealed class SubmissionReviewWorkflowTests : IDisposable
         Assert.Equal($"Người {world.Lecturer.Code}", midterm.Versions[0].ReviewedBy);
         Assert.NotNull(midterm.Versions[0].ReviewedAt);
 
+        await Db(async db =>
+        {
+            var notices = await db.Notifications.Where(n => n.Kind == NotificationKinds.Comment && n.Text.Contains("Cần bổ sung phần thực nghiệm")).ToListAsync();
+            Assert.Equal(world.Students.Select(s => s.Id).Order(), notices.Select(n => n.RecipientUserId).Order());
+        });
+
         // Sinh viên xem lại danh sách bài nộp cũng thấy comment
         var listRes = await Send(new ListSubmissionsQuery(world.Students[0].Id, ViewerRole.Student, world.TopicId));
         Assert.Equal(TopicResultStatus.Ok, listRes.Status);
