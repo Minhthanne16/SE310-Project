@@ -28,6 +28,8 @@ public class TopicDto
     public string Description { get; set; } = string.Empty;
     public string? Requirements { get; set; }
     public TopicPersonDto Supervisor { get; set; } = new();
+    // Giảng viên phản biện (PDR-062); null khi chưa phân công.
+    public TopicPersonDto? Reviewer { get; set; }
     // GV công bố | SV đề xuất
     public string Source { get; set; } = string.Empty;
     // Nhãn trạng thái đã tính theo thời điểm hiện tại (PDR-049), trùng TOPIC_STATUSES ở frontend.
