@@ -19,6 +19,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ThesisRound> ThesisRounds => Set<ThesisRound>();
     public DbSet<RoundMilestone> RoundMilestones => Set<RoundMilestone>();
     public DbSet<RoundParticipant> RoundParticipants => Set<RoundParticipant>();
+    public DbSet<RoundAuditEntry> RoundAuditEntries => Set<RoundAuditEntry>();
     public DbSet<UserAuditEntry> UserAuditEntries => Set<UserAuditEntry>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<ThesisTopic> ThesisTopics => Set<ThesisTopic>();
@@ -135,6 +136,15 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId);
             // Không xóa được người dùng đang thuộc đợt.
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RoundAuditEntry>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Action).IsRequired().HasMaxLength(32);
+            entity.Property(e => e.Details).HasColumnType("text");
+            entity.HasIndex(e => new { e.RoundId, e.CreatedAt });
+            entity.HasOne<ThesisRound>().WithMany().HasForeignKey(e => e.RoundId).OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<Notification>(entity =>

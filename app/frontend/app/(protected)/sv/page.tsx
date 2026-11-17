@@ -1,5 +1,10 @@
-import { SectionPlaceholder } from '@/features/navigation/components/SectionPlaceholder';
+import { Suspense } from 'react';
+import { RoundHomePage } from '@/features/rounds/components/RoundHomePage';
 
 export default function Home() {
-  return <SectionPlaceholder />;
+  return (
+    <Suspense fallback={null}>
+      <RoundHomePage />
+    </Suspense>
+  );
 }

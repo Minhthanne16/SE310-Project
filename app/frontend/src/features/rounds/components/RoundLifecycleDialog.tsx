@@ -196,14 +196,24 @@ export const RoundLifecycleDialog: React.FC<RoundLifecycleDialogProps> = ({
           được đợt, đề tài và kết quả của mình. Đợt không mở lại được.
         </p>
         {blocked ? (
-          <p role="alert" className="rnd-note rnd-note-bad">
+          <div role="alert" className="rnd-note rnd-note-bad">
             <b>Còn {pending} đề tài chưa công bố kết quả.</b> Công bố hết ở
             trang{' '}
             <Link className="rnd-link" href="/giao-vu/ket-qua">
               Kết quả
             </Link>{' '}
             rồi mới kết thúc được đợt. Đề tài Không có nhóm không tính.
-          </p>
+            {round.topicSummary.pendingTopics &&
+              round.topicSummary.pendingTopics.length > 0 && (
+                <ul>
+                  {round.topicSummary.pendingTopics.map((topic) => (
+                    <li key={topic.id}>
+                      {topic.title} — {topic.status}
+                    </li>
+                  ))}
+                </ul>
+              )}
+          </div>
         ) : (
           total > 0 && (
             <p className="rnd-note rnd-note-ok">

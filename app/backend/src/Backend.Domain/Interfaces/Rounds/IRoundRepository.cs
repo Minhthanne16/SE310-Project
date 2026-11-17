@@ -4,6 +4,10 @@ namespace Backend.Domain.Interfaces;
 
 // Sinh viên đang thuộc một đợt Đang diễn ra khác (PDR-029).
 public sealed record RoundConflict(Guid UserId, string UserCode, string UserName, Guid RoundId, string RoundName);
+public sealed record OpenRoundOutcome(bool Opened, IReadOnlyList<RoundConflict> Conflicts);
+public sealed record FinishRoundOutcome(bool Finished, IReadOnlyList<string> PendingTopics);
+public sealed record AddParticipantsOutcome(IReadOnlyList<RoundParticipant> Added, IReadOnlyList<RoundConflict> Conflicts,
+    IReadOnlySet<Guid> ExistingIds, bool Finished);
 
 public interface IRoundRepository
 {
@@ -15,14 +19,20 @@ public interface IRoundRepository
     // Ném DuplicateRoundNameException khi vi phạm tên đợt duy nhất.
     Task AddAsync(ThesisRound round, CancellationToken cancellationToken = default);
     // Lưu thay đổi của đợt đã nạp bằng GetByIdAsync (một lần lưu). Ném DuplicateRoundNameException khi trùng tên.
-    // Ghi cùng lần SaveAsync tiếp theo để thông báo và thay đổi của đợt nằm chung một transaction.
-    void AddNotifications(IEnumerable<Notification> notifications);
     Task SaveAsync(CancellationToken cancellationToken = default);
+    void AuditMilestones(Guid roundId, Guid? actorId, DateTime now, string details);
+    Task<OpenRoundOutcome> OpenAsync(ThesisRound round, DateTime now, Guid? actorId,
+        Func<IReadOnlyList<RoundParticipant>, IReadOnlyList<Notification>> notifications,
+        CancellationToken cancellationToken = default);
+    Task<FinishRoundOutcome> FinishAsync(Guid roundId, DateTime now, Guid? actorId,
+        Func<ThesisRound, IReadOnlyList<string>> pendingTopics, CancellationToken cancellationToken = default);
     // Xóa đợt cùng mốc và người tham gia.
     Task DeleteAsync(ThesisRound round, CancellationToken cancellationToken = default);
 
-    Task AddParticipantsAsync(IReadOnlyList<RoundParticipant> participants, CancellationToken cancellationToken = default);
-    Task RemoveParticipantAsync(RoundParticipant participant, CancellationToken cancellationToken = default);
+    Task<AddParticipantsOutcome> AddParticipantsAsync(IReadOnlyList<RoundParticipant> participants, Guid? actorId, DateTime now, CancellationToken cancellationToken = default);
+    // null = đã gỡ; chuỗi = lý do từ chối, kể cả khi dữ liệu vừa thay đổi.
+    Task<string?> RemoveParticipantAsync(RoundParticipant participant, Guid? actorId, DateTime now, CancellationToken cancellationToken = default);
+    Task<Dictionary<Guid, string>> GetRemovalBlockersAsync(Guid roundId, IReadOnlyCollection<RoundParticipant> participants, CancellationToken cancellationToken = default);
 
     // Người dùng đang hoạt động của vai trò, sắp theo mã.
     Task<IReadOnlyList<User>> GetActiveUsersAsync(UserRole role, CancellationToken cancellationToken = default);

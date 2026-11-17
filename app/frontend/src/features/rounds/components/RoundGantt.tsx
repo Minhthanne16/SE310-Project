@@ -17,7 +17,7 @@ interface RoundGanttProps {
   // "Hôm nay" (yyyy-MM-dd), lấy từ roundService.today.
   today: string;
   // Có giá trị = hiện nút thao tác theo từng mốc (giáo vụ: mọi mốc).
-  actionHref?: (milestoneKey: string) => string;
+  actionHref?: (milestoneKey: string) => string | undefined;
   // Thay cho actionHref khi thao tác diễn ra ngay trên trang (ví dụ đổi tab).
   onAction?: (milestoneKey: string) => void;
   actionLabel?: string;
@@ -160,6 +160,7 @@ export const RoundGantt: React.FC<RoundGanttProps> = ({
                   ? 'rnd-gantt-action rnd-gantt-action-now'
                   : 'rnd-gantt-action';
               const actionName = `${actionLabel} mốc ${m.name}`;
+              const href = actionHref?.(m.key);
               return (
                 <li key={m.key} className="rnd-gantt-row rnd-gantt-row-body">
                   <div className="rnd-gantt-label">
@@ -172,10 +173,10 @@ export const RoundGantt: React.FC<RoundGanttProps> = ({
                         ? `${ddMM(m.startDate)} – ${ddMM(m.endDate)} · ${weekText}`
                         : range}
                     </span>
-                    {actionHref && !onAction && (
+                    {href && !onAction && (
                       <Link
                         className={actionClass}
-                        href={actionHref(m.key)}
+                        href={href}
                         aria-label={actionName}
                       >
                         {actionLabel}

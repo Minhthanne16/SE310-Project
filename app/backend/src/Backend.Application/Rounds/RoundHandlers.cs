@@ -50,13 +50,13 @@ public sealed class AddParticipantsValidator : AbstractValidator<AddParticipants
 
 internal static class RoundMapping
 {
-    // Mở đợt gửi thông báo tới người tham gia hiện có (DESIGN · Danh sách đợt). Thông báo tự động, không có người gửi.
-    public static IReadOnlyList<Notification> OpenedNotifications(ThesisRound round, DateTime now)
+    public static IReadOnlyList<Notification> OpenedNotifications(ThesisRound round,
+        IReadOnlyList<RoundParticipant> participants, DateTime now)
     {
-        var batchId = Guid.NewGuid();
-        return round.Participants.Select(p => new Notification
+        var batch = Guid.NewGuid();
+        return participants.Select(p => new Notification
         {
-            BatchId = batchId,
+            BatchId = batch,
             RecipientUserId = p.UserId,
             Kind = NotificationKinds.Schedule,
             Text = $"Đợt khóa luận “{round.Name}” đã mở.",
@@ -93,23 +93,37 @@ internal static class RoundMapping
         }).ToList(),
         LecturerIds = IdsOf(round, ParticipantKind.Lecturer),
         StudentIds = IdsOf(round, ParticipantKind.Student),
-        // PDR-030: sinh viên đã có nhóm trong đợt không gỡ được.
         LockedStudentIds = round.GroupMembers.Select(m => m.StudentId).Distinct().ToList(),
+        LockedLecturerIds = round.Topics.Select(t => t.SupervisorId).Distinct().ToList(),
         TopicSummary = TopicSummary(round, today)
     };
+
+    public static async Task<RoundDto> ToDtoWithRemovalBlockersAsync(ThesisRound round, DateOnly today,
+        IRoundRepository repository, CancellationToken cancellationToken)
+    {
+        var dto = ToDto(round, today);
+        dto.RemovalBlockers = await repository.GetRemovalBlockersAsync(round.Id, round.Participants, cancellationToken);
+        dto.LockedStudentIds = round.Participants.Where(p => p.Kind == ParticipantKind.Student && dto.RemovalBlockers.ContainsKey(p.UserId))
+            .Select(p => p.UserId).Distinct().ToList();
+        dto.LockedLecturerIds = round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && dto.RemovalBlockers.ContainsKey(p.UserId))
+            .Select(p => p.UserId).Distinct().ToList();
+        return dto;
+    }
 
     // Đếm theo trạng thái hiển thị (PDR-049); đề tài chưa ở trạng thái kết thúc chặn kết thúc đợt (PDR-031).
     public static RoundTopicSummaryDto TopicSummary(ThesisRound round, DateOnly today)
     {
         // Đề xuất Đã hủy là lịch sử PDR-012, không nằm trong vòng đời/trạng thái tổng hợp của đề tài.
-        var statuses = round.Topics.Where(t => t.Status != TopicStatus.Cancelled)
-            .Select(t => TopicRules.Effective(t, round, today)).ToList();
+        var topics = round.Topics.Where(t => t.Status != TopicStatus.Cancelled)
+            .Select(t => new { Topic = t, Status = TopicRules.Effective(t, round, today) }).ToList();
         var byStatus = RoundRules.TopicStatuses.ToDictionary(s => s, _ => 0);
-        foreach (var status in statuses) byStatus[TopicRules.Label(status)] = byStatus.GetValueOrDefault(TopicRules.Label(status)) + 1;
+        foreach (var item in topics) byStatus[TopicRules.Label(item.Status)] = byStatus.GetValueOrDefault(TopicRules.Label(item.Status)) + 1;
         return new RoundTopicSummaryDto
         {
-            Total = statuses.Count,
-            PendingResultCount = statuses.Count(s => !TopicRules.IsSettled(s)),
+            Total = topics.Count,
+            PendingTopics = topics.Where(t => !TopicRules.IsSettled(t.Status))
+                .Select(t => new PendingRoundTopicDto(t.Topic.Id, t.Topic.Title, TopicRules.Label(t.Status))).ToList(),
+            PendingResultCount = topics.Count(t => !TopicRules.IsSettled(t.Status)),
             ByStatus = byStatus
         };
     }
@@ -178,9 +192,13 @@ public sealed class GetRoundHandler(IRoundRepository repository, TimeProvider cl
     public async Task<RoundResult<RoundDto>> Handle(GetRoundQuery request, CancellationToken cancellationToken)
     {
         var round = await repository.GetByIdAsync(request.Id, cancellationToken);
-        return round is null || !RoundMapping.CanView(round, request.ViewerId)
-            ? RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage)
-            : RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)));
+        if (round is null || !RoundMapping.CanView(round, request.ViewerId))
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        var today = RoundRules.TodayVietnam(clock);
+        var dto = request.ViewerId is null
+            ? await RoundMapping.ToDtoWithRemovalBlockersAsync(round, today, repository, cancellationToken)
+            : RoundMapping.ToDto(round, today);
+        return RoundResult<RoundDto>.Ok(dto);
     }
 }
 
@@ -280,6 +298,9 @@ public sealed class UpdateRoundMilestonesHandler(IRoundRepository repository, Ti
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Invalid, "Có mốc chưa hợp lệ", errors);
 
         // Tên và thứ tự mốc cố định; chỉ nhận phần cấu hình.
+        var today = RoundRules.TodayVietnam(clock);
+        var previous = RoundMapping.ToDto(round, today).Milestones;
+        var before = System.Text.Json.JsonSerializer.Serialize(previous);
         foreach (var milestone in round.Milestones)
         {
             var next = input[milestone.Key];
@@ -293,9 +314,14 @@ public sealed class UpdateRoundMilestonesHandler(IRoundRepository repository, Ti
                 : null;
             milestone.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         }
+        var updated = RoundMapping.ToDto(round, today);
+        var after = System.Text.Json.JsonSerializer.Serialize(updated.Milestones);
+        if (before != after)
+            repository.AuditMilestones(round.Id, request.ActorId, clock.GetUtcNow().UtcDateTime,
+                System.Text.Json.JsonSerializer.Serialize(new { Before = previous, After = updated.Milestones }));
         round.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         await repository.SaveAsync(cancellationToken);
-        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã lưu cấu hình mốc");
+        return RoundResult<RoundDto>.Ok(updated, "Đã lưu cấu hình mốc");
     }
 }
 
@@ -324,8 +350,10 @@ public sealed class OpenRoundHandler(IRoundRepository repository, TimeProvider c
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.MilestonesIncompleteMessage, errors);
 
         // PDR-029: mỗi sinh viên chỉ ở một đợt Đang diễn ra. Thiếu giảng viên/sinh viên không chặn (PDR-033).
-        var studentIds = RoundMapping.IdsOf(round, ParticipantKind.Student);
-        var conflicts = await repository.FindRunningRoundConflictsAsync(round.Id, studentIds, cancellationToken);
+        var now = clock.GetUtcNow().UtcDateTime;
+        var outcome = await repository.OpenAsync(round, now, request.ActorId,
+            participants => RoundMapping.OpenedNotifications(round, participants, now), cancellationToken);
+        var conflicts = outcome.Conflicts;
         if (conflicts.Count > 0)
         {
             var people = string.Join(", ", conflicts.Select(c => $"{c.UserCode} ({c.UserName})").Distinct());
@@ -334,14 +362,8 @@ public sealed class OpenRoundHandler(IRoundRepository repository, TimeProvider c
                 conflicts.Select(c => $"{c.UserCode} ({c.UserName}): đang thuộc đợt “{c.RoundName}”.").ToList());
         }
 
-        // Kiểm tra xung đột và đổi trạng thái nằm trong một lần SaveChanges. Hai yêu cầu mở đồng thời
-        // hai đợt vẫn có thể cùng lọt qua bước kiểm tra: TODO chặn ở mức database (khóa/ràng buộc) khi cần.
-        var now = clock.GetUtcNow().UtcDateTime;
-        round.Status = RoundStatus.Running;
-        round.OpenedAt = now;
-        round.UpdatedAt = now;
-        repository.AddNotifications(RoundMapping.OpenedNotifications(round, now));
-        await repository.SaveAsync(cancellationToken);
+        if (!outcome.Opened)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.OnlyDraftOpenMessage);
         return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã mở đợt");
     }
 }
@@ -357,15 +379,18 @@ public sealed class FinishRoundHandler(IRoundRepository repository, TimeProvider
         if (round.Status != RoundStatus.Running)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.OnlyRunningFinishMessage);
 
-        // PDR-031/048: chỉ kết thúc khi mọi đề tài đã ở trạng thái kết thúc; Không có nhóm không tính.
-        var pending = RoundMapping.TopicSummary(round, RoundRules.TodayVietnam(clock)).PendingResultCount;
-        if (pending > 0)
-            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.PendingTopicsMessage(pending));
         var now = clock.GetUtcNow().UtcDateTime;
+        var outcome = await repository.FinishAsync(round.Id, now, request.ActorId,
+            current => RoundMapping.TopicSummary(current, RoundRules.TodayVietnam(clock)).PendingTopics
+                .Select(t => $"{t.Title} ({t.Status})").ToList(), cancellationToken);
+        if (outcome.PendingTopics.Count > 0)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
+                RoundRules.PendingTopicsMessage(outcome.PendingTopics.Count), outcome.PendingTopics.ToList());
+        if (!outcome.Finished)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.OnlyRunningFinishMessage);
         round.Status = RoundStatus.Finished;
         round.FinishedAt = now;
         round.UpdatedAt = now;
-        await repository.SaveAsync(cancellationToken);
         return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã kết thúc đợt");
     }
 }
@@ -554,13 +579,29 @@ public sealed class AddParticipantsHandler(IRoundRepository repository, TimeProv
         RoundRules.TryParseKind(request.Kind, out var kind);
         var entries = await RoundParticipantRules.CheckAsync(repository, round, kind, request.Codes, cancellationToken);
         // Chỉ thêm mã hợp lệ; mã còn lại trả lý do trong results.
-        var added = entries.Where(e => e.Check.Status == "valid")
+        var candidates = entries.Where(e => e.Check.Status == "valid")
             .Select(e => new RoundParticipant { RoundId = round.Id, UserId = e.User!.Id, Kind = kind }).ToList();
-        if (added.Count > 0) await repository.AddParticipantsAsync(added, cancellationToken);
+        var outcome = candidates.Count > 0 ? await repository.AddParticipantsAsync(candidates, request.ActorId, clock.GetUtcNow().UtcDateTime, cancellationToken)
+            : new AddParticipantsOutcome([], [], new HashSet<Guid>(), false);
+        if (outcome.Finished)
+            return RoundResult<AddParticipantsResultDto>.Fail(RoundResultStatus.Conflict, RoundRules.FinishedMessage);
+        var newConflicts = outcome.Conflicts.ToDictionary(c => c.UserId);
+        foreach (var entry in entries.Where(e => e.User is not null && newConflicts.ContainsKey(e.User.Id)))
+        {
+            var other = newConflicts[entry.User!.Id];
+            entry.Check.Status = "inOtherRound";
+            entry.Check.Message = $"Đang thuộc đợt “{other.RoundName}”. Một sinh viên chỉ ở một đợt đang diễn ra.";
+        }
+        foreach (var entry in entries.Where(e => e.User is not null && outcome.ExistingIds.Contains(e.User.Id)))
+        {
+            entry.Check.Status = "alreadyInRound";
+            entry.Check.Message = "Đã có trong đợt này.";
+        }
+        var added = outcome.Added;
 
         return RoundResult<AddParticipantsResultDto>.Ok(new AddParticipantsResultDto
         {
-            Round = RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)),
+            Round = await RoundMapping.ToDtoWithRemovalBlockersAsync(round, RoundRules.TodayVietnam(clock), repository, cancellationToken),
             Results = entries.Select(e => e.Check).ToList(),
             Added = added.Count
         }, added.Count > 0 ? $"Đã thêm {added.Count} {RoundRules.KindLabel(kind)}" : "Không có mã hợp lệ để thêm");
@@ -583,18 +624,11 @@ public sealed class RemoveParticipantHandler(IRoundRepository repository, TimePr
         if (participant is null)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, $"Không có {RoundRules.KindLabel(kind)} này trong đợt.");
 
-        // PDR-030: người đã có dữ liệu nghiệp vụ trong đợt không được gỡ: GV có đề tài, SV đã có nhóm.
-        if (kind == ParticipantKind.Lecturer && round.Topics.Any(t => t.SupervisorId == request.UserId))
-            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
-                "Giảng viên đã có đề tài trong đợt nên không gỡ được khỏi đợt.");
-        // PDR-062: GV đang là phản biện của đề tài trong đợt cũng không gỡ được.
-        if (kind == ParticipantKind.Lecturer && round.Topics.Any(t => t.ReviewerId == request.UserId))
-            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
-                "Giảng viên đang phản biện đề tài trong đợt nên không gỡ được khỏi đợt.");
-        if (kind == ParticipantKind.Student && round.GroupMembers.Any(m => m.StudentId == request.UserId))
-            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
-                "Sinh viên đã có nhóm trong đợt nên không gỡ được khỏi đợt.");
-        await repository.RemoveParticipantAsync(participant, cancellationToken);
-        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), $"Đã gỡ {RoundRules.KindLabel(kind)} khỏi đợt");
+        var blocker = await repository.RemoveParticipantAsync(participant, request.ActorId, clock.GetUtcNow().UtcDateTime, cancellationToken);
+        if (blocker is not null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, blocker);
+        round.Participants.Remove(participant);
+        return RoundResult<RoundDto>.Ok(await RoundMapping.ToDtoWithRemovalBlockersAsync(round, RoundRules.TodayVietnam(clock), repository, cancellationToken),
+            $"Đã gỡ {RoundRules.KindLabel(kind)} khỏi đợt");
     }
 }

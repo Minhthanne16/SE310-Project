@@ -127,6 +127,48 @@ public sealed class GroupRegistrationTests : IDisposable
         (await Send(new GetMyRegistrationQuery(student.Id, roundId))).Response.Data!;
 
     [Fact]
+    public async Task SubmittedOutlineDisablesCancellationInRegistrationDto()
+    {
+        var w = await PublishedRound();
+        var student = w.Students[0];
+        await Register(student, w.Topics[0]);
+        using (var scope = _provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            db.TopicSubmissions.Add(new TopicSubmission
+            {
+                TopicId = w.Topics[0], Kind = SubmissionKind.Outline, VersionNo = 1,
+                ObjectKey = "test-outline", FileName = "outline.pdf", SubmittedById = student.Id
+            });
+            await db.SaveChangesAsync();
+        }
+        Assert.False((await Mine(student, w.RoundId)).CanCancel);
+        Assert.Equal(TopicRules.OutlineSubmittedMessage, (await Cancel(student, w.Topics[0])).Response.Message);
+    }
+
+    [Fact]
+    public async Task OutlineWriteAfterCancellationDoesNotPersistSubmission()
+    {
+        var w = await PublishedRound();
+        var student = w.Students[0];
+        var group = (await Register(student, w.Topics[0])).Response.Data!.Group!;
+        Assert.Equal(TopicResultStatus.Ok, (await Cancel(student, w.Topics[0])).Status);
+        using var scope = _provider.CreateScope();
+        var result = await scope.ServiceProvider.GetRequiredService<IOutlineRepository>().AddSubmissionAsync(
+            new TopicSubmission
+            {
+                TopicId = w.Topics[0], Kind = SubmissionKind.Outline, FileName = "outline.pdf",
+                ObjectKey = "test-outline", SubmittedById = student.Id
+            }, group.Id, new TopicHistoryEntry
+            {
+                TopicId = w.Topics[0], ActorUserId = student.Id,
+                Category = TopicHistoryCategories.Submission, Action = "Nộp đề cương"
+            }, []);
+        Assert.Equal(OutlineWriteOutcome.NoGroup, result.Outcome);
+        Assert.False(await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().TopicSubmissions.AnyAsync());
+    }
+
+    [Fact]
     public async Task AStudentRegistersAloneAndBecomesTheRepresentative()
     {
         var w = await PublishedRound();

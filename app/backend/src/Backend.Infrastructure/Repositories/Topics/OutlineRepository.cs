@@ -51,7 +51,7 @@ public class OutlineRepository(ApplicationDbContext context) : IOutlineRepositor
     }
 
     public async Task<(OutlineWriteOutcome Outcome, TopicSubmission Submission, int LinkedRequests)> AddSubmissionAsync(
-        TopicSubmission submission, TopicHistoryEntry history, IReadOnlyCollection<Notification> notifications,
+        TopicSubmission submission, Guid groupId, TopicHistoryEntry history, IReadOnlyCollection<Notification> notifications,
         CancellationToken cancellationToken = default)
     {
         // Hai thành viên nộp cùng lúc có thể lấy trùng số phiên bản: chỉ mục duy nhất
@@ -59,6 +59,10 @@ public class OutlineRepository(ApplicationDbContext context) : IOutlineRepositor
         for (var attempt = 1; ; attempt++)
         {
             await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+            // Khóa cùng hàng với CancelAsync trước khi kiểm tra và ghi bản nộp.
+            var active = await context.ThesisTopics.Where(t => t.Id == submission.TopicId && t.GroupId == groupId)
+                .ExecuteUpdateAsync(s => s.SetProperty(t => t.UpdatedAt, submission.CreatedAt), cancellationToken);
+            if (active == 0) return (OutlineWriteOutcome.NoGroup, submission, 0);
             if (await context.ThesisTopics.AnyAsync(t => t.Id == submission.TopicId && t.OutlineApprovedAt != null, cancellationToken))
                 return (OutlineWriteOutcome.AlreadyApproved, submission, 0);
 

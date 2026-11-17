@@ -165,6 +165,17 @@ public sealed class SubmissionWorkflowTests : IDisposable
 
     private static SubmissionKindDto Kind(TopicSubmissionsDto dto, string kind) => dto.Kinds.Single(k => k.Kind == kind);
 
+    [Fact]
+    public async Task StaffCannotGrantExtensionToTopicWithoutGroup()
+    {
+        var w = await RunningTopic();
+        await Db(db => db.ThesisTopics.Where(t => t.Id == w.TopicId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.GroupId, (Guid?)null)));
+        _clock.Set(new DateTimeOffset(2026, 11, 2, 3, 0, 0, TimeSpan.Zero));
+        var kind = Kind((await List(w.Lecturer, w.TopicId, ViewerRole.AcademicAffairs)).Response.Data!, "thesis");
+        Assert.False(kind.CanGrantExtension);
+    }
+
     private async Task<int> RecordCount()
     {
         var count = 0;
@@ -640,8 +651,9 @@ public sealed class SubmissionWorkflowTests : IDisposable
             inner.AddRequestAsync(request, history, notifications, cancellationToken);
         public Task<bool> ResolveRequestAsync(Guid requestId, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
             inner.ResolveRequestAsync(requestId, actorId, now, history, cancellationToken);
-        public Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
-            inner.SaveCommentAsync(submissionId, comment, actorId, now, history, cancellationToken);
+        public Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history,
+            IReadOnlyCollection<Notification> notifications, CancellationToken cancellationToken = default) =>
+            inner.SaveCommentAsync(submissionId, comment, actorId, now, history, notifications, cancellationToken);
         public Task<bool> GrantThesisExtensionAsync(Guid topicId, DateOnly end, string reason, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>
             inner.GrantThesisExtensionAsync(topicId, end, reason, actorId, now, history, cancellationToken);
         public Task<bool> LockThesisAsync(Guid topicId, Guid submissionId, Guid? actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default) =>

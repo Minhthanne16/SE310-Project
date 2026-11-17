@@ -30,7 +30,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const home = ROLE_HOME[user.role];
   return (
-    <aside id={id} className={`app-sidebar${open ? ' is-open' : ''}`}>
+    <aside
+      id={id}
+      className={`app-sidebar${open ? ' is-open' : ''}`}
+      role={open ? 'dialog' : undefined}
+      aria-modal={open ? 'true' : undefined}
+      aria-label={open ? 'Menu điều hướng' : undefined}
+    >
       <Link href={home} className="app-logo" onClick={onNavigate}>
         <span aria-hidden="true">Q</span>
         QLKLTN

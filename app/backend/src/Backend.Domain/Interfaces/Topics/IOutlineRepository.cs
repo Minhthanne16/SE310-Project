@@ -17,7 +17,7 @@ public interface IOutlineRepository
     // Gán VersionNo kế tiếp, liên kết mọi yêu cầu đang mở, ghi lịch sử và thông báo trong một
     // transaction. AlreadyApproved khi đề cương vừa được duyệt.
     Task<(OutlineWriteOutcome Outcome, TopicSubmission Submission, int LinkedRequests)> AddSubmissionAsync(
-        TopicSubmission submission, TopicHistoryEntry history, IReadOnlyCollection<Notification> notifications,
+        TopicSubmission submission, Guid groupId, TopicHistoryEntry history, IReadOnlyCollection<Notification> notifications,
         CancellationToken cancellationToken = default);
     Task<OutlineWriteOutcome> AddRequestAsync(RevisionRequest request, TopicHistoryEntry history,
         IReadOnlyCollection<Notification> notifications, CancellationToken cancellationToken = default);

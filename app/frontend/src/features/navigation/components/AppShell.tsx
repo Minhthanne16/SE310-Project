@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { AlertCircle, Menu, X } from 'lucide-react';
@@ -36,6 +36,7 @@ const ShellContent: React.FC<Omit<AppShellProps, 'authService'>> = ({
   const router = useRouter();
   const pathname = usePathname() ?? '';
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
   const [loggingOut, setLoggingOut] = useState(false);
   const [slotElement, setSlotElement] = useState<HTMLElement | null>(null);
   const [slotUsers, setSlotUsers] = useState(0);
@@ -56,6 +57,56 @@ const ShellContent: React.FC<Omit<AppShellProps, 'authService'>> = ({
   }, [session.status, user, wrongArea, router]);
 
   useEffect(() => setMenuOpen(false), [pathname]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const sidebar = document.getElementById(SIDEBAR_ID);
+    if (!sidebar) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusable = () =>
+      Array.from(
+        sidebar.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled])',
+        ),
+      );
+    focusable()[0]?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (
+        !sidebar.contains(document.activeElement) ||
+        (!event.shiftKey && document.activeElement === last)
+      ) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    const onResize = () => {
+      if (window.innerWidth > 900) setMenuOpen(false);
+    };
+    document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('resize', onResize);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('resize', onResize);
+    };
+  }, [menuOpen]);
 
   const handleLogout = async () => {
     setLoggingOut(true);
@@ -116,13 +167,17 @@ const ShellContent: React.FC<Omit<AppShellProps, 'authService'>> = ({
         <div
           className="app-backdrop"
           aria-hidden="true"
-          onClick={() => setMenuOpen(false)}
+          onClick={() => {
+            setMenuOpen(false);
+            menuButtonRef.current?.focus();
+          }}
         />
       )}
       <div className="app-main">
         <header className="app-topbar">
           <div className="app-topbar-left">
             <button
+              ref={menuButtonRef}
               type="button"
               className="app-menu-toggle"
               aria-controls={SIDEBAR_ID}

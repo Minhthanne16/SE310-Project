@@ -18,8 +18,9 @@ public sealed class RoundDto
     public List<RoundMilestoneDto> Milestones { get; set; } = [];
     public List<Guid> LecturerIds { get; set; } = [];
     public List<Guid> StudentIds { get; set; } = [];
-    // Chưa có dữ liệu đề tài/điểm nên chưa khóa ai (PDR-030).
     public List<Guid> LockedStudentIds { get; set; } = [];
+    public List<Guid> LockedLecturerIds { get; set; } = [];
+    public Dictionary<Guid, string> RemovalBlockers { get; set; } = [];
     public RoundTopicSummaryDto TopicSummary { get; set; } = new();
 }
 
@@ -44,8 +45,11 @@ public sealed class RoundTopicSummaryDto
     // Số đề tài chưa ở trạng thái kết thúc (Đã hoàn tất, Không đủ điều kiện công bố, Không có nhóm,
     // Bị từ chối đều không tính; PDR-031). Tính từ đề tài thật theo trạng thái hiển thị (PDR-049, PDR-053).
     public int PendingResultCount { get; set; }
+    public List<PendingRoundTopicDto> PendingTopics { get; set; } = [];
     public Dictionary<string, int> ByStatus { get; set; } = [];
 }
+
+public sealed record PendingRoundTopicDto(Guid Id, string Title, string Status);
 
 public sealed class RoundInputDto
 {

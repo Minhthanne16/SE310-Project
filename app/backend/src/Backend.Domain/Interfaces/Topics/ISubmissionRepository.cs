@@ -25,7 +25,8 @@ public interface ISubmissionRepository
     Task<RevisionRequest?> GetRequestAsync(Guid requestId, CancellationToken cancellationToken = default);
     Task AddRequestAsync(RevisionRequest request, TopicHistoryEntry history, IReadOnlyCollection<Notification> notifications, CancellationToken cancellationToken = default);
     Task<bool> ResolveRequestAsync(Guid requestId, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default);
-    Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default);
+    Task SaveCommentAsync(Guid submissionId, string? comment, Guid actorId, DateTime now, TopicHistoryEntry history,
+        IReadOnlyCollection<Notification> notifications, CancellationToken cancellationToken = default);
     Task<bool> GrantThesisExtensionAsync(Guid topicId, DateOnly end, string reason, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default);
     Task<bool> LockThesisAsync(Guid topicId, Guid submissionId, Guid? actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default);
     Task<bool> MarkIneligibleAsync(Guid topicId, string reason, Guid actorId, DateTime now, TopicHistoryEntry history, CancellationToken cancellationToken = default);
