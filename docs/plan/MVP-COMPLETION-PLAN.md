@@ -2,7 +2,7 @@
 
 **Trạng thái:** Đang triển khai; chưa đạt nghiệm thu MVP
 
-**Cập nhật:** 2026-11-16 (đối chiếu codebase, test và các PDR đã chốt)
+**Cập nhật:** 2026-11-17 (rà soát tài liệu Phase 00/G0.1); đối chiếu codebase và test gần nhất ngày 2026-11-16.
 
 **Mục đích:** Biến nền kỹ thuật và các màn hình hiện có thành MVP quản lý khóa luận tốt nghiệp có thể vận hành trọn một đợt trên dữ liệu thật.
 
@@ -70,12 +70,15 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G0.1 — Lập ma trận quy tắc, trạng thái và quyền
 
-- [ ] Tạo ma trận entity–trạng thái–chuyển trạng thái–vai trò từ PDR-005 đến PDR-047.
-- [ ] Rà các chỗ DESIGN mâu thuẫn PDR và ghi rõ PDR là nguồn thực thi; không biến ghi chú giao diện thành quy tắc mới.
-- [ ] Gắn mỗi quy tắc với test biên và lỗi dự kiến.
+- [x] Tạo ma trận entity–trạng thái–chuyển trạng thái–vai trò từ PDR-005 đến PDR-047.
+- [x] Rà các chỗ DESIGN mâu thuẫn PDR và ghi rõ PDR là nguồn thực thi; không biến ghi chú giao diện thành quy tắc mới.
+- [x] Gắn mỗi quy tắc với test biên và lỗi dự kiến.
+
+**Bằng chứng hoàn thành đầu việc G0.1 (2026-11-17):** [Ma trận Phase 00 và ca giấy T01–T40](PHASE-00-RULE-MATRIX.md), [kết quả Phase 00](phase-00-chot-nghiep-vu.md), [OPEN_QUESTIONS](../OPEN_QUESTIONS.md) và [REVIEW](REVIEW.md). Đây là kết quả rà soát tài liệu, chưa phải bằng chứng test API/DB.
 
 **Nghiệm thu:** Không còn quy tắc chưa xác định trong luồng đợt → công bố; OQ-007 được ghi rõ là ngoài cổng MVP.  
 **Kiểm chứng:** Review chéo ma trận với `OPEN_QUESTIONS.md`, `REVIEW.md` và PDR liên quan.
+**Tình trạng nghiệm thu G0.1:** Chưa đạt do OQ-020/025/028/029/030/031 còn cần quyết định, đặc biệt ca T40 chưa có kết quả xác định; checkpoint CP00 chưa được phê duyệt.
 
 #### G0.2 — Chuẩn hóa quy trình kỹ thuật và môi trường test
 
@@ -285,13 +288,13 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 **Checkpoint G8 / Definition of Done:** Mọi tiêu chí tại mục 2 có bằng chứng test hoặc thao tác thực tế trên môi trường test cô lập; không còn lỗi Critical/High chưa có quyết định chấp nhận rủi ro bằng văn bản.
 
-### Rà soát codebase ngày 2026-11-16 — tiến độ và kịch bản demo
+### Rà soát codebase ngày 2026-11-16, bổ sung Phase 00 ngày 2026-11-17 — tiến độ và kịch bản demo
 
-Đếm **55 checkbox triển khai** ở G0–G8 (không tính bốn checkbox phê duyệt ở mục 9): **19/55 = 34,5%**. Đây là **tỷ lệ đầu việc được đánh dấu theo code và test**, không phải phần trăm MVP đủ điều kiện vận hành; các checkpoint E2E và cổng release chưa đạt.
+Đếm **55 checkbox triển khai** ở G0–G8 (không tính bốn checkbox phê duyệt ở mục 9): **22/55 = 40,0%**, gồm **19 đầu việc đối chiếu code/test ngày 2026-11-16** và **3 đầu việc lập đặc tả G0.1 ngày 2026-11-17**. Đây là **tỷ lệ đầu việc được đánh dấu theo bằng chứng code/test hoặc tài liệu**, chưa phải phần trăm MVP đủ điều kiện vận hành; G0.1 và CP00 chưa đạt nghiệm thu, các checkpoint E2E và cổng release chưa đạt.
 
 | Nhóm | Đã đánh dấu / tổng | Phần có thể chứng minh | Phần chưa đủ để nghiệm thu |
 | --- | ---: | --- | --- |
-| G0 | 0/6 | Tài liệu PDR làm căn cứ | Ma trận quyền, quy trình DB test, review migration toàn hệ |
+| G0 | 3/6 | Đã lập ma trận quy tắc, quyền, trạng thái, đối chiếu DESIGN/PDR và ca giấy T01–T40 | Chờ quyết định OQ-020/025/028/029/030/031, phê duyệt CP00; G0.2 còn quy trình DB test, API contract và review migration |
 | G1 | 7/9 | Quản trị tài khoản, reset, hồ sơ, avatar, thông báo nền | Hai mục kiểm chứng auth/CSV và gỡ demo toàn luồng |
 | G2 | 3/6 | Vòng đời/sao chép/xóa đợt, chín mốc và Gantt từ dữ liệu API; kiểm tra mở/kết thúc | Race condition khi hai đợt mở cùng SV, history gỡ người và nguồn demo mặc định |
 | G3 | 6/7 | Đề tài, công bố, ghi danh, đề xuất và quyết định GV | `canCancel` lệch điều kiện đã nộp đề cương; checkpoint E2E nhóm 1/2 SV |
