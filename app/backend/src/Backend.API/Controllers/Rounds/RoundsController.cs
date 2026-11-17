@@ -50,17 +50,17 @@ public sealed class RoundsController(ISender sender) : ControllerBase
     [HttpPut("{id:guid}/milestones")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<RoundDto>>> UpdateMilestones(Guid id, RoundMilestonesInputDto dto, CancellationToken cancellationToken) =>
-        ToAction(await sender.Send(new UpdateRoundMilestonesCommand(id, dto), cancellationToken));
+        ToAction(await sender.Send(new UpdateRoundMilestonesCommand(id, dto, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
 
     [HttpPost("{id:guid}/open")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<RoundDto>>> Open(Guid id, CancellationToken cancellationToken) =>
-        ToAction(await sender.Send(new OpenRoundCommand(id), cancellationToken));
+        ToAction(await sender.Send(new OpenRoundCommand(id, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
 
     [HttpPost("{id:guid}/finish")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<RoundDto>>> Finish(Guid id, CancellationToken cancellationToken) =>
-        ToAction(await sender.Send(new FinishRoundCommand(id), cancellationToken));
+        ToAction(await sender.Send(new FinishRoundCommand(id, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
 
     // Công bố danh sách đề tài cho sinh viên (không hoàn tác); điều kiện xem PublishRoundTopicsHandler.
     [HttpPost("{id:guid}/topics/publish")]
@@ -92,12 +92,12 @@ public sealed class RoundsController(ISender sender) : ControllerBase
     [HttpPost("{id:guid}/{kind}")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<AddParticipantsResultDto>>> AddParticipants(Guid id, string kind, ParticipantCodesDto dto, CancellationToken cancellationToken) =>
-        ToAction(await sender.Send(new AddParticipantsCommand(id, kind, dto.Codes), cancellationToken));
+        ToAction(await sender.Send(new AddParticipantsCommand(id, kind, dto.Codes, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
 
     [HttpDelete("{id:guid}/{kind}/{userId:guid}")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<RoundDto>>> RemoveParticipant(Guid id, string kind, Guid userId, CancellationToken cancellationToken) =>
-        ToAction(await sender.Send(new RemoveParticipantCommand(id, kind, userId), cancellationToken));
+        ToAction(await sender.Send(new RemoveParticipantCommand(id, kind, userId, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
 
     private ActionResult<ApiResponse<T>> ToAction<T>(RoundResult<T> result) => result.Status switch
     {

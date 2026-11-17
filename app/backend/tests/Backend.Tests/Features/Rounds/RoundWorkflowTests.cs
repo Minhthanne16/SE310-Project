@@ -546,6 +546,122 @@ public sealed class RoundWorkflowTests : IDisposable
     }
 
     [Fact]
+    public async Task FinishNamesPendingTopicsAndAcceptsMixedSettledStatuses()
+    {
+        var lecturerId = await Seed(UserRole.Lecturer, "GVFINISH");
+        var round = await Open("Đợt có đề tài");
+        using (var scope = _provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            db.ThesisTopics.AddRange(
+                new ThesisTopic { RoundId = round.Id, Number = 1, Title = "Đề tài còn dở", Field = "CNPM", Description = "Mô tả", SupervisorId = lecturerId, Status = TopicStatus.InProgress },
+                new ThesisTopic { RoundId = round.Id, Number = 2, Title = "Đề tài đã xong", Field = "CNPM", Description = "Mô tả", SupervisorId = lecturerId, Status = TopicStatus.Completed },
+                new ThesisTopic { RoundId = round.Id, Number = 3, Title = "Đề tài không đủ điều kiện", Field = "CNPM", Description = "Mô tả", SupervisorId = lecturerId, Status = TopicStatus.Ineligible });
+            await db.SaveChangesAsync();
+        }
+
+        var blocked = await Send(new FinishRoundCommand(round.Id));
+        Assert.Equal(RoundResultStatus.Conflict, blocked.Status);
+        Assert.Single(blocked.Response.Errors!);
+        Assert.Contains("Đề tài còn dở", blocked.Response.Errors![0]);
+        Assert.Equal("Running", await StatusOf(round.Id));
+
+        using (var scope = _provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var pending = await db.ThesisTopics.SingleAsync(t => t.RoundId == round.Id && t.Number == 1);
+            pending.Status = TopicStatus.Completed;
+            await db.SaveChangesAsync();
+        }
+        Assert.Equal(RoundResultStatus.Ok, (await Send(new FinishRoundCommand(round.Id))).Status);
+        Assert.Equal("Finished", await StatusOf(round.Id));
+    }
+
+    [Fact]
+    public async Task LinkedParticipantsCannotBeRemovedButNotificationAloneDoesNotBlock()
+    {
+        var lecturer = await Seed(UserRole.Lecturer, "GVLOCK");
+        var reviewer = await Seed(UserRole.Lecturer, "GVHISTORY");
+        var student = await Seed(UserRole.Student, "SVLOCK");
+        var notified = await Seed(UserRole.Student, "SVNOTIFY");
+        var round = await Open("Đợt có nhóm", "SVLOCK", "SVNOTIFY");
+        await Send(new AddParticipantsCommand(round.Id, "lecturers", ["GVLOCK", "GVHISTORY"]));
+        using (var scope = _provider.CreateScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var topic = new ThesisTopic
+            {
+                RoundId = round.Id, Number = 1, Title = "Đề tài khóa", Field = "CNPM",
+                Description = "Mô tả", SupervisorId = lecturer, Status = TopicStatus.InProgress
+            };
+            db.ThesisTopics.Add(topic);
+            db.TopicHistoryEntries.Add(new TopicHistoryEntry
+            {
+                TopicId = topic.Id, ActorUserId = reviewer, Category = "Nội dung", Action = "Đã nhận xét"
+            });
+            db.ThesisGroups.Add(new ThesisGroup
+            {
+                RoundId = round.Id, RepresentativeId = student,
+                Members = [new GroupMember { RoundId = round.Id, StudentId = student }]
+            });
+            await db.SaveChangesAsync();
+        }
+
+        var detail = (await Send(new GetRoundQuery(round.Id))).Response.Data!;
+        Assert.Contains(student, detail.LockedStudentIds);
+        Assert.DoesNotContain(notified, detail.LockedStudentIds);
+        Assert.Equal(new[] { lecturer, reviewer }.Order(), detail.LockedLecturerIds.Order());
+        Assert.Contains("nhóm", detail.RemovalBlockers[student]);
+        Assert.Contains("Đề tài khóa", detail.RemovalBlockers[lecturer]);
+        Assert.Contains("lịch sử thao tác", detail.RemovalBlockers[reviewer]);
+        Assert.False(detail.RemovalBlockers.ContainsKey(notified));
+
+        var studentDetail = (await Send(new GetRoundQuery(round.Id, student))).Response.Data!;
+        Assert.Empty(studentDetail.RemovalBlockers);
+
+        var lockedLecturer = await Send(new RemoveParticipantCommand(round.Id, "lecturers", lecturer));
+        Assert.Equal(RoundResultStatus.Conflict, lockedLecturer.Status);
+        Assert.Contains("Đề tài khóa", lockedLecturer.Response.Message);
+        var lockedStudent = await Send(new RemoveParticipantCommand(round.Id, "students", student));
+        Assert.Equal(RoundResultStatus.Conflict, lockedStudent.Status);
+        Assert.Contains("nhóm", lockedStudent.Response.Message);
+
+        var removed = await Send(new RemoveParticipantCommand(round.Id, "students", notified));
+        Assert.Equal(RoundResultStatus.Ok, removed.Status);
+        Assert.Equal([student], removed.Response.Data!.StudentIds);
+        Assert.Contains(lecturer, removed.Response.Data.LecturerIds);
+    }
+
+    [Fact]
+    public async Task AuditRecordsActorOnlyForSuccessfulChanges()
+    {
+        var actor = await Seed(UserRole.AcademicAffairs, "GVAUDIT");
+        var student = await Seed(UserRole.Student, "SVAUDIT");
+        var round = await CreateConfigured("Đợt có lịch sử");
+        var revised = Dated(items => items[0].NotifyAudience = "Sinh viên");
+        await Send(new UpdateRoundMilestonesCommand(round.Id, revised, actor));
+        await Send(new UpdateRoundMilestonesCommand(round.Id, revised, actor));
+        await Send(new OpenRoundCommand(round.Id, actor));
+        await Send(new OpenRoundCommand(round.Id, actor));
+        await Send(new AddParticipantsCommand(round.Id, "students", ["SVAUDIT"], actor));
+        await Send(new AddParticipantsCommand(round.Id, "students", ["SVAUDIT"], actor));
+        await Send(new RemoveParticipantCommand(round.Id, "students", student, actor));
+        await Send(new RemoveParticipantCommand(round.Id, "students", student, actor));
+        await Send(new FinishRoundCommand(round.Id, actor));
+        await Send(new FinishRoundCommand(round.Id, actor));
+
+        using var scope = _provider.CreateScope();
+        var audits = await scope.ServiceProvider.GetRequiredService<ApplicationDbContext>().RoundAuditEntries
+            .Where(a => a.RoundId == round.Id && a.ActorUserId == actor).ToListAsync();
+        Assert.Equal(["Finished", "MilestonesUpdated", "Opened", "ParticipantAdded", "ParticipantRemoved"],
+            audits.Select(a => a.Action).OrderBy(a => a));
+        Assert.All(audits, a => Assert.Equal(actor, a.ActorUserId));
+        Assert.Equal([student, student], audits.Where(a => a.TargetUserId.HasValue).Select(a => a.TargetUserId));
+        using var details = System.Text.Json.JsonDocument.Parse(audits.Single(a => a.Action == "MilestonesUpdated").Details!);
+        Assert.Equal("Sinh viên", details.RootElement.GetProperty("After")[0].GetProperty("NotifyAudience").GetString());
+    }
+
+    [Fact]
     public async Task DeleteOnlyDraftAndCascadesChildren()
     {
         await Seed(UserRole.Student, "SV1");

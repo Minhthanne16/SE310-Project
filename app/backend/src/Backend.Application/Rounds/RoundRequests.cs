@@ -23,9 +23,9 @@ public record GetRoundsQuery(string? Status, string? Program, string? Search, Gu
 public record GetRoundQuery(Guid Id, Guid? ViewerId = null) : IRequest<RoundResult<RoundDto>>;
 public record CreateRoundCommand(RoundInputDto Round) : IRequest<RoundResult<RoundDto>>;
 public record UpdateRoundCommand(Guid Id, RoundInfoDto Round) : IRequest<RoundResult<RoundDto>>;
-public record UpdateRoundMilestonesCommand(Guid Id, RoundMilestonesInputDto Input) : IRequest<RoundResult<RoundDto>>;
-public record OpenRoundCommand(Guid Id) : IRequest<RoundResult<RoundDto>>;
-public record FinishRoundCommand(Guid Id) : IRequest<RoundResult<RoundDto>>;
+public record UpdateRoundMilestonesCommand(Guid Id, RoundMilestonesInputDto Input, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
+public record OpenRoundCommand(Guid Id, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
+public record FinishRoundCommand(Guid Id, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
 // ActorId: Giáo vụ công bố, ghi vào lịch sử từng đề tài (null = Hệ thống).
 public record PublishRoundTopicsCommand(Guid Id, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
 public record DeleteRoundCommand(Guid Id) : IRequest<RoundResult<bool>>;
@@ -33,8 +33,8 @@ public record DeleteRoundCommand(Guid Id) : IRequest<RoundResult<bool>>;
 public record GetPeopleQuery(string Kind) : IRequest<ApiResponse<IReadOnlyList<ParticipantDto>>>;
 public record GetCandidatesQuery(Guid Id, string Kind) : IRequest<RoundResult<IReadOnlyList<CandidateDto>>>;
 public record CheckParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes) : IRequest<RoundResult<IReadOnlyList<ParticipantCheckDto>>>;
-public record AddParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes) : IRequest<RoundResult<AddParticipantsResultDto>>;
-public record RemoveParticipantCommand(Guid Id, string Kind, Guid UserId) : IRequest<RoundResult<RoundDto>>;
+public record AddParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes, Guid? ActorId = null) : IRequest<RoundResult<AddParticipantsResultDto>>;
+public record RemoveParticipantCommand(Guid Id, string Kind, Guid UserId, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
 
 // Nhãn tiếng Việt, khóa JSON và quy tắc đợt (docs/DESIGN/03, PDR-029…PDR-034).
 public static class RoundRules

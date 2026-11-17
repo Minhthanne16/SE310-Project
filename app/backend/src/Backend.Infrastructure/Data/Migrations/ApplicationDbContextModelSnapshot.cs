@@ -430,6 +430,22 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.ToTable("RevisionRequestLinks");
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.RoundAuditEntry", b =>
+                {
+                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
+                    b.Property<string>("Action").IsRequired().HasMaxLength(32).HasColumnType("character varying(32)");
+                    b.Property<Guid?>("ActorUserId").HasColumnType("uuid");
+                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<string>("Details").HasColumnType("text");
+                    b.Property<Guid>("RoundId").HasColumnType("uuid");
+                    b.Property<Guid?>("TargetUserId").HasColumnType("uuid");
+                    b.Property<DateTime?>("UpdatedAt").HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+                    b.HasIndex("RoundId", "CreatedAt");
+                    b.ToTable("RoundAuditEntries");
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.RoundMilestone", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1098,6 +1114,15 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.HasOne("Backend.Domain.Entities.TopicSubmission", null)
                         .WithMany()
                         .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.RoundAuditEntry", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.ThesisRound", null)
+                        .WithMany()
+                        .HasForeignKey("RoundId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
