@@ -30,7 +30,7 @@ export default function RootLayout({
       lang="vi"
       className={`${beVietnamPro.variable} ${jetBrainsMono.variable}`}
     >
-      <body>{children}</body>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

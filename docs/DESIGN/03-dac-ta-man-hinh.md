@@ -466,7 +466,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 **Quy tắc nghiệp vụ**
 
 - Hội đồng hai người: chủ tịch và thư ký. Thư ký nhập điểm cho cả hai; Chủ tịch chỉ xem, không có bước xác nhận/trả lại (xem [PDR-050](../decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md), thay PDR-006).
-- Điểm CTHĐ bị trả lại không có hạn sửa riêng; mốc cho điểm chỉ nhắc, không tự khóa phiếu. Việc cần xử lý còn hiển thị đến khi Chủ tịch xác nhận.
+- Không có thao tác trả lại điểm CTHĐ và không có việc chờ Chủ tịch xác nhận (PDR-050); thời hạn cho điểm áp dụng theo mốc của đợt.
 - Cảnh báo khi bất kỳ cặp chéo nào giữa điểm CTHĐ/TKHĐ và CBHD/CBPB lệch từ 2 trở lên, theo [PDR-007](../decisions/PDR-007-canh-bao-lech-diem-bon-cap-cheo.md).
 
 ## Gửi thông báo (giảng viên)

@@ -6,7 +6,7 @@ Mỗi SV nhận bốn thành phần điểm độc lập; kết quả được t
 
 ## Step P07-S01 — Nhập phiếu theo phân công
 
-**Tham chiếu:** [BUSINESS_RULES — Chấm điểm](../requirements/BUSINESS_RULES.md), [ROLES](../product/ROLES.md), [PDR-006](../decisions/PDR-006-xac-nhan-diem-chu-tich-hoi-dong.md), [PDR-022](../decisions/PDR-022-dieu-kien-nhap-diem-phan-bien.md), [PDR-023](../decisions/PDR-023-khoa-thay-giang-vien-phan-bien-sau-phieu.md), [PDR-024](../decisions/PDR-024-mau-hoi-dong-chung-phieu-diem-rieng.md), [PDR-035](../decisions/PDR-035-cong-diem-tieu-chi-cap-cuoi.md), [DESIGN — Không gian đề tài GV](../DESIGN/03-dac-ta-man-hinh.md#không-gian-đề-tài-góc-nhìn-giảng-viên), R03/R05.
+**Tham chiếu:** [BUSINESS_RULES — Chấm điểm](../requirements/BUSINESS_RULES.md), [ROLES](../product/ROLES.md), [PDR-050](../decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md), [PDR-022](../decisions/PDR-022-dieu-kien-nhap-diem-phan-bien.md), [PDR-023](../decisions/PDR-023-khoa-thay-giang-vien-phan-bien-sau-phieu.md), [PDR-024](../decisions/PDR-024-mau-hoi-dong-chung-phieu-diem-rieng.md), [PDR-035](../decisions/PDR-035-cong-diem-tieu-chi-cap-cuoi.md), [DESIGN — Không gian đề tài GV](../DESIGN/03-dac-ta-man-hinh.md#không-gian-đề-tài-góc-nhìn-giảng-viên), R03/R05.
 
 **Công việc:**
 - [ ] Thiết kế phiếu theo SV, vai trò chấm, người nhập và phiên bản mẫu; Thư ký nhập điểm CTHĐ và TKHĐ theo PDR-050 (thay PDR-006) và PDR-024 cho hai phiếu hội đồng độc lập cùng mẫu.
@@ -22,9 +22,9 @@ Mỗi SV nhận bốn thành phần điểm độc lập; kết quả được t
 - [ ] Điểm phiếu bằng tổng điểm các tiêu chí cấp cuối đã chấm, trong khoảng 0–10; thiếu tiêu chí hoặc vượt mức làm phiếu chưa hợp lệ, tiêu chí cha không cộng trùng.
 - [ ] Thư ký nhập và sửa điểm CTHĐ, TKHĐ cho tới khi Giáo vụ xác nhận kết quả; Chủ tịch chỉ xem, không có thao tác xác nhận hay trả lại (PDR-050).
 
-**Verification:** Test ma trận bốn vai trò, một/hai SV, thiếu điểm, trả lại có/không lý do, sửa rồi xác nhận lại, sai hội đồng và truy vết.
+**Verification:** Test ma trận bốn thành phần điểm, một/hai SV, thiếu điểm, quyền Chủ tịch chỉ xem, quyền Thư ký nhập hai phiếu, sửa trước/sau khi Giáo vụ xác nhận, sai hội đồng và truy vết.
 
-**Dependencies:** `CP04`, `CP05`, `CP06`; PDR-006 cho xác nhận, trả lại và mốc nhắc; PDR-022/023 cho điểm và phân công PB.
+**Dependencies:** `CP04`, `CP05`, `CP06`; PDR-050 cho quyền nhập điểm hội đồng; PDR-022/023 cho điểm và phân công PB.
 
 ## Step P07-S02 — Tính điểm và cảnh báo
 
@@ -41,26 +41,26 @@ Mỗi SV nhận bốn thành phần điểm độc lập; kết quả được t
 
 **Verification:** Unit test công thức và test tích hợp 1/2 SV, thiếu một phiếu, điểm 0/10, cảnh báo biên.
 
-**Dependencies:** `P07-S01`; PDR-007/008/009.
+**Dependencies:** `P07-S01`; PDR-007/008/049.
 
 ## Step P07-S03 — Xác nhận, công bố và xem kết quả
 
-**Tham chiếu:** [BUSINESS_RULES — Chấm điểm](../requirements/BUSINESS_RULES.md), [WORKFLOWS — Chấm điểm](../requirements/WORKFLOWS.md), [PDR-010](../decisions/PDR-010-xu-ly-ket-qua-theo-lo.md), [PDR-011](../decisions/PDR-011-tham-quyen-xu-ly-nhom-chua-nop-ban-khoa-luan.md), [DESIGN — Kết quả](../DESIGN/03-dac-ta-man-hinh.md#kết-quả), R01/R02/R09.
+**Tham chiếu:** [BUSINESS_RULES — Chấm điểm](../requirements/BUSINESS_RULES.md), [WORKFLOWS — Chấm điểm](../requirements/WORKFLOWS.md), [PDR-049](../decisions/PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md), [PDR-011](../decisions/PDR-011-tham-quyen-xu-ly-nhom-chua-nop-ban-khoa-luan.md), [PDR-059](../decisions/PDR-059-chot-ban-khoa-luan-cuoi.md), [DESIGN — Kết quả](../DESIGN/03-dac-ta-man-hinh.md#kết-quả), R01/R02/R09.
 
 **Công việc:**
-- [ ] Áp dụng PDR-009/010 cho xác nhận/công bố từng SV và lô có báo cáo; giữ PDR-011 về Giáo vụ xử lý nhóm chưa có bản nào; áp dụng PDR-005 cho mở lại trước công bố.
-- [ ] Triển khai xác nhận/công bố theo từng bản ghi và lô: xử lý người đủ điều kiện, báo lý do từng người bị bỏ qua; khóa sửa điểm khi đã xác nhận, cho Giáo vụ mở lại trước công bố với lý do/lịch sử, xác nhận lại rồi mới công bố.
+- [ ] Áp dụng PDR-049 cho xác nhận/công bố **cả đề tài** khi mọi SV đủ bốn phiếu và không lệch điểm; lô báo cáo **từng đề tài**; giữ PDR-011 về Giáo vụ xử lý nhóm chưa có bản nào; áp dụng PDR-005 cho mở lại trước công bố.
+- [ ] Triển khai xác nhận/công bố từng đề tài và theo lô: chỉ xử lý đề tài đủ điều kiện, báo lý do từng đề tài bị bỏ qua; khóa sửa điểm cả nhóm khi đã xác nhận, cho Giáo vụ mở lại trước công bố với lý do/lịch sử, xác nhận lại rồi mới công bố.
 - [ ] Cập nhật trạng thái `Đã cho điểm`/`Đã hoàn tất` đúng quy tắc; chỉ SV liên quan thấy điểm sau công bố.
 
 **Acceptance criteria:**
-- [ ] Không thể công bố điểm chưa xác nhận hoặc trường hợp bản cuối không đủ điều kiện; lô hỗn hợp xử lý người hợp lệ và trả báo cáo từng người bị bỏ qua với lý do rõ.
-- [ ] Một SV thiếu phiếu không làm SV khác lộ điểm sai; sau công bố SV chỉ xem điểm của mình; Giáo vụ thấy lý do bị chặn.
+- [ ] Không thể công bố đề tài chưa xác nhận hoặc trường hợp bản cuối không đủ điều kiện; lô hỗn hợp xử lý đề tài hợp lệ và trả báo cáo từng đề tài bị bỏ qua với lý do rõ.
+- [ ] Một SV thiếu phiếu chặn xác nhận/công bố **toàn bộ đề tài**; sau khi cả đề tài công bố, mỗi SV chỉ xem điểm của mình; Giáo vụ thấy lý do bị chặn.
 - [ ] Mở lại trước công bố ghi lý do và không xóa dấu vết điểm/xác nhận cũ; mở lại sau công bố bị từ chối.
 - [ ] Nhóm được Giáo vụ kết thúc `Không đủ điều kiện công bố` vì không nộp bản nào sau hạn bổ sung không xuất hiện như điểm không đạt, kết quả đã công bố hoặc đề tài `Đã hoàn tất`; lý do quyết định tra cứu được theo quyền.
 
 **Verification:** Test trường hợp không có bản cuối, bản có nhưng chưa chốt, đủ/thiếu 4 phiếu, hai SV khác trạng thái, lô toàn hợp lệ/toàn không hợp lệ/hỗn hợp, thao tác lặp và sửa sau xác nhận.
 
-**Dependencies:** `P07-S02`, `P04-S03`; PDR-009/010/011.
+**Dependencies:** `P07-S02`, `P04-S03`; PDR-005/011/049/059. Trạng thái nguồn cho `Không đủ điều kiện công bố` cần chốt OQ-031 tại `CP00`.
 
 ## Checkpoint CP07 — Kết quả đúng và có thể giải thích
 
