@@ -6,13 +6,13 @@
 
 ## Bối cảnh
 
-Đề cương phải được GVHD duyệt trước khi đề tài chuyển `Đang thực hiện`, nhưng tài liệu trước đây chưa xác định ai đóng từng yêu cầu chỉnh sửa, nhóm nộp lại theo yêu cầu nào và mốc hạn áp dụng.
+Đề cương phải được GVHD duyệt để hoàn tất chặng Đề cương. Theo [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md), đề tài có nhóm chuyển `Đang thực hiện` khi hết hạn đăng ký, độc lập với việc duyệt đề cương. Tài liệu này xác định ai đóng từng yêu cầu chỉnh sửa, nhóm nộp lại theo yêu cầu nào và mốc hạn áp dụng.
 
 ## Quyết định
 
 - **GVHD** của đề tài tạo yêu cầu chỉnh sửa và là người duy nhất xác nhận yêu cầu đó đã **hoàn tất**. Nhóm Sinh viên được xem, trả lời và nộp lại; nhóm không tự đánh dấu hoàn tất.
 - Khi có nhiều yêu cầu đang mở, nhóm nộp **một phiên bản đề cương mới cho cả lần sửa**, liên kết phiên bản đó với các yêu cầu đang mở. GVHD kiểm tra và xác nhận hoàn tất **từng yêu cầu riêng**; yêu cầu chưa đạt vẫn mở để xử lý ở lần nộp tiếp theo.
-- GVHD chỉ được duyệt đề cương và chuyển đề tài sang `Đang thực hiện` khi **mọi yêu cầu chỉnh sửa còn liên quan đã hoàn tất** và bản đề cương được duyệt là phiên bản hiện hành được xem xét. Không duyệt khi còn yêu cầu mở.
+- GVHD chỉ được duyệt đề cương khi **mọi yêu cầu chỉnh sửa còn liên quan đã hoàn tất** và bản đề cương được duyệt là phiên bản hiện hành được xem xét. Không duyệt khi còn yêu cầu mở. Duyệt đề cương không đổi trạng thái đề tài theo PDR-049.
 - Yêu cầu chỉnh sửa **không có hạn nộp lại riêng**; dùng mốc Đề cương chung của đợt. Nhận nộp sau mốc theo hạn trễ riêng của mốc Đề cương nếu Giáo vụ bật theo [PDR-041](PDR-041-han-nop-tre-rieng-tung-moc.md); tạo yêu cầu không tự mở thêm hạn.
 
 ## Hệ quả

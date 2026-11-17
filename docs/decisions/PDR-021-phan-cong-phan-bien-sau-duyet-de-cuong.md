@@ -10,7 +10,7 @@ WORKFLOWS cho phép phân công phản biện khi đề tài `Đang thực hiệ
 
 ## Quyết định
 
-- Giáo vụ được phân công Giảng viên phản biện **từ khi đề cương của đề tài đã được GVHD duyệt**; đây là thời điểm đề tài chuyển `Đang thực hiện` theo quy tắc hiện hành.
+- Giáo vụ được phân công Giảng viên phản biện **từ khi đề cương của đề tài đã được GVHD duyệt**. Dấu duyệt đề cương là điều kiện phân công riêng; trạng thái đề tài chuyển `Đang thực hiện` khi hết hạn đăng ký theo [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md).
 - Không bắt buộc đã nộp báo cáo giữa kỳ hoặc báo cáo cuối kỳ để **phân công**. Giảng viên hướng dẫn của đề tài không được làm phản biện chính đề tài đó.
 - Phân công được ghi lịch sử và thông báo cho Giảng viên phản biện. Việc được phân công không tự cho phép **nhập điểm**; điều kiện chấm theo [PDR-022](PDR-022-dieu-kien-nhap-diem-phan-bien.md).
 

@@ -6,7 +6,7 @@
 - **Tham chiếu:**
   - [PDR-013 — Yêu cầu chỉnh sửa đề cương](PDR-013-yeu-cau-chinh-sua-de-cuong.md)
   - [PDR-041 — Hạn nộp trễ riêng từng mốc](PDR-041-han-nop-tre-rieng-tung-moc.md)
-  - [PDR-056 — Hợp đồng nộp báo cáo giữa kỳ và cuối kỳ](PDR-056-hop-dong-nop-bao-cao-giua-ky-cuoi-ky.md)
+  - [PDR-058 — Hợp đồng nộp báo cáo giữa kỳ và cuối kỳ](PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md)
   - [PDR-057 — Đề cương và yêu cầu chỉnh sửa](PDR-057-de-cuong-va-yeu-cau-chinh-sua.md)
   - [PDR-058 — Nộp báo cáo giữa kỳ và cuối kỳ](PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md)
   - [PDR-061 — Không gian đề tài, khung và tab](PDR-061-khong-gian-de-tai-khung-va-tab.md)

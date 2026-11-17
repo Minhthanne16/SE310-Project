@@ -31,7 +31,7 @@ Tài liệu cũng chưa nói rõ một số điểm khi dựng:
 - **Bắt đầu nộp:** nhóm nộp được từ lúc ghi danh hoặc được chấp nhận đề xuất. Không phải chờ ngày bắt đầu mốc Đề cương. Như vậy điều kiện "nhóm chưa nộp đề cương" của PDR-047 có nghĩa, và hủy ghi danh bị chặn ngay sau lần nộp đầu.
 - **Hạn nộp:** đóng sau 23:59 (giờ Việt Nam) ngày kết thúc mốc Đề cương.
   - Hạn trễ riêng theo PDR-041 chưa có chỗ lưu, vì dữ liệu mốc chỉ có công tắc "Cho nộp trễ".
-  - Vì vậy hiện **không nhận nộp trễ**. Trường `late` và `lateDeadline` đã có trong hợp đồng và sẽ được dùng khi P02 lưu hạn trễ.
+  - Tại thời điểm P04-S01, **chưa nhận nộp trễ**. Sau đó [PDR-058](PDR-058-nop-bao-cao-giua-ky-cuoi-ky.md) bổ sung `lateEndDate` và **đã thay thế giới hạn triển khai này**: Đề cương nhận nộp trễ trong cửa sổ hợp lệ và gắn `late`.
   - Thông điệp chặn là "Đã hết hạn nộp đề cương (dd/MM/yyyy)."
   - Tạo yêu cầu chỉnh sửa không mở thêm hạn (PDR-013).
 - **Phiên bản:**
@@ -116,7 +116,7 @@ Proxy Next.js (`next.config.ts`) đặt `experimental.proxyClientMaxBodySize = '
 
 ## Hệ quả và việc còn lại
 
-- Hạn trễ riêng của mốc Đề cương (PDR-041) cần P02 lưu ngày trễ; khi có, `OutlineRules.WindowBlocker` nhận nộp tới hạn trễ và gắn `late`.
+- Hạn trễ riêng của mốc Đề cương (PDR-041) đã được mở rộng theo PDR-058: `OutlineRules.WindowBlocker` nhận nộp tới hạn trễ hợp lệ và gắn `late`.
 - Xóa đợt (chỉ ở trạng thái Nháp) hoặc xóa đề tài bằng tay xóa bản ghi theo cascade, nhưng không xóa tệp trên storage. Đợt có bài nộp không còn là Nháp nên luồng thường không gặp; dọn tệp mồ côi thuộc P04-S02.
 - Các chặng Giữa kỳ, Cuối kỳ dùng chung bảng `TopicSubmissions` (cột `Kind`) ở P04-S02/S03.
 - OQ-020 mục "duyệt đề cương khi còn yêu cầu" vẫn mở. Đến khi chốt, giữ quy tắc PDR-013: không duyệt khi còn yêu cầu mở.
