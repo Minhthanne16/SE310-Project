@@ -670,13 +670,13 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 **Hành vi**
 
-- Chọn GVPB từng dòng (khóa GVHD, hiện số đề tài đang nhận) hoặc gán hàng loạt; "Tự gợi ý" (bỏ GV từ 6 đề tài, ưu tiên cùng lĩnh vực rồi ít đề tài); thanh tải từng GV.
+- Chọn GVPB từng dòng (khóa GVHD, hiện số đề tài đang nhận) hoặc gán hàng loạt; "Tự gợi ý" (bỏ GV đã đạt mức tối đa đề tài của đợt, ưu tiên cùng lĩnh vực rồi ít đề tài phản biện; chỉ điền sẵn bản nháp, Giáo vụ xác nhận bằng "Lưu và gửi thông báo" mới lưu; xem [PDR-062](../decisions/PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md)); thanh tải từng GV.
 - "Lưu và gửi thông báo".
 
 **Quy tắc nghiệp vụ**
 
 - Chỉ phân công đề tài có đề cương đã được GVHD duyệt; không chờ báo cáo giữa kỳ/cuối kỳ để giao phản biện (xem [PDR-021](../decisions/PDR-021-phan-cong-phan-bien-sau-duyet-de-cuong.md)). Đề tài chưa duyệt đề cương nằm ở khung "Chưa đủ điều kiện" với lý do. Phản biện đã được phân công chỉ được nhập điểm sau khi nhóm nộp báo cáo cuối kỳ; không chờ báo cáo giữa kỳ hoặc chốt bản cuối (xem [PDR-022](../decisions/PDR-022-dieu-kien-nhap-diem-phan-bien.md)).
-- GVPB không trùng GVHD.
+- GVPB không trùng GVHD. Mỗi đề tài một GVPB; đổi người gửi kèm GVPB đang thấy, lệch thì báo "Phân công vừa thay đổi, tải lại" (PDR-062). Vượt mức tối đa đề tài của đợt chỉ cảnh báo.
 - Từ phiếu phản biện đầu tiên của đề tài, ô thay Giảng viên phản biện bị khóa và backend chặn thay người; trước phiếu được đổi có lịch sử/thông báo, hiển thị lý do khóa theo [PDR-023](../decisions/PDR-023-khoa-thay-giang-vien-phan-bien-sau-phieu.md).
 
 ## Hội đồng bảo vệ

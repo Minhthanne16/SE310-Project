@@ -10,6 +10,7 @@ Mỗi SV nhận bốn thành phần điểm độc lập; kết quả được t
 
 **Công việc:**
 - [ ] Thiết kế phiếu theo SV, vai trò chấm, người nhập và phiên bản mẫu; Thư ký nhập điểm CTHĐ và TKHĐ theo PDR-050 (thay PDR-006) và PDR-024 cho hai phiếu hội đồng độc lập cùng mẫu.
+- [ ] Khi lưu phiếu PB đầu tiên, đặt `ThesisTopic.ReviewerFirstScoredAt` bằng một câu UPDATE có điều kiện `ReviewerId = @me` trong cùng transaction với phiếu (dấu khóa PDR-023; xem [PDR-062](../decisions/PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md)); dùng `ReviewerRules.ScoreBlocker` cho điều kiện PDR-022.
 - [ ] Triển khai nhập/sửa điểm HD, PB, CTHĐ, TKHĐ theo quyền ngữ cảnh; chỉ cho nhập điểm PB sau báo cáo cuối kỳ theo PDR-022, khóa thay PB từ phiếu đầu tiên theo PDR-023; tính tổng điểm cấp cuối theo PDR-035.
 - [ ] Khóa sửa khi đã xác nhận theo quyết định; ghi mọi lần thay đổi điểm.
 
