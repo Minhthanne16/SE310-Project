@@ -20,5 +20,5 @@ Mẫu đã gán phải tạo phiên bản mới nếu thay tiêu chí theo [PDR-
 
 ## Hệ quả
 
-- Mô hình phiếu phân biệt vai trò chấm, người nhập và người xác nhận dù dùng chung mẫu tiêu chí.
-- Kiểm thử nhóm một/hai Sinh viên, hai điểm hội đồng khác nhau, chỉ có một phiếu, mẫu sai phiên bản và xác nhận điểm CTHĐ.
+- Mô hình phiếu phân biệt vai trò chấm và người nhập, truy vết người sửa cùng mẫu tiêu chí; Thư ký nhập cả hai phiếu hội đồng theo PDR-050.
+- Kiểm thử nhóm một/hai Sinh viên, hai điểm hội đồng khác nhau, chỉ có một phiếu, mẫu sai phiên bản, quyền Thư ký nhập và quyền Chủ tịch chỉ xem.
