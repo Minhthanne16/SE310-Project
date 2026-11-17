@@ -133,7 +133,8 @@ export const ReviewerAssignmentPage: React.FC<ReviewerAssignmentPageProps> = ({
     [lecturers, topics, draft],
   );
   const max = current?.round.loadMax ?? 0;
-  const overLoaded = max > 0 ? lecturers.filter((l) => projected[l.id] > max) : [];
+  const overLoaded =
+    max > 0 ? lecturers.filter((l) => projected[l.id] > max) : [];
   const editableIds = mainRows.filter(isEditable).map((r) => r.topicId);
   const canSuggest = mainRows.some(
     (r) => isEditable(r) && !r.reviewer && !draft[r.topicId],
@@ -335,7 +336,11 @@ export const ReviewerAssignmentPage: React.FC<ReviewerAssignmentPageProps> = ({
                 )}
 
                 {selected.length > 0 && (
-                  <div className="rvw-bulk" role="group" aria-label="Gán hàng loạt">
+                  <div
+                    className="rvw-bulk"
+                    role="group"
+                    aria-label="Gán hàng loạt"
+                  >
                     <span>{`${selected.length} đề tài đã chọn`}</span>
                     <label htmlFor="pb-bulk" className="app-visually-hidden">
                       Giảng viên phản biện cho các đề tài đã chọn
@@ -545,7 +550,8 @@ const ReviewerRow: React.FC<RowProps> = ({
   onToggle,
 }) => {
   const editable = isEditable(row);
-  const changed = editable && value !== '' && value !== (row.reviewer?.id ?? '');
+  const changed =
+    editable && value !== '' && value !== (row.reviewer?.id ?? '');
   const describedBy =
     [
       row.locked ? `pb-lock-${row.topicId}` : null,

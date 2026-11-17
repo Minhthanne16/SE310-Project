@@ -1,11 +1,20 @@
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { MyReviewItem, MyReviews } from '@/types/reviewer';
 import { ReviewerTopicsPage } from './ReviewerTopicsPage';
 
 afterEach(cleanup);
 
-const item = (id: string, overrides: Partial<MyReviewItem> = {}): MyReviewItem => ({
+const item = (
+  id: string,
+  overrides: Partial<MyReviewItem> = {},
+): MyReviewItem => ({
   topicId: id,
   code: `DT-00${id}`,
   title: `Đề tài ${id}`,
@@ -34,23 +43,35 @@ const mine = (items: MyReviewItem[]): MyReviews => ({
 });
 
 it('lists assigned topics with the scoring state and a link to open each one', async () => {
-  const service = { mine: vi.fn().mockResolvedValue(
-    mine([
-      item('1'),
-      item('2', { canScore: true, scoreBlockedReason: null, hasFinal: true }),
-      item('3', { canScore: true, scoreBlockedReason: null, scored: true }),
-    ]),
-  ) };
+  const service = {
+    mine: vi.fn().mockResolvedValue(
+      mine([
+        item('1'),
+        item('2', {
+          canScore: true,
+          scoreBlockedReason: null,
+          hasFinal: true,
+        }),
+        item('3', { canScore: true, scoreBlockedReason: null, scored: true }),
+      ]),
+    ),
+  };
   render(<ReviewerTopicsPage service={service} />);
 
   const table = await screen.findByRole('table');
   const rows = within(table).getAllByRole('row');
-  expect(within(rows[1]).getByText('Chưa đủ điều kiện chấm')).toBeInTheDocument();
-  expect(within(rows[1]).getByText('Nhóm chưa nộp báo cáo cuối kỳ')).toBeInTheDocument();
+  expect(
+    within(rows[1]).getByText('Chưa đủ điều kiện chấm'),
+  ).toBeInTheDocument();
+  expect(
+    within(rows[1]).getByText('Nhóm chưa nộp báo cáo cuối kỳ'),
+  ).toBeInTheDocument();
   expect(within(rows[2]).getByText('Chưa chấm')).toBeInTheDocument();
   expect(within(rows[3]).getByText('Đã chấm')).toBeInTheDocument();
   expect(within(rows[1]).getByText('Giảng viên A')).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: 'Mở DT-001 Đề tài 1' })).toHaveAttribute('href', '/de-tai/1');
+  expect(
+    screen.getByRole('link', { name: 'Mở DT-001 Đề tài 1' }),
+  ).toHaveAttribute('href', '/de-tai/1');
 
   fireEvent.click(screen.getByRole('button', { name: 'Chưa chấm (2)' }));
   expect(screen.queryByText('DT-003')).not.toBeInTheDocument();
@@ -58,7 +79,9 @@ it('lists assigned topics with the scoring state and a link to open each one', a
 });
 
 it('shows the not assigned empty state', async () => {
-  const service = { mine: vi.fn().mockResolvedValue({ rounds: [], roundId: null, items: [] }) };
+  const service = {
+    mine: vi.fn().mockResolvedValue({ rounds: [], roundId: null, items: [] }),
+  };
   render(<ReviewerTopicsPage service={service} />);
 
   expect(await screen.findByText('Chưa được phân công')).toBeInTheDocument();

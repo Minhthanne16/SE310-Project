@@ -1,8 +1,5 @@
 import { expect, it } from 'vitest';
-import type {
-  ReviewerLecturer,
-  ReviewerTopicRow,
-} from '@/types/reviewer';
+import type { ReviewerLecturer, ReviewerTopicRow } from '@/types/reviewer';
 import {
   applySuggestions,
   assignMany,
@@ -81,7 +78,13 @@ it('applies suggestions only to empty editable rows and keeps notes for rows wit
     { topicId: '5', lecturerId: null, reason: 'Không có ứng viên' },
   ]);
 
-  expect(result.draft).toEqual({ '1': 'b', '2': 'b', '3': 'c', '4': '', '5': '' });
+  expect(result.draft).toEqual({
+    '1': 'b',
+    '2': 'b',
+    '3': 'c',
+    '4': '',
+    '5': '',
+  });
   expect(result.applied).toEqual(['1']);
   expect(result.notes).toEqual({ '5': 'Không có ứng viên' });
 });
@@ -112,7 +115,12 @@ it('assigns one lecturer to many rows and skips supervised, locked and ineligibl
     row('4', { eligible: false }),
   ];
 
-  const result = assignMany(rows, initialDraft(rows), ['1', '2', '3', '4'], 'b');
+  const result = assignMany(
+    rows,
+    initialDraft(rows),
+    ['1', '2', '3', '4'],
+    'b',
+  );
 
   expect(result.applied).toBe(1);
   expect(result.skipped).toBe(3);

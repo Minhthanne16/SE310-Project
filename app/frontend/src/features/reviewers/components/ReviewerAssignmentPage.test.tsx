@@ -44,7 +44,13 @@ const row = (
   title: `Đề tài ${id}`,
   field: 'CNPM',
   supervisor: person('gva', 'Giảng viên A'),
-  group: [{ ...person(`sv${id}`, `SV ${id}`), className: 'KTPM', representative: true }],
+  group: [
+    {
+      ...person(`sv${id}`, `SV ${id}`),
+      className: 'KTPM',
+      representative: true,
+    },
+  ],
   outlineApprovedAt: '2026-09-10T03:00:00Z',
   reviewer: null,
   assignedAt: null,
@@ -163,7 +169,16 @@ it('suggests into a draft without saving, then saves after confirmation and toas
   service.batch.mockResolvedValue({
     succeeded: 1,
     failed: 0,
-    results: [{ topicId: '1', code: 'DT-001', ok: true, message: 'ok', warning: null, row: null }],
+    results: [
+      {
+        topicId: '1',
+        code: 'DT-001',
+        ok: true,
+        message: 'ok',
+        warning: null,
+        row: null,
+      },
+    ],
   });
   await renderPage(service);
   expect(
@@ -173,27 +188,39 @@ it('suggests into a draft without saving, then saves after confirmation and toas
   fireEvent.click(screen.getByRole('button', { name: 'Tự gợi ý' }));
   const dialog = screen.getByRole('alertdialog');
   expect(dialog).toHaveTextContent('chưa được lưu');
-  fireEvent.click(within(dialog).getByRole('button', { name: 'Điền sẵn gợi ý' }));
+  fireEvent.click(
+    within(dialog).getByRole('button', { name: 'Điền sẵn gợi ý' }),
+  );
 
   await waitFor(() => expect(selectOf('DT-001')).toHaveValue('gvb'));
   expect(service.batch).not.toHaveBeenCalled();
   expect(screen.getByText('Gợi ý')).toBeInTheDocument();
-  expect(screen.getByText(/Không gợi ý được: Không có ứng viên/)).toBeInTheDocument();
-  expect(await screen.findByText(/Đã điền sẵn 1 gợi ý\. Chưa lưu/)).toBeInTheDocument();
+  expect(
+    screen.getByText(/Không gợi ý được: Không có ứng viên/),
+  ).toBeInTheDocument();
+  expect(
+    await screen.findByText(/Đã điền sẵn 1 gợi ý\. Chưa lưu/),
+  ).toBeInTheDocument();
 
   service.list.mockResolvedValue(
     data([row('1', { reviewer: person('gvb', 'Giảng viên B') }), row('2')]),
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Lưu và gửi thông báo (1)' }));
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Lưu và gửi thông báo (1)' }),
+  );
   const confirm = screen.getByRole('alertdialog');
-  fireEvent.click(within(confirm).getByRole('button', { name: 'Lưu và gửi thông báo' }));
+  fireEvent.click(
+    within(confirm).getByRole('button', { name: 'Lưu và gửi thông báo' }),
+  );
 
   await waitFor(() =>
     expect(service.batch).toHaveBeenCalledWith('r1', [
       { topicId: '1', reviewerId: 'gvb', expectedReviewerId: null },
     ]),
   );
-  expect(await screen.findByText(/Đã lưu 1 phân công và gửi thông báo/)).toBeInTheDocument();
+  expect(
+    await screen.findByText(/Đã lưu 1 phân công và gửi thông báo/),
+  ).toBeInTheDocument();
   await waitFor(() => expect(selectOf('DT-001')).toHaveValue('gvb'));
   expect(screen.queryByText('Gợi ý')).not.toBeInTheDocument();
 });
@@ -204,7 +231,14 @@ it('reports failed rows in place, keeps their draft and toasts the error', async
     succeeded: 1,
     failed: 1,
     results: [
-      { topicId: '1', code: 'DT-001', ok: true, message: 'ok', warning: null, row: null },
+      {
+        topicId: '1',
+        code: 'DT-001',
+        ok: true,
+        message: 'ok',
+        warning: null,
+        row: null,
+      },
       {
         topicId: '2',
         code: 'DT-002',
@@ -222,7 +256,9 @@ it('reports failed rows in place, keeps their draft and toasts the error', async
     data([row('1', { reviewer: person('gvb', 'Giảng viên B') }), row('2')]),
   );
 
-  fireEvent.click(screen.getByRole('button', { name: 'Lưu và gửi thông báo (2)' }));
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Lưu và gửi thông báo (2)' }),
+  );
   fireEvent.click(
     within(screen.getByRole('alertdialog')).getByRole('button', {
       name: 'Lưu và gửi thông báo',
@@ -246,14 +282,18 @@ it('keeps the confirm dialog with an inline error when the whole batch fails', a
   await renderPage(service);
   fireEvent.change(selectOf('DT-001'), { target: { value: 'gvb' } });
 
-  fireEvent.click(screen.getByRole('button', { name: 'Lưu và gửi thông báo (1)' }));
+  fireEvent.click(
+    screen.getByRole('button', { name: 'Lưu và gửi thông báo (1)' }),
+  );
   fireEvent.click(
     within(screen.getByRole('alertdialog')).getByRole('button', {
       name: 'Lưu và gửi thông báo',
     }),
   );
 
-  expect(await screen.findByText('Mỗi lô tối đa 200 đề tài.')).toBeInTheDocument();
+  expect(
+    await screen.findByText('Mỗi lô tối đa 200 đề tài.'),
+  ).toBeInTheDocument();
   expect(screen.getByRole('alertdialog')).toBeInTheDocument();
 });
 
