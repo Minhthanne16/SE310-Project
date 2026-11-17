@@ -110,7 +110,7 @@ it('edits and saves the profile', async () => {
   expect(
     screen.queryByRole('button', { name: 'Lưu thay đổi' }),
   ).not.toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent(
+  expect(await screen.findByRole('status')).toHaveTextContent(
     'Đã lưu thông tin cá nhân.',
   );
 });
@@ -262,7 +262,8 @@ it('confirms a password change on the page', async () => {
   await waitFor(() =>
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
   );
-  expect(screen.getByRole('status')).toHaveTextContent(
+  // Toast được vẽ ở nhịp render sau khi hộp thoại đóng: chờ thay vì đọc ngay (tránh lỗi chập chờn trên CI).
+  expect(await screen.findByRole('status')).toHaveTextContent(
     'Đã đổi mật khẩu. Lần đăng nhập sau dùng mật khẩu mới.',
   );
 });
