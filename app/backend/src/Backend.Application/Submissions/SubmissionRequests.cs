@@ -98,8 +98,8 @@ internal sealed record SubmissionContext(ThesisTopic Topic, ThesisRound Round, S
 
 internal static class SubmissionMapping
 {
-    // Quyền theo vai trò và quan hệ với đề tài (ROLES · Nguyên tắc truy cập). Phản biện và hội đồng
-    // được thêm ở đây khi có mô-đun phân công (P05/P06).
+    // Quyền theo vai trò và quan hệ với đề tài (ROLES · Nguyên tắc truy cập). GVPB hiện tại chỉ đọc
+    // (PDR-062); hội đồng được thêm ở đây khi có mô-đun phân công (P06).
     public static async Task<SubmissionContext?> Load(Guid topicId, Guid viewerId, ViewerRole role,
         ITopicRepository topics, IRoundRepository rounds, IGroupRepository groups, CancellationToken cancellationToken)
     {
@@ -109,7 +109,8 @@ internal static class SubmissionMapping
         var access = role switch
         {
             ViewerRole.AcademicAffairs => SubmissionAccess.Reader,
-            ViewerRole.Lecturer => topic.SupervisorId == viewerId ? SubmissionAccess.Supervisor : SubmissionAccess.None,
+            ViewerRole.Lecturer => topic.SupervisorId == viewerId ? SubmissionAccess.Supervisor
+                : topic.ReviewerId == viewerId ? SubmissionAccess.Reader : SubmissionAccess.None,
             _ => topic.GroupId is { } groupId && (await groups.GetGroupsAsync([groupId], cancellationToken))
                 .GetValueOrDefault(groupId)?.Members.Any(m => m.StudentId == viewerId) == true
                 ? SubmissionAccess.Member

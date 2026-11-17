@@ -42,6 +42,13 @@ public class ThesisTopic : BaseEntity
     // Giảng viên hướng dẫn.
     public Guid SupervisorId { get; set; }
     public User? Supervisor { get; set; }
+    // Giảng viên phản biện (PDR-021, PDR-062): tối đa một mỗi đề tài, khác GVHD (ràng buộc ở database).
+    public Guid? ReviewerId { get; set; }
+    public User? Reviewer { get; set; }
+    public DateTime? ReviewerAssignedAt { get; set; }
+    public Guid? ReviewerAssignedById { get; set; }
+    // Dấu khóa PDR-023: đặt cùng transaction với phiếu phản biện đầu tiên (P07); khác null thì không đổi GVPB.
+    public DateTime? ReviewerFirstScoredAt { get; set; }
     public TopicSource Source { get; set; } = TopicSource.Lecturer;
     public TopicStatus Status { get; set; } = TopicStatus.NotRegistered;
     // Nhóm đang nhận đề tài; duy nhất để một nhóm không giữ hai đề tài (PDR-054).
@@ -84,4 +91,5 @@ public static class TopicHistoryCategories
     public const string Content = "Nội dung";
     public const string Group = "Nhóm";
     public const string Submission = "Bài nộp";
+    public const string Assignment = "Phân công";
 }

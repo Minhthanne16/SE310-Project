@@ -204,7 +204,7 @@ Cột "Repo" là quy tắc trước 03/11. Mục 1–4 nay theo cột báo cáo 
 | 4 | Đơn vị xác nhận và công bố | Theo cả nhóm đề tài, từng đề tài hoặc theo lô | Theo từng SV; lô báo lý do từng người (PDR-009, PDR-010) |
 | 5 | Chủ tịch xác nhận điểm CTHĐ | Thư ký nhập điểm cả hai, không có bước chủ tịch xác nhận | Chủ tịch xác nhận hoặc trả lại có lý do (PDR-006). **Đã chốt theo báo cáo: [PDR-050](decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md)** |
 | 6 | Mở lại kết quả | "Hủy xác nhận" có lý do, về `Đã cho điểm` | Mở lại trước công bố có lý do (PDR-005); tương đương, cần thống nhất tên gọi |
-| 7 | Điều kiện phân công phản biện | Đủ 3 điều kiện: đề cương duyệt, đã nộp giữa kỳ, đã nộp cuối kỳ | Từ khi đề cương được duyệt (PDR-021); PB nhập điểm sau khi nộp cuối kỳ (PDR-022) |
+| 7 | Điều kiện phân công phản biện | Đủ 3 điều kiện: đề cương duyệt, đã nộp giữa kỳ, đã nộp cuối kỳ | Từ khi đề cương được duyệt (PDR-021); PB nhập điểm sau khi nộp cuối kỳ (PDR-022). **Đã chốt theo PDR-021/022, triển khai ở [PDR-062](decisions/PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md)** |
 | 8 | Trùng phòng, trùng GV giữa hai hội đồng | Chỉ cảnh báo khi lưu, còn cảnh báo thì không công bố | Chặn khi lưu (PDR-014, PDR-015) |
 | 9 | Duyệt đề cương khi còn yêu cầu mở | Được duyệt | Phải hoàn tất mọi yêu cầu trước (PDR-013) |
 | 10 | Hủy đề xuất | Xóa khỏi CSDL; chỉ đại diện hủy | Giữ `Đã hủy` trong lịch sử (PDR-012) |

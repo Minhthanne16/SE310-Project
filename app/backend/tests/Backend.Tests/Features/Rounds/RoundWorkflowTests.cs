@@ -582,17 +582,18 @@ public sealed class RoundWorkflowTests : IDisposable
     {
         var lecturer = await Seed(UserRole.Lecturer, "GVLOCK");
         var reviewer = await Seed(UserRole.Lecturer, "GVHISTORY");
+        var assignedReviewer = await Seed(UserRole.Lecturer, "GVPB");
         var student = await Seed(UserRole.Student, "SVLOCK");
         var notified = await Seed(UserRole.Student, "SVNOTIFY");
         var round = await Open("Đợt có nhóm", "SVLOCK", "SVNOTIFY");
-        await Send(new AddParticipantsCommand(round.Id, "lecturers", ["GVLOCK", "GVHISTORY"]));
+        await Send(new AddParticipantsCommand(round.Id, "lecturers", ["GVLOCK", "GVHISTORY", "GVPB"]));
         using (var scope = _provider.CreateScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             var topic = new ThesisTopic
             {
                 RoundId = round.Id, Number = 1, Title = "Đề tài khóa", Field = "CNPM",
-                Description = "Mô tả", SupervisorId = lecturer, Status = TopicStatus.InProgress
+                Description = "Mô tả", SupervisorId = lecturer, ReviewerId = assignedReviewer, Status = TopicStatus.InProgress
             };
             db.ThesisTopics.Add(topic);
             db.TopicHistoryEntries.Add(new TopicHistoryEntry
@@ -610,9 +611,10 @@ public sealed class RoundWorkflowTests : IDisposable
         var detail = (await Send(new GetRoundQuery(round.Id))).Response.Data!;
         Assert.Contains(student, detail.LockedStudentIds);
         Assert.DoesNotContain(notified, detail.LockedStudentIds);
-        Assert.Equal(new[] { lecturer, reviewer }.Order(), detail.LockedLecturerIds.Order());
+        Assert.Equal(new[] { lecturer, reviewer, assignedReviewer }.Order(), detail.LockedLecturerIds.Order());
         Assert.Contains("nhóm", detail.RemovalBlockers[student]);
         Assert.Contains("Đề tài khóa", detail.RemovalBlockers[lecturer]);
+        Assert.Contains("Đề tài khóa", detail.RemovalBlockers[assignedReviewer]);
         Assert.Contains("lịch sử thao tác", detail.RemovalBlockers[reviewer]);
         Assert.False(detail.RemovalBlockers.ContainsKey(notified));
 
@@ -625,6 +627,9 @@ public sealed class RoundWorkflowTests : IDisposable
         var lockedStudent = await Send(new RemoveParticipantCommand(round.Id, "students", student));
         Assert.Equal(RoundResultStatus.Conflict, lockedStudent.Status);
         Assert.Contains("nhóm", lockedStudent.Response.Message);
+        var lockedReviewer = await Send(new RemoveParticipantCommand(round.Id, "lecturers", assignedReviewer));
+        Assert.Equal(RoundResultStatus.Conflict, lockedReviewer.Status);
+        Assert.Contains("đang phản biện", lockedReviewer.Response.Message);
 
         var removed = await Send(new RemoveParticipantCommand(round.Id, "students", notified));
         Assert.Equal(RoundResultStatus.Ok, removed.Status);

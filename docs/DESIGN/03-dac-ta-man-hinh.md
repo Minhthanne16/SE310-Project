@@ -441,6 +441,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 - Lọc Tất cả, Chưa chấm; nút "Mở · cho điểm" vào Không gian đề tài: xem đề cương, bản nộp, nhập phiếu chấm phản biện; nhận xét phản biện không bắt buộc, lưu riêng.
 - Trạng thái trống: Chưa được phân công.
+- Ghi chú triển khai (2026-11-17; không có artboard `GV-PhanBien` trong repo; API `GET /api/reviewer-assignments/mine`): chọn đợt khi GV phản biện ở nhiều đợt; bảng Mã, Đề tài, Nhóm, GVHD, Ngày phân công, Trạng thái (Chưa chấm, Chưa đủ điều kiện chấm kèm lý do như "Nhóm chưa nộp báo cáo cuối kỳ", Đã chấm từ P07) và nút "Mở" vào `/de-tai/[id]` ở chế độ chỉ xem (vai trò `reviewer`). Nút "Mở · cho điểm" và phiếu chấm thuộc P07.
 
 **Quy tắc nghiệp vụ**
 
@@ -670,14 +671,16 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 **Hành vi**
 
-- Chọn GVPB từng dòng (khóa GVHD, hiện số đề tài đang nhận) hoặc gán hàng loạt; "Tự gợi ý" (bỏ GV từ 6 đề tài, ưu tiên cùng lĩnh vực rồi ít đề tài); thanh tải từng GV.
+- Chọn GVPB từng dòng (khóa GVHD, hiện số đề tài đang nhận) hoặc gán hàng loạt; "Tự gợi ý" (bỏ GV đã đạt mức tối đa đề tài của đợt, ưu tiên cùng lĩnh vực rồi ít đề tài phản biện; chỉ điền sẵn bản nháp, Giáo vụ xác nhận bằng "Lưu và gửi thông báo" mới lưu; xem [PDR-062](../decisions/PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md)); thanh tải từng GV.
 - "Lưu và gửi thông báo".
 
 **Quy tắc nghiệp vụ**
 
 - Chỉ phân công đề tài có đề cương đã được GVHD duyệt; không chờ báo cáo giữa kỳ/cuối kỳ để giao phản biện (xem [PDR-021](../decisions/PDR-021-phan-cong-phan-bien-sau-duyet-de-cuong.md)). Đề tài chưa duyệt đề cương nằm ở khung "Chưa đủ điều kiện" với lý do. Phản biện đã được phân công chỉ được nhập điểm sau khi nhóm nộp báo cáo cuối kỳ; không chờ báo cáo giữa kỳ hoặc chốt bản cuối (xem [PDR-022](../decisions/PDR-022-dieu-kien-nhap-diem-phan-bien.md)).
-- GVPB không trùng GVHD.
+- GVPB không trùng GVHD. Mỗi đề tài một GVPB; đổi người gửi kèm GVPB đang thấy, lệch thì báo "Phân công vừa thay đổi, tải lại" (PDR-062). Vượt mức tối đa đề tài của đợt chỉ cảnh báo.
 - Từ phiếu phản biện đầu tiên của đề tài, ô thay Giảng viên phản biện bị khóa và backend chặn thay người; trước phiếu được đổi có lịch sử/thông báo, hiển thị lý do khóa theo [PDR-023](../decisions/PDR-023-khoa-thay-giang-vien-phan-bien-sau-phieu.md).
+
+- Ghi chú triển khai (2026-11-17; không có artboard `GiaoVu-PhanBien` trong repo nên bám đặc tả này và `DESIGN.md`; API `/api/reviewer-assignments`, [PDR-062](../decisions/PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md)): chọn đợt ở đầu trang, giữ trong `?dot=`. Thanh công cụ có "Tự gợi ý" (hộp xác nhận, chỉ điền sẵn, dòng được điền có chip "Gợi ý") và "Lưu và gửi thông báo" (hộp xác nhận, ghi cả lô; dòng lỗi báo tại chỗ `role="alert"` và giữ nháp, kết quả chung bằng toast). Bảng: Mã, Đề tài, Lĩnh vực, GVHD, Nhóm, Điều kiện (chip: Đủ điều kiện, Chưa duyệt đề cương, Đề tài không có nhóm, Đề tài đã kết thúc, Đã khóa · có phiếu phản biện), GV phản biện (ô chọn kèm "đang PB n/tối đa"; GVHD của đề tài bị khóa với nhãn "(GVHD)"; dòng khóa tắt ô chọn và nêu lý do). Chọn nhiều dòng rồi "Gán hàng loạt" cũng chỉ điền nháp. Khung "Chưa đủ điều kiện" liệt kê đề tài kèm lý do; bảng "Tải của giảng viên" ở cột phải có chữ "Vượt mức" và banner cảnh báo khi bản nháp vượt `Tối đa đề tài mỗi GV` của đợt (chỉ cảnh báo). Chưa có trạng thái "GVPB đã nhập điểm" riêng vì phiếu thuộc P07; hiện chỉ có chip khóa khi `ReviewerFirstScoredAt` đã đặt.
 
 ## Hội đồng bảo vệ
 - **Vai trò:** Giáo vụ

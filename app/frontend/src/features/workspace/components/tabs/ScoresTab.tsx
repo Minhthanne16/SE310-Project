@@ -56,7 +56,9 @@ export const ScoresTab: React.FC<ScoresTabProps> = ({ topic, viewerRole }) => {
   const roleNoteText =
     viewerRole === 'supervisor'
       ? 'Bạn đang xem với vai trò giảng viên hướng dẫn. Ba phần chấm diễn ra song song, mỗi người chỉ nhập phiếu của mình.'
-      : 'Bạn đang xem với vai trò giáo vụ, chỉ xem.';
+      : viewerRole === 'reviewer'
+        ? 'Bạn đang xem với vai trò giảng viên phản biện, chỉ xem đề cương và bài nộp. Chấm điểm mở sau khi nhóm nộp báo cáo cuối kỳ.'
+        : 'Bạn đang xem với vai trò giáo vụ, chỉ xem.';
 
   return (
     <div

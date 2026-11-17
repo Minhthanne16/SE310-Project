@@ -175,6 +175,10 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(32);
             entity.HasIndex(e => new { e.RoundId, e.Number }).IsUnique();
             entity.HasIndex(e => e.SupervisorId);
+            entity.HasIndex(e => new { e.RoundId, e.ReviewerId });
+            // GVPB là tài khoản có phân công nên chỉ được vô hiệu hóa, không xóa; GVHD không phản biện đề tài mình (PDR-021).
+            entity.HasOne(e => e.Reviewer).WithMany().HasForeignKey(e => e.ReviewerId).OnDelete(DeleteBehavior.Restrict);
+            entity.ToTable(t => t.HasCheckConstraint("CK_ThesisTopics_ReviewerNotSupervisor", "\"ReviewerId\" IS NULL OR \"ReviewerId\" <> \"SupervisorId\""));
             // Một nhóm chỉ có một đơn/đề tài đang hoạt động. Đề xuất Đã hủy vẫn giữ GroupId để truy vết
             // nhưng không được chặn đề xuất lại bằng chính nhóm đó (PDR-012).
             entity.HasIndex(e => e.GroupId).HasDatabaseName("IX_ThesisTopics_ActiveGroupId")

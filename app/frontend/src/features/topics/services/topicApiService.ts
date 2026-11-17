@@ -65,7 +65,7 @@ const json = (method: string, body?: unknown): RequestInit => ({
   body: body === undefined ? undefined : JSON.stringify(body),
 });
 
-// TopicDto có phần đề tài (P03-S01), nhóm (P03-S02) và đề cương (P04-S01); phản biện,
+// TopicDto có phần đề tài (P03-S01), nhóm (P03-S02), đề cương (P04-S01) và phản biện (P05-S02);
 // hội đồng, bài nộp giữa/cuối kỳ và điểm chưa có API nên để trống (các màn hiển thị "chưa có").
 export function toTopic(dto: TopicDto | TopicDetailDto): Topic {
   return {
@@ -80,7 +80,7 @@ export function toTopic(dto: TopicDto | TopicDetailDto): Topic {
     source: dto.source,
     status: dto.status,
     group: (dto.group ?? []).map((m) => ({ ...m })),
-    reviewer: null,
+    reviewer: dto.reviewer ?? null,
     council: null,
     defense: null,
     outlineApprovedAt: dto.outlineApprovedAt ?? null,
