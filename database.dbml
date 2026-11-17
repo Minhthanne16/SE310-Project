@@ -1,0 +1,413 @@
+Table "__EFMigrationsHistory" {
+  "MigrationId" varchar(150) [pk, not null]
+  "ProductVersion" varchar(32) [not null]
+}
+
+Table "Products" {
+  "Id" uuid [pk, not null]
+  "Name" varchar(200) [not null]
+  "Description" text [not null]
+  "Price" numeric(18,2) [not null]
+  "Stock" int4 [not null]
+  "IsActive" bool [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+}
+
+Table "Users" {
+  "Id" uuid [pk, not null]
+  "UserCode" varchar(50) [unique, not null]
+  "FullName" varchar(200) [not null]
+  "Email" varchar(256) [unique, not null]
+  "PasswordHash" varchar(100) [not null]
+  "Role" varchar(32) [not null]
+  "IsActive" bool [not null]
+  "MustChangePassword" bool [not null]
+  "SecurityStamp" varchar(64) [not null]
+  "LastLoginAt" timestamptz
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+  "ActivationCodeExpiresAt" timestamptz
+  "ActivationCodeFailedAttempts" int4 [not null, default: 0]
+  "ActivationCodeHash" varchar(100)
+  "ActivationCodeSentAt" timestamptz
+  "AcademicTitle" varchar(100)
+  "ClassName" varchar(100)
+  "DateOfBirth" date
+  "Department" varchar(100)
+  "AvatarObjectKey" varchar(512)
+  "Phone" varchar(32)
+  "SecondaryEmail" varchar(256)
+}
+
+Table "EvaluationTemplates" {
+  "Id" uuid [pk, not null]
+  "Name" varchar(200) [not null]
+  "NormalizedName" varchar(200) [unique, not null]
+  "Description" varchar(1000)
+  "MaxScore" numeric(5,2) [not null]
+  "Status" varchar(16) [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+}
+
+Table "EvaluationCriteria" {
+  "Id" uuid [pk, not null]
+  "TemplateId" uuid [not null]
+  "Name" varchar(200) [not null]
+  "MaxScore" numeric(5,2) [not null]
+  "SortOrder" int4 [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+  "Description" varchar(1000)
+
+  Indexes {
+    (TemplateId, SortOrder) [type: btree, name: "IX_EvaluationCriteria_TemplateId_SortOrder"]
+  }
+}
+
+Table "EvaluationTemplateAssignments" {
+  "Id" uuid [pk, not null]
+  "RoundId" varchar(64) [not null]
+  "Role" varchar(16) [not null]
+  "TemplateId" uuid [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    (RoundId, Role) [type: btree, unique, name: "IX_EvaluationTemplateAssignments_RoundId_Role"]
+    TemplateId [type: btree, name: "IX_EvaluationTemplateAssignments_TemplateId"]
+  }
+}
+
+Table "EvaluationSubCriteria" {
+  "Id" uuid [pk, not null]
+  "CriterionId" uuid [not null]
+  "Name" varchar(200) [not null]
+  "MaxScore" numeric(5,2) [not null]
+  "SortOrder" int4 [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    (CriterionId, SortOrder) [type: btree, name: "IX_EvaluationSubCriteria_CriterionId_SortOrder"]
+  }
+}
+
+Table "UserAuditEntries" {
+  "Id" uuid [pk, not null]
+  "TargetUserId" uuid [not null]
+  "TargetUserCode" varchar(50) [not null]
+  "ActorUserId" uuid [not null]
+  "Action" varchar(32) [not null]
+  "Details" jsonb
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    (TargetUserId, CreatedAt) [type: btree, name: "IX_UserAuditEntries_TargetUserId_CreatedAt"]
+  }
+}
+
+Table "ThesisRounds" {
+  "Id" uuid [pk, not null]
+  "Name" varchar(200) [not null]
+  "NormalizedName" varchar(200) [unique, not null]
+  "Program" varchar(32) [not null]
+  "PeriodLabel" varchar(200) [not null]
+  "Status" varchar(16) [not null]
+  "CopiedFromId" uuid
+  "OpenedAt" timestamptz
+  "FinishedAt" timestamptz
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+  "LecturerLoadMax" int4 [not null, default: 0]
+  "LecturerLoadMin" int4 [not null, default: 0]
+  "TopicsPublishedAt" timestamptz
+
+  Indexes {
+    CopiedFromId [type: btree, name: "IX_ThesisRounds_CopiedFromId"]
+    Status [type: btree, name: "IX_ThesisRounds_Status"]
+  }
+}
+
+Table "RoundMilestones" {
+  "Id" uuid [pk, not null]
+  "RoundId" uuid [not null]
+  "Key" varchar(32) [not null]
+  "StartDate" date
+  "EndDate" date
+  "NotifyAudience" varchar(16) [not null]
+  "AllowLate" bool
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+  "LateEndDate" date
+
+  Indexes {
+    (RoundId, Key) [type: btree, unique, name: "IX_RoundMilestones_RoundId_Key"]
+  }
+}
+
+Table "RoundParticipants" {
+  "Id" uuid [pk, not null]
+  "RoundId" uuid [not null]
+  "UserId" uuid [not null]
+  "Kind" varchar(16) [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    (RoundId, UserId) [type: btree, unique, name: "IX_RoundParticipants_RoundId_UserId"]
+    UserId [type: btree, name: "IX_RoundParticipants_UserId"]
+  }
+}
+
+Table "Notifications" {
+  "Id" uuid [pk, not null]
+  "BatchId" uuid [not null]
+  "RecipientUserId" uuid [not null]
+  "SenderUserId" uuid
+  "Kind" varchar(16) [not null]
+  "Text" varchar(2000) [not null]
+  "Href" varchar(512) [not null]
+  "ReadAt" timestamptz
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    BatchId [type: btree, name: "IX_Notifications_BatchId"]
+    (RecipientUserId, CreatedAt) [type: btree, name: "IX_Notifications_RecipientUserId_CreatedAt"]
+    SenderUserId [type: btree, name: "IX_Notifications_SenderUserId"]
+  }
+}
+
+Table "PasswordResetRequests" {
+  "Id" uuid [pk, not null]
+  "EmailHash" varchar(64) [not null]
+  "Source" varchar(64) [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    CreatedAt [type: btree, name: "IX_PasswordResetRequests_CreatedAt"]
+    (EmailHash, CreatedAt) [type: btree, name: "IX_PasswordResetRequests_EmailHash_CreatedAt"]
+    (Source, CreatedAt) [type: btree, name: "IX_PasswordResetRequests_Source_CreatedAt"]
+  }
+}
+
+Table "PasswordResetTokens" {
+  "Id" uuid [pk, not null]
+  "UserId" uuid [not null]
+  "TokenHash" varchar(64) [unique, not null]
+  "SecurityStamp" varchar(64) [not null]
+  "ExpiresAt" timestamptz [not null]
+  "UsedAt" timestamptz
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    UserId [type: btree, name: "IX_PasswordResetTokens_UserId"]
+  }
+}
+
+Table "ThesisTopics" {
+  "Id" uuid [pk, not null]
+  "RoundId" uuid [not null]
+  "Number" int4 [not null]
+  "Title" varchar(300) [not null]
+  "Description" varchar(4000) [not null]
+  "Requirements" varchar(2000)
+  "Field" varchar(100) [not null]
+  "SupervisorId" uuid [not null]
+  "Source" varchar(32) [not null]
+  "Status" varchar(32) [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+  "GroupId" uuid [unique]
+  "OutlineApprovedAt" timestamptz
+  "OutlineApprovedById" uuid
+  "OutlineApprovedSubmissionId" uuid
+  "FinalThesisLockedAt" timestamptz
+  "FinalThesisLockedById" uuid
+  "FinalThesisSubmissionId" uuid
+  "IneligibleAt" timestamptz
+  "IneligibleById" uuid
+  "IneligibleReason" varchar(800)
+  "ThesisExtensionEnd" date
+  "ThesisExtensionGrantedAt" timestamptz
+  "ThesisExtensionGrantedById" uuid
+  "ThesisExtensionReason" varchar(800)
+
+  Indexes {
+    (RoundId, Number) [type: btree, unique, name: "IX_ThesisTopics_RoundId_Number"]
+    SupervisorId [type: btree, name: "IX_ThesisTopics_SupervisorId"]
+  }
+}
+
+Table "TopicHistoryEntries" {
+  "Id" uuid [pk, not null]
+  "TopicId" uuid [not null]
+  "ActorUserId" uuid
+  "Category" varchar(32) [not null]
+  "Action" varchar(100) [not null]
+  "Detail" varchar(8000)
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    (TopicId, CreatedAt) [type: btree, name: "IX_TopicHistoryEntries_TopicId_CreatedAt"]
+  }
+}
+
+Table "ThesisGroups" {
+  "Id" uuid [pk, not null]
+  "RoundId" uuid [not null]
+  "RepresentativeId" uuid [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    RepresentativeId [type: btree, name: "IX_ThesisGroups_RepresentativeId"]
+    RoundId [type: btree, name: "IX_ThesisGroups_RoundId"]
+  }
+}
+
+Table "GroupMembers" {
+  "Id" uuid [pk, not null]
+  "GroupId" uuid [not null]
+  "RoundId" uuid [not null]
+  "StudentId" uuid [not null]
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    (RoundId, StudentId) [type: btree, unique, name: "IX_GroupMembers_RoundId_StudentId"]
+    GroupId [type: btree, name: "IX_GroupMembers_GroupId"]
+    StudentId [type: btree, name: "IX_GroupMembers_StudentId"]
+  }
+}
+
+Table "TopicRegistrations" {
+  "Id" uuid [pk, not null]
+  "TopicId" uuid [not null]
+  "GroupId" uuid [not null]
+  "RegisteredById" uuid [not null]
+  "CancelledById" uuid
+  "CancelledAt" timestamptz
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    (GroupId, CreatedAt) [type: btree, name: "IX_TopicRegistrations_GroupId_CreatedAt"]
+    TopicId [type: btree, name: "IX_TopicRegistrations_TopicId"]
+  }
+}
+
+Table "TopicSubmissions" {
+  "Id" uuid [pk, not null]
+  "TopicId" uuid [not null]
+  "Kind" varchar(16) [not null]
+  "VersionNo" int4 [not null]
+  "ObjectKey" varchar(200) [not null]
+  "FileName" varchar(200) [not null]
+  "SizeBytes" int8 [not null]
+  "Note" varchar(2000)
+  "SubmittedById" uuid [not null]
+  "Late" bool [not null]
+  "ReviewComment" varchar(2000)
+  "ReviewedById" uuid
+  "ReviewedAt" timestamptz
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+
+  Indexes {
+    (TopicId, Kind, VersionNo) [type: btree, unique, name: "IX_TopicSubmissions_TopicId_Kind_VersionNo"]
+    SubmittedById [type: btree, name: "IX_TopicSubmissions_SubmittedById"]
+  }
+}
+
+Table "RevisionRequests" {
+  "Id" uuid [pk, not null]
+  "TopicId" uuid [not null]
+  "Content" varchar(2000) [not null]
+  "CreatedById" uuid [not null]
+  "RaisedOnSubmissionId" uuid [not null]
+  "ResolvedById" uuid
+  "ResolvedAt" timestamptz
+  "CreatedAt" timestamptz [not null]
+  "UpdatedAt" timestamptz
+  "Kind" varchar(16) [not null, default: 'Outline']
+
+  Indexes {
+    CreatedById [type: btree, name: "IX_RevisionRequests_CreatedById"]
+    RaisedOnSubmissionId [type: btree, name: "IX_RevisionRequests_RaisedOnSubmissionId"]
+    (TopicId, Kind, ResolvedAt) [type: btree, name: "IX_RevisionRequests_TopicId_Kind_ResolvedAt"]
+    (TopicId, ResolvedAt) [type: btree, name: "IX_RevisionRequests_TopicId_ResolvedAt"]
+  }
+}
+
+Table "RevisionRequestLinks" {
+  "SubmissionId" uuid [not null]
+  "RequestId" uuid [not null]
+
+  Indexes {
+    (SubmissionId, RequestId) [pk, type: btree, name: "PK_RevisionRequestLinks"]
+    RequestId [type: btree, name: "IX_RevisionRequestLinks_RequestId"]
+  }
+}
+
+Ref "FK_EvaluationCriteria_EvaluationTemplates_TemplateId":"EvaluationTemplates"."Id" <? "EvaluationCriteria"."TemplateId" [delete: cascade]
+
+Ref "FK_EvaluationSubCriteria_EvaluationCriteria_CriterionId":"EvaluationCriteria"."Id" <? "EvaluationSubCriteria"."CriterionId" [delete: cascade]
+
+Ref "FK_EvaluationTemplateAssignments_EvaluationTemplates_TemplateId":"EvaluationTemplates"."Id" <? "EvaluationTemplateAssignments"."TemplateId" [delete: restrict]
+
+Ref "FK_GroupMembers_ThesisGroups_GroupId":"ThesisGroups"."Id" <? "GroupMembers"."GroupId" [delete: cascade]
+
+Ref "FK_GroupMembers_ThesisRounds_RoundId":"ThesisRounds"."Id" <? "GroupMembers"."RoundId" [delete: cascade]
+
+Ref "FK_GroupMembers_Users_StudentId":"Users"."Id" <? "GroupMembers"."StudentId" [delete: restrict]
+
+Ref "FK_Notifications_Users_RecipientUserId":"Users"."Id" <? "Notifications"."RecipientUserId" [delete: restrict]
+
+Ref "FK_Notifications_Users_SenderUserId":"Users"."Id" ?<? "Notifications"."SenderUserId" [delete: restrict]
+
+Ref "FK_PasswordResetTokens_Users_UserId":"Users"."Id" <? "PasswordResetTokens"."UserId" [delete: cascade]
+
+Ref "FK_RevisionRequestLinks_RevisionRequests_RequestId":"RevisionRequests"."Id" <? "RevisionRequestLinks"."RequestId" [delete: cascade]
+
+Ref "FK_RevisionRequestLinks_TopicSubmissions_SubmissionId":"TopicSubmissions"."Id" <? "RevisionRequestLinks"."SubmissionId" [delete: cascade]
+
+Ref "FK_RevisionRequests_ThesisTopics_TopicId":"ThesisTopics"."Id" <? "RevisionRequests"."TopicId" [delete: cascade]
+
+Ref "FK_RevisionRequests_TopicSubmissions_RaisedOnSubmissionId":"TopicSubmissions"."Id" <? "RevisionRequests"."RaisedOnSubmissionId"
+
+Ref "FK_RevisionRequests_Users_CreatedById":"Users"."Id" <? "RevisionRequests"."CreatedById" [delete: restrict]
+
+Ref "FK_RoundMilestones_ThesisRounds_RoundId":"ThesisRounds"."Id" <? "RoundMilestones"."RoundId" [delete: cascade]
+
+Ref "FK_RoundParticipants_ThesisRounds_RoundId":"ThesisRounds"."Id" <? "RoundParticipants"."RoundId" [delete: cascade]
+
+Ref "FK_RoundParticipants_Users_UserId":"Users"."Id" <? "RoundParticipants"."UserId" [delete: restrict]
+
+Ref "FK_ThesisGroups_ThesisRounds_RoundId":"ThesisRounds"."Id" <? "ThesisGroups"."RoundId" [delete: cascade]
+
+Ref "FK_ThesisGroups_Users_RepresentativeId":"Users"."Id" <? "ThesisGroups"."RepresentativeId" [delete: restrict]
+
+Ref "FK_ThesisRounds_ThesisRounds_CopiedFromId":"ThesisRounds"."Id" ?<? "ThesisRounds"."CopiedFromId" [delete: set null]
+
+Ref "FK_ThesisTopics_ThesisGroups_GroupId":"ThesisGroups"."Id" ?<? "ThesisTopics"."GroupId" [delete: set null]
+
+Ref "FK_ThesisTopics_ThesisRounds_RoundId":"ThesisRounds"."Id" <? "ThesisTopics"."RoundId" [delete: cascade]
+
+Ref "FK_ThesisTopics_Users_SupervisorId":"Users"."Id" <? "ThesisTopics"."SupervisorId" [delete: restrict]
+
+Ref "FK_TopicHistoryEntries_ThesisTopics_TopicId":"ThesisTopics"."Id" <? "TopicHistoryEntries"."TopicId" [delete: cascade]
+
+Ref "FK_TopicRegistrations_ThesisGroups_GroupId":"ThesisGroups"."Id" <? "TopicRegistrations"."GroupId" [delete: cascade]
+
+Ref "FK_TopicRegistrations_ThesisTopics_TopicId":"ThesisTopics"."Id" <? "TopicRegistrations"."TopicId" [delete: cascade]
+
+Ref "FK_TopicSubmissions_ThesisTopics_TopicId":"ThesisTopics"."Id" <? "TopicSubmissions"."TopicId" [delete: cascade]
+
+Ref "FK_TopicSubmissions_Users_SubmittedById":"Users"."Id" <? "TopicSubmissions"."SubmittedById" [delete: restrict]
