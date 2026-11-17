@@ -214,8 +214,8 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G5.2 — Phân công phản biện
 
-- [ ] Phân công sau duyệt đề cương; chặn GVHD tự phản biện; triển khai batch có báo cáo từng dòng.
-- [ ] Cho đổi trước phiếu với history, khóa đổi sau phiếu đầu tiên; chỉ mở nhập điểm PB sau báo cáo cuối kỳ.
+- [x] Phân công sau duyệt đề cương; chặn GVHD tự phản biện; triển khai batch có báo cáo từng dòng (P05-S02, PDR-062; test workflow, API và PostgreSQL).
+- [ ] Cho đổi trước phiếu với history, khóa đổi sau phiếu đầu tiên; chỉ mở nhập điểm PB sau báo cáo cuối kỳ. *(Đổi trước phiếu có history/thông báo và khóa theo `ReviewerFirstScoredAt` đã có test; còn đặt dấu khóa cùng phiếu đầu tiên và chặn lưu phiếu khi chưa có báo cáo cuối kỳ ở P07-S01.)*
 
 **Checkpoint G5:** Danh sách phản biện cho GV lấy từ API thật, permissions và điều kiện PDR-021–023 có test.
 
@@ -287,7 +287,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 ### Rà soát codebase ngày 2026-11-16 — tiến độ và kịch bản demo
 
-Đếm **55 checkbox triển khai** ở G0–G8 (không tính bốn checkbox phê duyệt ở mục 9): **19/55 = 34,5%**. Đây là **tỷ lệ đầu việc được đánh dấu theo code và test**, không phải phần trăm MVP đủ điều kiện vận hành; các checkpoint E2E và cổng release chưa đạt.
+Đếm **55 checkbox triển khai** ở G0–G8 (không tính bốn checkbox phê duyệt ở mục 9): **23/55 = 41,8%**, gồm **19 đầu việc đối chiếu code/test ngày 2026-11-16**, **3 đầu việc lập đặc tả G0.1 ngày 2026-11-17** và **1 đầu việc G5.2 (P05-S02) ngày 2026-11-17**. Đây là **tỷ lệ đầu việc được đánh dấu theo bằng chứng code/test hoặc tài liệu**, chưa phải phần trăm MVP đủ điều kiện vận hành; G0.1 và CP00 chưa đạt nghiệm thu, các checkpoint E2E và cổng release chưa đạt.
 
 | Nhóm | Đã đánh dấu / tổng | Phần có thể chứng minh | Phần chưa đủ để nghiệm thu |
 | --- | ---: | --- | --- |
@@ -296,7 +296,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 | G2 | 3/6 | Vòng đời/sao chép/xóa đợt, chín mốc và Gantt từ dữ liệu API; kiểm tra mở/kết thúc | Race condition khi hai đợt mở cùng SV, history gỡ người và nguồn demo mặc định |
 | G3 | 6/7 | Đề tài, công bố, ghi danh, đề xuất và quyết định GV | `canCancel` lệch điều kiện đã nộp đề cương; checkpoint E2E nhóm 1/2 SV |
 | G4 | 3/6 | Đề cương và chốt bản khóa luận cuối có code/test | Hạn trễ đề cương; upload thật MinIO, quyền GV phản biện và recovery |
-| G5 | 0/4 | API/UI mẫu phiếu là nền ban đầu | Mẫu đủ ba vai trò, snapshot, phân công phản biện |
+| G5 | 1/4 | API/UI mẫu phiếu là nền ban đầu; phân công phản biện theo PDR-021/023/062 (API, màn Giáo vụ và GVPB, test) | Mẫu đủ ba vai trò, snapshot; chặn lưu phiếu PB và dấu khóa cùng phiếu đầu tiên (P07) |
 | G6 | 0/4 | Một số màn hình demo | API và quy tắc hội đồng, lịch, va chạm và công bố |
 | G7 | 0/6 | Một số màn hình demo | Bốn phiếu điểm, tính điểm, xác nhận và công bố thật |
 | G8 | 0/7 | Có thông báo và một số audit theo module | Thông báo xuyên quy trình, báo cáo/export, E2E và release gate |
