@@ -97,8 +97,10 @@ internal static class OutlineAccess
     public const string Member = "member";
     public const string Supervisor = "supervisor";
     public const string Staff = "staff";
+    // GVPB hiện tại: chỉ xem và tải (PDR-062); không duyệt, nhận xét hay sửa.
+    public const string Reviewer = "reviewer";
 
-    // Thành viên nhóm, GVHD và Giáo vụ; người khác nhận NotFound để không lộ đề tài.
+    // Thành viên nhóm, GVHD, GVPB hiện tại và Giáo vụ; người khác nhận NotFound để không lộ đề tài.
     public static async Task<OutlineContext?> LoadAsync(ITopicRepository topics, IRoundRepository rounds, IGroupRepository groups,
         Guid topicId, Guid viewerId, ViewerRole role, CancellationToken cancellationToken)
     {
@@ -110,6 +112,7 @@ internal static class OutlineAccess
         {
             ViewerRole.AcademicAffairs => Staff,
             ViewerRole.Lecturer when topic.SupervisorId == viewerId => Supervisor,
+            ViewerRole.Lecturer when topic.ReviewerId == viewerId => Reviewer,
             ViewerRole.Student when topic.GroupId is { } groupId &&
                 (await groups.GetGroupsAsync([groupId], cancellationToken)).GetValueOrDefault(groupId) is { } group &&
                 group.Members.Any(m => m.StudentId == viewerId) => Member,

@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<ITopicRepository, TopicRepository>();
         services.AddScoped<IGroupRepository, GroupRepository>();
         services.AddScoped<IOutlineRepository, OutlineRepository>();
+        services.AddScoped<IReviewerRepository, ReviewerRepository>();
         services.AddScoped<ISubmissionRepository, SubmissionRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddSingleton<IPasswordHasher, PasswordHasher>();

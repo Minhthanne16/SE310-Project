@@ -89,6 +89,9 @@ internal static class TopicMapping
             Code = topic.Supervisor?.UserCode ?? string.Empty,
             Name = topic.Supervisor?.FullName ?? string.Empty
         };
+        dto.Reviewer = topic.ReviewerId is { } reviewerId
+            ? new TopicPersonDto { Id = reviewerId, Code = topic.Reviewer?.UserCode ?? string.Empty, Name = topic.Reviewer?.FullName ?? string.Empty }
+            : null;
         dto.Source = TopicRules.SourceLabel(topic.Source);
         dto.Status = TopicRules.Label(TopicRules.Effective(topic, round, today));
         dto.CreatedAt = DateTime.SpecifyKind(topic.CreatedAt, DateTimeKind.Utc);
@@ -355,12 +358,14 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
         var round = (await rounds.GetByIdAsync(topic.RoundId, cancellationToken))!;
 
         var isSupervisor = request.Role == ViewerRole.Lecturer && topic.SupervisorId == request.ViewerId;
+        // GVPB hiện tại chỉ xem (PDR-062); GVPB cũ sau khi bị đổi không còn thấy đề tài.
+        var isReviewer = request.Role == ViewerRole.Lecturer && topic.ReviewerId == request.ViewerId;
         var members = await groups.MembersOf([topic], cancellationToken);
         var ownGroup = members.Values.Any(g => g.Members.Any(m => m.StudentId == request.ViewerId));
         var allowed = request.Role switch
         {
             ViewerRole.AcademicAffairs => true,
-            ViewerRole.Lecturer => isSupervisor,
+            ViewerRole.Lecturer => isSupervisor || isReviewer,
             _ => round.TopicsPublishedAt is not null && TopicMapping.IsStudentOf(round, request.ViewerId)
                 && (topic.Source == TopicSource.Lecturer || ownGroup)
         };
@@ -396,7 +401,7 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
                 }
             }
         }
-        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || ownGroup)
+        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || isReviewer || ownGroup)
             TopicMapping.FillThesis(detail, topic, round, today,
                 (await submissions.ListReportsAsync(topic.Id, cancellationToken)).Where(s => s.Kind == SubmissionKind.Thesis));
         if (request.Role != ViewerRole.Student || (topic.Source == TopicSource.StudentProposal && ownGroup))
@@ -416,7 +421,7 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
                 }).ToList();
         }
         // Phiên bản bài nộp: người liên quan tới đề tài (Giáo vụ, GVHD, thành viên nhóm).
-        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || ownGroup)
+        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || isReviewer || ownGroup)
         {
             var submissions = await outlines.ListSubmissionsAsync(topic.Id, cancellationToken);
             var submitters = await topics.GetUserNamesAsync(submissions.Select(x => x.SubmittedById).Distinct().ToList(), cancellationToken);

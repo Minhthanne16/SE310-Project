@@ -174,12 +174,13 @@ public class RoundRepository(ApplicationDbContext context) : IRoundRepository
             .Select(g => g.RepresentativeId).Distinct().ToListAsync(ct)) Block(id, groupReason);
 
         var topics = await context.ThesisTopics.AsNoTracking().Where(t => t.RoundId == roundId)
-            .Select(t => new { t.Title, t.SupervisorId, t.OutlineApprovedById, t.ThesisExtensionGrantedById, t.FinalThesisLockedById, t.IneligibleById })
+            .Select(t => new { t.Title, t.SupervisorId, t.ReviewerId, t.OutlineApprovedById, t.ThesisExtensionGrantedById, t.FinalThesisLockedById, t.IneligibleById })
             .ToListAsync(ct);
         foreach (var topic in topics)
         {
             var reason = $"Người này có dữ liệu ở đề tài “{topic.Title}” nên không gỡ được.";
             Block(topic.SupervisorId, reason);
+            Block(topic.ReviewerId, $"Giảng viên đang phản biện đề tài “{topic.Title}” nên không gỡ được khỏi đợt.");
             Block(topic.OutlineApprovedById, reason);
             Block(topic.ThesisExtensionGrantedById, reason);
             Block(topic.FinalThesisLockedById, reason);

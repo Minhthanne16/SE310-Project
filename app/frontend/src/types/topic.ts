@@ -171,6 +171,8 @@ export interface TopicDto {
   description: string;
   requirements: string | null;
   supervisor: TopicPerson;
+  // Giảng viên phản biện (PDR-062); null/thiếu khi chưa phân công.
+  reviewer?: TopicPerson | null;
   source: TopicSource;
   status: TopicStatus;
   createdAt: string;

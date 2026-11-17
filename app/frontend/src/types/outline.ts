@@ -1,7 +1,8 @@
 // Đề cương và yêu cầu chỉnh sửa của một đề tài (P04-S01, PDR-013, PDR-057).
 // Khớp OutlineDto của GET /api/topics/{id}/outline; thời điểm là ISO UTC.
 
-export type OutlineViewerRole = 'member' | 'supervisor' | 'staff';
+// reviewer: GVPB hiện tại, chỉ xem (PDR-062).
+export type OutlineViewerRole = 'member' | 'supervisor' | 'staff' | 'reviewer';
 
 export interface OutlineSubmission {
   id: string;
