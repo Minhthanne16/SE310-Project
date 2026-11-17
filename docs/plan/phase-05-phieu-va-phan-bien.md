@@ -31,16 +31,16 @@ Giáo vụ cấu hình mẫu điểm có hiệu lực và phân công phản bi�
 **Tham chiếu:** [ROLES](../product/ROLES.md), [WORKFLOWS — Phân công](../requirements/WORKFLOWS.md), [DESIGN — Giảng viên phản biện](../DESIGN/03-dac-ta-man-hinh.md#giảng-viên-phản-biện), [PDR-021](../decisions/PDR-021-phan-cong-phan-bien-sau-duyet-de-cuong.md), [PDR-022](../decisions/PDR-022-dieu-kien-nhap-diem-phan-bien.md), [PDR-023](../decisions/PDR-023-khoa-thay-giang-vien-phan-bien-sau-phieu.md), R05.
 
 **Công việc:**
-- [ ] Giao phản biện từ khi đề cương đã duyệt theo PDR-021, không chờ hai báo cáo; chỉ mở **nhập điểm** sau khi có báo cáo cuối kỳ theo PDR-022, hiển thị lý do chưa đủ điều kiện.
-- [ ] Triển khai gán từng đề tài/hàng loạt; chặn GVHD phản biện chính đề tài mình, kiểm tra một người được gán đồng thời.
-- [ ] Nếu giữ chức năng “Tự gợi ý”, chốt thuật toán và tính chất gợi ý; Giáo vụ xác nhận trước khi lưu.
-- [ ] Cho đổi Giảng viên phản biện trước phiếu có lịch sử/thông báo; từ phiếu đầu tiên khóa thay người theo PDR-023, kể cả khi chỉ một Sinh viên đã có phiếu.
+- [ ] Giao phản biện từ khi đề cương đã duyệt theo PDR-021, không chờ hai báo cáo; chỉ mở **nhập điểm** sau khi có báo cáo cuối kỳ theo PDR-022, hiển thị lý do chưa đủ điều kiện. *(Đã làm và test: phân công, lý do chưa đủ điều kiện, `ReviewerRules.ScoreBlocker` và cờ `canScore` ở `/api/reviewer-assignments/mine`. Còn lại: chặn lưu phiếu thật, thuộc P07-S01.)*
+- [x] Triển khai gán từng đề tài/hàng loạt; chặn GVHD phản biện chính đề tài mình, kiểm tra một người được gán đồng thời (nghĩa của "đồng thời" ở [PDR-062](../decisions/PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md)).
+- [x] Nếu giữ chức năng “Tự gợi ý”, chốt thuật toán và tính chất gợi ý; Giáo vụ xác nhận trước khi lưu (giữ chức năng; thuật toán và tính chất ở PDR-062, chỉ điền sẵn bản nháp).
+- [x] Cho đổi Giảng viên phản biện trước phiếu có lịch sử/thông báo; từ phiếu đầu tiên khóa thay người theo PDR-023, kể cả khi chỉ một Sinh viên đã có phiếu (khóa dựa trên `ReviewerFirstScoredAt`; P07 đặt dấu này cùng transaction với phiếu đầu tiên).
 
 **Acceptance criteria:**
-- [ ] Đề tài đã duyệt đề cương nhưng chưa nộp một hoặc cả hai báo cáo vẫn được phân công; đề tài chưa duyệt bị chặn với lý do. Gán hợp lệ hiện ở màn GV phản biện; GV không được phân công không xem/chấm dữ liệu kín.
-- [ ] Đã phân công nhưng chưa có báo cáo cuối kỳ thì không lưu được phiếu phản biện; thiếu báo cáo giữa kỳ hoặc chưa chốt bản cuối không tự khóa nhập điểm nếu báo cáo cuối kỳ đã nộp.
-- [ ] Gán trùng, gán GVHD và thay sau điểm được xử lý theo quy tắc; thao tác hàng loạt báo rõ dòng thành công/thất bại.
-- [ ] Đổi người sau phiếu đầu tiên bị từ chối; điểm đã nhập giữ nguyên người chấm; đổi trước phiếu lưu lịch sử và thông báo người bị ảnh hưởng.
+- [x] Đề tài đã duyệt đề cương nhưng chưa nộp một hoặc cả hai báo cáo vẫn được phân công; đề tài chưa duyệt bị chặn với lý do. Gán hợp lệ hiện ở màn GV phản biện; GV không được phân công không xem/chấm dữ liệu kín.
+- [ ] Đã phân công nhưng chưa có báo cáo cuối kỳ thì không lưu được phiếu phản biện; thiếu báo cáo giữa kỳ hoặc chưa chốt bản cuối không tự khóa nhập điểm nếu báo cáo cuối kỳ đã nộp. *(Quy tắc và cờ `canScore` đã có test; chặn lưu phiếu thật chờ P07-S01.)*
+- [x] Gán trùng, gán GVHD và thay sau điểm được xử lý theo quy tắc; thao tác hàng loạt báo rõ dòng thành công/thất bại.
+- [ ] Đổi người sau phiếu đầu tiên bị từ chối; điểm đã nhập giữ nguyên người chấm; đổi trước phiếu lưu lịch sử và thông báo người bị ảnh hưởng. *(Đã test từ chối khi `ReviewerFirstScoredAt` đã đặt, đổi trước phiếu có lịch sử và thông báo cả hai GV, đua với dấu khóa trên PostgreSQL; "điểm giữ nguyên người chấm" cần phiếu thật ở P07.)*
 
 **Verification:** Test ma trận điều kiện, quyền, xung đột gán và dữ liệu đồng thời; luồng Giáo vụ gán → GV xem.
 

@@ -658,6 +658,18 @@ namespace Backend.Infrastructure.Data.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
+                    b.Property<DateTime?>("ReviewerAssignedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewerAssignedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("ReviewerFirstScoredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewerId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("RoundId")
                         .HasColumnType("uuid");
 
@@ -702,12 +714,19 @@ namespace Backend.Infrastructure.Data.Migrations
                         .HasDatabaseName("IX_ThesisTopics_ActiveGroupId")
                         .HasFilter("\"GroupId\" IS NOT NULL AND \"Status\" IN ('PendingApproval', 'Registered', 'Rejected')");
 
+                    b.HasIndex("ReviewerId");
+
                     b.HasIndex("SupervisorId");
 
                     b.HasIndex("RoundId", "Number")
                         .IsUnique();
 
-                    b.ToTable("ThesisTopics");
+                    b.HasIndex("RoundId", "ReviewerId");
+
+                    b.ToTable("ThesisTopics", t =>
+                        {
+                            t.HasCheckConstraint("CK_ThesisTopics_ReviewerNotSupervisor", "\"ReviewerId\" IS NULL OR \"ReviewerId\" <> \"SupervisorId\"");
+                        });
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.TopicHistoryEntry", b =>
@@ -1160,6 +1179,11 @@ namespace Backend.Infrastructure.Data.Migrations
                         .HasForeignKey("GroupId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("Backend.Domain.Entities.User", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Backend.Domain.Entities.ThesisRound", null)
                         .WithMany("Topics")
                         .HasForeignKey("RoundId")
@@ -1171,6 +1195,8 @@ namespace Backend.Infrastructure.Data.Migrations
                         .HasForeignKey("SupervisorId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Reviewer");
 
                     b.Navigation("Supervisor");
                 });

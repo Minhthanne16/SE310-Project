@@ -28,7 +28,7 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
 
 ## 3. Phân công và bảo vệ
 
-1. Từ khi đề cương đã được GVHD duyệt, Giáo vụ có thể phân công Giảng viên phản biện, không cần chờ báo cáo giữa kỳ/cuối kỳ (PDR-021); đề tài cũng có thể được gán vào hội đồng. Giảng viên phản biện chỉ được nhập điểm sau khi nhóm nộp báo cáo cuối kỳ, không cần chốt bản cuối sau bảo vệ (PDR-022). Từ phiếu phản biện đầu tiên, khóa đổi người được phân công (PDR-023).
+1. Từ khi đề cương đã được GVHD duyệt, Giáo vụ có thể phân công Giảng viên phản biện, không cần chờ báo cáo giữa kỳ/cuối kỳ (PDR-021); đề tài cũng có thể được gán vào hội đồng. Giảng viên phản biện chỉ được nhập điểm sau khi nhóm nộp báo cáo cuối kỳ, không cần chốt bản cuối sau bảo vệ (PDR-022). Từ phiếu phản biện đầu tiên, khóa đổi người được phân công (PDR-023). Mỗi đề tài một Giảng viên phản biện; "Tự gợi ý" chỉ điền sẵn, Giáo vụ xác nhận mới lưu (PDR-062).
 2. Giáo vụ tạo hội đồng gồm chủ tịch và thư ký, sau đó nhập giờ bắt đầu/kết thúc cho từng lượt và lập lịch bảo vệ (PDR-017).
 3. Sinh viên xem lịch; các giảng viên được phân công xem dữ liệu cần thiết để thực hiện nhiệm vụ.
 4. Sau công bố và trước khi có điểm hội đồng, Giáo vụ có thể sửa giờ/phòng/hội đồng có lý do, kiểm tra lại xung đột, lưu lịch sử và thông báo người bị ảnh hưởng (PDR-018); cũng có thể hủy lịch với lý do/lịch sử/thông báo (PDR-019). Sau khi có điểm, giờ/phòng bị khóa sửa trực tiếp, chỉ ghi đính chính có lý do và giữ lịch gốc; không hủy lịch hoặc thay Chủ tịch/Thư ký bằng thao tác thường (PDR-020).

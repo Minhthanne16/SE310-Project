@@ -100,6 +100,26 @@ it('lists the round topics, filters on the client and keys loads by lecturer', a
   expect(list.round.roundStatus).toBe('Đang diễn ra');
 });
 
+it('maps the reviewer of each topic and leaves it null when none is assigned', async () => {
+  ok({
+    round: roundInfo,
+    items: [
+      dto({ reviewer: { id: 'gv2', code: 'GV0002', name: 'Lê Văn Cường' } }),
+      dto({ id: 't2', code: 'DT-002', reviewer: null }),
+      dto({ id: 't3', code: 'DT-003' }),
+    ],
+    loads: [],
+  });
+
+  const list = await createApiTopicService(rounds).list({ roundId: 'r1' });
+
+  expect(list.items.map((t) => t.reviewer?.code ?? null)).toEqual([
+    'GV0002',
+    null,
+    null,
+  ]);
+});
+
 it('maps the history of one topic and turns 404 into TopicNotFoundError', async () => {
   const detail: TopicDetailDto = {
     ...dto(),

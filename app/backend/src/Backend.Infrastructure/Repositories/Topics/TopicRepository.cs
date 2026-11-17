@@ -11,17 +11,17 @@ public class TopicRepository(ApplicationDbContext context) : ITopicRepository
 
     public async Task<IReadOnlyList<ThesisTopic>> ListByRoundAsync(Guid roundId, Guid? supervisorId = null, CancellationToken cancellationToken = default)
     {
-        var query = context.ThesisTopics.AsNoTracking().Include(t => t.Supervisor).Where(t => t.RoundId == roundId);
+        var query = context.ThesisTopics.AsNoTracking().Include(t => t.Supervisor).Include(t => t.Reviewer).Where(t => t.RoundId == roundId);
         if (supervisorId is { } id) query = query.Where(t => t.SupervisorId == id);
         return await query.OrderBy(t => t.Number).ToListAsync(cancellationToken);
     }
 
     public Task<ThesisTopic?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        context.ThesisTopics.Include(t => t.Supervisor).Include(t => t.History).AsSplitQuery()
+        context.ThesisTopics.Include(t => t.Supervisor).Include(t => t.Reviewer).Include(t => t.History).AsSplitQuery()
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
     public async Task<IReadOnlyList<ThesisTopic>> ListByGroupAsync(Guid groupId, CancellationToken cancellationToken = default) =>
-        await context.ThesisTopics.AsNoTracking().Include(t => t.Supervisor).Include(t => t.History).AsSplitQuery()
+        await context.ThesisTopics.AsNoTracking().Include(t => t.Supervisor).Include(t => t.Reviewer).Include(t => t.History).AsSplitQuery()
             .Where(t => t.GroupId == groupId && t.Source == TopicSource.StudentProposal)
             .OrderByDescending(t => t.CreatedAt).ToListAsync(cancellationToken);
 
