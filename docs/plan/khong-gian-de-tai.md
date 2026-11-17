@@ -353,6 +353,7 @@ Mỗi bước B **chỉ bắt đầu khi phase tương ứng đã có hợp đ�
 
 - Aside "HỘI ĐỒNG · LỊCH BẢO VỆ": thứ, ngày, giờ bắt đầu–kết thúc, phòng, tên hội đồng, Chủ tịch, Thư ký; chỉ lịch đã công bố và lượt có hiệu lực (PDR-016); đính chính hiện kèm (PDR-018).
 - `viewerRole` thêm `councilChair`, `councilSecretary`. Liên kết quay lại "Hội đồng".
+- *(2026-11-17, [PDR-063](../decisions/PDR-063-hoi-dong-va-lich-bao-ve.md))* Đã làm: aside hiện ngày, giờ bắt đầu–kết thúc, phòng, thứ tự, Chủ tịch, Thư ký và đính chính; `viewerRole` dùng một giá trị `council` (chỉ xem) cho cả Chủ tịch và Thư ký, tách khi P07 cần quyền nhập điểm; liên kết quay lại "Hội đồng bảo vệ" (`/gv/hoi-dong`). Tab mặc định giữ Hoạt động như GVPB.
 
 ### B4. Phiếu điểm và kết quả (P07)
 

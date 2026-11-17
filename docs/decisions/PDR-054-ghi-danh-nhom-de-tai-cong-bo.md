@@ -73,6 +73,15 @@ Ba endpoint chỉ dành cho vai trò `Student`; lỗi dùng `ApiResponse`.
 - Mục "Lịch sử ghi danh của nhóm" liệt kê mọi lần ghi danh (người/thời điểm ghi danh, người/thời điểm hủy hoặc "Đang hiệu lực"); chỉ thành viên nhóm thấy, theo `my-registration`.
 - Chưa hiện "mức tối đa của GV" trên màn sinh viên: `GET /api/topics/published` trả `loads: []` cho sinh viên theo PDR-053; muốn hiện phải đổi hợp đồng đó.
 
+## Sửa lỗi đồng thời (2026-11-17)
+
+Khi chạy `RegistrationConcurrencyTests` trên PostgreSQL, ca "bấm đúp ghi danh hai đề tài" lỗi không đều do hai khe đua có sẵn:
+
+- **Deadlock `40P01`:** hai giao dịch chèn hai thành viên nhóm theo thứ tự khác nhau (EF sắp lệnh chèn theo khóa ngẫu nhiên). PostgreSQL hủy một bên và request đó ném ngoại lệ (500). Nay `GroupRepository` coi deadlock như vi phạm chỉ mục `GroupMembers(RoundId, StudentId)`: trả `MemberTaken` (409), cả ở luồng ghi danh lẫn tạo đề xuất.
+- **400 sai:** request thua đọc "chưa có nhóm" trước khi request kia commit, rồi thấy bạn cùng nhóm "đã có nhóm" và trả 400 "Sinh viên … đã có nhóm trong đợt". Nay handler kiểm tra lại: nếu chính người ghi danh vừa có nhóm thì trả 409 "Nhóm của bạn đã ghi danh một đề tài…".
+
+Bất biến (một nhóm, một đề tài, một sinh viên một nhóm) vốn không bị phá; sửa này chỉ đưa mã lỗi về đúng hợp đồng 409 ở trên.
+
 ## Hệ quả
 
 - Migration `AddTopicGroups`:

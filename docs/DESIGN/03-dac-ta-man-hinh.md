@@ -468,6 +468,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Hội đồng hai người: chủ tịch và thư ký. Thư ký nhập điểm cho cả hai; Chủ tịch chỉ xem, không có bước xác nhận/trả lại (xem [PDR-050](../decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md), thay PDR-006).
 - Không có thao tác trả lại điểm CTHĐ và không có việc chờ Chủ tịch xác nhận (PDR-050); thời hạn cho điểm áp dụng theo mốc của đợt.
 - Cảnh báo khi bất kỳ cặp chéo nào giữa điểm CTHĐ/TKHĐ và CBHD/CBPB lệch từ 2 trở lên, theo [PDR-007](../decisions/PDR-007-canh-bao-lech-diem-bon-cap-cheo.md).
+- Ghi chú triển khai (2026-11-17, [PDR-063](../decisions/PDR-063-hoi-dong-va-lich-bao-ve.md)): màn dùng `GET /api/councils/mine`, chỉ hiện hội đồng đã công bố hoặc đã hủy (kèm lý do) và đính chính. Cột "Điểm hội đồng" hiện "Chưa nhập điểm" / "Thư ký chưa nhập" cho tới khi có phiếu ở P07. Nút "Mở" dẫn tới Không gian đề tài, nơi Chủ tịch/Thư ký chỉ xem (`viewerRole = council`).
 
 ## Gửi thông báo (giảng viên)
 - **Vai trò:** Giảng viên
@@ -707,6 +708,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - GVHD ngồi hội đồng chấm đề tài của mình: CHẶN. Hai hội đồng cùng phòng với thời gian chồng lấn: CHẶN lưu/công bố lịch theo [PDR-014](../decisions/PDR-014-chan-trung-phong-bao-ve.md). Một Giảng viên thuộc hai hội đồng chồng lấn giờ: CHẶN lưu/công bố theo [PDR-015](../decisions/PDR-015-chan-trung-lich-giang-vien-hoi-dong.md). Hủy lịch đã công bố theo [PDR-019](../decisions/PDR-019-huy-lich-bao-ve-da-cong-bo.md); thay Chủ tịch/Thư ký sau khi hội đồng có điểm bị chặn theo [PDR-020](../decisions/PDR-020-khoa-thay-thanh-vien-hoi-dong-sau-diem.md).
 - Chỉ xóa được hội đồng Nháp; hội đồng đã công bố khóa nút Xóa. Giáo vụ được hủy lịch đã công bố trước điểm hội đồng, bắt buộc lý do/lịch sử/thông báo; sau điểm khóa Hủy thông thường (PDR-019). Không công bố khi đang sửa.
 - Tên hội đồng do giáo vụ tự đặt.
+- Ghi chú triển khai (2026-11-17, [PDR-063](../decisions/PDR-063-hoi-dong-va-lich-bao-ve.md)): theo PDR-014/015, trùng phòng và trùng giảng viên là **lỗi chặn lưu** (không phải cảnh báo như canvas); màn sửa xem trước xung đột qua `POST /api/councils/check`. Giờ lưu theo từng lượt (PDR-017); "Giờ bắt đầu + Phút mỗi đề tài" của canvas thành công cụ "Điền giờ tự động" chỉ điền sẵn. Mỗi hội đồng một ngày, một phòng. Ô ngày dùng bộ chọn ngày của trình duyệt kèm gợi ý khoảng mốc 7 thay cho lịch tháng tự dựng. Kho chỉ cho thêm đề tài đã duyệt đề cương; đề tài chưa đủ điều kiện hiện kèm lý do. Lịch đã công bố có "Hủy lịch" (lý do bắt buộc); sau khi có phiếu điểm chỉ có "Ghi đính chính". GVPB được ngồi hội đồng chấm cùng đề tài (OQ-032).
 
 ## Kết quả
 - **Vai trò:** Giáo vụ
