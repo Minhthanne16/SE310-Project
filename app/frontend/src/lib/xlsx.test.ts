@@ -17,6 +17,8 @@ describe('safeCell', () => {
     expect(safeCell('-1')).toBe("'-1");
     expect(safeCell('@cmd')).toBe("'@cmd");
     expect(safeCell('\tx')).toBe("'\tx");
+    expect(safeCell('   =1+1')).toBe("'   =1+1");
+    expect(safeCell('\n@cmd')).toBe("'\n@cmd");
     expect(safeCell('Bình thường')).toBe('Bình thường');
     expect(safeCell('')).toBe('');
   });

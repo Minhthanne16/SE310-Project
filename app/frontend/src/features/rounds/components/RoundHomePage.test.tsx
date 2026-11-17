@@ -13,7 +13,7 @@ import { SessionProvider } from '@/features/auth/session/SessionProvider';
 import type { AuthService } from '@/features/auth/services/authService';
 import { createRoundService } from '@/features/rounds/services/roundDemoService';
 import { type RoundService } from '@/features/rounds/services/roundService';
-import type { CurrentUser } from '@/types/auth';
+import type { CurrentUser, UserRole } from '@/types/auth';
 import { RoundHomePage } from './RoundHomePage';
 
 vi.mock('next/navigation', async () => {
@@ -291,4 +291,98 @@ it('tells apart a running round before its first week and after its last milesto
   });
   expect(screen.getByText('Chưa bắt đầu')).toBeInTheDocument();
   expect(screen.getByText('Đã qua mốc cuối')).toBeInTheDocument();
+});
+
+const renderParticipantHome = async (role: UserRole, assigned = true) => {
+  const id = role === 'Student' ? 'student-guid' : 'lecturer-guid';
+  const source = createRoundService();
+  const all = await source.list();
+  const running = all.find((r) => r.status === 'Đang diễn ra')!;
+  const draft = all.find((r) => r.status === 'Nháp')!;
+  const outsider = all.find((r) => r.status === 'Đã kết thúc')!;
+  const withParticipants = {
+    ...running,
+    studentIds: assigned ? ['student-guid'] : [],
+    lecturerIds: assigned ? ['lecturer-guid'] : [],
+  };
+  const service = createRoundService({
+    today: '2026-10-26',
+    rounds: [
+      withParticipants,
+      { ...draft, studentIds: [id], lecturerIds: [id] },
+      outsider,
+    ],
+  });
+  resetNavigation(role === 'Student' ? '/sv' : '/gv');
+  render(
+    <SessionProvider
+      authService={{
+        ...fakeAuth(),
+        getCurrentUser: vi.fn().mockResolvedValue({ ...me, id, role }),
+      }}
+    >
+      <RoundHomePage roundService={service} />
+    </SessionProvider>,
+  );
+  await screen.findByRole('heading', { name: 'Chào Phạm Minh Châu' });
+  return withParticipants;
+};
+
+it.each([
+  ['Student', '/sv/de-tai'],
+  ['Lecturer', '/gv/huong-dan'],
+] as const)(
+  'shows only assigned opened rounds and safe actions for %s',
+  async (role, actionHref) => {
+    const round = await renderParticipantHome(role);
+    expect(
+      screen.getByText(/Bạn tham gia 1 đợt khóa luận/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Chưa mở đợt')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: 'Đến danh sách đợt' }),
+    ).not.toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole('button', {
+        name: `Mở đợt ${round.program} ${round.name.slice(round.program.length + 3)}`,
+      }),
+    );
+    const tasks = await screen.findByRole('region', {
+      name: 'Việc sắp đến hạn',
+    });
+    expect(
+      within(tasks).getByRole('link', { name: /Báo cáo giữa kỳ/ }),
+    ).toHaveAttribute('href', actionHref);
+    expect(
+      screen.queryByRole('link', { name: /Quản lý đợt/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('link', { name: /Cấu hình mốc/ }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Thao tác mốc Báo cáo giữa kỳ' }),
+    ).toHaveAttribute('href', actionHref);
+    if (role === 'Student') {
+      expect(
+        screen.queryByRole('link', { name: 'Soạn thông báo' }),
+      ).not.toBeInTheDocument();
+    } else {
+      expect(
+        screen.getByRole('link', { name: 'Soạn thông báo' }),
+      ).toHaveAttribute('href', '/gv/thong-bao/gui');
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Tất cả đợt' }));
+    expect(screen.getAllByRole('button', { name: /^Mở đợt/ })).toHaveLength(1);
+  },
+);
+
+it('hides drafts and unrelated rounds even if a service returns them for a student', async () => {
+  await renderParticipantHome('Student', false);
+  expect(screen.getByText('Chưa có đợt nào')).toBeInTheDocument();
+  expect(
+    screen.getByText('Bạn chưa được phân công vào đợt khóa luận nào đã mở.'),
+  ).toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: /^Mở đợt/ }),
+  ).not.toBeInTheDocument();
 });

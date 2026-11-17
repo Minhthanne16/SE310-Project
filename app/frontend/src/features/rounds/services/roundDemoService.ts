@@ -33,9 +33,13 @@ const cloneRound = (round: Round): Round => ({
   lecturerIds: [...round.lecturerIds],
   studentIds: [...round.studentIds],
   lockedStudentIds: [...round.lockedStudentIds],
+  lockedLecturerIds: [...(round.lockedLecturerIds ?? [])],
   topicSummary: {
     ...round.topicSummary,
     byStatus: { ...round.topicSummary.byStatus },
+    pendingTopics: round.topicSummary.pendingTopics?.map((topic) => ({
+      ...topic,
+    })),
   },
 });
 
@@ -229,6 +233,7 @@ export function createRoundService(
         lecturerIds: [],
         studentIds: [],
         lockedStudentIds: [],
+        lockedLecturerIds: [],
         topicSummary: emptyTopics(),
       };
       rounds = [round, ...rounds];
@@ -391,7 +396,12 @@ export function createRoundService(
       const participant = users[kind].find((u) => u.id === userId);
       if (!participant || !idsOf(round, kind).includes(userId))
         throw new RoundRuleError(`Không có ${KIND_LABEL[kind]} này trong đợt.`);
-      if (kind === 'student' && round.lockedStudentIds.includes(userId))
+      if (
+        (kind === 'student'
+          ? round.lockedStudentIds
+          : (round.lockedLecturerIds ?? [])
+        ).includes(userId)
+      )
         throw new RoundRuleError(
           `Không gỡ được ${participant.name}: đã có dữ liệu (đề tài, điểm...) trong đợt này.`,
         );

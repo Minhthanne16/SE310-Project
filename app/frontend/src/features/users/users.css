@@ -255,6 +255,7 @@
 .usr-search input {
   flex: 1;
   min-width: 0;
+  min-height: var(--field-h-sm);
   border: 0;
   outline: none;
   background: transparent;
