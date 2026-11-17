@@ -12,8 +12,8 @@
 | Bài nộp | Một phiên bản đề cương, báo cáo giữa kỳ/cuối kỳ hoặc khóa luận | Thuộc đề tài, có người nộp, tệp PDF và các nhận xét; mọi phiên bản được giữ sau khi kết thúc đợt (PDR-039/042). |
 | Nhận xét | Kết quả phản hồi cho bài nộp | Có tác giả là Giảng viên; có thể yêu cầu chỉnh sửa. |
 | Yêu cầu chỉnh sửa đề cương | Việc GVHD giao cho nhóm xử lý trước khi duyệt | Gắn đề tài/bản đề cương, liên kết các lần nộp lại và người xác nhận hoàn tất. |
-| Hội đồng | Nhóm chấm các đề tài được gán | Thuộc đợt, có chủ tịch/thư ký; thành viên bị khóa thay khi đã có phiếu điểm (PDR-020). |
-| Lượt bảo vệ | Khoảng thời gian bảo vệ của một đề tài | Gắn hội đồng, đề tài, giờ bắt đầu/kết thúc, phòng và trạng thái lịch; chỉ một lượt có hiệu lực, bản đã hủy/đổi còn trong lịch sử (PDR-016–019). |
+| Hội đồng | Nhóm chấm các đề tài được gán | Thuộc đợt, có chủ tịch/thư ký, một ngày bảo vệ và một phòng; trạng thái Nháp/Đã công bố/Đã hủy; thành viên bị khóa thay khi đã có phiếu điểm (PDR-020, PDR-063). |
+| Lượt bảo vệ | Khoảng thời gian bảo vệ của một đề tài | Gắn hội đồng, đề tài, thứ tự, giờ bắt đầu/kết thúc và trạng thái (có hiệu lực/đã bỏ/đã hủy); phòng lấy theo hội đồng; chỉ một lượt có hiệu lực, bản đã hủy/đổi còn trong lịch sử (PDR-016–019, PDR-063). |
 | Mẫu phiếu và tiêu chí | Cấu hình cách chấm | Mẫu được gán cho HD, PB hoặc hội đồng trong một đợt; Chủ tịch/Thư ký dùng chung mẫu hội đồng nhưng mỗi người có phiếu riêng (PDR-024). |
 | Phiếu điểm và chi tiết điểm | Điểm của một người chấm cho một Sinh viên | Gắn vai trò, mẫu phiếu, người chấm/người nhập và các tiêu chí. |
 | Thông báo | Thông tin gửi tới người dùng | Có người nhận, có thể có người gửi và trạng thái đã đọc; ẩn khỏi danh sách đã gửi chỉ tác động người gửi, bản người nhận còn nguyên (PDR-038). |
