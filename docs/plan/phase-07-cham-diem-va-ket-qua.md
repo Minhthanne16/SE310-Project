@@ -60,7 +60,7 @@ Mỗi SV nhận bốn thành phần điểm độc lập; kết quả được t
 
 **Verification:** Test trường hợp không có bản cuối, bản có nhưng chưa chốt, đủ/thiếu 4 phiếu, hai SV khác trạng thái, lô toàn hợp lệ/toàn không hợp lệ/hỗn hợp, thao tác lặp và sửa sau xác nhận.
 
-**Dependencies:** `P07-S02`, `P04-S03`; PDR-005/011/049/059. Trạng thái nguồn cho `Không đủ điều kiện công bố` cần chốt OQ-031 tại `CP00`.
+**Dependencies:** `P07-S02`, `P04-S03`; PDR-005/011/049/059. OQ-031 đã chốt theo PDR-011: Giáo vụ có thể chuyển trực tiếp `Đã xác nhận` → `Không đủ điều kiện công bố` sau hạn bổ sung nếu không có bản Thesis, có lý do và lưu lịch sử; vẫn cần kiểm chứng API/DB trong G4/G7.
 
 ## Checkpoint CP07 — Kết quả đúng và có thể giải thích
 

@@ -44,7 +44,7 @@ Ba endpoint chỉ dành cho vai trò `Student`; lỗi dùng `ApiResponse`.
 
 ## Quy tắc thực thi
 
-- **Cửa sổ đăng ký:** mở từ lúc Giáo vụ công bố tới hết ngày kết thúc mốc "Công bố đề tài · SV đăng ký" (giờ Việt Nam), áp cho cả ghi danh và hủy. Hết hạn thì đề tài có nhóm hiển thị `Đang thực hiện` (PDR-049).
+- **Cửa sổ đăng ký:** mở từ lúc Giáo vụ công bố tới hết ngày kết thúc mốc "Công bố đề tài · SV đăng ký" (giờ Việt Nam), áp cho cả ghi danh và hủy. Hết hạn thì tác vụ đóng hạn lưu đề tài có nhóm thành `Đang thực hiện` kèm lịch sử, kể cả khi không có truy cập (PDR-049/064).
 - **Chỉ ghi danh đề tài GV công bố đang trống.** Ghi danh thành công thì đề tài `Đã đăng ký`; GVHD không còn sửa được đề tài đó (PDR-053).
 - **Không có hai nhóm cùng nhận một đề tài.**
   - Nhận đề tài bằng cập nhật có điều kiện (`GroupId IS NULL` và `Chưa đăng ký`) trong cùng transaction với việc tạo nhóm. Nhóm thua không lưu gì.

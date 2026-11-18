@@ -63,7 +63,7 @@ Hết thời gian đăng ký (cuối mốc 2):
 Nhóm không nộp bản khóa luận nào sau hạn bổ sung ──► Không đủ điều kiện công bố (giáo vụ kết thúc)
 ```
 
-- **Đang thực hiện** kéo dài từ hết thời gian đăng ký, qua Đề cương và Giữa kỳ, đến khi nộp báo cáo cuối kỳ. Duyệt đề cương chỉ hoàn tất chặng Đề cương, **không đổi trạng thái**.
+- **Đang thực hiện** kéo dài từ hết thời gian đăng ký, qua Đề cương, Giữa kỳ và cả sau khi nhóm nộp báo cáo cuối kỳ. Chỉ khi giảng viên nhập điểm đầu tiên, đề tài mới chuyển sang **Đang cho điểm**. Duyệt đề cương chỉ hoàn tất chặng Đề cương, **không đổi trạng thái**.
 - **Đã hoàn tất:** công bố chính là hoàn tất; không có bước "đóng khóa luận" riêng. Bản nộp cuối cùng là bản chính thức và bị khóa.
 - **Thống kê:** dùng đủ 12 trạng thái trên (gồm Chờ GV duyệt và Bị từ chối).
 - **Danh sách đề tài của đợt** sau hạn đăng ký không hiện đề xuất `Bị từ chối` (vẫn còn trong lịch sử), theo PDR-049.
@@ -90,8 +90,8 @@ Nhóm không nộp bản khóa luận nào sau hạn bổ sung ──► Không 
 **Nhóm và đề tài**
 - Nhóm có tối đa 2 SV và 1 đại diện. Mỗi SV chỉ thuộc một nhóm trong một đợt.
 - Hai nhóm không nhận cùng một đề tài: nhóm ghi danh trước được nhận, không có bước duyệt nhóm.
-- GV chỉ thêm, xóa đề tài khi giáo vụ chưa đóng danh sách. Sau khi đóng: tên đề tài bị khóa; đề tài chưa có nhóm chỉ còn sửa được mô tả và yêu cầu.
-- Giáo vụ **đóng và công bố danh sách** thủ công sau mốc 1. Từ đó SV mới ghi danh hoặc đề xuất được.
+- GV chỉ thêm, sửa, xóa đề tài trong mốc "GV gửi đề tài", đến hết 23:59 ngày cuối của mốc; hết mốc thì khóa cả ba thao tác, dù Giáo vụ chưa công bố. Sau công bố mọi đề tài GV chỉ xem, kể cả đề tài chưa có nhóm (PDR-048/053, OQ-025(c)).
+- Giáo vụ **đóng và công bố danh sách** thủ công sau mốc 1 (sau hạn GV gửi đề tài), trước khi hết hạn đăng ký; không có công bố sớm. Từ đó SV mới ghi danh hoặc đề xuất được.
 - **Đề xuất của SV:**
   - Đề xuất chỉ cần GVHD chấp nhận, không qua giáo vụ.
   - Mỗi nhóm có tối đa 1 đề xuất đang chờ, và không ghi danh đề tài khác trong lúc chờ.
@@ -198,7 +198,7 @@ Cột "Repo" là quy tắc trước 03/11. Mục 1–4 nay theo cột báo cáo 
 
 | # | Chủ đề | Báo cáo 03-11 | Repo hiện hành |
 | --- | --- | --- | --- |
-| 1 | Khi nào `Đang thực hiện` | Tự chuyển khi hết thời gian đăng ký; duyệt đề cương không đổi trạng thái | Chuyển khi GVHD duyệt đề cương (`BUSINESS_RULES`, `WORKFLOWS` §2.3) |
+| 1 | Khi nào `Đang thực hiện` | Tự chuyển khi hết thời gian đăng ký cho đề tài có nhóm hợp lệ dù chưa nộp/duyệt đề cương; trước hạn vẫn `Đã đăng ký` | **Đã đồng bộ 2026-11-18 (OQ-025(d), PDR-049/064)** trong `BUSINESS_RULES`, `WORKFLOWS`; bản cũ từng yêu cầu GVHD duyệt đề cương mới chuyển trạng thái |
 | 2 | Trạng thái mới | Thêm `Không có nhóm`, `Đang cho điểm`, `Có lệch điểm`, `Đã xác nhận` | Chuỗi cũ `Đã đăng ký → Đang thực hiện → Đã cho điểm → Đã hoàn tất` (`PROJECT_SPEC`) |
 | 3 | Lệch điểm | Chặn xác nhận tới khi hết lệch; giáo vụ nhắc GV trong cặp lệch | Chỉ cảnh báo, hiện khi xác nhận (PDR-007) |
 | 4 | Đơn vị xác nhận và công bố | Theo cả nhóm đề tài, từng đề tài hoặc theo lô | Theo từng SV; lô báo lý do từng người (PDR-009, PDR-010) |

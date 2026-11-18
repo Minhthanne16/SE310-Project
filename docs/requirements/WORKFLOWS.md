@@ -5,13 +5,14 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
 ## 1. Mở đợt và đăng ký đề tài
 
 1. Giáo vụ tạo và vận hành đợt khóa luận, quản lý người tham gia và mốc liên quan; trước khi mở đợt Nháp phải đủ chín mốc hợp lệ theo PDR-032 và hạn trễ riêng cho từng mốc bật “Cho nộp trễ” theo PDR-041, đồng thời kiểm tra mỗi Sinh viên chỉ thuộc một đợt đang diễn ra theo PDR-029. Nếu thiếu Sinh viên/Giảng viên, cảnh báo nhưng vẫn cho mở theo PDR-033.
-2. Giảng viên tạo đề tài để công bố. Giáo vụ đóng và công bố danh sách khi phù hợp với đợt.
+2. Giảng viên thêm/sửa/xóa đề tài trong mốc "GV gửi đề tài"; hết mốc thì cả ba thao tác bị khóa kể cả chưa công bố. Sau hạn GV gửi đề tài, Giáo vụ đóng và công bố danh sách thủ công trước khi hết hạn đăng ký; không công bố sớm. Công bố xong, đề tài GV chỉ xem và Sinh viên mới được ghi danh/đề xuất trong hạn đăng ký. Công bố sau hạn đăng ký bị chặn (PDR-048/053/064, OQ-025(c)).
 3. Nhóm Sinh viên đăng ký đề tài công bố; hệ thống chỉ nhận một đăng ký hợp lệ đầu tiên.
    Khi đợt còn mở đăng ký và nhóm chưa nộp đề cương, bất kỳ thành viên nào được hủy ghi danh cho cả nhóm; đề tài trở lại `Chưa đăng ký`, nhóm giữ nguyên để ghi danh lại, lần cũ còn lịch sử (PDR-047).
 4. Hoặc nhóm đề xuất đề tài cùng giảng viên hướng dẫn. Giảng viên chấp nhận hoặc từ chối kèm lý do.
    Khi đề xuất còn chờ, nhóm có thể hủy; đề xuất được giữ `Đã hủy` trong lịch sử và rời danh sách chờ của Giảng viên (PDR-012).
    Nhóm giữ nguyên thành viên/đại diện; nếu đợt vẫn mở đăng ký và không có đăng ký/đề xuất khác đang hoạt động, nhóm có thể tạo đề xuất mới ngay sau khi hủy (PDR-012).
-5. Đề tài hợp lệ chuyển sang `Đã đăng ký`. Khi hết thời gian đăng ký, đề tài có nhóm tự chuyển `Đang thực hiện` theo PDR-049, kể cả khi nhóm chưa nộp hoặc chưa được duyệt đề cương; nộp/duyệt đề cương là tiến độ tài liệu riêng.
+   Khi đóng đăng ký, hệ thống tự hủy mọi đề xuất còn `Chờ GV duyệt` thành `Đã hủy`, giữ nhóm/lịch sử; GV không xử lý được đơn chờ sau hạn (PDR-064).
+5. Đề tài có nhóm đăng ký hợp lệ chuyển sang `Đã đăng ký` và giữ trạng thái này đến hết hạn đăng ký, dù đã nộp hoặc được duyệt đề cương. Khi hết thời gian đăng ký, tác vụ tự động lưu `Đang thực hiện` cho đề tài có nhóm (kể cả chưa nộp hoặc chưa duyệt đề cương) và `Không có nhóm` cho đề tài còn trống kèm lịch sử, kể cả không có truy cập; nộp/duyệt đề cương là tiến độ tài liệu riêng (PDR-049/064, OQ-025(d)).
 6. Giáo vụ chỉ kết thúc đợt khi mọi đề tài trong đợt đã `Đã hoàn tất`, `Không đủ điều kiện công bố` hoặc `Không có nhóm`; còn đề tài chưa kết thúc thì thao tác bị chặn và liệt kê để xử lý (PDR-031, mở rộng ở PDR-048 mục 5).
 7. Nếu sao chép từ đợt cũ, Giáo vụ nhận một đợt Nháp mới chỉ có khung chín mốc và cấu hình “Cho nộp trễ”; nhập lại ngày mốc, hạn trễ, người tham gia, mẫu và dữ liệu riêng trước khi vận hành (PDR-034/041).
 
@@ -22,7 +23,7 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
 3. Chỉ khi mọi yêu cầu chỉnh sửa liên quan đã hoàn tất, GVHD mới duyệt bản đề cương hiện hành; duyệt hoàn tất chặng Đề cương, đề tài vẫn `Đang thực hiện` (đã chuyển khi hết hạn đăng ký, PDR-049).
 4. Nhóm nộp các phiên bản khóa luận; hệ thống giữ lịch sử các lần nộp. Với mốc bật “Cho nộp trễ”, bài sau hạn thường được nhận và gắn nhãn đến hết hạn trễ riêng của mốc (PDR-041). Mọi phiên bản tài liệu vẫn được giữ sau khi đợt kết thúc (PDR-042).
 5. Nhóm hoặc hệ thống chốt bản cuối. Khi quá hạn mà chưa có bản nộp, xử lý ngoại lệ theo PDR-011; không tự chốt khi không có bản.
-6. Nếu đến hạn mà nhóm chưa nộp bản khóa luận nào, kết quả chờ xử lý ngoại lệ; Giáo vụ có thể cấp hạn nộp bổ sung riêng cho nhóm **một lần**, đặt hạn và ghi lý do. Nếu hết hạn bổ sung vẫn không có bản, Giáo vụ có thể kết thúc “Không đủ điều kiện công bố” kèm lý do; hệ thống không tự đánh không đạt (PDR-011).
+6. Nếu đến hạn mà nhóm chưa nộp bản khóa luận nào, kết quả chờ xử lý ngoại lệ; Giáo vụ có thể cấp hạn nộp bổ sung riêng cho nhóm **một lần**, đặt hạn và ghi lý do. Nếu hết hạn bổ sung vẫn không có bản, Giáo vụ có thể kết thúc “Không đủ điều kiện công bố” kèm lý do từ `Đang thực hiện`, `Đang cho điểm`, `Có lệch điểm`, `Đã cho điểm` hoặc trực tiếp từ `Đã xác nhận` mà không phải hủy xác nhận. Giữ nguyên điểm, xác nhận và lịch sử cũ; không công bố điểm và không tự đánh không đạt (PDR-011, OQ-031 đã chốt).
 7. Nếu có bản nộp trong hạn bổ sung, nhóm tự chốt bản cuối hoặc hệ thống chốt bản mới nhất khi hết hạn bổ sung; lưu lịch sử chốt (PDR-011).
 8. Đề tài đã được Giáo vụ kết thúc `Không đủ điều kiện công bố` không mở lại bằng thao tác thông thường (PDR-011).
 
@@ -37,7 +38,7 @@ Các luồng này diễn đạt bằng chữ để làm nguồn cho đặc tả 
 
 1. Giảng viên hướng dẫn, phản biện, chủ tịch và thư ký có các phiếu điểm riêng cho từng Sinh viên.
    Thư ký nhập điểm cho cả Chủ tịch và Thư ký; không có bước Chủ tịch xác nhận hay trả lại (PDR-050).
-2. Có điểm đầu tiên thì đề tài `Đang cho điểm`. Khi mọi Sinh viên đủ bốn điểm, hệ thống tính điểm tổng kết và chuyển đề tài `Đã cho điểm`, hoặc `Có lệch điểm` nếu có cặp lệch; đề tài còn lệch không xác nhận được, Giáo vụ gửi thông báo nhắc các Giảng viên trong cặp lệch (PDR-049).
+2. Nhóm nộp báo cáo cuối kỳ không làm đề tài rời `Đang thực hiện`; khi giảng viên nhập điểm đầu tiên thì đề tài chuyển `Đang cho điểm`. Khi mọi Sinh viên đủ bốn điểm, hệ thống tính điểm tổng kết và chuyển đề tài `Đã cho điểm`, hoặc `Có lệch điểm` nếu có cặp lệch; đề tài còn lệch không xác nhận được, Giáo vụ gửi thông báo nhắc các Giảng viên trong cặp lệch (PDR-049, OQ-025(a)).
 3. Giáo vụ kiểm tra điểm từng Sinh viên rồi xác nhận kết quả **theo cả nhóm đề tài** (từng đề tài hoặc theo lô); đề tài `Đã xác nhận` khóa điểm, chỉ hủy xác nhận được trước công bố, có lý do (PDR-005, PDR-049).
 4. Giáo vụ công bố kết quả đề tài `Đã xác nhận` khi nhóm đã chốt bản khóa luận cuối hoặc đã hết hạn chốt **và có bản khóa luận**; không công bố trường hợp chưa có bản đang chờ ngoại lệ hoặc `Không đủ điều kiện công bố` (PDR-011/059). Công bố xong đề tài `Đã hoàn tất`. Sinh viên xem điểm của mình sau công bố.
 

@@ -78,7 +78,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 **Nghiệm thu:** Không còn quy tắc chưa xác định trong luồng đợt → công bố; OQ-007 được ghi rõ là ngoài cổng MVP.  
 **Kiểm chứng:** Review chéo ma trận với `OPEN_QUESTIONS.md`, `REVIEW.md` và PDR liên quan.
-**Tình trạng nghiệm thu G0.1:** Chưa đạt do OQ-020/025/028/029/030/031 còn cần quyết định, đặc biệt ca T40 chưa có kết quả xác định; checkpoint CP00 chưa được phê duyệt.
+**Tình trạng nghiệm thu G0.1 (cập nhật 2026-11-18):** OQ-028/029/030 đã chốt theo PDR-064; OQ-031 đã chốt theo PDR-011, ca T40 có kết quả kỳ vọng. Cần bổ sung triển khai/test đóng đăng ký, chuyển trạng thái ngoại lệ và audit trong G2/G3/G4/G7. Chưa đạt do OQ-020/025 còn mở và checkpoint CP00 chưa được phê duyệt.
 
 #### G0.2 — Chuẩn hóa quy trình kỹ thuật và môi trường test
 
@@ -296,7 +296,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 | Nhóm | Đã đánh dấu / tổng | Phần có thể chứng minh | Phần chưa đủ để nghiệm thu |
 | --- | ---: | --- | --- |
-| G0 | 3/6 | Đã lập ma trận quy tắc, quyền, trạng thái, đối chiếu DESIGN/PDR và ca giấy T01–T40 | Chờ quyết định OQ-020/025/028/029/030/031, phê duyệt CP00; G0.2 còn quy trình DB test, API contract và review migration |
+| G0 | 3/6 | Đã lập ma trận quy tắc, quyền, trạng thái, đối chiếu DESIGN/PDR và ca giấy T01–T40; OQ-028/029/030 chốt ở PDR-064, OQ-031 chốt ở PDR-011 | Chờ quyết định OQ-020/025, phê duyệt CP00; bổ sung kiểm thử đóng hạn/audit ở G2/G3 và chuyển ngoại lệ T40 ở G4/G7; G0.2 còn quy trình DB test, API contract và review migration |
 | G1 | 7/9 | Quản trị tài khoản, reset, hồ sơ, avatar, thông báo nền | Hai mục kiểm chứng auth/CSV và gỡ demo toàn luồng |
 | G2 | 3/6 | Vòng đời/sao chép/xóa đợt, chín mốc và Gantt từ dữ liệu API; kiểm tra mở/kết thúc | Race condition khi hai đợt mở cùng SV, history gỡ người và nguồn demo mặc định |
 | G3 | 6/7 | Đề tài, công bố, ghi danh, đề xuất và quyết định GV | `canCancel` lệch điều kiện đã nộp đề cương; checkpoint E2E nhóm 1/2 SV |
