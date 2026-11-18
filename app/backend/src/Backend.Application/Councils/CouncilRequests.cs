@@ -337,8 +337,12 @@ public sealed class UpdateCouncilHandler(IRoundRepository rounds, ITopicReposito
         // Thành viên cũ và mới của hội đồng (gồm người bị thay, PDR-020).
         if (before.ChairId != after.ChairId || before.SecretaryId != after.SecretaryId)
             foreach (var topicId in newSlots.Keys.Where(oldSlots.ContainsKey))
+            {
                 history.Add(CouncilFlow.History(topicId, actorId, "Đổi thành viên hội đồng", now,
                     $"Chủ tịch {workspace.Name(before.ChairId)} → {workspace.Name(after.ChairId)}; Thư ký {workspace.Name(before.SecretaryId)} → {workspace.Name(after.SecretaryId)}. Lý do: {reason}"));
+                foreach (var person in workspace.Stakeholders(topicId))
+                    notices.Add(person, $"Thành viên hội đồng bảo vệ {workspace.Code(topicId)} đã thay đổi ({after.Name}). Lý do: {reason}", $"/de-tai/{topicId}");
+            }
         var summary = $"Lịch {after.Name} đã thay đổi: {CouncilFlow.When(after.Date, after.Slots.FirstOrDefault()?.Start ?? default, after.Slots.LastOrDefault()?.End ?? default, after.Room)}. Lý do: {reason}";
         foreach (var member in new[] { before.ChairId, before.SecretaryId }.Where(m => m != after.ChairId && m != after.SecretaryId))
             notices.Add(member, $"Bạn không còn thuộc {before.Name}. Lý do: {reason}", "/gv/hoi-dong");

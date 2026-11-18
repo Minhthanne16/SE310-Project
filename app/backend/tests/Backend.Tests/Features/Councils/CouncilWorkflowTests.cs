@@ -641,6 +641,59 @@ public sealed class CouncilWorkflowTests : IDisposable
         Assert.Equal(w.B.Id, await Read(db => db.DefenseCouncils.Where(c => c.Id == council.Id).Select(c => c.ChairId).SingleAsync()));
     }
 
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReplacingAPublishedCouncilMemberWithoutChangingScheduleNotifiesAllAffected(bool replaceChair)
+    {
+        var w = await NewWorld();
+        await Send(new AssignReviewerCommand(w.Staff.Id, w.T[0], new AssignReviewerInputDto { ReviewerId = w.E.Id }));
+        // GVPB đồng thời thuộc hội đồng; hai đề tài cùng GVHD vẫn cần thông báo riêng theo đề tài.
+        await Send(new AssignReviewerCommand(w.Staff.Id, w.T[1], new AssignReviewerInputDto { ReviewerId = w.B.Id }));
+        var council = await Created(w, Input(w, "Hội đồng 1", w.B, w.C, "B4.12",
+            (w.T[0], "07:30", "08:15"), (w.T[1], "08:15", "09:00")));
+        await Publish(w, council.Id);
+        council = (await Board(w)).Councils.Single();
+        var previousIds = await Read(db => db.Notifications.Select(n => n.Id).ToListAsync());
+        var reason = replaceChair ? "Thay Chủ tịch đi công tác" : "Thay Thư ký đi công tác";
+
+        var result = await Send(new UpdateCouncilCommand(w.Staff.Id, council.Id, Edit(council, i =>
+        {
+            if (replaceChair) i.ChairId = w.D.Id;
+            else i.SecretaryId = w.D.Id;
+            i.Reason = reason;
+        })));
+
+        Assert.Equal(TopicResultStatus.Ok, result.Status);
+        var updated = result.Response.Data!;
+        Assert.Equal(council.Date, updated.Date);
+        Assert.Equal(council.Room, updated.Room);
+        Assert.Equal(council.Slots.Select(s => (s.TopicId, s.Start, s.End)), updated.Slots.Select(s => (s.TopicId, s.Start, s.End)));
+        var notices = await Read(db => db.Notifications.Where(n => !previousIds.Contains(n.Id)).ToListAsync());
+        Assert.Single(notices.Select(n => n.BatchId).Distinct());
+        Assert.Equal(notices.Count, notices.Select(n => (n.RecipientUserId, n.Text)).Distinct().Count());
+        Assert.All(notices, n =>
+        {
+            Assert.Equal(NotificationKinds.Schedule, n.Kind);
+            Assert.Equal(w.Staff.Id, n.SenderUserId);
+            Assert.Contains(reason, n.Text);
+        });
+        foreach (var topicId in w.T.Take(2))
+        {
+            var reviewerId = topicId == w.T[0] ? w.E.Id : w.B.Id;
+            var recipients = w.Members[topicId].Append(w.A.Id).Append(reviewerId);
+            foreach (var recipient in recipients)
+                Assert.Single(notices, n => n.RecipientUserId == recipient && n.Href == $"/de-tai/{topicId}");
+        }
+        var removedId = replaceChair ? w.B.Id : w.C.Id;
+        var remainingId = replaceChair ? w.C.Id : w.B.Id;
+        var removedNotice = Assert.Single(notices, n => n.RecipientUserId == removedId && n.Href == "/gv/hoi-dong");
+        Assert.StartsWith("Bạn không còn thuộc Hội đồng 1", removedNotice.Text);
+        foreach (var memberId in new[] { remainingId, w.D.Id })
+            Assert.Single(notices, n => n.RecipientUserId == memberId && n.Href == "/gv/hoi-dong");
+        Assert.DoesNotContain(notices, n => n.RecipientUserId == w.Outside.Id || n.RecipientUserId == w.Staff.Id);
+    }
+
     // ---------- PDR-019: hủy lịch đã công bố ----------
 
     [Fact]
@@ -720,14 +773,43 @@ public sealed class CouncilWorkflowTests : IDisposable
     {
         var w = await NewWorld();
         await Created(w, Input(w, "Hội đồng 1", w.D, w.E, "B4.12"));
-        var removal = await Send(new RemoveParticipantCommand(w.RoundId, "lecturers", w.E.Id));
-        Assert.Equal(RoundResultStatus.Conflict, removal.Status);
-        Assert.Equal("Giảng viên đang thuộc hội đồng bảo vệ trong đợt nên không gỡ được khỏi đợt.", removal.Response.Message);
+        var round = (await Send(new GetRoundQuery(w.RoundId))).Response.Data!;
+        foreach (var member in new[] { w.D, w.E })
+        {
+            const string blocker = "Giảng viên đang thuộc hội đồng bảo vệ trong đợt nên không gỡ được khỏi đợt.";
+            Assert.Equal(blocker, round.RemovalBlockers[member.Id]);
+            Assert.Contains(member.Id, round.LockedLecturerIds);
+            var removal = await Send(new RemoveParticipantCommand(w.RoundId, "lecturers", member.Id));
+            Assert.Equal(RoundResultStatus.Conflict, removal.Status);
+            Assert.Equal(blocker, removal.Response.Message);
+        }
 
         var withData = await Read(async db => await new UserRepository(db).GetUserIdsWithRelatedDataAsync([w.D.Id, w.E.Id, w.Outside.Id]));
         Assert.Contains(w.D.Id, withData);
         Assert.Contains(w.E.Id, withData);
         Assert.DoesNotContain(w.Outside.Id, withData);
+    }
+
+    [Fact]
+    public async Task CancelledCouncilMembershipDoesNotBlockRemovalFromTheRound()
+    {
+        var w = await NewWorld();
+        var council = await Created(w, Input(w, "Hội đồng 1", w.D, w.E, "B4.12", (w.T[0], "07:30", "08:15")));
+        await Publish(w, council.Id);
+        Assert.Equal(TopicResultStatus.Ok,
+            (await Send(new CancelCouncilCommand(w.Staff.Id, council.Id, new CouncilReasonInputDto { Reason = "Hủy buổi bảo vệ" }))).Status);
+
+        var round = (await Send(new GetRoundQuery(w.RoundId))).Response.Data!;
+        foreach (var member in new[] { w.D, w.E })
+        {
+            Assert.False(round.RemovalBlockers.ContainsKey(member.Id));
+            Assert.DoesNotContain(member.Id, round.LockedLecturerIds);
+            Assert.Equal(RoundResultStatus.Ok,
+                (await Send(new RemoveParticipantCommand(w.RoundId, "lecturers", member.Id))).Status);
+        }
+        round = (await Send(new GetRoundQuery(w.RoundId))).Response.Data!;
+        Assert.DoesNotContain(w.D.Id, round.LecturerIds);
+        Assert.DoesNotContain(w.E.Id, round.LecturerIds);
     }
 
     [Fact]

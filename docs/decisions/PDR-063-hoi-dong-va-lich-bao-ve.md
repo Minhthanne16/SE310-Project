@@ -87,7 +87,7 @@ Gốc `api/councils`, mọi endpoint yêu cầu đăng nhập; lỗi dùng `ApiR
 - **Ngày bảo vệ ngoài mốc 7 "Lịch bảo vệ" không bị chặn.** Màn sửa gợi ý khoảng ngày của mốc; dùng ô chọn ngày của trình duyệt thay cho lịch tháng tự dựng của canvas.
 - **Một `viewerRole = council`** cho cả Chủ tịch và Thư ký, vì trước P07 quyền của hai vai trò như nhau (chỉ xem). [plan/khong-gian-de-tai.md](../plan/khong-gian-de-tai.md) mục B3 đề xuất tách `councilChair`/`councilSecretary`; P07 tách khi cần quyền nhập điểm của Thư ký. Tab mặc định vẫn là Hoạt động, như GVPB hiện nay.
 - **Lịch sử hội đồng** lưu ở bảng `DefenseCouncilLogs` (tạo, sửa, công bố, hủy, đính chính; người, thời điểm, lý do, mô tả lịch trước/sau). Lịch sử đề tài chỉ ghi các sự kiện đã công bố (nhóm "Lịch bảo vệ"); thao tác trên hội đồng Nháp không ghi vào lịch sử đề tài vì chưa ai ngoài Giáo vụ thấy.
-- **Màn Hội đồng của GV**: cột "Điểm hội đồng" hiện "Chưa nhập điểm" / "Thư ký chưa nhập" cho tới khi có phiếu ở P07; nút "Mở" dẫn tới Không gian đề tài.
+- **Màn Hội đồng của GV**: cột "Điểm hội đồng" hiện "Chưa nhập điểm" / "Thư ký chưa nhập" cho tới khi có phiếu ở P07; nút "Mở" dẫn tới Không gian đề tài. Chưa hiển thị bộ lọc theo điểm trong P06 vì API chưa có trạng thái điểm từng lượt; triển khai bộ lọc cùng phiếu điểm ở P07.
 
 ## Hệ quả
 

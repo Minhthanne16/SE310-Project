@@ -97,12 +97,11 @@ it('thư ký thấy thông tin hội đồng, giờ, khóa luận và liên kế
     within(rows[0]).getByRole('link', { name: 'Mở DT-001 Đề tài 001' }),
   ).toHaveAttribute('href', '/de-tai/001');
   expect(
-    screen.getByRole('button', { name: 'Chưa nhập điểm (2)' }),
-  ).toHaveAttribute('aria-pressed', 'false');
-  fireEvent.click(screen.getByRole('button', { name: 'Chưa nhập điểm (2)' }));
-  expect(
-    screen.getByRole('button', { name: 'Chưa nhập điểm (2)' }),
-  ).toHaveAttribute('aria-pressed', 'true');
+    screen.queryByRole('group', { name: 'Lọc đề tài' }),
+  ).not.toBeInTheDocument();
+  expect(screen.getByRole('note')).toHaveTextContent(
+    'Chức năng nhập điểm và lọc theo điểm chưa khả dụng.',
+  );
 });
 
 it('chủ tịch chỉ xem điểm và thấy đính chính', async () => {

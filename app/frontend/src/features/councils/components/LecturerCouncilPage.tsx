@@ -17,15 +17,10 @@ interface LecturerCouncilPageProps {
   service?: Pick<CouncilService, 'mine'>;
 }
 
-type Filter = 'all' | 'todo';
-
 const errorText = (err: unknown) =>
   err instanceof Error && err.message
     ? err.message
     : 'Không tải được hội đồng bảo vệ.';
-
-// Phiếu điểm hội đồng thuộc P07; trước đó mọi đề tài đều "chưa nhập điểm".
-const scored = (_slot: CouncilSlot) => false;
 
 function thesisText(slot: CouncilSlot) {
   if (slot.finalLocked)
@@ -50,7 +45,6 @@ export const LecturerCouncilPage: React.FC<LecturerCouncilPageProps> = ({
 }) => {
   const [data, setData] = useState<MyCouncils | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<Filter>('all');
 
   const load = useCallback(
     async (roundId?: string) => {
@@ -85,8 +79,6 @@ export const LecturerCouncilPage: React.FC<LecturerCouncilPageProps> = ({
   const active = data.councils.filter((c) => c.status !== 'Đã hủy');
   const anyChair = active.some((c) => c.myRole === 'chair');
   const anySecretary = active.some((c) => c.myRole === 'secretary');
-  const rows = active.flatMap((c) => c.slots);
-  const todo = rows.filter((s) => !scored(s));
 
   return (
     <div className="cnc-page">
@@ -129,26 +121,11 @@ export const LecturerCouncilPage: React.FC<LecturerCouncilPageProps> = ({
         </section>
       ) : (
         <>
-          {rows.length > 0 && (
-            <div className="app-segmented" role="group" aria-label="Lọc đề tài">
-              <button
-                type="button"
-                aria-pressed={filter === 'all'}
-                onClick={() => setFilter('all')}
-              >
-                {`Tất cả (${rows.length})`}
-              </button>
-              <button
-                type="button"
-                aria-pressed={filter === 'todo'}
-                onClick={() => setFilter('todo')}
-              >
-                {`${anySecretary ? 'Chưa nhập điểm' : 'Chưa có điểm'} (${todo.length})`}
-              </button>
-            </div>
-          )}
+          <p role="note" className="cnc-hint">
+            Chức năng nhập điểm và lọc theo điểm chưa khả dụng.
+          </p>
           {data.councils.map((council) => (
-            <CouncilBlock key={council.id} council={council} filter={filter} />
+            <CouncilBlock key={council.id} council={council} />
           ))}
           <p className="cnc-hint">
             {anySecretary
@@ -161,15 +138,9 @@ export const LecturerCouncilPage: React.FC<LecturerCouncilPageProps> = ({
   );
 };
 
-const CouncilBlock: React.FC<{ council: MyCouncil; filter: Filter }> = ({
-  council,
-  filter,
-}) => {
+const CouncilBlock: React.FC<{ council: MyCouncil }> = ({ council }) => {
   const chair = council.myRole === 'chair';
   const cancelled = council.status === 'Đã hủy';
-  const shown = council.slots.filter(
-    (s) => filter === 'all' || cancelled || !scored(s),
-  );
   const titleId = `hd-${council.id}`;
   return (
     <section className="cnc-mine" aria-labelledby={titleId}>
@@ -215,8 +186,8 @@ const CouncilBlock: React.FC<{ council: MyCouncil; filter: Filter }> = ({
         </p>
       ))}
 
-      {shown.length === 0 ? (
-        <p className="app-muted">Không còn đề tài nào chưa có điểm.</p>
+      {council.slots.length === 0 ? (
+        <p className="app-muted">Hội đồng chưa có đề tài.</p>
       ) : (
         <div className="app-table-scroll">
           <table className="app-table">
@@ -232,7 +203,7 @@ const CouncilBlock: React.FC<{ council: MyCouncil; filter: Filter }> = ({
               </tr>
             </thead>
             <tbody>
-              {shown.map((slot) => {
+              {council.slots.map((slot) => {
                 const thesis = thesisText(slot);
                 return (
                   <tr key={slot.id}>

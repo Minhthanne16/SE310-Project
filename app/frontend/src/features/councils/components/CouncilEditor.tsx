@@ -158,7 +158,6 @@ export const CouncilEditor: React.FC<CouncilEditorProps> = ({
             id="cnc-date"
             type="date"
             value={draft.date}
-            min={board.round.defenseStart || undefined}
             disabled={busy}
             {...aria('date')}
             aria-describedby={

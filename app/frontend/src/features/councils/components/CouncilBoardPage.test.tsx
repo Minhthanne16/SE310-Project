@@ -1,4 +1,5 @@
 import {
+  act,
   cleanup,
   fireEvent,
   render,
@@ -187,6 +188,69 @@ async function renderPage(service: CouncilService) {
   );
   await screen.findByRole('heading', { name: 'Hội đồng 1', level: 2 });
 }
+
+it.each(['2026-10-01', '2026-10-30'])(
+  'cho phép lưu ngày %s ngoài mốc bảo vệ',
+  async (date) => {
+    const service = fakeService(boardOf([council()]));
+    await renderPage(service);
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa' }));
+    const input = screen.getByLabelText('Ngày bảo vệ') as HTMLInputElement;
+    fireEvent.change(input, { target: { value: date } });
+    expect(input.checkValidity()).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Lưu hội đồng' }));
+    await waitFor(() =>
+      expect(service.update).toHaveBeenCalledWith(
+        'c1',
+        expect.objectContaining({ date }),
+      ),
+    );
+  },
+);
+
+it.each(['Phòng', 'Giờ kết thúc DT-001'])(
+  'bỏ kết quả kiểm tra cũ khi %s trở thành không hợp lệ',
+  async (label) => {
+    const pending = Promise.withResolvers<{
+      ok: boolean;
+      problems: string[];
+    }>();
+    const service = fakeService(boardOf([council()]), {
+      check: vi.fn(() => pending.promise),
+    });
+    await renderPage(service);
+    fireEvent.click(screen.getByRole('button', { name: 'Sửa' }));
+    await waitFor(() => expect(service.check).toHaveBeenCalledTimes(1));
+    fireEvent.change(screen.getByLabelText(label), { target: { value: '' } });
+    expect(
+      screen.queryByText(/Đang kiểm tra trùng phòng/),
+    ).not.toBeInTheDocument();
+    await act(async () =>
+      pending.resolve({ ok: false, problems: ['Xung đột cũ'] }),
+    );
+    expect(screen.queryByText('Xung đột cũ')).not.toBeInTheDocument();
+    expect(service.check).toHaveBeenCalledTimes(1);
+  },
+);
+
+it('bỏ phản hồi kiểm tra của form đã đóng khi mở form mới chưa đủ dữ liệu', async () => {
+  const pending = Promise.withResolvers<{ ok: boolean; problems: string[] }>();
+  const service = fakeService(boardOf([council()]), {
+    check: vi.fn(() => pending.promise),
+  });
+  await renderPage(service);
+  fireEvent.click(screen.getByRole('button', { name: 'Sửa' }));
+  await waitFor(() => expect(service.check).toHaveBeenCalledTimes(1));
+  fireEvent.click(screen.getByRole('button', { name: 'Hủy' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Tạo hội đồng' }));
+  await act(async () =>
+    pending.resolve({ ok: false, problems: ['Xung đột form đã đóng'] }),
+  );
+  expect(screen.queryByText('Xung đột form đã đóng')).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(/Đang kiểm tra trùng phòng/),
+  ).not.toBeInTheDocument();
+});
 
 it('hiển thị thống kê, danh sách hội đồng, chi tiết, lịch sử và kho đề tài chưa xếp', async () => {
   const service = fakeService(

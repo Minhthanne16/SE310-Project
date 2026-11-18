@@ -1,12 +1,6 @@
 'use client';
 
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -76,7 +70,6 @@ export const CouncilBoardPage: React.FC<CouncilBoardPageProps> = ({
   const [dialogError, setDialogError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const checkSeq = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -133,6 +126,8 @@ export const CouncilBoardPage: React.FC<CouncilBoardPageProps> = ({
 
   // Xem trước xung đột (trùng phòng/giảng viên, GVHD, đề tài đã xếp) trên máy chủ khi bản nháp đủ dữ liệu.
   useEffect(() => {
+    setProblems(null);
+    setChecking(false);
     if (!draft || !current) return;
     const local = fieldErrors({
       ...draft,
@@ -142,25 +137,27 @@ export const CouncilBoardPage: React.FC<CouncilBoardPageProps> = ({
       Object.keys(local).length > 0 ||
       Object.keys(slotErrors(draft)).length > 0
     ) {
-      setProblems(null);
       return;
     }
-    const seq = ++checkSeq.current;
+    let cancelled = false;
     setChecking(true);
     const timer = setTimeout(() => {
       service
         .check(toInput(draft, current.round.id), draft.id)
         .then((result) => {
-          if (seq === checkSeq.current) setProblems(result.problems);
+          if (!cancelled) setProblems(result.problems);
         })
         .catch(() => {
-          if (seq === checkSeq.current) setProblems(null);
+          if (!cancelled) setProblems(null);
         })
         .finally(() => {
-          if (seq === checkSeq.current) setChecking(false);
+          if (!cancelled) setChecking(false);
         });
     }, checkDelayMs);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [draft, current, service, checkDelayMs]);
 
   // Kho khi sửa: đề tài đủ điều kiện chưa xếp, cộng đề tài vừa bỏ khỏi chính hội đồng đang sửa.
