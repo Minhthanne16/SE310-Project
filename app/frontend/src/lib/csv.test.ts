@@ -13,6 +13,8 @@ it('builds CRLF-terminated CSV and escapes every cell', () => {
   );
   expect(buildCsv(['a'], [])).toBe('a\r\n');
   expect(escapeCsvCell(null)).toBe('');
+  for (const value of ['=1+1', '+cmd', '-1', '@cmd', '  =SUM(A1)', '\n+1'])
+    expect(escapeCsvCell(value)).toBe(escapeCsvCell(`'${value}`));
 });
 
 it('downloads with a UTF-8 BOM, the file name and revokes the URL', () => {

@@ -124,6 +124,7 @@ export interface Participant {
 
 export interface TopicSummary {
   total: number;
+  pendingTopics?: { id: string; title: string; status: TopicStatus }[];
   // Số đề tài chưa ở trạng thái kết thúc (isSettledTopicStatus): còn chờ công
   // bố kết quả. Chặn kết thúc đợt khi > 0 (PDR-031).
   pendingResultCount: number;
@@ -147,9 +148,11 @@ export interface Round {
   lecturerIds: string[];
   studentIds: string[];
   // Sinh viên đã có dữ liệu TRONG ĐỢT NÀY (đề tài, điểm...): không gỡ được khỏi
-  // đợt (03: Chi tiết đợt). Theo từng đợt, không theo từng người; giảng viên
-  // không bị khóa (tài liệu chỉ nêu quy tắc này cho sinh viên).
+  // đợt (PDR-030); backend kiểm tra lại tham chiếu tại thời điểm gỡ.
   lockedStudentIds: string[];
+  lockedLecturerIds?: string[];
+  // Lý do cụ thể từ backend cho người đã có tham chiếu nghiệp vụ trong đợt.
+  removalBlockers?: Record<string, string>;
   topicSummary: TopicSummary;
 }
 

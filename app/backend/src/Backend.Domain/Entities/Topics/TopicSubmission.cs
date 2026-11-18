@@ -62,6 +62,8 @@ public enum OutlineWriteOutcome
     Done,
     // Đề cương vừa được duyệt bởi request khác.
     AlreadyApproved,
+    // Nhóm đã hủy ghi danh trong lúc gửi tệp.
+    NoGroup,
     // Còn yêu cầu mở hoặc nhóm vừa nộp bản mới hơn bản được duyệt.
     Stale
 }

@@ -8,7 +8,10 @@ import {
 import { buildMilestones, seedRounds } from './roundSeed';
 import { ApiError } from '@/api/request';
 
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 
 const stubFetch = (
   status = 200,
@@ -111,12 +114,21 @@ it('calls the round endpoints with the expected method, URL and body', async () 
   ]);
 });
 
-it('returns the data of the response and today as a local date', async () => {
+it('returns the data of the response and today in Vietnam time', async () => {
   const round = seedRounds()[0];
   stubFetch(200, { success: true, message: '', data: round });
   const service = createApiRoundService();
   expect(await service.get(round.id)).toEqual(round);
   expect(service.today).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+});
+
+it('refreshes today at Vietnam midnight without recreating the service', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-11-17T16:59:59Z'));
+  const service = createApiRoundService();
+  expect(service.today).toBe('2026-11-17');
+  vi.setSystemTime(new Date('2026-11-17T17:00:00Z'));
+  expect(service.today).toBe('2026-11-18');
 });
 
 it('maps 404 to RoundNotFoundError', async () => {

@@ -96,6 +96,29 @@ it('renders the menu of the role returned by the auth service', async () => {
   expect(replace).not.toHaveBeenCalled();
 });
 
+it('traps focus in the mobile menu and restores it after Escape', async () => {
+  renderShell(fakeAuth(vi.fn().mockResolvedValue(student)), 'Student');
+  const toggle = await screen.findByRole('button', { name: 'Mở menu' });
+  fireEvent.click(toggle);
+
+  const dialog = screen.getByRole('dialog', { name: 'Menu điều hướng' });
+  const focusables = dialog.querySelectorAll('a[href], button:not([disabled])');
+  expect(dialog).toHaveAttribute('aria-modal', 'true');
+  expect(focusables[0]).toHaveFocus();
+  expect(document.body.style.overflow).toBe('hidden');
+
+  (focusables[focusables.length - 1] as HTMLElement).focus();
+  fireEvent.keyDown(document, { key: 'Tab' });
+  expect(focusables[0]).toHaveFocus();
+  fireEvent.keyDown(document, { key: 'Tab', shiftKey: true });
+  expect(focusables[focusables.length - 1]).toHaveFocus();
+
+  fireEvent.keyDown(document, { key: 'Escape' });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  expect(toggle).toHaveFocus();
+  expect(document.body.style.overflow).toBe('');
+});
+
 it('offers a retry when the session check fails', async () => {
   const getCurrentUser = vi
     .fn()

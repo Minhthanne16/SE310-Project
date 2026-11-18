@@ -176,6 +176,85 @@ public sealed class RegistrationConcurrencyTests : IAsyncLifetime
     private Func<Task<TopicResult<TopicDto>>> CancelProposal(Person student, Guid proposalId) =>
         () => Send(new CancelProposalCommand(student.Id, proposalId));
 
+    [PostgresFact]
+    public async Task TwoDraftRoundsWithSameStudentCannotBothOpen()
+    {
+        var student = await Seed(UserRole.Student, $"SV{Guid.NewGuid():N}"[..10]);
+        var rounds = new List<Guid>();
+        for (var i = 0; i < 2; i++)
+        {
+            var round = (await Send(new CreateRoundCommand(new RoundInputDto
+            {
+                Name = $"Đợt {Guid.NewGuid():N}", Program = "Văn bằng 1", PeriodLabel = "K1"
+            }))).Response.Data!;
+            await Send(new UpdateRoundMilestonesCommand(round.Id, Dated()));
+            await Send(new AddParticipantsCommand(round.Id, "students", [student.Code]));
+            rounds.Add(round.Id);
+        }
+
+        var results = await Race(rounds.Select(id => (Func<Task<RoundResult<RoundDto>>>)(() => Send(new OpenRoundCommand(id)))).ToArray());
+        Assert.Single(results, r => r.Status == RoundResultStatus.Ok);
+        Assert.Single(results, r => r.Status == RoundResultStatus.Conflict);
+        Assert.Equal(1, await Query(db => db.ThesisRounds.CountAsync(r => rounds.Contains(r.Id) && r.Status == RoundStatus.Running)));
+    }
+
+    [PostgresFact]
+    public async Task CancellingAndSubmittingOutlineCannotBothCommit()
+    {
+        var w = await PublishedRound(students: 1, topics: 1);
+        var student = w.Students[0];
+        var group = (await Register(student, w.Topics[0])()).Response.Data!.Group!;
+
+        async Task<OutlineWriteOutcome> Submit()
+        {
+            using var scope = Provider.CreateScope();
+            var repo = scope.ServiceProvider.GetRequiredService<IOutlineRepository>();
+            var result = await repo.AddSubmissionAsync(new TopicSubmission
+            {
+                TopicId = w.Topics[0], Kind = SubmissionKind.Outline, ObjectKey = "race-outline",
+                FileName = "outline.pdf", SubmittedById = student.Id, CreatedAt = DateTime.UtcNow
+            }, group.Id, new TopicHistoryEntry
+            {
+                TopicId = w.Topics[0], ActorUserId = student.Id,
+                Category = TopicHistoryCategories.Submission, Action = "Nộp đề cương"
+            }, []);
+            return result.Outcome;
+        }
+
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var cancelTask = Task.Run(async () => { await gate.Task; return await Cancel(student, w.Topics[0])(); });
+        var submitTask = Task.Run(async () => { await gate.Task; return await Submit(); });
+        gate.SetResult();
+        var cancel = await cancelTask;
+        var submitted = await submitTask;
+        Assert.True((cancel.Status == TopicResultStatus.Ok) != (submitted == OutlineWriteOutcome.Done));
+        Assert.Equal(submitted == OutlineWriteOutcome.Done,
+            await Query(db => db.TopicSubmissions.AnyAsync(s => s.TopicId == w.Topics[0] && s.Kind == SubmissionKind.Outline)));
+    }
+
+    [PostgresFact]
+    public async Task OpeningDraftRoundAndAddingItsStudentToRunningRoundCannotBothSucceed()
+    {
+        var student = await Seed(UserRole.Student, $"SV{Guid.NewGuid():N}"[..10]);
+        var running = (await Send(new CreateRoundCommand(new RoundInputDto
+            { Name = $"Đợt {Guid.NewGuid():N}", Program = "Văn bằng 1", PeriodLabel = "K1" }))).Response.Data!;
+        var draft = (await Send(new CreateRoundCommand(new RoundInputDto
+            { Name = $"Đợt {Guid.NewGuid():N}", Program = "Văn bằng 1", PeriodLabel = "K2" }))).Response.Data!;
+        foreach (var id in new[] { running.Id, draft.Id })
+            await Send(new UpdateRoundMilestonesCommand(id, Dated()));
+        await Send(new AddParticipantsCommand(draft.Id, "students", [student.Code]));
+        await Send(new OpenRoundCommand(running.Id));
+
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var openTask = Task.Run(async () => { await gate.Task; return await Send(new OpenRoundCommand(draft.Id)); });
+        var addTask = Task.Run(async () => { await gate.Task; return await Send(new AddParticipantsCommand(running.Id, "students", [student.Code])); });
+        gate.SetResult();
+        var opened = await openTask;
+        var added = await addTask;
+        Assert.True((opened.Status == RoundResultStatus.Ok) != (added.Response.Data!.Added == 1));
+        Assert.Equal(1, await Query(db => db.RoundParticipants.CountAsync(p => p.UserId == student.Id && p.Round!.Status == RoundStatus.Running)));
+    }
+
     // Bất biến của PDR-054 sau mọi cuộc đua: một đề tài tối đa một nhóm và một lần ghi danh đang hiệu lực,
     // một sinh viên tối đa một nhóm trong đợt, một nhóm tối đa một đề tài.
     private async Task AssertInvariants(Guid roundId)

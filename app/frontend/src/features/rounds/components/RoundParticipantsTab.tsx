@@ -27,7 +27,7 @@ interface RoundParticipantsTabProps {
 
 const NOTES: Record<ParticipantKind, string> = {
   lecturer:
-    'Giảng viên được thêm từ tài khoản đã tạo ở trang Người dùng. Chỉ giảng viên có tên ở đây mới gửi đề tài, được sinh viên chọn hướng dẫn và được phân công phản biện, hội đồng trong đợt. Một giảng viên có thể tham gia nhiều đợt cùng lúc. Giảng viên gỡ được khỏi đợt (quy tắc khóa gỡ vì đã có dữ liệu chỉ áp dụng cho sinh viên).',
+    'Giảng viên được thêm từ tài khoản đã tạo ở trang Người dùng. Chỉ giảng viên có tên ở đây mới gửi đề tài, được sinh viên chọn hướng dẫn và được phân công phản biện, hội đồng trong đợt. Một giảng viên có thể tham gia nhiều đợt cùng lúc. Không thể gỡ giảng viên đã có dữ liệu nghiệp vụ liên quan trong đợt.',
   student:
     'Sinh viên được thêm từ tài khoản đã tạo ở trang Người dùng. Sinh viên chỉ thấy đợt mình được ghi danh và chỉ thuộc một đợt đang diễn ra. Chỉ gỡ khỏi đợt được sinh viên chưa có dữ liệu trong đợt; sinh viên đã có dữ liệu thì không gỡ được.',
 };
@@ -88,9 +88,11 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
         p.unit.toLowerCase().includes(keyword),
     );
   const readOnly = round.status === 'Đã kết thúc';
-  // Chỉ sinh viên có dữ liệu trong đợt này bị khóa (03: Chi tiết đợt).
+  // Cả sinh viên và giảng viên có dữ liệu nghiệp vụ đều bị khóa (PDR-030).
   const isLocked = (p: Participant) =>
-    isStudent && round.lockedStudentIds.includes(p.id);
+    isStudent
+      ? round.lockedStudentIds.includes(p.id)
+      : (round.lockedLecturerIds?.includes(p.id) ?? false);
 
   const confirmRemove = async () => {
     if (!removing || busy) return;
@@ -186,7 +188,8 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
             </thead>
             <tbody>
               {members.map((p) => {
-                const locked = isLocked(p);
+                const blocker = round.removalBlockers?.[p.id];
+                const locked = Boolean(blocker) || isLocked(p);
                 return (
                   <tr key={p.id}>
                     <td>
@@ -207,18 +210,10 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                     <td>
                       <span
                         className={`rnd-pill ${
-                          !isStudent
-                            ? 'rnd-pill-ok'
-                            : locked
-                              ? 'rnd-pill-purple'
-                              : 'rnd-pill-neutral'
+                          locked ? 'rnd-pill-purple' : 'rnd-pill-neutral'
                         }`}
                       >
-                        {!isStudent
-                          ? 'Đang tham gia'
-                          : locked
-                            ? 'Đã có dữ liệu'
-                            : 'Chưa có dữ liệu'}
+                        {locked ? 'Đã có dữ liệu' : 'Chưa có dữ liệu'}
                       </span>
                     </td>
                     {!readOnly && (
@@ -242,7 +237,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                           </button>
                           {locked && (
                             <small id={`locked-${p.id}`}>
-                              Đã có dữ liệu, không gỡ được
+                              {blocker ?? 'Đã có dữ liệu, không gỡ được'}
                             </small>
                           )}
                         </span>

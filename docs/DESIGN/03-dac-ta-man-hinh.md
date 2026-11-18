@@ -110,7 +110,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - Đợt Nháp chỉ giáo vụ thấy, GV và SV thấy sau khi giáo vụ mở đợt.
 - Bảng thông báo không có trả lời, không có số người đã xem.
 - Đây là bản thử nghiệm của danh sách thẻ đợt, chưa chốt hẳn.
-- Ghi chú triển khai frontend (`/giao-vu`): Trang chủ Giáo vụ đã dựng (thẻ mọi đợt kể cả Nháp, chi tiết đợt với việc cần xử lý suy ra từ dữ liệu, Bảng thông báo, Gantt; đợt đang xem giữ trong `?dot=id`). Từ 2026-11-11 trang luôn dùng API thật (`GET /api/rounds`, `GET /api/rounds/{id}`); kho trong bộ nhớ chỉ còn phục vụ test (`roundDemoService.ts`). Backend chưa có API thông báo của đợt (Phase 08) nên Bảng thông báo để trống, không hiện dữ liệu mẫu. Trang chủ SV và GV chưa dựng.
+- Ghi chú triển khai frontend (`/giao-vu`, `/gv`, `/sv`): Trang chủ của cả ba vai trò đã dựng, hiển thị các đợt theo quyền (chỉ Giáo vụ thấy Nháp), xem chi tiết với việc cần xử lý/nhắc hạn, Bảng thông báo và Gantt; đợt đang xem giữ trong `?dot=id`. Trang dùng API thật (`GET /api/rounds`); kho trong bộ nhớ chỉ phục vụ test (`roundDemoService.ts`). Backend chưa có API thông báo của đợt (Phase 08) nên Bảng thông báo để trống, không hiện dữ liệu mẫu.
 - Cập nhật giao diện theo artboard TrangChu: thẻ đợt bấm được, thanh tiến độ, lưới "Việc sắp đến hạn", Bảng thông báo có avatar/chip nguồn và "Xem thêm". Bộ lọc Bảng thông báo giữ theo docs (Tất cả / Từ giáo vụ / Tôi đã gửi). Chưa có sidebar thu gọn chỉ còn biểu tượng và chip đếm "Đề xuất từ SV".
 
 ## Gantt tiến độ đợt (thành phần)
@@ -136,7 +136,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 - 9 mốc: GV gửi đề tài, Công bố đề tài · SV đăng ký, Đề cương, Báo cáo giữa kỳ, Báo cáo cuối kỳ, Lịch phản biện, Lịch bảo vệ, Thời gian cho điểm, Chốt bản cuối · công bố.
 - Thời gian cho điểm chỉ để nhắc, không khóa phiếu chấm.
-- Ghi chú triển khai frontend: thành phần `RoundGantt` (`frontend/src/features/rounds/components/RoundGantt.tsx`) mới có biến thể Giáo vụ (nút Cấu hình ở mọi mốc); tuần 1 tính từ thứ Hai của tuần chứa mốc sớm nhất.
+- Ghi chú triển khai frontend: `RoundGantt` (`app/frontend/src/features/rounds/components/RoundGantt.tsx`) dùng chung ba vai trò. Giáo vụ có nút Cấu hình ở mọi mốc, còn SV/GV có liên kết thao tác ở mốc đang diễn ra và có màn hình tương ứng; tuần 1 tính từ thứ Hai của tuần chứa mốc sớm nhất. Ngày hiện tại dùng giờ Việt Nam (UTC+7), đồng nhất với backend.
 
 ## Menu thông báo (chuông)
 - **Vai trò:** Chung

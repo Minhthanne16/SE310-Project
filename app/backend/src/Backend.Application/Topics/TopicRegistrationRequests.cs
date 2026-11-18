@@ -13,7 +13,7 @@ public record GetMyRegistrationQuery(Guid StudentId, Guid RoundId) : IRequest<To
 
 internal static class RegistrationMapping
 {
-    public static async Task<MyRegistrationDto> BuildAsync(IGroupRepository groups, ITopicRepository topics, ThesisRound round,
+    public static async Task<MyRegistrationDto> BuildAsync(IGroupRepository groups, ITopicRepository topics, IOutlineRepository outlines, ThesisRound round,
         Guid studentId, DateOnly today, CancellationToken cancellationToken)
     {
         var open = TopicRules.RegistrationOpen(round, today);
@@ -31,7 +31,8 @@ internal static class RegistrationMapping
         {
             dto.Topic = TopicMapping.ToDto(topic, round, today, viewerIsSupervisor: false,
                 new Dictionary<Guid, ThesisGroup> { [group.Id] = group });
-            dto.CanCancel = open && topic.Source == TopicSource.Lecturer && topic.Status == TopicStatus.Registered;
+            dto.CanCancel = open && topic.Source == TopicSource.Lecturer && topic.Status == TopicStatus.Registered &&
+                !await outlines.HasOutlineAsync(topic.Id, cancellationToken);
         }
 
         var registrations = await groups.ListRegistrationsAsync(group.Id, cancellationToken);
@@ -53,7 +54,7 @@ internal static class RegistrationMapping
 }
 
 public sealed class RegisterTopicHandler(
-    IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, TimeProvider clock)
+    IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, IOutlineRepository outlines, TimeProvider clock)
     : IRequestHandler<RegisterTopicCommand, TopicResult<MyRegistrationDto>>
 {
     public async Task<TopicResult<MyRegistrationDto>> Handle(RegisterTopicCommand request, CancellationToken cancellationToken)
@@ -145,7 +146,7 @@ public sealed class RegisterTopicHandler(
         return outcome switch
         {
             RegisterOutcome.Registered => TopicResult<MyRegistrationDto>.Ok(
-                await RegistrationMapping.BuildAsync(groups, topics, round, me, today, cancellationToken), "Đã ghi danh đề tài"),
+                await RegistrationMapping.BuildAsync(groups, topics, outlines, round, me, today, cancellationToken), "Đã ghi danh đề tài"),
             RegisterOutcome.TopicTaken => Fail(TopicResultStatus.Conflict, TopicRules.TopicTakenMessage),
             RegisterOutcome.GroupHasTopic => Fail(TopicResultStatus.Conflict, TopicRules.GroupHasTopicMessage),
             _ => Fail(TopicResultStatus.Conflict, "Bạn hoặc thành viên vừa vào một nhóm khác trong đợt. Tải lại trang rồi thử lại.")
@@ -181,9 +182,10 @@ public sealed class CancelRegistrationHandler(
         var now = clock.GetUtcNow().UtcDateTime;
         var history = TopicMapping.History(topic, me, TopicHistoryCategories.Group, "Hủy ghi danh", now, "Hủy cho cả nhóm; nhóm giữ nguyên thành viên.");
         if (!await groups.CancelAsync(topic.Id, group.Id, me, now, history, cancellationToken))
-            return Fail(TopicResultStatus.Conflict, TopicRules.NotRegisteredMessage);
+            return Fail(TopicResultStatus.Conflict, await outlines.HasOutlineAsync(topic.Id, cancellationToken)
+                ? TopicRules.OutlineSubmittedMessage : TopicRules.NotRegisteredMessage);
         return TopicResult<MyRegistrationDto>.Ok(
-            await RegistrationMapping.BuildAsync(groups, topics, round, me, today, cancellationToken), "Đã hủy ghi danh cho cả nhóm");
+            await RegistrationMapping.BuildAsync(groups, topics, outlines, round, me, today, cancellationToken), "Đã hủy ghi danh cho cả nhóm");
     }
 
     private static TopicResult<MyRegistrationDto> Fail(TopicResultStatus status, string message) =>
@@ -191,7 +193,7 @@ public sealed class CancelRegistrationHandler(
 }
 
 public sealed class GetMyRegistrationHandler(
-    IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, TimeProvider clock)
+    IRoundRepository rounds, ITopicRepository topics, IGroupRepository groups, IOutlineRepository outlines, TimeProvider clock)
     : IRequestHandler<GetMyRegistrationQuery, TopicResult<MyRegistrationDto>>
 {
     public async Task<TopicResult<MyRegistrationDto>> Handle(GetMyRegistrationQuery request, CancellationToken cancellationToken)
@@ -201,7 +203,7 @@ public sealed class GetMyRegistrationHandler(
             return TopicResult<MyRegistrationDto>.Fail(TopicResultStatus.NotFound, RoundRules.NotFoundMessage);
         if (!TopicMapping.IsStudentOf(round, request.StudentId))
             return TopicResult<MyRegistrationDto>.Fail(TopicResultStatus.Forbidden, TopicRules.NotRoundStudentMessage);
-        return TopicResult<MyRegistrationDto>.Ok(await RegistrationMapping.BuildAsync(groups, topics, round, request.StudentId,
+        return TopicResult<MyRegistrationDto>.Ok(await RegistrationMapping.BuildAsync(groups, topics, outlines, round, request.StudentId,
             RoundRules.TodayVietnam(clock), cancellationToken));
     }
 }

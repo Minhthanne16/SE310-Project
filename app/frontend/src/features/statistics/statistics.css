@@ -1,0 +1,292 @@
+.statistics-page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.statistics-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.statistics-round {
+  display: grid;
+  gap: 7px;
+  min-width: min(100%, 300px);
+}
+.statistics-round label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 650;
+}
+.statistics-round .app-select {
+  width: 100%;
+}
+.statistics-overview {
+  background: var(--ink);
+  color: var(--surface);
+  border-radius: var(--radius-card);
+  padding: 28px;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(0, 1.5fr);
+  align-items: end;
+  gap: 28px;
+}
+.statistics-overview-title {
+  display: grid;
+  gap: 10px;
+}
+.statistics-overview-title h2 {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.statistics-overview-title p {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--line-input);
+}
+.statistics-eyebrow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.statistics-kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.statistics-kpis > div {
+  border-left: 1px solid var(--muted);
+  padding: 0 8px 0 16px;
+  display: grid;
+  gap: 5px;
+}
+.statistics-kpis strong {
+  font-size: 32px;
+  line-height: 1.1;
+  font-weight: 750;
+}
+.statistics-kpis span {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--line-input);
+}
+.statistics-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+.statistics-grid > .app-card {
+  min-width: 0;
+}
+.statistics-caption {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.statistics-notice {
+  background: var(--info-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+  padding: 16px 20px;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  font-size: 16px;
+}
+.statistics-notice p {
+  color: var(--ink-2);
+}
+.statistics-error {
+  background: var(--danger-bg);
+  color: var(--danger-ink);
+  justify-content: space-between;
+}
+.statistics-status-list,
+.statistics-stage-list {
+  display: grid;
+  gap: 16px;
+}
+.statistics-status-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.25fr) minmax(75px, 1fr) 28px;
+  gap: 14px;
+  align-items: center;
+  min-height: var(--btn-h);
+  padding: 5px 8px;
+  margin: 0 -8px;
+  border-radius: var(--radius-control-sm);
+  text-align: left;
+  font-size: 16px;
+}
+.statistics-status-row:hover,
+.statistics-status-selected {
+  background: var(--surface-2);
+}
+.statistics-status-row:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+.statistics-status-row strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.statistics-stage-row {
+  display: grid;
+  gap: 8px;
+}
+.statistics-stage-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 16px;
+}
+.statistics-stage-head strong {
+  font-variant-numeric: tabular-nums;
+}
+.statistics-status-row progress,
+.statistics-stage-row progress {
+  display: block;
+  appearance: none;
+  border: 0;
+  width: 100%;
+  height: 10px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+  background: var(--surface-3);
+}
+.statistics-status-row progress::-webkit-progress-bar,
+.statistics-stage-row progress::-webkit-progress-bar {
+  background: var(--surface-3);
+  border-radius: var(--radius-pill);
+}
+.statistics-status-row progress::-webkit-progress-value {
+  background: var(--ink);
+  border-radius: var(--radius-pill);
+}
+.statistics-stage-row progress::-webkit-progress-value {
+  background: var(--ok-ink);
+  border-radius: var(--radius-pill);
+}
+.statistics-status-row progress::-moz-progress-bar {
+  background: var(--ink);
+}
+.statistics-stage-row progress::-moz-progress-bar {
+  background: var(--ok-ink);
+}
+.statistics-grade-empty {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  text-align: center;
+  gap: 12px;
+  padding: 22px;
+  background: var(--canvas);
+  border: 1px dashed var(--line-input);
+  border-radius: var(--radius-card);
+}
+.statistics-grade-empty svg {
+  color: var(--muted);
+}
+.statistics-grade-empty strong {
+  font-size: 16px;
+}
+.statistics-grade-empty p {
+  color: var(--muted);
+  line-height: 1.6;
+  font-size: 16px;
+  max-width: 40ch;
+}
+.statistics-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.statistics-actions .app-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.statistics-detail-heading {
+  align-items: start;
+}
+.statistics-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.statistics-filters .app-select {
+  max-width: 260px;
+}
+.statistics-search {
+  display: flex;
+  align-items: center;
+  min-width: min(100%, 260px);
+  flex: 1;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius-control);
+  padding: 0 12px;
+  color: var(--muted);
+}
+.statistics-search input {
+  width: 100%;
+  min-height: var(--field-h-sm);
+  padding: 0 8px;
+  border: none;
+  outline: none;
+  color: var(--ink);
+  background: transparent;
+  font-size: 16px;
+}
+.statistics-search:focus-within {
+  outline: 2px solid var(--link);
+  outline-offset: 1px;
+}
+.statistics-link {
+  font-weight: 700;
+  color: var(--link);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.statistics-link:hover {
+  color: var(--link-hover);
+}
+@media (max-width: 1050px) {
+  .statistics-overview {
+    grid-template-columns: 1fr;
+  }
+  .statistics-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 640px) {
+  .statistics-overview {
+    padding: 20px;
+  }
+  .statistics-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px 12px;
+  }
+  .statistics-kpis strong {
+    font-size: 28px;
+  }
+  .statistics-status-row {
+    grid-template-columns: minmax(90px, 1.1fr) minmax(50px, 1fr) 24px;
+    gap: 8px;
+  }
+  .statistics-page .app-card {
+    padding: 18px;
+  }
+}

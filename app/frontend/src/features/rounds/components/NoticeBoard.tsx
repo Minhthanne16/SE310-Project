@@ -11,6 +11,7 @@ import type { NoticeFilter, RoundNotification } from '@/types/round';
 interface NoticeBoardProps {
   roundId: string;
   roundService: RoundService;
+  composeHref?: string | null;
 }
 
 const FILTERS: { id: NoticeFilter; label: string }[] = [
@@ -27,6 +28,7 @@ const PAGE = 5;
 export const NoticeBoard: React.FC<NoticeBoardProps> = ({
   roundId,
   roundService,
+  composeHref = '/giao-vu/thong-bao/gui',
 }) => {
   const [filter, setFilter] = useState<NoticeFilter>('all');
   const [search, setSearch] = useState('');
@@ -90,10 +92,12 @@ export const NoticeBoard: React.FC<NoticeBoardProps> = ({
               }}
             />
           </label>
-          <Link className="notice-compose" href="/giao-vu/thong-bao/gui">
-            <SquarePen size={16} aria-hidden="true" />
-            Soạn thông báo
-          </Link>
+          {composeHref && (
+            <Link className="notice-compose" href={composeHref}>
+              <SquarePen size={16} aria-hidden="true" />
+              Soạn thông báo
+            </Link>
+          )}
         </div>
       </div>
 

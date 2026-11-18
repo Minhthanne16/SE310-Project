@@ -39,6 +39,12 @@ Người dùng nhận đúng việc cần làm; Giáo vụ theo dõi/xuất dữ
 
 **Dependencies:** `CP03`, `CP07`.
 
+**Ghi nhận triển khai 2026-11-17 — P08-S02 (chưa hoàn tất CP07):**
+- Trang `/giao-vu/thong-ke` lấy dữ liệu thật theo đợt qua `GET /api/statistics/{roundId}`: số đề tài theo trạng thái, bằng chứng hoàn thành 6 chặng, tải GV hướng dẫn theo định mức của đợt, danh sách chi tiết và sinh viên tham gia. `snapshotAt` là thời điểm máy chủ tổng hợp lần tải gần nhất; nút Làm mới yêu cầu dữ liệu lại. Đợt Nháp/rỗng được hiển thị rõ thay vì dùng dữ liệu mẫu.
+- Danh sách đề tài xuất theo bộ lọc trạng thái/tìm kiếm/GV của đợt đang chọn, gồm **Mã, Tên đề tài, Lĩnh vực, GV hướng dẫn, Nhóm, Nguồn, Trạng thái, Tiến độ khóa luận**. Danh sách đăng ký xuất toàn đợt, mỗi SV một dòng, gồm **MSSV, Họ tên, Lớp, Mã đề tài, Tên đề tài, GV hướng dẫn, Trạng thái đăng ký**. Mẫu cột theo phần **Chi tiết đợt → Tab Đề tài → Popup xuất Excel** của [DESIGN/03](../DESIGN/03-dac-ta-man-hinh.md), không lấy từ artboard. Excel dùng dữ liệu đang hiển thị ở lần tải gần nhất; API CSV truy vấn dữ liệu mới tại thời điểm yêu cầu xuất.
+- Chỉ vai trò **Giáo vụ** được truy cập `/api/statistics/{roundId}` và các endpoint xuất `topics.csv`, `registrations.csv`, `grades.csv`, kể cả gọi API trực tiếp. Cả CSV UTF-8 BOM và Excel đều vô hiệu hóa chuỗi có tiền tố công thức `=`, `+`, `-`, `@` (kể cả khoảng trắng/ký tự điều khiển đầu ô).
+- **Chưa nghiệm thu phân bố điểm và xuất bảng điểm:** CP07 chưa lưu đủ phiếu chấm và kết quả xác nhận/công bố trong DB. `grades.csv` trả **409 Conflict** cho Giáo vụ và vẫn từ chối **401/403** đối với người không có quyền; UI thông báo thiếu dữ liệu và vô hiệu hóa xuất điểm. Sau CP07 cần chốt các cột bảng điểm, nguồn điểm theo từng SV, thời điểm chốt và phạm vi xem theo trạng thái xác nhận/công bố trước khi bật xuất.
+
 ## Step P08-S03 — Kiểm thử xuyên suốt và chuẩn bị vận hành
 
 **Tham chiếu:** [VISION](../product/VISION.md), [NON_FUNCTIONAL](../requirements/NON_FUNCTIONAL.md), [NEON](../NEON.md). Đánh giá chịu tải theo PDR-046 được để sau phase này.

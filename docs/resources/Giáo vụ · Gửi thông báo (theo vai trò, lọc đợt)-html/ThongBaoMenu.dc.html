@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Menu thông báo</title>
+<script src="./vendor/react.js"></script>
+<script src="./vendor/react-dom.js"></script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="display: flex; justify-content: flex-end; width: {{ rootW }}; padding: {{ rootPad }}; box-sizing: border-box; font-family: 'Be Vietnam Pro', system-ui, sans-serif; color: #1A1A1A">
+ <div style="position: relative; display: inline-flex">
+  <button type="button" onClick="{{ toggle }}" aria-haspopup="true" aria-expanded="{{ ariaOpen }}" aria-label="{{ bellLabel }}" style="position: relative; width: 44px; height: 44px; border: 0; border-radius: 999px; background: {{ bellBg }}; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #1A1A1A">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"></path><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"></path></svg>
+    <sc-if value="{{ hasUnread }}" hint-placeholder-val="{{ true }}">
+      <span aria-hidden="true" style="position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 999px; background: #A8281C; color: #FFFFFF; border: 2px solid #FFFFFF; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{ unread }}</span>
+    </sc-if>
+  </button>
+
+  <sc-if value="{{ open }}" hint-placeholder-val="{{ true }}">
+    <div role="dialog" aria-label="Thông báo" style="position: absolute; top: 52px; right: 0; z-index: 40; width: 400px; max-width: calc(100vw - 32px); background: #FFFFFF; border: 1px solid #E5E5E5; border-radius: 14px; box-shadow: 0 10px 28px rgba(26,26,26,0.10); display: flex; flex-direction: column; overflow: hidden">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 16px 10px">
+        <span style="font-size: 17px; font-weight: 700">Thông báo</span>
+        <button type="button" onClick="{{ markAll }}" disabled="{{ noUnread }}" style="min-height: 36px; padding: 0 6px; border: 0; background: transparent; font: inherit; font-size: 13.5px; font-weight: 600; color: {{ markAllFg }}; cursor: {{ markAllCursor }}">Đánh dấu tất cả đã đọc</button>
+      </div>
+      <div role="group" aria-label="Lọc thông báo" style="display: flex; gap: 4px; margin: 0 16px 8px; padding: 4px; border-radius: 12px; background: #F2F2F1; align-self: flex-start">
+        <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="2">
+          <button type="button" onClick="{{ tb.pick }}" aria-pressed="{{ tb.on }}" style="min-height: 34px; padding: 0 12px; border-radius: 9px; border: {{ tb.bd }}; background: {{ tb.bg }}; font: inherit; font-size: 13.5px; font-weight: {{ tb.fw }}; color: #1A1A1A; cursor: pointer">{{ tb.label }}</button>
+        </sc-for>
+      </div>
+
+      <div style="max-height: 440px; overflow-y: auto; border-top: 1px solid #E5E5E5">
+        <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+          <div>
+            <div style="padding: 10px 16px 4px; font-size: 11.5px; font-weight: 600; letter-spacing: 0.08em; color: #737373">{{ g.label }}</div>
+            <sc-for list="{{ g.items }}" as="n" hint-placeholder-count="3">
+              <a href="{{ n.href }}" onClick="{{ n.read }}" style="display: flex; gap: 12px; padding: 12px 16px; text-decoration: none; color: #1A1A1A; background: {{ n.bg }}">
+                <span style="width: 36px; height: 36px; border-radius: 999px; background: {{ n.iconBg }}; color: {{ n.iconFg }}; display: flex; align-items: center; justify-content: center; flex: none">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="{{ n.p1 }}"></path><path d="{{ n.p2 }}"></path></svg>
+                </span>
+                <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+                  <span style="font-size: 14px; line-height: 1.45; font-weight: {{ n.fw }}">{{ n.text }}</span>
+                  <span style="font-size: 12.5px; color: #5C5C5C">{{ n.from }} · {{ n.time }}</span>
+                </span>
+                <sc-if value="{{ n.unread }}" hint-placeholder-val="{{ true }}">
+                  <span aria-label="Chưa đọc" style="width: 8px; height: 8px; margin-top: 6px; border-radius: 999px; background: #1F5FBF; flex: none"></span>
+                </sc-if>
+              </a>
+            </sc-for>
+          </div>
+        </sc-for>
+        <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding: 36px 20px; text-align: center; font-size: 14px; color: #5C5C5C">Bạn đã đọc hết thông báo.</div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+ </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"audience":{"editor":"enum","options":["sv","gv","giaovu"],"default":"sv"},"startOpen":{"editor":"boolean","default":true},"preview":{"editor":"boolean","default":true},"$preview":{"width":560,"height":680}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { open: null, tab: 'all', readIds: [] };
+  }
+  renderVals() {
+    const s = this.state;
+    const open = s.open === null ? (this.props.startOpen ?? true) : s.open;
+    const aud = this.props.audience ?? 'sv';
+    const ICON = {
+      assign: ['#E3ECFB', '#1F4FA0', 'M5 4h14v17H5z', 'm9 13 2 2 4-4'],
+      success: ['#DDF3D8', '#2B6A1F', 'M20 6 9 17l-5-5', ''],
+      reject: ['#FBE9E7', '#A8281C', 'M6 6l12 12', 'M18 6 6 18'],
+      schedule: ['#EDE7FB', '#5B3BA8', 'M3.5 5h17v15.5h-17z', 'M3.5 10h17M8 3v4M16 3v4'],
+      comment: ['#F2F2F1', '#3D3D3D', 'M4 4h16v12H8l-4 4z', ''],
+      deadline: ['#FEF4E2', '#B45309', 'M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18', 'M12 7v5l3 2'],
+      result: ['#DDF3D8', '#2B6A1F', 'M12 3.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11', 'm8.5 13.5-1.5 7.5 5-2.5 5 2.5-1.5-7.5'],
+      inbox: ['#FDF1D8', '#6B3A06', 'M4 13h4l2 3h4l2-3h4', 'M4 13 6.5 5h11L20 13v6H4z'],
+      post: ['#FFF7D6', '#7A5A00', 'M3 10v4h4l6 4V6L7 10z', 'M16.5 9a4 4 0 0 1 0 6']
+    };
+    const DATA = {
+      sv: [
+        ['s1', 'today', 'assign', 'Giáo vụ đã phân công giảng viên phản biện và hội đồng cho khóa luận của bạn.', 'Giáo vụ Khoa', '15 phút trước', 'KhongGianDeTai.dc.html', true],
+        ['s2', 'today', 'success', 'Giảng viên hướng dẫn đã chấp nhận đề xuất "Ứng dụng quản lý chi tiêu cá nhân". Đề tài đã được đăng ký.', 'TS. Phạm Quốc Bảo', '2 giờ trước', 'DonDangKy.dc.html', true],
+        ['s3', 'today', 'deadline', 'Còn [n] ngày đến hạn nộp bản cuối. Nhớ chốt bản cuối trước hạn, quá hạn hệ thống tự lấy bản mới nhất.', 'Hệ thống', '8 giờ trước', 'KhongGianDeTai.dc.html', true],
+        ['s8', 'earlier', 'post', 'GV Trần Minh Khoa đăng bài mới trên Bảng thông báo: "Họp nhóm hướng dẫn tuần 7".', 'TS. Trần Minh Khoa', 'Hôm qua, 20:15', 'TrangChu.dc.html', true],
+        ['s4', 'earlier', 'reject', 'Đơn đề xuất đề tài "Game giáo dục cho học sinh tiểu học" của bạn đã bị từ chối. Xem lý do.', 'ThS. Lê Thu Hà', '[dd/mm]', 'DonDangKy.dc.html', false],
+        ['s7', 'earlier', 'success', 'Giảng viên hướng dẫn đã chấp nhận đề xuất "Xây dựng hệ thống đặt lịch khám bệnh trực tuyến". Đề tài đã được đăng ký.', 'TS. Trần Minh Khoa', '[dd/mm]', 'KhongGianDeTai.dc.html', false],
+        ['s5', 'earlier', 'comment', 'Giảng viên hướng dẫn đã thêm yêu cầu chỉnh sửa đề cương.', 'TS. Trần Minh Khoa', '[dd/mm]', 'KhongGianDeTai.dc.html', false],
+        ['s6', 'earlier', 'schedule', 'Đã có lịch bảo vệ: [Thứ, dd/mm] lúc [hh:mm], phòng [số phòng].', 'Giáo vụ Khoa', '[dd/mm]', 'KhongGianDeTai.dc.html', false]
+      ],
+      gv: [
+        ['g1', 'today', 'inbox', 'Sinh viên Đặng Thu Hạnh đã gửi đề xuất đề tài và chọn bạn hướng dẫn.', 'Đặng Thu Hạnh', '10 phút trước', 'GV-DeXuat.dc.html', true],
+        ['g2', 'today', 'assign', 'Giáo vụ đã phân công bạn phản biện đề tài "Nền tảng học trực tuyến với Blazor".', 'Giáo vụ Khoa', '1 giờ trước', 'GV-PhanBien.dc.html', true],
+        ['g3', 'today', 'comment', 'Nhóm Nguyễn Văn An đã nộp đề cương, chờ bạn duyệt.', 'Nguyễn Văn An', '3 giờ trước', 'KhongGianDeTai-GV.dc.html', false],
+        ['g7', 'earlier', 'post', 'Giáo vụ Khoa đăng bài mới trên Bảng thông báo: "Nhắc giảng viên duyệt đề cương".', 'Giáo vụ Khoa', '11/10', 'TrangChu.dc.html', false],
+        ['g4', 'earlier', 'schedule', 'Bạn được thêm vào Hội đồng [số] với vai trò Thư ký. Lịch: [Thứ, dd/mm], phòng [số phòng].', 'Giáo vụ Khoa', '[dd/mm]', 'GV-HoiDong.dc.html', false],
+        ['g6', 'today', 'deadline', 'Điểm GV phản biện đề tài [DT-03] lệch từ 2 điểm so với điểm hội đồng. Hội đồng vui lòng xem lại điểm.', 'Hệ thống', '4 giờ trước', 'KhongGianDeTai-GV.dc.html', false],
+        ['g5', 'earlier', 'comment', 'Nhóm Nguyễn Văn An đã tải lên phiên bản 3 của khóa luận: "Sửa lỗi trình bày chương 3".', 'Hệ thống', '[dd/mm]', 'KhongGianDeTai-GV.dc.html', false]
+      ],
+      giaovu: [
+        ['v1', 'today', 'deadline', 'Hạn giảng viên gửi đề tài kết thúc hôm nay. Bạn có thể đóng và công bố danh sách.', 'Hệ thống', '30 phút trước', 'GiaoVu-DeTai.dc.html', true],
+        ['v2', 'today', 'result', 'Đề tài [DT-02] đã đủ điểm, chờ xác nhận kết quả.', 'Hệ thống', '2 giờ trước', 'GiaoVu-KetQua.dc.html', true],
+        ['v5', 'today', 'inbox', 'TS. Phạm Quốc Bảo đã chấp nhận đề xuất "Ứng dụng quản lý chi tiêu cá nhân". Cảnh báo: giảng viên đã vượt số đề tài tối đa của đợt (6/5).', 'Hệ thống', '1 giờ trước', 'GiaoVu-DeTai.dc.html', true],
+        ['v6', 'earlier', 'success', 'Nhóm đề tài [DT-02] đã chốt bản cuối, sẵn sàng xác nhận và công bố kết quả.', 'Hệ thống', '[dd/mm]', 'GiaoVu-KetQua.dc.html', false],
+        ['v3', 'earlier', 'assign', '[n] đề tài đang thực hiện chưa được phân công phản biện.', 'Hệ thống', '[dd/mm]', 'GiaoVu-PhanBien.dc.html', false],
+        ['v4', 'earlier', 'comment', 'Nhập Excel người dùng hoàn tất: [n] dòng thành công, [n] dòng lỗi.', 'Hệ thống', '[dd/mm]', 'GiaoVu-NguoiDung.dc.html', false]
+      ]
+    };
+    const raw = DATA[aud] || DATA.sv;
+    const isUnread = (r) => r[7] && s.readIds.indexOf(r[0]) < 0;
+    const unread = raw.filter(isUnread).length;
+    const shown = raw.filter((r) => s.tab === 'all' || isUnread(r));
+    const mk = (r) => {
+      const ic = ICON[r[2]]; const u = isUnread(r);
+      return {
+        text: r[3], from: r[4], time: r[5], href: r[6], unread: u, fw: u ? '600' : '400', bg: u ? '#F7FAFF' : '#FFFFFF',
+        iconBg: ic[0], iconFg: ic[1], p1: ic[2], p2: ic[3],
+        read: () => { if (this.state.readIds.indexOf(r[0]) < 0) this.setState({ readIds: this.state.readIds.concat([r[0]]) }); }
+      };
+    };
+    const groups = [['today', 'HÔM NAY'], ['earlier', 'TRƯỚC ĐÓ']]
+      .map(([k, label]) => ({ label: label, items: shown.filter((r) => r[1] === k).map(mk) }))
+      .filter((g) => g.items.length > 0);
+    const mkTab = (id, label) => ({
+      label: label, on: s.tab === id ? 'true' : 'false',
+      bg: s.tab === id ? '#FFFFFF' : 'transparent', bd: s.tab === id ? '1px solid #E5E5E5' : '1px solid transparent',
+      fw: s.tab === id ? '600' : '500', pick: () => this.setState({ tab: id })
+    });
+    return {
+      rootW: (this.props.preview ?? true) ? '560px' : 'auto',
+      rootPad: (this.props.preview ?? true) ? '16px' : '0',
+      open: open, ariaOpen: open ? 'true' : 'false', bellBg: open ? '#EBEBEA' : 'transparent',
+      toggle: () => this.setState({ open: !open }),
+      unread: unread > 9 ? '9+' : unread, hasUnread: unread > 0, noUnread: unread === 0,
+      bellLabel: unread > 0 ? 'Thông báo, ' + unread + ' chưa đọc' : 'Thông báo',
+      markAllFg: unread > 0 ? '#1F5FBF' : '#8F8F8F', markAllCursor: unread > 0 ? 'pointer' : 'default',
+      markAll: () => this.setState({ readIds: raw.map((r) => r[0]) }),
+      tabs: [mkTab('all', 'Tất cả'), mkTab('unread', 'Chưa đọc (' + unread + ')')],
+      groups: groups, empty: groups.length === 0
+    };
+  }
+}
+</script>
+</body>
+</html>

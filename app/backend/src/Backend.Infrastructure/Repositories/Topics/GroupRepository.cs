@@ -147,6 +147,11 @@ public class GroupRepository(ApplicationDbContext context) : IGroupRepository
         CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        // Khóa hàng trước rồi đọc đề cương ở câu lệnh mới để thấy bản nộp vừa commit.
+        var held = await context.ThesisTopics.Where(t => t.Id == topicId && t.GroupId == groupId)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.UpdatedAt, now), cancellationToken);
+        if (held == 0 || await context.TopicSubmissions.AnyAsync(s => s.TopicId == topicId && s.Kind == SubmissionKind.Outline, cancellationToken))
+            return false;
         var released = await context.ThesisTopics
             .Where(t => t.Id == topicId && t.GroupId == groupId)
             .ExecuteUpdateAsync(s => s
