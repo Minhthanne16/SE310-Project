@@ -35,15 +35,13 @@ Mọi endpoint yêu cầu đăng nhập; lỗi dùng `ApiResponse`.
 
 ### Quy tắc đã chốt trong tài liệu, nay thực thi ở backend
 
-- **GV gửi đề tài:** phải thuộc danh sách giảng viên của đợt. Đợt phải Đang diễn ra, chưa công bố danh sách, và hôm nay (giờ Việt Nam) không trước ngày bắt đầu mốc "GV gửi đề tài". Hết hạn mốc nhưng chưa công bố vẫn thêm, sửa, xóa tự do (DESIGN · Đề tài của tôi: "Đến khi giáo vụ công bố danh sách").
+- **GV thêm/sửa/xóa đề tài:** phải thuộc danh sách giảng viên của đợt, đợt Đang diễn ra và chưa công bố danh sách. Chỉ được thao tác trong mốc "GV gửi đề tài", từ ngày bắt đầu đến hết 23:59 ngày kết thúc theo giờ Việt Nam. Hết mốc GV gửi thì chặn cả thêm, sửa, xóa dù Giáo vụ chưa công bố. Kiểm tra hạn ở backend cho cả ba endpoint; yêu cầu quá hạn trả 409 (PDR-048, OQ-025(c)).
 - **Sau công bố:**
-  - Không thêm, không xóa.
-  - Chỉ sửa mô tả và yêu cầu của đề tài chưa có nhóm (trạng thái hiển thị `Chưa đăng ký`).
-  - Tên đề tài và lĩnh vực bị khóa; gửi khác đi trả 409.
-  - Đề tài đã có nhóm không sửa được.
-  - Đợt Đã kết thúc thì chỉ xem.
+  - Toàn bộ đề tài GV chỉ xem, không thêm, sửa hoặc xóa, kể cả đề tài chưa có nhóm.
+  - API thêm/sửa/xóa từ chối với 409; `canEdit=none`, `canDelete=false`.
+  - Đợt Đã kết thúc cũng chỉ xem.
 - **Mức đề tài GV:** số đề tài = đề tài GV gửi + đề xuất SV đã chấp nhận. Vượt mức chỉ cảnh báo (thông điệp lưu và cờ trên danh sách), không chặn.
-- **Công bố:** cần ít nhất 1 đề tài. Mỗi đề tài nhận một mục lịch sử "Công bố danh sách đề tài" ghi Giáo vụ đã công bố.
+- **Công bố:** Giáo vụ thực hiện thủ công sau hạn GV gửi đề tài và trước khi kết thúc hạn SV đăng ký, cần ít nhất 1 đề tài; không cho công bố sớm. Mỗi đề tài nhận một mục lịch sử "Công bố danh sách đề tài" ghi Giáo vụ đã công bố.
 - **Kết thúc đợt:** bị chặn khi còn đề tài chưa ở trạng thái kết thúc (PDR-031/048), thông báo "Còn n đề tài chưa công bố kết quả…".
 - **PDR-030:** không gỡ được giảng viên đã có đề tài trong đợt. Tài khoản là GVHD của đề tài tính là "đã có dữ liệu", nên chỉ bị vô hiệu hóa, không xóa (bổ sung vào PDR-004).
 - **Sinh viên:** chỉ thấy đề tài GV công bố của đợt mình thuộc, sau khi Giáo vụ công bố.
@@ -57,11 +55,13 @@ Mọi endpoint yêu cầu đăng nhập; lỗi dùng `ApiResponse`.
   - Yêu cầu ≤ 2000 ký tự, không bắt buộc.
   - Khoảng trắng đầu/cuối được bỏ.
 - **Mã đề tài:** `DT-001`, `DT-002`… theo thứ tự trong đợt. Chỉ mục duy nhất `(RoundId, Number)`, thử lại khi hai GV gửi cùng lúc.
-- **Xóa trước công bố:** xóa hẳn đề tài cùng lịch sử của nó. Đề tài chưa từng hiện cho sinh viên và chưa có nhóm.
+- **Xóa trong hạn GV gửi và trước công bố:** xóa hẳn đề tài cùng lịch sử của nó. Đề tài chưa từng hiện cho sinh viên và chưa có nhóm.
 - **Lịch sử:** thêm nhóm "Nội dung" cho sửa tên/lĩnh vực/mô tả/yêu cầu (giá trị trước → sau). "Gửi đề tài" và "Công bố danh sách đề tài" thuộc nhóm "Trạng thái". Sửa không đổi gì thì không ghi.
-- **Trạng thái khi hết hạn đăng ký** (PDR-049): tính khi đọc, không cần tác vụ nền. Sau ngày kết thúc mốc "Công bố đề tài · SV đăng ký":
-  - đề tài `Chưa đăng ký` hiển thị `Không có nhóm`;
-  - đề tài `Đã đăng ký` hiển thị `Đang thực hiện`.
+- **Trạng thái khi hết hạn đăng ký** (PDR-049, [PDR-064](PDR-064-dong-dang-ky-va-luu-trang-thai-het-han.md)): tác vụ tự động ghi trạng thái thực vào CSDL và lưu lịch sử có tác nhân `Hệ thống`; không chuyển trạng thái khi đọc. Sau khi hết hạn:
+  - đề tài `Chưa đăng ký` chuyển và được lưu thành `Không có nhóm`;
+  - đề tài `Đã đăng ký` chuyển và được lưu thành `Đang thực hiện`;
+  - đề xuất còn `Chờ GV duyệt` chuyển và được lưu thành `Đã hủy`.
+  - backend kiểm tra hạn trên thao tác ghi và cập nhật trạng thái/lịch sử an toàn khi retry hoặc chạy đồng thời.
 - **Frontend:**
   - Màn GV `/gv/de-tai` và SV `/sv/dang-ky` chỉ dùng API thật.
   - Màn Giáo vụ (Đề tài, Chi tiết đề tài, tab Đề tài của Chi tiết đợt) dùng API. Cập nhật 2026-11-11: đã bỏ cờ `NEXT_PUBLIC_ROUNDS_API`; kho trong bộ nhớ chỉ còn phục vụ test.

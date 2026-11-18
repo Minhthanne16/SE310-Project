@@ -99,6 +99,8 @@ internal static class OutlineAccess
     public const string Staff = "staff";
     // GVPB hiện tại: chỉ xem và tải (PDR-062); không duyệt, nhận xét hay sửa.
     public const string Reviewer = "reviewer";
+    // Chủ tịch/Thư ký của hội đồng đã công bố có lượt bảo vệ của đề tài: chỉ xem và tải (P06, PDR-063).
+    public const string Council = "council";
 
     // Thành viên nhóm, GVHD, GVPB hiện tại và Giáo vụ; người khác nhận NotFound để không lộ đề tài.
     public static async Task<OutlineContext?> LoadAsync(ITopicRepository topics, IRoundRepository rounds, IGroupRepository groups,
@@ -113,6 +115,7 @@ internal static class OutlineAccess
             ViewerRole.AcademicAffairs => Staff,
             ViewerRole.Lecturer when topic.SupervisorId == viewerId => Supervisor,
             ViewerRole.Lecturer when topic.ReviewerId == viewerId => Reviewer,
+            ViewerRole.Lecturer when await IsCouncilMemberAsync(topics, topic.Id, viewerId, cancellationToken) => Council,
             ViewerRole.Student when topic.GroupId is { } groupId &&
                 (await groups.GetGroupsAsync([groupId], cancellationToken)).GetValueOrDefault(groupId) is { } group &&
                 group.Members.Any(m => m.StudentId == viewerId) => Member,
@@ -120,6 +123,10 @@ internal static class OutlineAccess
         };
         return relation is null ? null : new OutlineContext(topic, round, relation);
     }
+
+    public static async Task<bool> IsCouncilMemberAsync(ITopicRepository topics, Guid topicId, Guid lecturerId, CancellationToken cancellationToken) =>
+        await topics.GetActiveDefenseAsync(topicId, cancellationToken) is { Council: { Status: CouncilStatus.Published } council }
+        && (council.ChairId == lecturerId || council.SecretaryId == lecturerId);
 
     public static async Task<OutlineDto> BuildAsync(OutlineContext context, IOutlineRepository outlines, ITopicRepository topics,
         DateOnly today, CancellationToken cancellationToken)

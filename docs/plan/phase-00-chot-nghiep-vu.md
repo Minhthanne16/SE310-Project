@@ -18,7 +18,7 @@ Biến câu hỏi mở và các điểm bất nhất trong [REVIEW.md](REVIEW.md
 **Acceptance criteria:**
 - [ ] Mỗi chuyển trạng thái có tiền điều kiện, kết quả, quyền, lịch sử và cách xử lý thao tác lặp/đồng thời; quy tắc gỡ người theo PDR-030 được đối chiếu với cả hai vai trò.
 
-**Verification:** Đã đối chiếu bảng trạng thái với tài liệu màn SV/GV/Giáo vụ và các tình huống T01–T12 trên giấy. **Chưa đạt acceptance criteria** vì OQ-028/029/030 còn mở, cần chốt cơ chế xử lý đồng thời và lịch sử; kiểm chứng transaction thật thuộc G2/G3.
+**Verification (cập nhật 2026-11-18):** Đã đối chiếu bảng trạng thái với tài liệu màn SV/GV/Giáo vụ và các tình huống T01–T12 trên giấy. OQ-028/029/030 **đã chốt** ở PDR-064. **Chưa đạt acceptance criteria** cho đến khi kiểm chứng tác vụ đóng hạn, transaction, chống cạnh tranh và lịch sử thật ở G2/G3, cùng quy tắc còn mở thuộc OQ-020/025.
 
 **Dependencies:** Không.
 
@@ -34,7 +34,7 @@ Biến câu hỏi mở và các điểm bất nhất trong [REVIEW.md](REVIEW.md
 **Acceptance criteria:**
 - [ ] Với mỗi ngoại lệ có người xử lý, trạng thái sau xử lý và bằng chứng lịch sử; không còn hai điều kiện công bố đối nghịch giữa yêu cầu và thiết kế.
 
-**Verification:** Đã lập ca giấy T13–T23/T35–T37/T40 cho không có bản cuối, nộp trễ, trùng phòng, đổi Thư ký sau điểm, chốt Thesis và công bố. **Acceptance criteria còn mở** vì OQ-020/025/031 chưa được chủ nghiệp vụ giải quyết, đặc biệt tập trạng thái nguồn để kết thúc `Không đủ điều kiện công bố`.
+**Verification:** Đã lập ca giấy T13–T23/T35–T37/T40 cho không có bản cuối, nộp trễ, trùng phòng, đổi Thư ký sau điểm, chốt Thesis và công bố. OQ-031 đã chốt theo PDR-011, bao gồm chuyển trực tiếp từ `Đã xác nhận` sang `Không đủ điều kiện công bố`; kết quả kỳ vọng đã ghi tại T40. **Acceptance criteria còn mở** do OQ-020/025 và cần kiểm chứng hành vi API/DB, lịch sử và xử lý đồng thời.
 
 **Dependencies:** `P00-S01` cho trạng thái đề tài.
 
@@ -53,7 +53,7 @@ Biến câu hỏi mở và các điểm bất nhất trong [REVIEW.md](REVIEW.md
 - [ ] Các tình huống một SV thiếu điểm, điểm lệch đúng 2, điểm tổng ở giá trị làm tròn giữa, hủy xác nhận và nhóm không có bản cuối đều có kết quả xác định.
 - [x] Mọi OQ còn mở liên quan đến phase được đóng hoặc gắn rõ vào bước phụ thuộc; không ghi “đã chốt” cho nhận định chưa được xác nhận.
 
-**Verification:** Đã review chéo tài liệu và lập ca giấy T24–T34/T39/T40. **Acceptance criteria về kết quả xác định của nhóm không có Thesis còn mở** vì OQ-031 cần chốt tập trạng thái nguồn; chưa có xác nhận của người phụ trách sản phẩm/kỹ thuật.
+**Verification:** Đã review chéo tài liệu và lập ca giấy T24–T34/T39/T40. Tập trạng thái nguồn và kết quả kỳ vọng của nhóm không có Thesis đã chốt theo OQ-031/PDR-011. **Acceptance criteria còn mở** đến khi kiểm chứng thực tế và có xác nhận của người phụ trách sản phẩm/kỹ thuật.
 
 **Dependencies:** `P00-S01`, `P00-S02`.
 
@@ -63,4 +63,4 @@ Biến câu hỏi mở và các điểm bất nhất trong [REVIEW.md](REVIEW.md
 - [x] Danh sách OQ/R ảnh hưởng từng phase đã được cập nhật.
 - [ ] Không còn mâu thuẫn chưa giải quyết trong luồng chuẩn và các ngoại lệ chặn nghiệm thu.
 
-**Kết luận checkpoint 2026-11-17:** Đã hoàn tất **11/11 công việc lập đặc tả** của S01–S03 và **1/4 acceptance criteria** (S03, mục truy vết OQ), cùng **1/3** mục CP00. Còn OQ-020/025/028/029/030/031, phê duyệt owner và kiểm chứng API/DB phù hợp trước khi có thể đánh dấu CP00 hoàn thành. Xem [ma trận Phase 00](PHASE-00-RULE-MATRIX.md) để tiếp tục từ các ca T01–T40.
+**Kết luận checkpoint cập nhật 2026-11-18:** Đã hoàn tất **11/11 công việc lập đặc tả** của S01–S03 và **1/4 acceptance criteria** (S03, mục truy vết OQ), cùng **1/3** mục CP00. OQ-028/029/030 đã chốt ở PDR-064; OQ-031 đã chốt ở PDR-011. Còn OQ-020/025, phê duyệt owner và kiểm chứng API/DB tác vụ đóng hạn cùng ca T40 trước khi có thể đánh dấu CP00 hoàn thành. Xem [ma trận Phase 00](PHASE-00-RULE-MATRIX.md) để tiếp tục từ các ca T01–T40.

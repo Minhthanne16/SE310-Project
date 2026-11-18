@@ -360,12 +360,16 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
         var isSupervisor = request.Role == ViewerRole.Lecturer && topic.SupervisorId == request.ViewerId;
         // GVPB hiện tại chỉ xem (PDR-062); GVPB cũ sau khi bị đổi không còn thấy đề tài.
         var isReviewer = request.Role == ViewerRole.Lecturer && topic.ReviewerId == request.ViewerId;
+        // Chủ tịch/Thư ký của hội đồng đã công bố có lượt bảo vệ của đề tài: chỉ xem (P06, PDR-063).
+        var defense = await topics.GetActiveDefenseAsync(topic.Id, cancellationToken);
+        var isCouncil = request.Role == ViewerRole.Lecturer && defense?.Council is { Status: CouncilStatus.Published } council
+            && (council.ChairId == request.ViewerId || council.SecretaryId == request.ViewerId);
         var members = await groups.MembersOf([topic], cancellationToken);
         var ownGroup = members.Values.Any(g => g.Members.Any(m => m.StudentId == request.ViewerId));
         var allowed = request.Role switch
         {
             ViewerRole.AcademicAffairs => true,
-            ViewerRole.Lecturer => isSupervisor || isReviewer,
+            ViewerRole.Lecturer => isSupervisor || isReviewer || isCouncil,
             _ => round.TopicsPublishedAt is not null && TopicMapping.IsStudentOf(round, request.ViewerId)
                 && (topic.Source == TopicSource.Lecturer || ownGroup)
         };
@@ -401,7 +405,10 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
                 }
             }
         }
-        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || isReviewer || ownGroup)
+        if (defense?.Council is { } defenseCouncil && (request.Role == ViewerRole.AcademicAffairs
+                || (defenseCouncil.Status == CouncilStatus.Published && (isSupervisor || isReviewer || isCouncil || ownGroup))))
+            detail.Defense = await DefenseOf(defense, defenseCouncil, cancellationToken);
+        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || isReviewer || isCouncil || ownGroup)
             TopicMapping.FillThesis(detail, topic, round, today,
                 (await submissions.ListReportsAsync(topic.Id, cancellationToken)).Where(s => s.Kind == SubmissionKind.Thesis));
         if (request.Role != ViewerRole.Student || (topic.Source == TopicSource.StudentProposal && ownGroup))
@@ -420,8 +427,8 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
                     Detail = h.Detail
                 }).ToList();
         }
-        // Phiên bản bài nộp: người liên quan tới đề tài (Giáo vụ, GVHD, thành viên nhóm).
-        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || isReviewer || ownGroup)
+        // Phiên bản bài nộp: người liên quan tới đề tài (Giáo vụ, GVHD, GVPB, hội đồng, thành viên nhóm).
+        if (request.Role == ViewerRole.AcademicAffairs || isSupervisor || isReviewer || isCouncil || ownGroup)
         {
             var submissions = await outlines.ListSubmissionsAsync(topic.Id, cancellationToken);
             var submitters = await topics.GetUserNamesAsync(submissions.Select(x => x.SubmittedById).Distinct().ToList(), cancellationToken);
@@ -438,5 +445,32 @@ public sealed class GetTopicHandler(IRoundRepository rounds, ITopicRepository to
             }).ToList();
         }
         return TopicResult<TopicDetailDto>.Ok(detail);
+    }
+
+    private async Task<Backend.Application.Councils.TopicDefenseDto> DefenseOf(DefenseSlot slot, DefenseCouncil council, CancellationToken cancellationToken)
+    {
+        var corrections = await topics.ListDefenseCorrectionsAsync(council.Id, cancellationToken);
+        var names = await topics.GetUserNamesAsync(corrections.Where(c => c.ActorUserId is not null).Select(c => c.ActorUserId!.Value).Distinct().ToList(), cancellationToken);
+        var day = RoundRules.FormatDate(council.DefenseDate);
+        return new Backend.Application.Councils.TopicDefenseDto
+        {
+            CouncilId = council.Id,
+            Council = council.Name,
+            CouncilPublished = council.Status == CouncilStatus.Published,
+            Chair = council.Chair?.FullName ?? string.Empty,
+            Secretary = council.Secretary?.FullName ?? string.Empty,
+            Date = day,
+            Start = $"{day}T{Backend.Application.Councils.CouncilRules.FormatTime(slot.StartTime)}:00",
+            End = $"{day}T{Backend.Application.Councils.CouncilRules.FormatTime(slot.EndTime)}:00",
+            Room = council.Room,
+            Order = slot.Order,
+            Corrections = corrections.Select(c => new Backend.Application.Councils.CouncilCorrectionDto
+            {
+                At = DateTime.SpecifyKind(c.CreatedAt, DateTimeKind.Utc),
+                By = c.ActorUserId is { } actor ? names.GetValueOrDefault(actor, "Tài khoản đã xóa") : "Hệ thống",
+                Content = c.Detail ?? string.Empty,
+                Reason = c.Reason
+            }).ToList()
+        };
     }
 }

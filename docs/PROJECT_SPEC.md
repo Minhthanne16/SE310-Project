@@ -26,7 +26,9 @@ Không thuộc phạm vi hiện tại: triển khai lại giao diện, API, cơ 
 
 `Chưa đăng ký` hoặc `Chờ GV duyệt` → `Đã đăng ký` → `Đang thực hiện` (tự chuyển khi hết thời gian đăng ký; đề tài chưa có nhóm thành `Không có nhóm`) → `Đang cho điểm` → `Đã cho điểm` hoặc `Có lệch điểm` → `Đã xác nhận` → `Đã hoàn tất` (xem [PDR-049](decisions/PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md)).
 
-Nhánh ngoại lệ: từ `Đang thực hiện` hoặc một trạng thái chấm điểm, nếu không có bản khóa luận nào sau hạn bổ sung và Giáo vụ quyết định kết thúc có lý do, đề tài chuyển sang trạng thái kết thúc riêng `Không đủ điều kiện công bố`; nhánh này không phải `Đã hoàn tất` sau công bố điểm (xem [PDR-011](decisions/PDR-011-tham-quyen-xu-ly-nhom-chua-nop-ban-khoa-luan.md)).
+Nhóm nộp báo cáo cuối kỳ vẫn giữ đề tài ở `Đang thực hiện`; giảng viên nhập điểm đầu tiên mới chuyển đề tài sang `Đang cho điểm` (PDR-049, OQ-025(a)).
+
+Nhánh ngoại lệ: từ `Đang thực hiện`, `Đang cho điểm`, `Có lệch điểm`, `Đã cho điểm` hoặc `Đã xác nhận`, nếu không có bản khóa luận nào sau hạn bổ sung và Giáo vụ quyết định kết thúc có lý do, đề tài chuyển trực tiếp sang `Không đủ điều kiện công bố`. Trường hợp `Đã xác nhận` không cần hủy xác nhận trước; giữ dữ liệu điểm, xác nhận và lịch sử, không công bố điểm. Nhánh này không phải `Đã hoàn tất` sau công bố điểm (xem [PDR-011](decisions/PDR-011-tham-quyen-xu-ly-nhom-chua-nop-ban-khoa-luan.md)).
 Trạng thái `Không đủ điều kiện công bố` không mở lại bằng thao tác thông thường; sai sót đặc biệt cần quyết định riêng trước khi có chức năng xử lý.
 
 `Bị từ chối` là kết quả của đề tài do sinh viên đề xuất. Các quy tắc chuyển trạng thái, bao gồm hủy đăng ký/đề xuất, nằm trong [requirements/BUSINESS_RULES.md](requirements/BUSINESS_RULES.md); điểm chưa đủ căn cứ nằm trong `OPEN_QUESTIONS.md`.

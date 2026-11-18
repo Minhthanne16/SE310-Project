@@ -2,7 +2,9 @@
 // Khớp OutlineDto của GET /api/topics/{id}/outline; thời điểm là ISO UTC.
 
 // reviewer: GVPB hiện tại, chỉ xem (PDR-062).
-export type OutlineViewerRole = 'member' | 'supervisor' | 'staff' | 'reviewer';
+// council: Chủ tịch/Thư ký của hội đồng đã công bố có lượt bảo vệ của đề tài, chỉ xem (P06, PDR-063).
+export type OutlineViewerRole =
+  'member' | 'supervisor' | 'staff' | 'reviewer' | 'council';
 
 export interface OutlineSubmission {
   id: string;

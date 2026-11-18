@@ -16,10 +16,13 @@ Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xu�
 **Acceptance criteria:**
 - [x] Trước/sau công bố cho phép đúng thao tác; danh sách SV chỉ hiện khi đã công bố; cảnh báo vượt mức không cản lưu.
 - [x] Đề tài đã có nhóm không bị xóa/sửa trái quy tắc.
+- [ ] Theo quyết định 2026-11-18: GV chỉ thêm/sửa/xóa đến hết hạn mốc GV gửi, chặn cả ba thao tác từ khi hết hạn kể cả chưa công bố; công bố thủ công chỉ sau hạn GV gửi và trước hạn đăng ký, sau công bố GV chỉ xem (PDR-048/053, OQ-025(c)).
 
 **Verification:** Test ma trận quyền–trạng thái–trường sửa và một luồng GV gửi → Giáo vụ công bố → SV xem.
 
 *(2026-11-07: hợp đồng và lựa chọn triển khai tại [PDR-053](../decisions/PDR-053-de-tai-giang-vien-va-cong-bo-danh-sach.md); test handler (SQLite) và API cho ma trận quyền–trạng thái–trường sửa; luồng GV gửi → Giáo vụ công bố → SV xem chạy trên trình duyệt với PostgreSQL local. "Đề tài đã có nhóm" mới kiểm bằng trạng thái lưu, nhóm thật thuộc P03-S02.)*
+
+**Quy tắc bổ sung 2026-11-18 (PDR-048/053/064, cần triển khai/kiểm chứng):** GV bị khóa thêm/sửa/xóa từ khi hết mốc gửi đề tài, dù chưa công bố; Giáo vụ không công bố sớm, chỉ công bố thủ công trong cửa sổ sau hạn GV gửi và trước hạn đăng ký. Trạng thái hết hạn đăng ký phải lưu CSDL và lịch sử bằng tác vụ tự động thay vì chỉ tính khi đọc. Các tiêu chí `[x]` phía trên phản ánh kiểm chứng trước quyết định mới, **chưa xác nhận** các nhánh thời hạn và khóa thao tác mới.
 
 **Dependencies:** `CP02`.
 
@@ -37,8 +40,9 @@ Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xu�
 - [x] Hai nhóm ghi danh đồng thời: đúng một nhóm thành công; nhóm thua nhận lỗi rõ và có thể làm mới danh sách.
 - [x] Một SV không thuộc hai nhóm trong cùng đợt; sau tải lại không thay đổi đại diện hay thành viên.
 - [x] Thành viên không phải đại diện cũng hủy được cho cả nhóm trong thời hạn hợp lệ; sau hủy nhóm/đại diện không đổi, đề tài trống trở lại, lần ghi danh cũ tra cứu được đúng quyền; hủy lặp không làm sai trạng thái.
+- [ ] OQ-025(d): đề tài có nhóm đăng ký hợp lệ giữ `Đã đăng ký` trước hạn dù đã nộp/duyệt đề cương; hết hạn tự lưu `Đang thực hiện` kèm lịch sử ngay cả khi chưa nộp hoặc chưa duyệt đề cương (PDR-049/064).
 
-**Verification:** Test tích hợp đồng thời và ranh giới 1/2/3 thành viên, quyền SV khác đợt, thao tác lặp.
+**Verification:** Test tích hợp đồng thời và ranh giới 1/2/3 thành viên, quyền SV khác đợt, thao tác lặp; kiểm tra trạng thái trước/sau hạn với ba trường hợp chưa nộp, đã nộp chưa duyệt, đã duyệt đề cương và lịch sử tác vụ đóng hạn.
 
 *(2026-11-07: backend xong theo [PDR-054](../decisions/PDR-054-ghi-danh-nhom-de-tai-cong-bo.md), có test handler/API và E2E đồng thời trên PostgreSQL local. Còn: giao diện sinh viên (mục dựng tìm kiếm/chi tiết/xác nhận) và điều kiện "chưa nộp đề cương" khi hủy, chờ mô-đun nộp bài P04; hai tiêu chí còn lại chưa tick vì cần kiểm tra trên giao diện.)*
 
@@ -62,6 +66,8 @@ Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xu�
 **Verification:** Test chuỗi tạo → sửa → chấp nhận/từ chối/hủy, quyền sai, xử lý đồng thời và lịch sử GV/Giáo vụ.
 
 *(2026-11-10: API `api/topics/proposals` bảo vệ theo vai trò và kiểm tra GVHD tại handler; chuyển trạng thái có điều kiện trong transaction để chỉ một thao tác thắng. UI: SV `/sv/don-dang-ky`, GV `/gv/de-xuat`; cả hai hiển thị lịch sử. Test handler SQLite bao phủ chuỗi/quyền/lịch sử; test PostgreSQL tùy chọn (`RegistrationConcurrencyTests`) bao phủ đua duyệt–hủy và đề xuất lại đồng thời. Chạy toàn bộ kịch bản PostgreSQL bằng `app/scripts/test-ghi-danh.ps1` khi có Docker.)*
+
+**Quy tắc bổ sung 2026-11-18 (PDR-064, cần triển khai/kiểm chứng):** tự hủy đề xuất còn `Chờ GV duyệt` khi hết hạn, giữ nhóm/lịch sử và chặn GV duyệt/từ chối sau hạn. Test cũ về hủy thủ công/chuyển trạng thái cạnh tranh chưa chứng minh nhánh tự hủy của hệ thống.
 
 **Dependencies:** `P03-S02`; PDR-012.
 

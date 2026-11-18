@@ -22,6 +22,170 @@ namespace Backend.Infrastructure.Data.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Backend.Domain.Entities.DefenseCouncil", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CancelReason")
+                        .HasMaxLength(800)
+                        .HasColumnType("character varying(800)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CancelledById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChairId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("DefenseDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("FirstScoredAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("NormalizedRoom")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("PublishedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PublishedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Room")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SecretaryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChairId");
+
+                    b.HasIndex("DefenseDate");
+
+                    b.HasIndex("RoundId");
+
+                    b.HasIndex("SecretaryId");
+
+                    b.ToTable("DefenseCouncils", t =>
+                        {
+                            t.HasCheckConstraint("CK_DefenseCouncils_ChairNotSecretary", "\"ChairId\" <> \"SecretaryId\"");
+                        });
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.DefenseCouncilLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CouncilId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Detail")
+                        .HasMaxLength(8000)
+                        .HasColumnType("character varying(8000)");
+
+                    b.Property<string>("Reason")
+                        .HasMaxLength(800)
+                        .HasColumnType("character varying(800)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CouncilId", "CreatedAt");
+
+                    b.ToTable("DefenseCouncilLogs");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.DefenseSlot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CouncilId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeOnly>("EndTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<TimeOnly>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<Guid>("TopicId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TopicId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_DefenseSlots_ActiveTopic")
+                        .HasFilter("\"Status\" = 'Active'");
+
+                    b.HasIndex("CouncilId", "Order");
+
+                    b.ToTable("DefenseSlots", t =>
+                        {
+                            t.HasCheckConstraint("CK_DefenseSlots_EndAfterStart", "\"EndTime\" > \"StartTime\"");
+                        });
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.EvaluationCriterion", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1024,6 +1188,59 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.ToTable("UserAuditEntries");
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.DefenseCouncil", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.User", "Chair")
+                        .WithMany()
+                        .HasForeignKey("ChairId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.ThesisRound", null)
+                        .WithMany()
+                        .HasForeignKey("RoundId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.User", "Secretary")
+                        .WithMany()
+                        .HasForeignKey("SecretaryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Chair");
+
+                    b.Navigation("Secretary");
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.DefenseCouncilLog", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.DefenseCouncil", null)
+                        .WithMany()
+                        .HasForeignKey("CouncilId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.DefenseSlot", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.DefenseCouncil", "Council")
+                        .WithMany("Slots")
+                        .HasForeignKey("CouncilId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Backend.Domain.Entities.ThesisTopic", "Topic")
+                        .WithMany()
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Council");
+
+                    b.Navigation("Topic");
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.EvaluationCriterion", b =>
                 {
                     b.HasOne("Backend.Domain.Entities.EvaluationTemplate", null)
@@ -1263,6 +1480,11 @@ namespace Backend.Infrastructure.Data.Migrations
                         .HasForeignKey("TopicId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Backend.Domain.Entities.DefenseCouncil", b =>
+                {
+                    b.Navigation("Slots");
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.EvaluationCriterion", b =>

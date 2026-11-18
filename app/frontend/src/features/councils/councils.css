@@ -1,0 +1,462 @@
+/* Hội đồng và lịch bảo vệ (P06). Tiền tố .cnc-; chỉ dùng token của :root, cỡ chữ mới theo thang 4px (docs/DESIGN.md). */
+
+.cnc-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.cnc-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.cnc-spacer {
+  flex: 1 1 auto;
+}
+
+.cnc-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.cnc-note {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--warn-line);
+  border-radius: var(--radius-block);
+  background: var(--warn-bg);
+  color: var(--warn-ink-strong);
+}
+
+.cnc-ok {
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid var(--ok-line);
+  border-radius: var(--radius-block);
+  background: var(--ok-bg-soft);
+  color: var(--ok-ink);
+}
+
+.cnc-conflicts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 16px;
+  border: 1px solid var(--danger-line);
+  border-radius: var(--radius-block);
+  background: var(--danger-bg-soft);
+  color: var(--danger-ink);
+}
+
+.cnc-conflicts ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.cnc-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+@media (min-width: 900px) {
+  .cnc-stats {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.cnc-stats > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+}
+
+.cnc-stats dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cnc-stats dd {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.cnc-stats > div[data-tone='warn'] {
+  background: var(--warn-bg);
+  border-color: var(--warn-line);
+}
+
+.cnc-stats > div[data-tone='warn'] dd {
+  color: var(--warn-ink-strong);
+}
+
+.cnc-stats > div[data-tone='danger'] {
+  background: var(--danger-bg-soft);
+  border-color: var(--danger-line);
+}
+
+.cnc-stats > div[data-tone='danger'] dd {
+  color: var(--danger-ink);
+}
+
+.cnc-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+}
+
+@media (min-width: 1000px) {
+  .cnc-layout {
+    grid-template-columns: 300px minmax(0, 1fr);
+    align-items: start;
+  }
+}
+
+.cnc-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.cnc-list-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.cnc-list-item:hover:not(:disabled) {
+  background: var(--canvas);
+}
+
+.cnc-list-item[aria-current='true'] {
+  border: 2px solid var(--ink);
+  background: var(--canvas);
+}
+
+.cnc-list-item:disabled {
+  cursor: not-allowed;
+  color: var(--muted);
+}
+
+.cnc-list-item:focus-visible {
+  outline: 2px solid var(--link);
+  outline-offset: 2px;
+}
+
+.cnc-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.cnc-list-name {
+  font-weight: 700;
+}
+
+.cnc-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cnc-list-warn {
+  margin-left: auto;
+}
+
+.cnc-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+}
+
+.cnc-detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.cnc-detail-head h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.cnc-detail-body,
+.cnc-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.cnc-detail-actions,
+.cnc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cnc-actions {
+  justify-content: flex-end;
+}
+
+.cnc-dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px 20px;
+  margin: 0;
+}
+
+.cnc-dl dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cnc-dl dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+
+.cnc-nowrap {
+  white-space: nowrap;
+}
+
+.cnc-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.cnc-section h2,
+.cnc-section h3,
+.cnc-fill h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.cnc-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 14px 20px;
+}
+
+.cnc-fill {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+  background: var(--canvas);
+}
+
+.cnc-fill-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.tpc-form-field input.cnc-time,
+.cnc-time {
+  width: 96px;
+  min-height: var(--field-h-sm);
+}
+
+.cnc-slot-list,
+.cnc-pool,
+.cnc-log {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-block);
+}
+
+.cnc-slot,
+.cnc-pool-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  padding: 10px 14px;
+}
+
+.cnc-slot + .cnc-slot,
+.cnc-pool-item + .cnc-pool-item,
+.cnc-log li + li {
+  border-top: 1px solid var(--line-soft);
+}
+
+.cnc-slot[data-warn='true'] {
+  background: var(--danger-bg-soft);
+}
+
+.cnc-slot-order {
+  flex: none;
+  width: 24px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.cnc-slot-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.cnc-slot-title {
+  display: block;
+  font-weight: 600;
+}
+
+.cnc-slot-meta {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.cnc-slot-error {
+  font-size: 12px;
+  color: var(--danger-ink);
+}
+
+.cnc-slot-times {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cnc-slot-times input {
+  padding: 0 10px;
+  border: 1px solid var(--line-input);
+  border-radius: var(--radius-control-sm);
+  background: var(--surface);
+  font: inherit;
+}
+
+.cnc-slot-times input[aria-invalid='true'] {
+  border-color: var(--danger-ink);
+}
+
+.cnc-slot-actions {
+  display: flex;
+  gap: 2px;
+}
+
+.cnc-log li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+}
+
+.cnc-log-head {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.cnc-log-detail {
+  font-size: 12px;
+  color: var(--ink-2);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.cnc-history summary {
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cnc-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cnc-dialog-heading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cnc-dialog-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.cnc-dialog-heading p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.cnc-mine {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.cnc-mine-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px 20px;
+  padding: 16px 20px;
+}
+
+.cnc-mine-info > div {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.cnc-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.cnc-mine-value {
+  font-weight: 600;
+}

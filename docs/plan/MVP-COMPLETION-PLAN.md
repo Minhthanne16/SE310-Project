@@ -78,7 +78,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 **Nghiệm thu:** Không còn quy tắc chưa xác định trong luồng đợt → công bố; OQ-007 được ghi rõ là ngoài cổng MVP.  
 **Kiểm chứng:** Review chéo ma trận với `OPEN_QUESTIONS.md`, `REVIEW.md` và PDR liên quan.
-**Tình trạng nghiệm thu G0.1:** Chưa đạt do OQ-020/025/028/029/030/031 còn cần quyết định, đặc biệt ca T40 chưa có kết quả xác định; checkpoint CP00 chưa được phê duyệt.
+**Tình trạng nghiệm thu G0.1 (cập nhật 2026-11-18):** OQ-028/029/030 đã chốt theo PDR-064; OQ-031 đã chốt theo PDR-011, ca T40 có kết quả kỳ vọng. Cần bổ sung triển khai/test đóng đăng ký, chuyển trạng thái ngoại lệ và audit trong G2/G3/G4/G7. Chưa đạt do OQ-020/025 còn mở và checkpoint CP00 chưa được phê duyệt.
 
 #### G0.2 — Chuẩn hóa quy trình kỹ thuật và môi trường test
 
@@ -229,13 +229,15 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G6.1 — Hội đồng và bất biến thành viên
 
-- [ ] Quản lý Chủ tịch/Thư ký, thành viên, đề tài và lịch sử; ngăn trùng vai trò, GVHD chấm đề tài mình và hơn một lượt có hiệu lực.
-- [ ] Khóa thay Chủ tịch/Thư ký từ phiếu đầu tiên theo PDR-020.
+- [x] Quản lý Chủ tịch/Thư ký, thành viên, đề tài và lịch sử; ngăn trùng vai trò, GVHD chấm đề tài mình và hơn một lượt có hiệu lực.
+- [x] Khóa thay Chủ tịch/Thư ký từ phiếu đầu tiên theo PDR-020. *(Khóa dựa trên `DefenseCouncils.FirstScoredAt`; P07 đặt dấu này cùng transaction với phiếu hội đồng đầu tiên.)*
 
 #### G6.2 — Lập lịch, công bố, sửa/hủy/đính chính
 
-- [ ] Nhập start/end/room, chặn trùng phòng và trùng lịch Giảng viên bằng transaction/ràng buộc thích hợp.
-- [ ] Thực hiện công bố idempotent; sửa/hủy trước điểm có lý do/history/notification; sau điểm chỉ đính chính theo PDR-018/019.
+- [x] Nhập start/end/room, chặn trùng phòng và trùng lịch Giảng viên bằng transaction/ràng buộc thích hợp. *(Khóa advisory + kiểm tra lại, chỉ mục lượt có hiệu lực, `expectedVersion`; `CouncilConcurrencyTests` đạt trên PostgreSQL 17 thật qua `app/scripts/test-ghi-danh.ps1` ngày 2026-11-17.)*
+- [x] Thực hiện công bố idempotent; sửa/hủy trước điểm có lý do/history/notification; sau điểm chỉ đính chính theo PDR-018/019.
+
+*(2026-11-17: [PDR-063](../decisions/PDR-063-hoi-dong-va-lich-bao-ve.md); `CouncilsController`, `Backend.Application/Councils`, `CouncilRepository`, migration `AddDefenseCouncils`; màn `/giao-vu/hoi-dong`, `/gv/hoi-dong`, aside Không gian đề tài; `CouncilWorkflowTests`, `CouncilRulesTests`, `CouncilApiTests` và test frontend. Migration `AddDefenseCouncils` đã áp lên PostgreSQL tạm của test đồng thời; toàn bộ 413 test backend đạt với `QLKLTN_TEST_POSTGRES` (không bỏ qua test nào). Chưa chạy E2E qua giao diện.)*
 
 **Nghiệm thu:** Case chồng lấn, sát giờ, đồng thời, sau điểm đều xác định; lịch cũ/hủy vẫn tra cứu được và không xóa vật lý.
 
@@ -290,17 +292,17 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 ### Rà soát codebase ngày 2026-11-16, bổ sung Phase 00 ngày 2026-11-17 — tiến độ và kịch bản demo
 
-Đếm **55 checkbox triển khai** ở G0–G8 (không tính bốn checkbox phê duyệt ở mục 9): **23/55 = 41,8%**, gồm **19 đầu việc đối chiếu code/test ngày 2026-11-16**, **3 đầu việc lập đặc tả G0.1 ngày 2026-11-17** và **1 đầu việc G5.2 (P05-S02) ngày 2026-11-17**. Đây là **tỷ lệ đầu việc được đánh dấu theo bằng chứng code/test hoặc tài liệu**, chưa phải phần trăm MVP đủ điều kiện vận hành; G0.1 và CP00 chưa đạt nghiệm thu, các checkpoint E2E và cổng release chưa đạt.
+Đếm **55 checkbox triển khai** ở G0–G8 (không tính bốn checkbox phê duyệt ở mục 9): **27/55 = 49,1%**, gồm **19 đầu việc đối chiếu code/test ngày 2026-11-16**, **3 đầu việc lập đặc tả G0.1 ngày 2026-11-17**, **1 đầu việc G5.2 (P05-S02) ngày 2026-11-17** và **4 đầu việc G6 (P06) ngày 2026-11-17**. Đây là **tỷ lệ đầu việc được đánh dấu theo bằng chứng code/test hoặc tài liệu**, chưa phải phần trăm MVP đủ điều kiện vận hành; G0.1 và CP00 chưa đạt nghiệm thu, các checkpoint E2E và cổng release chưa đạt.
 
 | Nhóm | Đã đánh dấu / tổng | Phần có thể chứng minh | Phần chưa đủ để nghiệm thu |
 | --- | ---: | --- | --- |
-| G0 | 3/6 | Đã lập ma trận quy tắc, quyền, trạng thái, đối chiếu DESIGN/PDR và ca giấy T01–T40 | Chờ quyết định OQ-020/025/028/029/030/031, phê duyệt CP00; G0.2 còn quy trình DB test, API contract và review migration |
+| G0 | 3/6 | Đã lập ma trận quy tắc, quyền, trạng thái, đối chiếu DESIGN/PDR và ca giấy T01–T40; OQ-028/029/030 chốt ở PDR-064, OQ-031 chốt ở PDR-011 | Chờ quyết định OQ-020/025, phê duyệt CP00; bổ sung kiểm thử đóng hạn/audit ở G2/G3 và chuyển ngoại lệ T40 ở G4/G7; G0.2 còn quy trình DB test, API contract và review migration |
 | G1 | 7/9 | Quản trị tài khoản, reset, hồ sơ, avatar, thông báo nền | Hai mục kiểm chứng auth/CSV và gỡ demo toàn luồng |
 | G2 | 3/6 | Vòng đời/sao chép/xóa đợt, chín mốc và Gantt từ dữ liệu API; kiểm tra mở/kết thúc | Race condition khi hai đợt mở cùng SV, history gỡ người và nguồn demo mặc định |
 | G3 | 6/7 | Đề tài, công bố, ghi danh, đề xuất và quyết định GV | `canCancel` lệch điều kiện đã nộp đề cương; checkpoint E2E nhóm 1/2 SV |
 | G4 | 3/6 | Đề cương và chốt bản khóa luận cuối có code/test | Hạn trễ đề cương; upload thật MinIO, quyền GV phản biện và recovery |
 | G5 | 1/4 | API/UI mẫu phiếu là nền ban đầu; phân công phản biện theo PDR-021/023/062 (API, màn Giáo vụ và GVPB, test) | Mẫu đủ ba vai trò, snapshot; chặn lưu phiếu PB và dấu khóa cùng phiếu đầu tiên (P07) |
-| G6 | 0/4 | Một số màn hình demo | API và quy tắc hội đồng, lịch, va chạm và công bố |
+| G6 | 4/4 | Hội đồng, thành viên, lịch từng lượt, chặn trùng phòng/GV, công bố, sửa/hủy trước điểm, đính chính sau điểm, quyền xem (PDR-063; API, hai màn, test SQLite/HTTP/UI và đồng thời trên PostgreSQL) | P07 đặt dấu khóa `FirstScoredAt`; checkpoint E2E qua giao diện |
 | G7 | 0/6 | Một số màn hình demo | Bốn phiếu điểm, tính điểm, xác nhận và công bố thật |
 | G8 | 0/7 | Có thông báo và một số audit theo module | Thông báo xuyên quy trình, báo cáo/export, E2E và release gate |
 
@@ -313,6 +315,8 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 5. **Ưu tiên vừa — điều kiện công bố trên UI dùng thiếu dữ liệu.** `publishResultBlocker` đọc `topic.submissions` dù danh sách đề tài từ API chỉ cung cấp số phiên bản/chốt bản cuối. Đồng thời các lệnh xác nhận, hủy xác nhận, công bố và nhắc lệch điểm ở `topicApiService` còn là stub; giữ G7 chưa đánh dấu.
 6. **Ưu tiên vừa — điều kiện cấp hạn bổ sung.** `SubmissionRequests.ToDto` có thể bật `CanGrantExtension` khi đề tài chưa có nhóm, trong khi `GrantThesisExtensionCommand` từ chối đề tài không có `GroupId`. Đồng bộ điều kiện hiển thị để tránh thao tác 409.
 7. **Ưu tiên vừa — phạm vi dữ liệu người tham gia đợt.** `RoundMapping.ToDto` luôn trả `LecturerIds`, `StudentIds`, `LockedStudentIds` qua cả API GET danh sách/chi tiết cho GV/SV đã tham gia (`RoundHandlers.cs`, `RoundsController.cs`). Đối chiếu `docs/product/ROLES.md` về nguyên tắc SV chỉ xem dữ liệu thuộc về mình hoặc thông tin công bố chung; cần xác nhận danh sách ID này có được công bố cho toàn đợt hay phải giới hạn theo vai trò. Thêm kiểm thử phân quyền phản hồi API sau khi chốt quy tắc.
+
+8. **Đã sửa 2026-11-17 — ghi danh bấm đúp (P03-S02).** Chạy `RegistrationConcurrencyTests` trên PostgreSQL lộ hai lỗi có sẵn khi đại diện ghi danh hai đề tài cùng lúc: (a) PostgreSQL báo deadlock `40P01` khi hai giao dịch chèn thành viên nhóm theo thứ tự khác nhau, request thua ném ngoại lệ (500) thay vì 409; (b) request thua đọc "chưa có nhóm" rồi thấy bạn cùng nhóm "đã có nhóm" và trả 400 sai. Đã sửa `GroupRepository` (deadlock → `MemberTaken`, 409) và `RegisterTopicHandler` (nhóm vừa tạo bởi chính người đó → 409 "Nhóm của bạn đã ghi danh một đề tài…"). Bản gốc lỗi 2/60 lần; sau sửa 0/40 lần chạy cả lớp test.
 
 **Điều kiện chạy demo:** Dùng **database test cô lập**, backend, PostgreSQL, MinIO và frontend cùng hoạt động; cập nhật các migration đã review trên **DB test**; chuẩn bị tài khoản đủ ba vai trò, một đợt với chín mốc, 1 nhóm một SV, 1 nhóm hai SV, giảng viên hướng dẫn và vài PDF hợp lệ. Bật `NEXT_PUBLIC_ROUNDS_API=true` khi chạy frontend để các màn đợt/đề tài dùng API thật. Chọn ngày mốc phù hợp với từng hành động; không sửa đồng hồ/migration của DB dùng chung. Luôn reload sau thao tác để xác nhận dữ liệu thật được lưu.
 

@@ -28,6 +28,8 @@ export const HISTORY_CATEGORIES = [
   'Nhóm',
   'Bài nộp',
   'Phân công',
+  // Công bố, đổi, hủy, đính chính lịch bảo vệ (P06).
+  'Lịch bảo vệ',
   'Điểm',
 ] as const;
 export type HistoryCategory = (typeof HISTORY_CATEGORIES)[number];
@@ -62,15 +64,26 @@ export interface TopicSubmission {
 
 // Hội đồng và lịch bảo vệ của một đề tài.
 export interface TopicDefense {
+  councilId?: string;
   council: string;
   councilPublished: boolean;
   chair: string;
   secretary: string;
-  // yyyy-MM-ddTHH:mm:ss
+  // yyyy-MM-dd
+  date?: string;
+  // yyyy-MM-ddTHH:mm:ss (giờ Việt Nam); giờ bắt đầu và kết thúc của lượt (PDR-017).
   start: string;
+  end?: string;
   room: string;
   // Thứ tự bảo vệ trong buổi.
   order: number;
+  // Đính chính sau khi hội đồng có điểm (PDR-018); lịch gốc giữ nguyên.
+  corrections?: {
+    at: string;
+    by: string;
+    content: string;
+    reason: string | null;
+  }[];
 }
 
 export type RoleScores = Record<ScoreRole, number | null>;
@@ -222,6 +235,8 @@ export interface TopicDetailDto extends TopicDto {
   history: TopicHistoryDto[];
   // Giáo vụ, GVHD và thành viên nhóm; người khác nhận mảng rỗng.
   submissions: SubmissionSummaryDto[];
+  // Lượt bảo vệ có hiệu lực (P06): người liên quan thấy khi đã công bố, Giáo vụ thấy cả Nháp; null khi chưa xếp.
+  defense?: TopicDefense | null;
 }
 
 export interface TopicRoundInfo {

@@ -58,7 +58,18 @@ public class UserRepository : IUserRepository
             .Select(s => s.SubmittedById)
             .Distinct()
             .ToListAsync(cancellationToken);
-        return recipients.Concat(senders).Concat(supervisors).Concat(members).Concat(submitters).ToHashSet();
+        // Phân công phản biện (PDR-062) và thành viên hội đồng (P06): tài khoản có phân công chỉ bị vô hiệu hóa.
+        var reviewers = await _context.ThesisTopics
+            .Where(t => t.ReviewerId != null && userIds.Contains(t.ReviewerId.Value))
+            .Select(t => t.ReviewerId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+        var chairs = await _context.DefenseCouncils.Where(c => userIds.Contains(c.ChairId))
+            .Select(c => c.ChairId).Distinct().ToListAsync(cancellationToken);
+        var secretaries = await _context.DefenseCouncils.Where(c => userIds.Contains(c.SecretaryId))
+            .Select(c => c.SecretaryId).Distinct().ToListAsync(cancellationToken);
+        return recipients.Concat(senders).Concat(supervisors).Concat(members).Concat(submitters).Concat(reviewers)
+            .Concat(chairs).Concat(secretaries).ToHashSet();
     }
 
     public async Task<IReadOnlySet<string>> GetExistingUserCodesAsync(IReadOnlyCollection<string> userCodes, CancellationToken cancellationToken = default)

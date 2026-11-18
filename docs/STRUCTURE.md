@@ -74,7 +74,8 @@ docs/
 │   ├── PDR-059-chot-ban-khoa-luan-cuoi.md
 │   ├── PDR-060-nhan-xet-va-yeu-cau-chinh-sua-giua-ky-cuoi-ky.md
 │   ├── PDR-061-khong-gian-de-tai-khung-va-tab.md
-│   └── PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md
+│   ├── PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md
+│   └── PDR-063-hoi-dong-va-lich-bao-ve.md
 ├── product/
 │   ├── GLOSSARY.md
 │   ├── ROLES.md

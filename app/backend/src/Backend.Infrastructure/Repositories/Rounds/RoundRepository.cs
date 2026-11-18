@@ -187,6 +187,17 @@ public class RoundRepository(ApplicationDbContext context) : IRoundRepository
             Block(topic.IneligibleById, reason);
         }
 
+        var councils = await context.DefenseCouncils.AsNoTracking()
+            .Where(c => c.RoundId == roundId && c.Status != CouncilStatus.Cancelled
+                && (ids.Contains(c.ChairId) || ids.Contains(c.SecretaryId)))
+            .Select(c => new { c.ChairId, c.SecretaryId }).ToListAsync(ct);
+        foreach (var council in councils)
+        {
+            const string reason = "Giảng viên đang thuộc hội đồng bảo vệ trong đợt nên không gỡ được khỏi đợt.";
+            Block(council.ChairId, reason);
+            Block(council.SecretaryId, reason);
+        }
+
         var registrations = await (from r in context.TopicRegistrations.AsNoTracking()
             join t in context.ThesisTopics on r.TopicId equals t.Id
             where t.RoundId == roundId

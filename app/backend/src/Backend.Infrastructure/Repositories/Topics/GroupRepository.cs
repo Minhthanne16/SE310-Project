@@ -63,6 +63,13 @@ public class GroupRepository(ApplicationDbContext context) : IGroupRepository
                 Reset();
                 return ProposalCreateOutcome.MemberTaken;
             }
+            catch (Exception ex) when (Deadlock(ex))
+            {
+                // Hai giao dịch cùng chèn thành viên nhóm theo thứ tự khác nhau: PostgreSQL hủy một bên, bên kia giữ nhóm.
+                await transaction.RollbackAsync(CancellationToken.None);
+                Reset();
+                return ProposalCreateOutcome.MemberTaken;
+            }
             catch (DbUpdateException ex) when (UniqueViolation(ex, "IX_ThesisTopics_ActiveGroupId"))
             {
                 await transaction.RollbackAsync(CancellationToken.None);
@@ -120,6 +127,14 @@ public class GroupRepository(ApplicationDbContext context) : IGroupRepository
             Reset();
             return RegisterOutcome.MemberTaken;
         }
+        catch (Exception ex) when (Deadlock(ex))
+        {
+            // Hai lần ghi danh đồng thời cùng chèn thành viên nhóm (EF có thể xếp lệnh chèn theo thứ tự khác nhau):
+            // PostgreSQL hủy một giao dịch do deadlock, giao dịch kia đã giữ nhóm. Trả như thành viên vừa vào nhóm khác.
+            await transaction.RollbackAsync(CancellationToken.None);
+            Reset();
+            return RegisterOutcome.MemberTaken;
+        }
         catch (DbUpdateException ex) when (UniqueViolation(ex, "IX_ThesisTopics_ActiveGroupId"))
         {
             await transaction.RollbackAsync(CancellationToken.None);
@@ -156,6 +171,14 @@ public class GroupRepository(ApplicationDbContext context) : IGroupRepository
     }
 
     private void Reset() => context.ChangeTracker.Clear();
+
+    // 40P01: Npgsql có thể bọc trong DbUpdateException hoặc InvalidOperationException ("transient failure").
+    private static bool Deadlock(Exception ex)
+    {
+        for (var e = ex; e is not null; e = e.InnerException)
+            if (e is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.DeadlockDetected }) return true;
+        return false;
+    }
 
     // PostgreSQL trả tên ràng buộc; SQLite (test) chỉ nêu cột nên so thêm theo tên cột.
     private static bool UniqueViolation(DbUpdateException ex, string index)

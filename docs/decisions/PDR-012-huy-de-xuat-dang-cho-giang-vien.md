@@ -15,9 +15,11 @@ Thiết kế trước đây nói đơn chờ bị hủy sẽ biến khỏi danh 
 - Đề xuất `Đã hủy` rời danh sách chờ xử lý của Giảng viên và danh sách đơn đang hoạt động của nhóm; người có quyền vẫn tra cứu được trong lịch sử. Không xóa vật lý để làm đơn “biến mất”.
 - Sau khi hủy, nhóm được **tạo đề xuất mới ngay nếu đợt còn mở đăng ký** và các thành viên không có đăng ký/đề xuất khác đang hoạt động trong đợt. Đề xuất cũ `Đã hủy` không tự biến thành đề xuất mới; hai lần gửi có lịch sử riêng.
 - **Giữ nguyên nhóm** sau khi hủy đề xuất, gồm thành viên và đại diện. Khi đề xuất lại, nhóm dùng chính nhóm đó; không tự tạo một nhóm hoạt động thứ hai. Đề xuất cũ vẫn giữ ảnh chụp thành viên trong lịch sử.
+- **Khi hết hạn đăng ký**, hệ thống tự chuyển mọi đề xuất còn `Chờ GV duyệt` sang `Đã hủy`, ghi tác nhân `Hệ thống`, thời điểm, lý do và giữ nguyên nhóm/thành viên/đại diện. Giảng viên không được duyệt/từ chối đề xuất sau hạn; xem [PDR-064](PDR-064-dong-dang-ky-va-luu-trang-thai-het-han.md).
 
 ## Hệ quả
 
 - Hành vi hủy phải kiểm tra trạng thái hiện tại ở backend để tránh cuộc đua giữa thao tác hủy của nhóm và thao tác chấp nhận/từ chối của Giảng viên.
 - Test hủy khi đang chờ, hủy lặp, hủy sau quyết định của Giảng viên và đọc lịch sử theo quyền.
 - Test nhóm vẫn có cùng thành viên/đại diện sau khi hủy, đề xuất lại dùng đúng nhóm và không sinh nhóm trùng trong cùng đợt.
+- Test tự hủy khi hết hạn, cạnh tranh duyệt/hủy và tác vụ đóng hạn, chạy lại không ghi lịch sử trùng.

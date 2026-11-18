@@ -44,7 +44,7 @@ Ba endpoint chỉ dành cho vai trò `Student`; lỗi dùng `ApiResponse`.
 
 ## Quy tắc thực thi
 
-- **Cửa sổ đăng ký:** mở từ lúc Giáo vụ công bố tới hết ngày kết thúc mốc "Công bố đề tài · SV đăng ký" (giờ Việt Nam), áp cho cả ghi danh và hủy. Hết hạn thì đề tài có nhóm hiển thị `Đang thực hiện` (PDR-049).
+- **Cửa sổ đăng ký:** mở từ lúc Giáo vụ công bố tới hết ngày kết thúc mốc "Công bố đề tài · SV đăng ký" (giờ Việt Nam), áp cho cả ghi danh và hủy. Hết hạn thì tác vụ đóng hạn lưu đề tài có nhóm thành `Đang thực hiện` kèm lịch sử, kể cả khi không có truy cập (PDR-049/064).
 - **Chỉ ghi danh đề tài GV công bố đang trống.** Ghi danh thành công thì đề tài `Đã đăng ký`; GVHD không còn sửa được đề tài đó (PDR-053).
 - **Không có hai nhóm cùng nhận một đề tài.**
   - Nhận đề tài bằng cập nhật có điều kiện (`GroupId IS NULL` và `Chưa đăng ký`) trong cùng transaction với việc tạo nhóm. Nhóm thua không lưu gì.
@@ -72,6 +72,15 @@ Ba endpoint chỉ dành cho vai trò `Student`; lỗi dùng `ApiResponse`.
 - Ghi danh có hộp "Xác nhận ghi danh". Lỗi 400 hiện dưới ô MSSV; lỗi 403/409 hiện đúng thông điệp máy chủ và màn tải lại đề tài và tình trạng nhóm (nhóm thua cuộc thấy ngay "Đề tài đã có nhóm" và nút "Về danh sách đề tài").
 - Mục "Lịch sử ghi danh của nhóm" liệt kê mọi lần ghi danh (người/thời điểm ghi danh, người/thời điểm hủy hoặc "Đang hiệu lực"); chỉ thành viên nhóm thấy, theo `my-registration`.
 - Chưa hiện "mức tối đa của GV" trên màn sinh viên: `GET /api/topics/published` trả `loads: []` cho sinh viên theo PDR-053; muốn hiện phải đổi hợp đồng đó.
+
+## Sửa lỗi đồng thời (2026-11-17)
+
+Khi chạy `RegistrationConcurrencyTests` trên PostgreSQL, ca "bấm đúp ghi danh hai đề tài" lỗi không đều do hai khe đua có sẵn:
+
+- **Deadlock `40P01`:** hai giao dịch chèn hai thành viên nhóm theo thứ tự khác nhau (EF sắp lệnh chèn theo khóa ngẫu nhiên). PostgreSQL hủy một bên và request đó ném ngoại lệ (500). Nay `GroupRepository` coi deadlock như vi phạm chỉ mục `GroupMembers(RoundId, StudentId)`: trả `MemberTaken` (409), cả ở luồng ghi danh lẫn tạo đề xuất.
+- **400 sai:** request thua đọc "chưa có nhóm" trước khi request kia commit, rồi thấy bạn cùng nhóm "đã có nhóm" và trả 400 "Sinh viên … đã có nhóm trong đợt". Nay handler kiểm tra lại: nếu chính người ghi danh vừa có nhóm thì trả 409 "Nhóm của bạn đã ghi danh một đề tài…".
+
+Bất biến (một nhóm, một đề tài, một sinh viên một nhóm) vốn không bị phá; sửa này chỉ đưa mã lỗi về đúng hợp đồng 409 ở trên.
 
 ## Hệ quả
 
