@@ -151,7 +151,7 @@ it('reports duplicate code and duplicate email with the owning account', async (
   type('Email *', 'moi@truong.edu.vn');
   fireEvent.click(screen.getByRole('button', { name: 'Tạo tài khoản' }));
   expect(await screen.findByText('22529999')).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent(
+  expect(await screen.findByRole('status')).toHaveTextContent(
     'Đã tạo tài khoản 22529999. Mật khẩu ban đầu là mã người dùng.',
   );
 });
@@ -217,7 +217,7 @@ it('disables a user with data, then reactivates them', async () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument(),
   );
   expect(screen.getByText('Nguyễn Văn An')).toBeInTheDocument();
-  expect(screen.getByRole('status')).toHaveTextContent(
+  expect(await screen.findByRole('status')).toHaveTextContent(
     'Đã vô hiệu hóa tài khoản 22520001',
   );
 
@@ -409,7 +409,7 @@ it('previews a CSV with per-row errors, then imports the valid rows', async () =
     ).not.toBeInTheDocument(),
   );
   expect(importCommit).toHaveBeenCalledWith(file);
-  expect(screen.getByRole('status')).toHaveTextContent(
+  expect(await screen.findByRole('status')).toHaveTextContent(
     'Đã nhập 1 người dùng từ danh-sach.csv',
   );
   expect(
