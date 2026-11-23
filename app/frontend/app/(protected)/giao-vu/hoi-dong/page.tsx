@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <CouncilBoardPage />
+      <CouncilBoardPage mode="view" />
     </Suspense>
   );
 }

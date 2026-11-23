@@ -38,8 +38,9 @@ public sealed class CreateProposalValidator : AbstractValidator<CreateProposalCo
     {
         ProposalValidation.Apply(this, x => x.Proposal);
         RuleFor(x => x.Proposal.SupervisorId).NotEmpty().WithMessage("Chọn giảng viên hướng dẫn.");
-        RuleFor(x => x.Proposal.MemberCodes).Must(codes => codes is null || codes.Count <= ThesisGroup.MaxMembers - 1)
-            .WithMessage("Nhóm có tối đa 2 sinh viên; chỉ nhập một mã thành viên.");
+        // PDR-069: Giới hạn thô ở validator, kiểm tra chi tiết theo round.MaxGroupSize ở handler.
+        RuleFor(x => x.Proposal.MemberCodes).Must(codes => codes is null || codes.Count <= 9)
+            .WithMessage("Số lượng thành viên vượt quá giới hạn.");
     }
 }
 
@@ -136,8 +137,9 @@ public sealed class CreateProposalHandler(
         }
         else
         {
-            if (codes.Count > ThesisGroup.MaxMembers - 1)
-                return Fail(TopicResultStatus.Invalid, "Nhóm có tối đa 2 sinh viên; chỉ nhập một mã thành viên.");
+            // PDR-069: số thành viên tối đa theo round.MaxGroupSize
+            if (codes.Count > round.MaxGroupSize - 1)
+                return Fail(TopicResultStatus.Invalid, $"Nhóm có tối đa {round.MaxGroupSize} sinh viên; chỉ nhập mã của {round.MaxGroupSize - 1} thành viên.");
             var found = await rounds.GetActiveUsersByCodesOrEmailsAsync(UserRole.Student, codes, cancellationToken);
             var partners = new List<User>();
             foreach (var code in codes)
@@ -349,7 +351,7 @@ public sealed class ListProposalSupervisorsHandler(IRoundRepository rounds)
         if (!TopicMapping.IsStudentOf(round, request.StudentId))
             return TopicResult<IReadOnlyList<TopicPersonDto>>.Fail(TopicResultStatus.Forbidden, TopicRules.NotRoundStudentMessage);
 
-        var ids = round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer).Select(p => p.UserId).ToHashSet();
+        var ids = round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && p.IsSupervisor).Select(p => p.UserId).ToHashSet();
         var people = await rounds.GetActiveUsersAsync(UserRole.Lecturer, cancellationToken);
         var result = people.Where(person => ids.Contains(person.Id)).Select(person => new TopicPersonDto
         {

@@ -78,6 +78,15 @@ internal static class RoundMapping
         Status = RoundRules.Label(round.Status),
         LecturerLoadMin = round.LecturerLoadMin,
         LecturerLoadMax = round.LecturerLoadMax,
+        MaxGroupSize = round.MaxGroupSize,
+        Grading = new RoundGradingDto
+        {
+            WeightChair = round.GradingConfig.WeightChair,
+            WeightSecretary = round.GradingConfig.WeightSecretary,
+            WeightSupervisor = round.GradingConfig.WeightSupervisor,
+            WeightReviewer = round.GradingConfig.WeightReviewer,
+            DeviationThreshold = round.GradingConfig.DeviationThreshold
+        },
         TopicsPublishedAt = round.TopicsPublishedAt is { } published
             ? DateTime.SpecifyKind(published, DateTimeKind.Utc).ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", System.Globalization.CultureInfo.InvariantCulture)
             : null,
@@ -95,6 +104,20 @@ internal static class RoundMapping
         StudentIds = IdsOf(round, ParticipantKind.Student),
         LockedStudentIds = round.GroupMembers.Select(m => m.StudentId).Distinct().ToList(),
         LockedLecturerIds = round.Topics.Select(t => t.SupervisorId).Distinct().ToList(),
+        LecturerRoles = round.Participants
+            .Where(p => p.Kind == ParticipantKind.Lecturer)
+            .OrderBy(p => p.CreatedAt)
+            .Select(p => new RoundLecturerRoleDto
+            {
+                UserId = p.UserId,
+                Code = p.User?.UserCode ?? string.Empty,
+                Name = p.User?.FullName ?? string.Empty,
+                Email = p.User?.Email ?? string.Empty,
+                Unit = p.User?.Department ?? string.Empty,
+                IsSupervisor = p.IsSupervisor,
+                IsReviewer = p.IsReviewer,
+                IsCommittee = p.IsCommittee,
+            }).ToList(),
         TopicSummary = TopicSummary(round, today)
     };
 
@@ -131,6 +154,15 @@ internal static class RoundMapping
     public static List<Guid> IdsOf(ThesisRound round, ParticipantKind kind) =>
         round.Participants.Where(p => p.Kind == kind).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
 
+    public static List<Guid> LecturerIdsForSupervisor(ThesisRound round) =>
+        round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && p.IsSupervisor).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
+
+    public static List<Guid> LecturerIdsForReviewer(ThesisRound round) =>
+        round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && p.IsReviewer).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
+
+    public static List<Guid> LecturerIdsForCommittee(ThesisRound round) =>
+        round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && p.IsCommittee).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
+
     public static ParticipantDto ToParticipant(User user) => new()
     {
         Id = user.Id,
@@ -145,7 +177,7 @@ internal static class RoundMapping
     public static string AccountStatus(User user) =>
         !user.IsActive ? "Vô hiệu hóa" : user.MustChangePassword ? "Chưa đăng nhập" : "Đang hoạt động";
 
-    public static ThesisRound NewRound(string name, string program, string periodLabel, ThesisRound? source)
+    public static ThesisRound NewRound(string name, string program, string periodLabel, ThesisRound? source, ProgramRoundDefaults? defaults = null)
     {
         var round = new ThesisRound
         {
@@ -155,6 +187,15 @@ internal static class RoundMapping
             PeriodLabel = periodLabel,
             LecturerLoadMin = source?.LecturerLoadMin ?? 0,
             LecturerLoadMax = source?.LecturerLoadMax ?? 0,
+            MaxGroupSize = source?.MaxGroupSize ?? defaults?.MaxGroupSize ?? 2,
+            GradingConfig = source?.GradingConfig.Clone() ?? (defaults is not null ? new RoundGradingConfig
+            {
+                WeightChair = defaults.WeightChair,
+                WeightSecretary = defaults.WeightSecretary,
+                WeightSupervisor = defaults.WeightSupervisor,
+                WeightReviewer = defaults.WeightReviewer,
+                DeviationThreshold = defaults.DeviationThreshold
+            } : new RoundGradingConfig()),
             CopiedFromId = source?.Id
         };
         // Đủ 9 mốc theo thứ tự cố định. Sao chép (PDR-034) chỉ lấy đối tượng thông báo và công tắc nộp trễ.
@@ -220,7 +261,8 @@ public sealed class CreateRoundHandler(IRoundRepository repository, TimeProvider
                 return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, "Không tìm thấy đợt nguồn để sao chép.");
         }
 
-        var round = RoundMapping.NewRound(name, input.Program.Trim(), RoundRules.NormalizeText(input.PeriodLabel), source);
+        var defaults = await repository.GetProgramDefaultsAsync(input.Program.Trim(), cancellationToken);
+        var round = RoundMapping.NewRound(name, input.Program.Trim(), RoundRules.NormalizeText(input.PeriodLabel), source, defaults);
         try
         {
             await repository.AddAsync(round, cancellationToken);
@@ -242,7 +284,11 @@ public sealed class UpdateRoundHandler(IRoundRepository repository, TimeProvider
         if (round is null)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
         if (round.Status != RoundStatus.Draft)
+        {
+            if (request.Round.MaxGroupSize is { } newMax && newMax != round.MaxGroupSize)
+                return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, "Đợt đã mở, không sửa số sinh viên tối đa.");
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.NotDraftInfoMessage);
+        }
 
         var name = RoundRules.NormalizeText(request.Round.Name);
         var normalized = ThesisRound.NormalizeName(name);
@@ -255,6 +301,7 @@ public sealed class UpdateRoundHandler(IRoundRepository repository, TimeProvider
         round.PeriodLabel = RoundRules.NormalizeText(request.Round.PeriodLabel);
         round.LecturerLoadMin = request.Round.LecturerLoadMin ?? round.LecturerLoadMin;
         round.LecturerLoadMax = request.Round.LecturerLoadMax ?? round.LecturerLoadMax;
+        round.MaxGroupSize = request.Round.MaxGroupSize ?? round.MaxGroupSize;
         round.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         try
         {
@@ -336,11 +383,22 @@ public sealed class OpenRoundHandler(IRoundRepository repository, TimeProvider c
         if (round.Status != RoundStatus.Draft)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.OnlyDraftOpenMessage);
 
-        // PDR-032: đủ 9 mốc, có đủ ngày và đúng thứ tự thời gian mới được mở.
+        // PDR-067: đợt Nháp được mở khi ba mốc đầu có đủ ngày hợp lệ; mốc 4-9 có thể để trống.
+        var firstThreeKeys = new[] { MilestoneKey.TopicSubmission, MilestoneKey.TopicRegistration, MilestoneKey.Outline };
+        var missingFirstThree = firstThreeKeys
+            .Where(k => !round.Milestones.Any(m => m.Key == k && m.StartDate.HasValue && m.EndDate.HasValue))
+            .Select(k => $"{RoundRules.Name(k)}: chưa đặt ngày.")
+            .ToList();
+        if (missingFirstThree.Count > 0)
+        {
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
+                "Cần nhập đủ 3 mốc đầu (Gửi đề tài, Đăng ký, Đề cương) trước khi mở đợt.", missingFirstThree);
+        }
+
         var errors = RoundRules.ValidateMilestones(
             round.Milestones.OrderBy(m => (int)m.Key)
                 .Select(m => (m.Key, (string?)RoundRules.FormatDate(m.StartDate), (string?)RoundRules.FormatDate(m.EndDate))),
-            requireAll: true);
+            requireAll: false);
         // PDR-041: mốc bật "Cho nộp trễ" phải có hạn trễ hợp lệ trước khi mở đợt.
         errors.AddRange(RoundRules.ValidateLateDeadlines(
             round.Milestones.OrderBy(m => (int)m.Key).Select(m =>
@@ -578,9 +636,21 @@ public sealed class AddParticipantsHandler(IRoundRepository repository, TimeProv
 
         RoundRules.TryParseKind(request.Kind, out var kind);
         var entries = await RoundParticipantRules.CheckAsync(repository, round, kind, request.Codes, cancellationToken);
+        var isSupervisor = kind == ParticipantKind.Lecturer ? (request.IsSupervisor ?? true) : true;
+        var isReviewer = kind == ParticipantKind.Lecturer ? (request.IsReviewer ?? true) : false;
+        var isCommittee = kind == ParticipantKind.Lecturer ? (request.IsCommittee ?? true) : false;
+
         // Chỉ thêm mã hợp lệ; mã còn lại trả lý do trong results.
         var candidates = entries.Where(e => e.Check.Status == "valid")
-            .Select(e => new RoundParticipant { RoundId = round.Id, UserId = e.User!.Id, Kind = kind }).ToList();
+            .Select(e => new RoundParticipant
+            {
+                RoundId = round.Id,
+                UserId = e.User!.Id,
+                Kind = kind,
+                IsSupervisor = isSupervisor,
+                IsReviewer = isReviewer,
+                IsCommittee = isCommittee,
+            }).ToList();
         var outcome = candidates.Count > 0 ? await repository.AddParticipantsAsync(candidates, request.ActorId, clock.GetUtcNow().UtcDateTime, cancellationToken)
             : new AddParticipantsOutcome([], [], new HashSet<Guid>(), false);
         if (outcome.Finished)
@@ -630,5 +700,218 @@ public sealed class RemoveParticipantHandler(IRoundRepository repository, TimePr
         round.Participants.Remove(participant);
         return RoundResult<RoundDto>.Ok(await RoundMapping.ToDtoWithRemovalBlockersAsync(round, RoundRules.TodayVietnam(clock), repository, cancellationToken),
             $"Đã gỡ {RoundRules.KindLabel(kind)} khỏi đợt");
+    }
+}
+
+public sealed class UpdateRoundGradingHandler(IRoundRepository repository, TimeProvider clock)
+    : IRequestHandler<UpdateRoundGradingCommand, RoundResult<RoundDto>>
+{
+    public async Task<RoundResult<RoundDto>> Handle(UpdateRoundGradingCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status != RoundStatus.Draft)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, "Đợt đã mở nên không sửa cấu hình điểm được nữa.");
+
+        var input = request.Input;
+        round.GradingConfig.WeightChair = input.WeightChair;
+        round.GradingConfig.WeightSecretary = input.WeightSecretary;
+        round.GradingConfig.WeightSupervisor = input.WeightSupervisor;
+        round.GradingConfig.WeightReviewer = input.WeightReviewer;
+        round.GradingConfig.DeviationThreshold = input.DeviationThreshold;
+        round.UpdatedAt = clock.GetUtcNow().UtcDateTime;
+
+        if (input.SaveAsProgramDefault)
+        {
+            // OQ-033(e): Giáo vụ lưu làm mặc định chương trình
+            await repository.SaveProgramDefaultsAsync(new ProgramRoundDefaults
+            {
+                Program = round.Program,
+                MaxGroupSize = round.MaxGroupSize,
+                WeightChair = input.WeightChair,
+                WeightSecretary = input.WeightSecretary,
+                WeightSupervisor = input.WeightSupervisor,
+                WeightReviewer = input.WeightReviewer,
+                DeviationThreshold = input.DeviationThreshold,
+                UpdatedAt = clock.GetUtcNow().UtcDateTime,
+                UpdatedById = request.ActorId
+            }, cancellationToken);
+        }
+
+        await repository.SaveAsync(cancellationToken);
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã lưu cấu hình điểm");
+    }
+}
+
+public sealed class GetProgramDefaultsHandler(IRoundRepository repository)
+    : IRequestHandler<GetProgramDefaultsQuery, ApiResponse<ProgramRoundDefaultsDto>>
+{
+    public async Task<ApiResponse<ProgramRoundDefaultsDto>> Handle(GetProgramDefaultsQuery request, CancellationToken cancellationToken)
+    {
+        var d = await repository.GetProgramDefaultsAsync(request.Program.Trim(), cancellationToken);
+        var dto = new ProgramRoundDefaultsDto
+        {
+            Program = request.Program.Trim(),
+            MaxGroupSize = d?.MaxGroupSize ?? 2,
+            WeightChair = d?.WeightChair ?? 1,
+            WeightSecretary = d?.WeightSecretary ?? 1,
+            WeightSupervisor = d?.WeightSupervisor ?? 2,
+            WeightReviewer = d?.WeightReviewer ?? 2,
+            DeviationThreshold = d?.DeviationThreshold ?? 2
+        };
+        return ApiResponse<ProgramRoundDefaultsDto>.Ok(dto);
+    }
+}
+
+public sealed class UpdateLecturerRolesHandler(IRoundRepository repository, TimeProvider clock)
+    : IRequestHandler<UpdateLecturerRolesCommand, RoundResult<RoundDto>>
+{
+    public async Task<RoundResult<RoundDto>> Handle(UpdateLecturerRolesCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status == RoundStatus.Finished)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.FinishedMessage);
+
+        if (!request.IsSupervisor && !request.IsReviewer && !request.IsCommittee)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, "Phải chọn ít nhất một vai trò cho giảng viên.");
+
+        var err = await repository.UpdateLecturerRolesAsync(
+            round.Id, request.UserId, request.IsSupervisor, request.IsReviewer, request.IsCommittee,
+            clock.GetUtcNow().UtcDateTime, request.ActorId, cancellationToken);
+
+        if (err is not null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, err);
+
+        var updated = await repository.GetByIdAsync(round.Id, cancellationToken);
+        var dto = await RoundMapping.ToDtoWithRemovalBlockersAsync(updated ?? round, RoundRules.TodayVietnam(clock), repository, cancellationToken);
+        return RoundResult<RoundDto>.Ok(dto, "Đã cập nhật vai trò giảng viên.");
+    }
+}
+
+public sealed class PreviewLecturerRolesHandler(IRoundRepository repository)
+    : IRequestHandler<PreviewLecturerRolesCommand, RoundResult<LecturerRolesPreviewResultDto>>
+{
+    public async Task<RoundResult<LecturerRolesPreviewResultDto>> Handle(PreviewLecturerRolesCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<LecturerRolesPreviewResultDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status == RoundStatus.Finished)
+            return RoundResult<LecturerRolesPreviewResultDto>.Fail(RoundResultStatus.Conflict, RoundRules.FinishedMessage);
+
+        var codes = request.Rows.Select(r => r.Code.Trim()).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
+        var users = await repository.GetActiveUsersByCodesOrEmailsAsync(UserRole.Lecturer, codes, cancellationToken);
+
+        var userMap = new Dictionary<string, User>(StringComparer.OrdinalIgnoreCase);
+        foreach (var u in users)
+        {
+            userMap[u.UserCode] = u;
+            userMap[u.Email] = u;
+        }
+
+        var blockers = await repository.GetLecturerRoleBlockersAsync(round.Id, cancellationToken);
+        var existingParticipants = round.Participants
+            .Where(p => p.Kind == ParticipantKind.Lecturer)
+            .ToDictionary(p => p.UserId);
+
+        var valid = new List<LecturerRolePreviewItemDto>();
+        var errors = new List<LecturerRolePreviewErrorDto>();
+
+        foreach (var row in request.Rows)
+        {
+            var cleanCode = row.Code.Trim();
+            if (string.IsNullOrEmpty(cleanCode)) continue;
+
+            if (!userMap.TryGetValue(cleanCode, out var user))
+            {
+                errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Không tìm thấy giảng viên trong hệ thống." });
+                continue;
+            }
+
+            if (!row.IsSupervisor && !row.IsReviewer && !row.IsCommittee)
+            {
+                errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Không có vai trò nào được chọn." });
+                continue;
+            }
+
+            var isExisting = existingParticipants.ContainsKey(user.Id);
+
+            if (isExisting)
+            {
+                if (!row.IsSupervisor && blockers.SupervisorIds.Contains(user.Id))
+                {
+                    errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Đang hướng dẫn đề tài, không thể bỏ vai trò Hướng dẫn." });
+                    continue;
+                }
+                if (!row.IsReviewer && blockers.ReviewerIds.Contains(user.Id))
+                {
+                    errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Đang phản biện đề tài, không thể bỏ vai trò Phản biện." });
+                    continue;
+                }
+                if (!row.IsCommittee && blockers.CommitteeIds.Contains(user.Id))
+                {
+                    errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Đang trong hội đồng, không thể bỏ vai trò Hội đồng." });
+                    continue;
+                }
+            }
+
+            valid.Add(new LecturerRolePreviewItemDto
+            {
+                UserId = user.Id,
+                Code = user.UserCode,
+                Name = user.FullName,
+                Email = user.Email,
+                Unit = user.Department ?? string.Empty,
+                IsSupervisor = row.IsSupervisor,
+                IsReviewer = row.IsReviewer,
+                IsCommittee = row.IsCommittee,
+                IsNew = !isExisting
+            });
+        }
+
+        return RoundResult<LecturerRolesPreviewResultDto>.Ok(new LecturerRolesPreviewResultDto
+        {
+            Valid = valid,
+            Errors = errors
+        });
+    }
+}
+
+public sealed class ImportLecturerRolesHandler(IRoundRepository repository, TimeProvider clock)
+    : IRequestHandler<ImportLecturerRolesCommand, RoundResult<LecturerRolesImportResultDto>>
+{
+    public async Task<RoundResult<LecturerRolesImportResultDto>> Handle(ImportLecturerRolesCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<LecturerRolesImportResultDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status == RoundStatus.Finished)
+            return RoundResult<LecturerRolesImportResultDto>.Fail(RoundResultStatus.Conflict, RoundRules.FinishedMessage);
+
+        var previewHandler = new PreviewLecturerRolesHandler(repository);
+        var preview = await previewHandler.Handle(new PreviewLecturerRolesCommand(request.Id, request.Rows), cancellationToken);
+        if (!preview.Response.Success || preview.Response.Data is null)
+            return RoundResult<LecturerRolesImportResultDto>.Fail(preview.Status, preview.Response.Message);
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        var updates = preview.Response.Data.Valid.Where(v => !v.IsNew)
+            .Select(v => (v.UserId, v.IsSupervisor, v.IsReviewer, v.IsCommittee)).ToList();
+        var adds = preview.Response.Data.Valid.Where(v => v.IsNew)
+            .Select(v => (v.UserId, v.IsSupervisor, v.IsReviewer, v.IsCommittee)).ToList();
+
+        await repository.SaveLecturerRolesBatchAsync(round.Id, updates, adds, now, request.ActorId, cancellationToken);
+
+        var updated = await repository.GetByIdAsync(round.Id, cancellationToken);
+        var roles = RoundMapping.ToDto(updated ?? round, RoundRules.TodayVietnam(clock)).LecturerRoles;
+
+        return RoundResult<LecturerRolesImportResultDto>.Ok(new LecturerRolesImportResultDto
+        {
+            UpdatedCount = updates.Count,
+            AddedCount = adds.Count,
+            Roles = roles
+        }, $"Đã cập nhật {updates.Count} và thêm mới {adds.Count} giảng viên.");
     }
 }

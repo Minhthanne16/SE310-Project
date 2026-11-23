@@ -11,13 +11,13 @@ Giáo vụ vận hành một đợt có mốc và người tham gia; SV/GV chỉ
 **Công việc:**
 - [ ] Đặc tả trạng thái Nháp/Đang diễn ra/Đã kết thúc, thao tác tạo/mở/kết thúc/xóa và dữ liệu không được xóa.
 - [ ] Đối chiếu hợp đồng API với UI hiện có; triển khai backend, migration và frontend cho danh sách/chi tiết/tạo/mở/kết thúc/xóa.
-- [ ] Sao chép đợt chỉ tạo Nháp mới với khung chín mốc/cờ “Cho nộp trễ”, không mang ngày, hạn trễ, người hoặc dữ liệu nghiệp vụ theo PDR-034; mở đợt phải đủ chín mốc và hạn trễ của các mốc bật nộp trễ hợp lệ theo PDR-032/041 nhưng thiếu người chỉ cảnh báo theo PDR-033; kết thúc đợt theo PDR-031.
+- [ ] Sao chép đợt chỉ tạo Nháp mới với khung chín mốc/cờ “Cho nộp trễ”, không mang ngày, hạn trễ, người hoặc dữ liệu nghiệp vụ theo PDR-034; mở đợt phải có ba mốc đầu và hạn trễ của các mốc bật nộp trễ hợp lệ theo PDR-067/041 (PDR-067 thay PDR-032) nhưng thiếu người chỉ cảnh báo theo PDR-033; kết thúc đợt theo PDR-031.
 
 **Acceptance criteria:**
 - [ ] Nháp chỉ Giáo vụ thấy; mở đợt chuyển khả năng nhìn thấy theo quyền; xóa chỉ áp dụng với Nháp đủ điều kiện.
 - [ ] Sau tải lại trang, dữ liệu đợt vẫn còn và trạng thái đồng nhất ở ba vai trò.
 - [ ] Đợt có ít nhất một đề tài chưa `Đã hoàn tất`/`Không đủ điều kiện công bố` không kết thúc được và nêu đề tài còn dở; hỗn hợp hai trạng thái kết thúc hợp lệ không bị chặn bởi quy tắc này.
-- [ ] Không mở đợt thiếu một trong chín mốc, mốc thiếu đầu/cuối hoặc sai thứ tự; lỗi chỉ rõ mốc để sửa.
+- [ ] Không mở đợt thiếu một trong ba mốc đầu, mốc thiếu đầu/cuối hoặc sai thứ tự; lỗi chỉ rõ mốc để sửa. Mốc 4–9 được để trống khi mở (PDR-067).
 - [ ] Đợt đủ mốc nhưng thiếu SV, GV hoặc cả hai vẫn mở được sau cảnh báo rõ vai trò thiếu; không tự tạo người, thao tác sau mở vẫn kiểm tra người tham gia.
 - [ ] Đợt sao chép ở trạng thái Nháp, không có ngày/giờ/hạn trễ, người, mẫu phiếu, đề tài, điểm hoặc lịch sử từ nguồn; lưu được tham chiếu đợt nguồn và không mở được trước khi nhập đủ mốc/hạn trễ hợp lệ.
 
@@ -30,13 +30,13 @@ Giáo vụ vận hành một đợt có mốc và người tham gia; SV/GV chỉ
 **Tham chiếu:** [DESIGN — Gantt/Chi tiết đợt](../DESIGN/03-dac-ta-man-hinh.md), [NON_FUNCTIONAL](../requirements/NON_FUNCTIONAL.md), [PDR-041](../decisions/PDR-041-han-nop-tre-rieng-tung-moc.md).
 
 **Công việc:**
-- [ ] Giữ chín mốc bắt buộc trước khi mở đợt theo PDR-032; chốt ý nghĩa từng mốc và phân biệt mốc nhắc với mốc khóa thao tác.
+- [ ] Ba mốc đầu bắt buộc trước khi mở đợt theo PDR-067 (thay PDR-032), tự điền các mốc từ ngày bắt đầu và gợi ý ngày khi sửa gây xung đột; chốt ý nghĩa từng mốc và phân biệt mốc nhắc với mốc khóa thao tác.
 - [ ] Lưu cấu hình theo đợt và cung cấp UI Gantt cho từng vai trò; kiểm tra ngày sai thứ tự và khoảng trống.
 - [ ] Bật “Cho nộp trễ” chỉ khi có hạn trễ riêng sau hạn thường của từng mốc Đề cương/Giữa kỳ/Cuối kỳ; hiện hạn cho nhóm liên quan, ghi lịch sử khi đổi theo PDR-041.
 
 **Acceptance criteria:**
 - [ ] Cấu hình không hợp lệ bị từ chối với lỗi chỉ rõ mốc; thay đổi hợp lệ hiện đúng trên Gantt sau tải lại.
-- [ ] Đợt Nháp thiếu hoặc sai một mốc không mở được; đủ chín mốc hợp lệ thì không bị chặn bởi điều kiện mốc.
+- [ ] Đợt Nháp thiếu hoặc sai một trong ba mốc đầu không mở được; đủ ba mốc đầu hợp lệ thì không bị chặn bởi điều kiện mốc. Cấu hình điểm, số Sinh viên tối đa và vai trò Giảng viên của đợt làm theo PDR-065/069/070 (xem G2.3).
 - [ ] Thời gian cho điểm chỉ nhắc, không tự khóa phiếu chấm theo DESIGN; nộp đúng hạn/trong khoảng trễ/sau hạn trễ cho kết quả đúng PDR-041, hạn bổ sung riêng PDR-011 chỉ áp dụng đúng nhóm.
 
 **Verification:** Test ranh giới ngày/giờ, lệch múi giờ và trạng thái trước/trong/sau mốc.

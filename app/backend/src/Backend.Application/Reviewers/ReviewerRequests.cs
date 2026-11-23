@@ -72,7 +72,7 @@ internal sealed class ReviewerSession
     {
         var all = await topics.ListByRoundAsync(round.Id, cancellationToken: cancellationToken);
         var listed = all.Where(ReviewerRules.Listed).ToList();
-        var lecturers = await reviewers.GetUsersAsync(RoundMapping.IdsOf(round, ParticipantKind.Lecturer), cancellationToken);
+        var lecturers = await reviewers.GetUsersAsync(RoundMapping.LecturerIdsForReviewer(round), cancellationToken);
         var members = await groups.MembersOf(listed, cancellationToken);
         var presence = await reviewers.GetReportPresenceAsync(listed.Select(t => t.Id).ToList(), cancellationToken);
         return new ReviewerSession(reviewers, round, all, today, lecturers, members, presence);

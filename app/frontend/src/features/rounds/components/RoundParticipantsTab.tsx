@@ -8,6 +8,7 @@ import {
   AddParticipantsDialog,
   type AddMode,
 } from '@/features/rounds/components/AddParticipantsDialog';
+import { LecturerRoleImportDialog } from '@/features/rounds/components/LecturerRoleImportDialog';
 import { RoundModal } from '@/features/rounds/components/RoundModal';
 import { studentNoun } from '@/features/rounds/roundUtils';
 import type { RoundService } from '@/features/rounds/services/roundService';
@@ -16,7 +17,10 @@ import type {
   Participant,
   ParticipantKind,
   Round,
+  RoundLecturerRole,
 } from '@/types/round';
+
+type RoleFilter = 'all' | 'supervisor' | 'reviewer' | 'committee';
 
 interface RoundParticipantsTabProps {
   kind: ParticipantKind;
@@ -58,6 +62,9 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
 
   const [everyone, setEveryone] = useState<Participant[]>([]);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState<RoleFilter>('all');
+  const [importingRoles, setImportingRoles] = useState(false);
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
   const [adding, setAdding] = useState<AddMode | null>(null);
   const [removing, setRemoving] = useState<Participant | null>(null);
   const [busy, setBusy] = useState(false);
@@ -74,11 +81,75 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
     };
   }, [roundService, kind]);
 
+  const getLecturerRole = (userId: string): RoundLecturerRole => {
+    const found = round.lecturerRoles?.find((r) => r.userId === userId);
+    return (
+      found ?? {
+        userId,
+        code: '',
+        name: '',
+        email: '',
+        unit: '',
+        isSupervisor: true,
+        isReviewer: true,
+        isCommittee: true,
+      }
+    );
+  };
+
+  const handleRoleToggle = async (
+    p: Participant,
+    roleKey: 'isSupervisor' | 'isReviewer' | 'isCommittee',
+    checked: boolean,
+  ) => {
+    if (readOnly || updatingRoleId) return;
+    const current = getLecturerRole(p.id);
+    const nextRole = {
+      ...current,
+      [roleKey]: checked,
+    };
+    if (
+      !nextRole.isSupervisor &&
+      !nextRole.isReviewer &&
+      !nextRole.isCommittee
+    ) {
+      toast.error('Mỗi giảng viên phải có ít nhất 1 vai trò trong đợt.');
+      return;
+    }
+
+    setUpdatingRoleId(p.id);
+    try {
+      const updated = await roundService.updateLecturerRoles(round.id, p.id, {
+        isSupervisor: nextRole.isSupervisor,
+        isReviewer: nextRole.isReviewer,
+        isCommittee: nextRole.isCommittee,
+      });
+      toast.success(`Đã cập nhật vai trò của ${p.name}.`);
+      onChanged(updated);
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error && err.message
+          ? err.message
+          : 'Không cập nhật được vai trò.';
+      toast.error(msg);
+    } finally {
+      setUpdatingRoleId(null);
+    }
+  };
+
   const ids = isStudent ? round.studentIds : round.lecturerIds;
   const keyword = search.trim().toLowerCase();
   const members = ids
     .map((id) => everyone.find((p) => p.id === id))
     .filter((p): p is Participant => !!p)
+    .filter((p) => {
+      if (isStudent || roleFilter === 'all') return true;
+      const r = getLecturerRole(p.id);
+      if (roleFilter === 'supervisor') return r.isSupervisor;
+      if (roleFilter === 'reviewer') return r.isReviewer;
+      if (roleFilter === 'committee') return r.isCommittee;
+      return true;
+    })
     .filter(
       (p) =>
         !keyword ||
@@ -137,8 +208,53 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        {!isStudent && (
+          <div
+            className="rnd-role-filters"
+            role="group"
+            aria-label="Lọc theo vai trò"
+          >
+            <button
+              type="button"
+              className={`rnd-btn ${roleFilter === 'all' ? 'rnd-btn-primary' : ''}`}
+              onClick={() => setRoleFilter('all')}
+            >
+              Tất cả
+            </button>
+            <button
+              type="button"
+              className={`rnd-btn ${roleFilter === 'supervisor' ? 'rnd-btn-primary' : ''}`}
+              onClick={() => setRoleFilter('supervisor')}
+            >
+              Hướng dẫn
+            </button>
+            <button
+              type="button"
+              className={`rnd-btn ${roleFilter === 'reviewer' ? 'rnd-btn-primary' : ''}`}
+              onClick={() => setRoleFilter('reviewer')}
+            >
+              Phản biện
+            </button>
+            <button
+              type="button"
+              className={`rnd-btn ${roleFilter === 'committee' ? 'rnd-btn-primary' : ''}`}
+              onClick={() => setRoleFilter('committee')}
+            >
+              Hội đồng
+            </button>
+          </div>
+        )}
         {!readOnly && (
           <>
+            {!isStudent && (
+              <button
+                type="button"
+                className="rnd-btn rnd-btn-lg"
+                onClick={() => setImportingRoles(true)}
+              >
+                Nhập vai trò từ Excel
+              </button>
+            )}
             <button
               type="button"
               className="rnd-btn rnd-btn-lg"
@@ -181,6 +297,7 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
               <tr>
                 <th scope="col">{heading}</th>
                 <th scope="col">{unitLabel}</th>
+                {!isStudent && <th scope="col">Vai trò trong đợt</th>}
                 <th scope="col">Tài khoản</th>
                 <th scope="col">Trạng thái</th>
                 {!readOnly && <th scope="col">Thao tác</th>}
@@ -190,6 +307,8 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
               {members.map((p) => {
                 const blocker = round.removalBlockers?.[p.id];
                 const locked = Boolean(blocker) || isLocked(p);
+                const role = !isStudent ? getLecturerRole(p.id) : null;
+                const isUpdatingRole = updatingRoleId === p.id;
                 return (
                   <tr key={p.id}>
                     <td>
@@ -200,6 +319,57 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                       </span>
                     </td>
                     <td>{p.unit}</td>
+                    {!isStudent && role && (
+                      <td>
+                        <div className="rnd-roles-cell">
+                          <label className="rnd-check-label">
+                            <input
+                              type="checkbox"
+                              checked={role.isSupervisor}
+                              disabled={readOnly || isUpdatingRole}
+                              onChange={(e) =>
+                                void handleRoleToggle(
+                                  p,
+                                  'isSupervisor',
+                                  e.target.checked,
+                                )
+                              }
+                            />
+                            <span>Hướng dẫn</span>
+                          </label>
+                          <label className="rnd-check-label">
+                            <input
+                              type="checkbox"
+                              checked={role.isReviewer}
+                              disabled={readOnly || isUpdatingRole}
+                              onChange={(e) =>
+                                void handleRoleToggle(
+                                  p,
+                                  'isReviewer',
+                                  e.target.checked,
+                                )
+                              }
+                            />
+                            <span>Phản biện</span>
+                          </label>
+                          <label className="rnd-check-label">
+                            <input
+                              type="checkbox"
+                              checked={role.isCommittee}
+                              disabled={readOnly || isUpdatingRole}
+                              onChange={(e) =>
+                                void handleRoleToggle(
+                                  p,
+                                  'isCommittee',
+                                  e.target.checked,
+                                )
+                              }
+                            />
+                            <span>Hội đồng</span>
+                          </label>
+                        </div>
+                      </td>
+                    )}
                     <td>
                       <span
                         className={`rnd-pill ${ACCOUNT_PILL[p.accountStatus]}`}
@@ -268,6 +438,18 @@ export const RoundParticipantsTab: React.FC<RoundParticipantsTabProps> = ({
                   : 'Họ nhận thông báo và thấy đợt này ở lần đăng nhập tiếp theo.'
               }`,
             );
+            onChanged(updated);
+          }}
+        />
+      )}
+
+      {importingRoles && (
+        <LecturerRoleImportDialog
+          round={round}
+          roundService={roundService}
+          onClose={() => setImportingRoles(false)}
+          onImported={(updated) => {
+            setImportingRoles(false);
             onChanged(updated);
           }}
         />

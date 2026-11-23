@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28.
+Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28. **Ngày 2026-11-23, [PDR-065](PDR-065-cau-hinh-diem-theo-dot.md) thay công thức cố định bằng công thức có hệ số cấu hình theo đợt; quy tắc làm tròn ở đây giữ nguyên, và cảnh báo lệch theo [PDR-066](PDR-066-lech-diem-so-voi-diem-khoa-luan.md).**
 
 ## Bối cảnh
 

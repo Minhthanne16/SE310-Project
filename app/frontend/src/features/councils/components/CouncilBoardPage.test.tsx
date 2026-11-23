@@ -21,6 +21,7 @@ import type {
   CouncilSlot,
 } from '@/types/council';
 import { CouncilBoardPage } from './CouncilBoardPage';
+import { CouncilPanel } from './CouncilPanel';
 
 vi.mock('next/navigation', async () => {
   const mod = await import('@/test/navigationMock');
@@ -180,12 +181,15 @@ const roundService = { list: vi.fn(async () => rounds) };
 
 async function renderPage(service: CouncilService) {
   render(
-    <CouncilBoardPage
+    <CouncilPanel
+      mode="edit"
       service={service}
       roundService={roundService}
       checkDelayMs={0}
     />,
   );
+  const row = await screen.findByText('Hội đồng 1');
+  fireEvent.click(row);
   await screen.findByRole('heading', { name: 'Hội đồng 1', level: 2 });
 }
 
@@ -267,7 +271,7 @@ it('hiển thị thống kê, danh sách hội đồng, chi tiết, lịch sử 
   expect(screen.getByText('Đề tài đã xếp lịch').nextSibling).toHaveTextContent(
     '1/3',
   );
-  const list = screen.getByRole('list', { name: 'Danh sách hội đồng' });
+  const list = screen.getByRole('region', { name: 'Danh sách hội đồng' });
   expect(
     within(list).getByText('14/10/2026 · 07:30–08:15 · B4.12'),
   ).toBeInTheDocument();
@@ -675,4 +679,29 @@ it('báo khi chưa có đợt đã mở', async () => {
   expect(
     await screen.findByText('Chưa có đợt khóa luận nào đã mở để lập hội đồng.'),
   ).toBeInTheDocument();
+});
+
+it('hiển thị chế độ xem cho trang lẻ và có liên kết tới tab Đánh giá', async () => {
+  const service = fakeService(boardOf([council()]));
+  render(
+    <CouncilBoardPage
+      mode="view"
+      service={service}
+      roundService={roundService}
+      checkDelayMs={0}
+    />,
+  );
+  await screen.findByRole('table');
+  expect(
+    screen.queryByRole('button', { name: 'Tạo hội đồng' }),
+  ).not.toBeInTheDocument();
+  expect(
+    screen.queryByRole('button', { name: 'Công bố lịch bảo vệ' }),
+  ).not.toBeInTheDocument();
+  const link = screen.getByRole('link', { name: 'Mở tab Đánh giá' });
+  expect(link).toBeInTheDocument();
+  expect(link).toHaveAttribute(
+    'href',
+    expect.stringContaining('/giao-vu/dot/r1?tab=danh-gia&muc=hoi-dong'),
+  );
 });

@@ -8,6 +8,10 @@ public sealed record OpenRoundOutcome(bool Opened, IReadOnlyList<RoundConflict> 
 public sealed record FinishRoundOutcome(bool Finished, IReadOnlyList<string> PendingTopics);
 public sealed record AddParticipantsOutcome(IReadOnlyList<RoundParticipant> Added, IReadOnlyList<RoundConflict> Conflicts,
     IReadOnlySet<Guid> ExistingIds, bool Finished);
+public sealed record LecturerRoleBlockers(
+    IReadOnlySet<Guid> SupervisorIds,
+    IReadOnlySet<Guid> ReviewerIds,
+    IReadOnlySet<Guid> CommitteeIds);
 
 public interface IRoundRepository
 {
@@ -40,6 +44,18 @@ public interface IRoundRepository
     Task<IReadOnlyList<User>> GetActiveUsersByCodesOrEmailsAsync(UserRole role, IReadOnlyCollection<string> codes, CancellationToken cancellationToken = default);
     // Trong các sinh viên đã cho, những ai đang ở đợt Đang diễn ra khác đợt exceptRoundId.
     Task<IReadOnlyList<RoundConflict>> FindRunningRoundConflictsAsync(Guid exceptRoundId, IReadOnlyCollection<Guid> studentIds, CancellationToken cancellationToken = default);
+
+    // PDR-065, PDR-069, OQ-033(e): Mặc định cấu hình theo chương trình.
+    Task<ProgramRoundDefaults?> GetProgramDefaultsAsync(string program, CancellationToken cancellationToken = default);
+    Task SaveProgramDefaultsAsync(ProgramRoundDefaults defaults, CancellationToken cancellationToken = default);
+
+    // PDR-070: Vai trò của Giảng viên trong đợt.
+    Task<LecturerRoleBlockers> GetLecturerRoleBlockersAsync(Guid roundId, CancellationToken cancellationToken = default);
+    Task<string?> UpdateLecturerRolesAsync(Guid roundId, Guid userId, bool isSupervisor, bool isReviewer, bool isCommittee, DateTime now, Guid? actorId, CancellationToken cancellationToken = default);
+    Task SaveLecturerRolesBatchAsync(Guid roundId,
+        IReadOnlyList<(Guid UserId, bool IsSupervisor, bool IsReviewer, bool IsCommittee)> updates,
+        IReadOnlyList<(Guid UserId, bool IsSupervisor, bool IsReviewer, bool IsCommittee)> adds,
+        DateTime now, Guid? actorId, CancellationToken cancellationToken = default);
 }
 
 public sealed class DuplicateRoundNameException(Exception? inner = null)

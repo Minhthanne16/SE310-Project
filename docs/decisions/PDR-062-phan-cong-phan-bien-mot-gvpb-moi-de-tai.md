@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận ngày 2026-11-17. Bổ sung chi tiết thực thi cho [PDR-021](PDR-021-phan-cong-phan-bien-sau-duyet-de-cuong.md), [PDR-022](PDR-022-dieu-kien-nhap-diem-phan-bien.md), [PDR-023](PDR-023-khoa-thay-giang-vien-phan-bien-sau-phieu.md); không đổi các quyết định đó. Người dùng đã chốt **giữ "Tự gợi ý"**, chỉ điền sẵn bản nháp và Giáo vụ xác nhận mới lưu.
+Đã chấp nhận ngày 2026-11-17. Bổ sung chi tiết thực thi cho [PDR-021](PDR-021-phan-cong-phan-bien-sau-duyet-de-cuong.md), [PDR-022](PDR-022-dieu-kien-nhap-diem-phan-bien.md), [PDR-023](PDR-023-khoa-thay-giang-vien-phan-bien-sau-phieu.md); không đổi các quyết định đó. Người dùng đã chốt **giữ "Tự gợi ý"**, chỉ điền sẵn bản nháp và Giáo vụ xác nhận mới lưu. **Bổ sung 2026-11-23 ([PDR-070](PDR-070-vai-tro-giang-vien-trong-dot.md)): chỉ chọn Giảng viên có vai trò Phản biện trong đợt và thao tác trong tab Đánh giá của đợt; ô chọn khóa GVHD của chính đề tài.**
 
 ## Bối cảnh
 

@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28. **Thay thế một phần bởi PDR-049 ngày 2026-11-03: bốn cặp chéo và ngưỡng giữ nguyên, nhưng đề tài còn lệch (`Có lệch điểm`) không xác nhận được.** Xem [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md).
+Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28. **Thay thế một phần bởi PDR-049 ngày 2026-11-03: bốn cặp chéo và ngưỡng giữ nguyên, nhưng đề tài còn lệch (`Có lệch điểm`) không xác nhận được.** Xem [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md). **Thay thế bởi [PDR-066](PDR-066-lech-diem-so-voi-diem-khoa-luan.md) ngày 2026-11-23: so từng điểm với điểm khóa luận có hệ số; chặn lưu khi điểm đang nhập bị lệch.**
 
 ## Bối cảnh
 

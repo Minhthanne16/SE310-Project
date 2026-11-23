@@ -23,6 +23,8 @@ public record GetRoundsQuery(string? Status, string? Program, string? Search, Gu
 public record GetRoundQuery(Guid Id, Guid? ViewerId = null) : IRequest<RoundResult<RoundDto>>;
 public record CreateRoundCommand(RoundInputDto Round) : IRequest<RoundResult<RoundDto>>;
 public record UpdateRoundCommand(Guid Id, RoundInfoDto Round) : IRequest<RoundResult<RoundDto>>;
+public record UpdateRoundGradingCommand(Guid Id, UpdateRoundGradingDto Input, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
+public record GetProgramDefaultsQuery(string Program) : IRequest<ApiResponse<ProgramRoundDefaultsDto>>;
 public record UpdateRoundMilestonesCommand(Guid Id, RoundMilestonesInputDto Input, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
 public record OpenRoundCommand(Guid Id, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
 public record FinishRoundCommand(Guid Id, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
@@ -33,8 +35,11 @@ public record DeleteRoundCommand(Guid Id) : IRequest<RoundResult<bool>>;
 public record GetPeopleQuery(string Kind) : IRequest<ApiResponse<IReadOnlyList<ParticipantDto>>>;
 public record GetCandidatesQuery(Guid Id, string Kind) : IRequest<RoundResult<IReadOnlyList<CandidateDto>>>;
 public record CheckParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes) : IRequest<RoundResult<IReadOnlyList<ParticipantCheckDto>>>;
-public record AddParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes, Guid? ActorId = null) : IRequest<RoundResult<AddParticipantsResultDto>>;
+public record AddParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes, Guid? ActorId = null, bool? IsSupervisor = null, bool? IsReviewer = null, bool? IsCommittee = null) : IRequest<RoundResult<AddParticipantsResultDto>>;
 public record RemoveParticipantCommand(Guid Id, string Kind, Guid UserId, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
+public record UpdateLecturerRolesCommand(Guid Id, Guid UserId, bool IsSupervisor, bool IsReviewer, bool IsCommittee, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
+public record PreviewLecturerRolesCommand(Guid Id, IReadOnlyList<LecturerRoleImportRowDto> Rows) : IRequest<RoundResult<LecturerRolesPreviewResultDto>>;
+public record ImportLecturerRolesCommand(Guid Id, IReadOnlyList<LecturerRoleImportRowDto> Rows, Guid? ActorId = null) : IRequest<RoundResult<LecturerRolesImportResultDto>>;
 
 // Nhãn tiếng Việt, khóa JSON và quy tắc đợt (docs/DESIGN/03, PDR-029…PDR-034).
 public static class RoundRules
@@ -155,12 +160,13 @@ public static class RoundRules
     public static string FormatDate(DateOnly? date) => date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
 
     // Kiểm tra từng mốc theo thứ tự (cổng của validateMilestones phía frontend): bắt đầu <= kết thúc và
-    // mốc sau không bắt đầu sớm hơn mốc có ngày liền trước. requireAll=true (mở đợt, PDR-032): mốc nào
-    // cũng phải có đủ ngày; false (lưu cấu hình): mốc để trống cả hai ngày được bỏ qua.
+    // mốc sau không bắt đầu sớm hơn mốc trước (PDR-067). requireAll=true (cũ): mọi mốc phải đủ ngày;
+    // false: mốc để trống cả hai ngày được bỏ qua.
     public static List<string> ValidateMilestones(IEnumerable<(MilestoneKey Key, string? Start, string? End)> milestones, bool requireAll)
     {
         var errors = new List<string>();
-        (string Name, DateOnly Start)? previous = null;
+        var parsed = new Dictionary<MilestoneKey, (string Name, DateOnly Start, DateOnly End)>();
+
         foreach (var (key, rawStart, rawEnd) in milestones)
         {
             var name = Name(key);
@@ -181,12 +187,51 @@ public static class RoundRules
                 errors.Add($"{name}: Ngày kết thúc phải sau hoặc cùng ngày bắt đầu.");
                 continue;
             }
-            if (previous is { } p && s < p.Start)
+
+            // PDR-067: Ngoại lệ mốc 8 so với mốc 6 (hoặc mốc gần nhất trước 6), không so với mốc 7.
+            // Mốc 9 so với mốc 7 (hoặc mốc gần nhất trước 7), không so với mốc 8.
+            (string Name, DateOnly Start)? reference = null;
+            if (key == MilestoneKey.Grading)
             {
-                errors.Add($"{name}: Mốc này bắt đầu trước mốc “{p.Name}”. Các mốc phải theo thứ tự thời gian.");
+                for (var k = MilestoneKey.ReviewSchedule; k >= MilestoneKey.TopicSubmission; k--)
+                {
+                    if (parsed.TryGetValue(k, out var p))
+                    {
+                        reference = (p.Name, p.Start);
+                        break;
+                    }
+                }
+            }
+            else if (key == MilestoneKey.Finalize)
+            {
+                for (var k = MilestoneKey.DefenseSchedule; k >= MilestoneKey.TopicSubmission; k--)
+                {
+                    if (parsed.TryGetValue(k, out var p))
+                    {
+                        reference = (p.Name, p.Start);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                for (var k = key - 1; k >= MilestoneKey.TopicSubmission; k--)
+                {
+                    if (parsed.TryGetValue(k, out var p))
+                    {
+                        reference = (p.Name, p.Start);
+                        break;
+                    }
+                }
+            }
+
+            if (reference is { } r && s < r.Start)
+            {
+                errors.Add($"{name}: Mốc này bắt đầu trước mốc “{r.Name}”. Các mốc phải theo thứ tự thời gian.");
                 continue;
             }
-            previous = (name, s);
+
+            parsed[key] = (name, s, e);
         }
         return errors;
     }
@@ -263,6 +308,29 @@ public sealed class UpdateRoundValidator : RoundTextValidator<UpdateRoundCommand
             // 0 = chưa đặt mức nên chỉ so khi cả hai đều đã đặt.
             RuleFor(x => x.Round).Must(r => r.LecturerLoadMin is not > 0 || r.LecturerLoadMax is not > 0 || r.LecturerLoadMin <= r.LecturerLoadMax)
                 .WithMessage("Số đề tài tối thiểu không được lớn hơn tối đa.").OverridePropertyName("lecturerLoad");
+            RuleFor(x => x.Round.MaxGroupSize).Must(size => !size.HasValue || (size.Value >= 1 && size.Value <= 10))
+                .WithMessage("Số sinh viên tối đa mỗi nhóm từ 1 đến 10.");
+        });
+    }
+}
+
+public sealed class UpdateRoundGradingValidator : AbstractValidator<UpdateRoundGradingCommand>
+{
+    public UpdateRoundGradingValidator()
+    {
+        RuleFor(x => x.Input).NotNull();
+        When(x => x.Input is not null, () =>
+        {
+            RuleFor(x => x.Input.WeightChair).GreaterThan(0).WithMessage("Hệ số Chủ tịch phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Hệ số Chủ tịch tối đa là 10.");
+            RuleFor(x => x.Input.WeightSecretary).GreaterThan(0).WithMessage("Hệ số Thư ký phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Hệ số Thư ký tối đa là 10.");
+            RuleFor(x => x.Input.WeightSupervisor).GreaterThan(0).WithMessage("Hệ số Hướng dẫn phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Hệ số Hướng dẫn tối đa là 10.");
+            RuleFor(x => x.Input.WeightReviewer).GreaterThan(0).WithMessage("Hệ số Phản biện phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Hệ số Phản biện tối đa là 10.");
+            RuleFor(x => x.Input.DeviationThreshold).GreaterThan(0).WithMessage("Ngưỡng lệch điểm phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Ngưỡng lệch điểm tối đa là 10.");
         });
     }
 }

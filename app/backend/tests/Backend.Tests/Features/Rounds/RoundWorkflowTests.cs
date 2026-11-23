@@ -105,7 +105,7 @@ public sealed class RoundWorkflowTests : IDisposable
         return result.Response.Data!;
     }
 
-    private static RoundMilestonesInputDto Dated(Action<List<RoundMilestoneInputDto>>? tweak = null)
+    internal static RoundMilestonesInputDto Dated(Action<List<RoundMilestoneInputDto>>? tweak = null)
     {
         // Chín mốc nối tiếp nhau, mỗi mốc 5 ngày từ 2026-09-01.
         var start = new DateOnly(2026, 9, 1);
@@ -351,9 +351,7 @@ public sealed class RoundWorkflowTests : IDisposable
         var result = await Send(new OpenRoundCommand(round.Id));
 
         Assert.Equal(RoundResultStatus.Conflict, result.Status);
-        Assert.Equal("Chưa mở được đợt: các mốc thời gian chưa đầy đủ hoặc chưa hợp lệ.", result.Response.Message);
-        Assert.Equal(9, result.Response.Errors!.Count);
-        Assert.Equal("GV gửi đề tài: Chưa đặt ngày bắt đầu và kết thúc.", result.Response.Errors[0]);
+        Assert.Equal("Cần nhập đủ 3 mốc đầu (Gửi đề tài, Đăng ký, Đề cương) trước khi mở đợt.", result.Response.Message);
         Assert.Equal("Draft", await StatusOf(round.Id));
     }
 

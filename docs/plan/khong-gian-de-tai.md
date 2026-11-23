@@ -360,7 +360,7 @@ Mỗi bước B **chỉ bắt đầu khi phase tương ứng đã có hợp đ�
 - Thẻ phiếu: bảng tiêu chí chung → hạng mục con, cột "Tối đa", cột "Điểm SV1/SV2" theo từng sinh viên (nhóm 1 hoặc 2 SV), ô số `step=0.25`, `min=0`, `max` theo tiêu chí; tổng tự cộng (PDR-035); lỗi "Có hạng mục vượt điểm tối đa. Sửa lại trước khi lưu." `role="alert"`; thiếu hạng mục → lỗi tại chỗ; nhận xét (PB: không bắt buộc).
 - Ai nhập: GVHD → phiếu HD; GV phản biện → phiếu PB, chỉ khi nhóm đã nộp báo cáo cuối kỳ (PDR-022, hiện lý do khóa); Thư ký → hai phiếu CTHĐ và TKHĐ (công tắc "Phiếu chủ tịch"/"Phiếu thư ký"); Chủ tịch chỉ xem (PDR-050); Giáo vụ chỉ xem.
 - Sửa được tới khi Giáo vụ xác nhận; sau đó trạng thái "Kết quả đã xác nhận, không sửa được."
-- Cảnh báo lệch: bốn cặp chéo, ngưỡng ≥ 2,00 do backend tính (PDR-007/049), hiện ở thẻ hội đồng cho Thư ký/Chủ tịch; không chặn lưu.
+- Cảnh báo lệch: so từng điểm với điểm khóa luận có hệ số, ngưỡng theo đợt (PDR-066, thay PDR-007; trạng thái theo PDR-049), do backend tính, hiện trước khi lưu ở thẻ hội đồng cho Thư ký/Chủ tịch; điểm đang nhập lệch thì chặn lưu, điểm của người khác lệch thì lưu và gắn cờ.
 - "Điểm khóa luận (tạm tính)": `(CTHĐ + TKHĐ + 2×CBHD + 2×CBPB)/6`, làm tròn nửa lên 2 chữ số (PDR-008), backend trả số, frontend chỉ định dạng dấu phẩy.
 - SV sau công bố: 4 dòng điểm riêng + điểm khóa luận + hộp thoại "Chi tiết phiếu đánh giá" (chỉ xem, có các nút chọn phiếu).
 - Tiến độ ĐÁNH GIÁ lấy từng phiếu thay cho suy từ `topic.status`.

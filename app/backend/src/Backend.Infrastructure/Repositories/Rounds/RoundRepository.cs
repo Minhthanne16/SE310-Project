@@ -264,6 +264,119 @@ public class RoundRepository(ApplicationDbContext context) : IRoundRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<ProgramRoundDefaults?> GetProgramDefaultsAsync(string program, CancellationToken cancellationToken = default) =>
+        context.ProgramRoundDefaults.FirstOrDefaultAsync(d => d.Program == program, cancellationToken);
+
+    public async Task SaveProgramDefaultsAsync(ProgramRoundDefaults defaults, CancellationToken cancellationToken = default)
+    {
+        var existing = await context.ProgramRoundDefaults.FirstOrDefaultAsync(d => d.Program == defaults.Program, cancellationToken);
+        if (existing is null)
+        {
+            context.ProgramRoundDefaults.Add(defaults);
+        }
+        else
+        {
+            existing.MaxGroupSize = defaults.MaxGroupSize;
+            existing.WeightChair = defaults.WeightChair;
+            existing.WeightSecretary = defaults.WeightSecretary;
+            existing.WeightSupervisor = defaults.WeightSupervisor;
+            existing.WeightReviewer = defaults.WeightReviewer;
+            existing.DeviationThreshold = defaults.DeviationThreshold;
+            existing.UpdatedAt = defaults.UpdatedAt;
+            existing.UpdatedById = defaults.UpdatedById;
+        }
+        await SaveAsync(cancellationToken);
+    }
+
+    public async Task<LecturerRoleBlockers> GetLecturerRoleBlockersAsync(Guid roundId, CancellationToken cancellationToken = default)
+    {
+        var supervisors = await context.ThesisTopics.AsNoTracking()
+            .Where(t => t.RoundId == roundId)
+            .Select(t => t.SupervisorId).Distinct().ToListAsync(cancellationToken);
+
+        var reviewers = await context.ThesisTopics.AsNoTracking()
+            .Where(t => t.RoundId == roundId && t.ReviewerId != null)
+            .Select(t => t.ReviewerId!.Value).Distinct().ToListAsync(cancellationToken);
+
+        var councils = await context.DefenseCouncils.AsNoTracking()
+            .Where(c => c.RoundId == roundId && c.Status != CouncilStatus.Cancelled)
+            .Select(c => new { c.ChairId, c.SecretaryId }).ToListAsync(cancellationToken);
+
+        var committees = councils.Select(c => c.ChairId).Concat(councils.Select(c => c.SecretaryId)).ToHashSet();
+
+        return new LecturerRoleBlockers(supervisors.ToHashSet(), reviewers.ToHashSet(), committees);
+    }
+
+    public async Task<string?> UpdateLecturerRolesAsync(Guid roundId, Guid userId, bool isSupervisor, bool isReviewer, bool isCommittee, DateTime now, Guid? actorId, CancellationToken cancellationToken = default)
+    {
+        var participant = await context.RoundParticipants
+            .FirstOrDefaultAsync(p => p.RoundId == roundId && p.UserId == userId && p.Kind == ParticipantKind.Lecturer, cancellationToken);
+        if (participant is null) return "Giảng viên không có trong đợt.";
+
+        var blockers = await GetLecturerRoleBlockersAsync(roundId, cancellationToken);
+        if (!isSupervisor && blockers.SupervisorIds.Contains(userId))
+            return "Giảng viên đang hướng dẫn đề tài trong đợt, không thể bỏ vai trò Hướng dẫn.";
+        if (!isReviewer && blockers.ReviewerIds.Contains(userId))
+            return "Giảng viên đang phản biện đề tài trong đợt, không thể bỏ vai trò Phản biện.";
+        if (!isCommittee && blockers.CommitteeIds.Contains(userId))
+            return "Giảng viên đang thuộc hội đồng bảo vệ trong đợt, không thể bỏ vai trò Hội đồng.";
+
+        participant.IsSupervisor = isSupervisor;
+        participant.IsReviewer = isReviewer;
+        participant.IsCommittee = isCommittee;
+        participant.UpdatedAt = now;
+
+        Audit(roundId, actorId, "LecturerRolesUpdated", now, userId);
+        await context.SaveChangesAsync(cancellationToken);
+        return null;
+    }
+
+    public async Task SaveLecturerRolesBatchAsync(Guid roundId,
+        IReadOnlyList<(Guid UserId, bool IsSupervisor, bool IsReviewer, bool IsCommittee)> updates,
+        IReadOnlyList<(Guid UserId, bool IsSupervisor, bool IsReviewer, bool IsCommittee)> adds,
+        DateTime now, Guid? actorId, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        if (updates.Count > 0)
+        {
+            var userIds = updates.Select(u => u.UserId).ToList();
+            var participants = await context.RoundParticipants
+                .Where(p => p.RoundId == roundId && p.Kind == ParticipantKind.Lecturer && userIds.Contains(p.UserId))
+                .ToListAsync(cancellationToken);
+            var updateMap = updates.ToDictionary(u => u.UserId);
+            foreach (var p in participants)
+            {
+                if (updateMap.TryGetValue(p.UserId, out var u))
+                {
+                    p.IsSupervisor = u.IsSupervisor;
+                    p.IsReviewer = u.IsReviewer;
+                    p.IsCommittee = u.IsCommittee;
+                    p.UpdatedAt = now;
+                }
+            }
+        }
+
+        if (adds.Count > 0)
+        {
+            var newParticipants = adds.Select(a => new RoundParticipant
+            {
+                RoundId = roundId,
+                UserId = a.UserId,
+                Kind = ParticipantKind.Lecturer,
+                IsSupervisor = a.IsSupervisor,
+                IsReviewer = a.IsReviewer,
+                IsCommittee = a.IsCommittee,
+                CreatedAt = now,
+                UpdatedAt = now
+            }).ToList();
+            context.RoundParticipants.AddRange(newParticipants);
+        }
+
+        Audit(roundId, actorId, "LecturerRolesImported", now);
+        await context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+    }
+
     private static bool IsDuplicateName(DbUpdateException ex) =>
         ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: { } name }
         && name.Contains("NormalizedName", StringComparison.Ordinal);

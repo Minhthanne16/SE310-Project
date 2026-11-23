@@ -8,7 +8,10 @@ import {
 } from '@/features/rounds/services/roundService';
 import type {
   Candidate,
+  LecturerRolesImportResult,
+  LecturerRolesPreviewResult,
   Milestone,
+  OverviewStatistics,
   Participant,
   ParticipantCheck,
   ParticipantKind,
@@ -98,6 +101,7 @@ export function createApiRoundService(): RoundService {
           periodLabel: input.periodLabel,
           lecturerLoadMin: input.lecturerLoadMin,
           lecturerLoadMax: input.lecturerLoadMax,
+          maxGroupSize: input.maxGroupSize,
         }),
         true,
       ),
@@ -113,6 +117,9 @@ export function createApiRoundService(): RoundService {
     updateMilestones: (id, milestones: Milestone[]) =>
       call<Round>(`/rounds/${enc(id)}/milestones`, json('PUT', { milestones })),
 
+    saveGrading: (id, input) =>
+      call<Round>(`/rounds/${enc(id)}/grading`, json('PUT', input)),
+
     listParticipants: (kind) =>
       call<Participant[]>(`/rounds/people/${KIND_PATH[kind]}`),
 
@@ -125,10 +132,15 @@ export function createApiRoundService(): RoundService {
         json('POST', { codes }),
       ),
 
-    addParticipants: (id, kind, codes) =>
+    addParticipants: (id, kind, codes, roles) =>
       call<AddParticipantsResult>(
         `/rounds/${enc(id)}/${KIND_PATH[kind]}`,
-        json('POST', { codes }),
+        json('POST', {
+          codes,
+          isSupervisor: roles?.isSupervisor,
+          isReviewer: roles?.isReviewer,
+          isCommittee: roles?.isCommittee,
+        }),
       ),
 
     removeParticipant: (id, kind, userId) =>
@@ -137,9 +149,30 @@ export function createApiRoundService(): RoundService {
         json('DELETE'),
       ),
 
+    updateLecturerRoles: (id, userId, roles) =>
+      call<Round>(
+        `/rounds/${enc(id)}/lecturers/${enc(userId)}/roles`,
+        json('PUT', roles),
+      ),
+
+    previewLecturerRoles: (id, rows) =>
+      call<LecturerRolesPreviewResult>(
+        `/rounds/${enc(id)}/lecturers/roles/preview`,
+        json('POST', rows),
+      ),
+
+    importLecturerRoles: async (id, rows) => {
+      await call<LecturerRolesImportResult>(
+        `/rounds/${enc(id)}/lecturers/roles/import`,
+        json('POST', rows),
+      );
+      return service.get(id);
+    },
+
     // Backend chưa có API thông báo của đợt (Phase 08): Bảng thông báo để trống
     // thay vì hiện dữ liệu mẫu cho người dùng thật.
     listNotifications: async () => ({ items: [], total: 0 }),
+    getOverview: () => call<OverviewStatistics>('/statistics/overview'),
     markTopicsPublished: (id) =>
       call<Round>(`/rounds/${enc(id)}/topics/publish`, json('POST')),
   };

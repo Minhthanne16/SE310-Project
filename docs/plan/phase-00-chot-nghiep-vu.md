@@ -43,7 +43,7 @@ Biến câu hỏi mở và các điểm bất nhất trong [REVIEW.md](REVIEW.md
 **Tham chiếu:** PDR-005–010/024–028/035–038/044/045/049/050; R02–R05, R08–R10, R14; [ROLES](../product/ROLES.md).
 
 **Công việc:**
-- [x] Giữ PDR-007–008 về bốn cặp cảnh báo và làm tròn (PDR-007 đã sửa một phần theo PDR-049); điểm CTHĐ theo PDR-050, thay PDR-006; đối chiếu cấu trúc mẫu phiếu đã chốt.
+- [x] Giữ PDR-007–008 về bốn cặp cảnh báo và làm tròn (PDR-007 đã sửa một phần theo PDR-049, rồi thay bởi PDR-066 ngày 2026-11-23; công thức cố định thay bởi PDR-065); điểm CTHĐ theo PDR-050, thay PDR-006; đối chiếu cấu trúc mẫu phiếu đã chốt.
 - [x] Giữ PDR-024–028/035: Chủ tịch/Thư ký chung mẫu hội đồng nhưng phiếu riêng; mẫu đã gán đổi tiêu chí bằng phiên bản mới, khóa bản đang dùng từ phiếu đầu tiên, chỉ xóa Nháp chưa từng gán, Đóng chỉ ngăn gán mới; điểm phiếu cộng các tiêu chí cấp cuối có tổng tối đa 10.
 - [x] Giữ PDR-005 về mở lại trước công bố; áp dụng PDR-049 **thay PDR-009/010**: mỗi SV có bốn điểm riêng, nhưng chỉ xác nhận/công bố **cả đề tài** khi tất cả SV đủ điều kiện; xử lý lô và báo lý do theo **từng đề tài**.
 - [x] Đối chiếu quyền sửa họ tên theo PDR-036, phản hồi khôi phục mật khẩu theo PDR-037, thao tác ẩn thông báo theo PDR-038, giới hạn yêu cầu khôi phục theo PDR-044 và điều kiện tài khoản nhận thư theo PDR-045.

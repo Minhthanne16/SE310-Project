@@ -73,6 +73,9 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
   const [unit, setUnit] = useState('');
   const [onlyFree, setOnlyFree] = useState(false);
   const [codesText, setCodesText] = useState('');
+  const [isSupervisor, setIsSupervisor] = useState(true);
+  const [isReviewer, setIsReviewer] = useState(false);
+  const [isCommittee, setIsCommittee] = useState(false);
   const [results, setResults] = useState<ParticipantCheck[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,6 +168,9 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
         round.id,
         kind,
         codesToAdd,
+        kind === 'lecturer'
+          ? { isSupervisor, isReviewer, isCommittee }
+          : undefined,
       );
       if (outcome.added === 0) {
         setResults(outcome.results);
@@ -217,8 +223,12 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
       : previewing
         ? `Thêm ${count} ${who} hợp lệ`
         : 'Kiểm tra danh sách';
+  const noLecturerRoles =
+    kind === 'lecturer' && !isSupervisor && !isReviewer && !isCommittee;
   const goDisabled =
-    busy || (mode === 'pick' || previewing ? count === 0 : false);
+    busy ||
+    noLecturerRoles ||
+    (mode === 'pick' || previewing ? count === 0 : false);
   const onGo = () => {
     if (goDisabled) return;
     if (mode === 'codes' && !previewing) void check();
@@ -276,6 +286,38 @@ export const AddParticipantsDialog: React.FC<AddParticipantsDialogProps> = ({
             </button>
           ))}
         </div>
+        {kind === 'lecturer' && (
+          <div className="rnd-roles-select-bar">
+            <span>Vai trò ban đầu:</span>
+            <label className="rnd-check-inline">
+              <input
+                type="checkbox"
+                checked={isSupervisor}
+                onChange={(e) => setIsSupervisor(e.target.checked)}
+              />
+              Hướng dẫn
+            </label>
+            <label className="rnd-check-inline">
+              <input
+                type="checkbox"
+                checked={isReviewer}
+                onChange={(e) => setIsReviewer(e.target.checked)}
+              />
+              Phản biện
+            </label>
+            <label className="rnd-check-inline">
+              <input
+                type="checkbox"
+                checked={isCommittee}
+                onChange={(e) => setIsCommittee(e.target.checked)}
+              />
+              Hội đồng
+            </label>
+            {noLecturerRoles && (
+              <span className="rnd-field-err">Phải chọn ít nhất 1 vai trò</span>
+            )}
+          </div>
+        )}
       </div>
 
       <div

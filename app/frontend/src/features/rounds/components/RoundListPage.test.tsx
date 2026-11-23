@@ -257,7 +257,7 @@ it('blocks opening a draft with unset milestones and lists them', async () => {
   });
   const alert = within(dialog).getByRole('alert');
   expect(alert).toHaveTextContent('Đề cương: chưa đặt ngày');
-  expect(within(alert).getAllByRole('listitem')).toHaveLength(7);
+  expect(within(alert).getAllByRole('listitem')).toHaveLength(1);
   expect(within(alert).getByRole('link')).toHaveAttribute(
     'href',
     '/giao-vu/dot/r-vb2-hk2-nhap?tab=cau-hinh',

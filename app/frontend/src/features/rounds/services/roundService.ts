@@ -2,16 +2,20 @@ import type { RoundFieldErrors } from '@/features/rounds/roundValidation';
 import { createApiRoundService } from '@/features/rounds/services/roundApiService';
 import type {
   Candidate,
+  LecturerRoleImportRow,
+  LecturerRolesPreviewResult,
   Milestone,
   MilestoneErrors,
   NotificationPage,
   NotificationQuery,
+  OverviewStatistics,
   Participant,
   ParticipantCheck,
   ParticipantKind,
   Round,
   RoundFilters,
   RoundInput,
+  UpdateRoundGradingInput,
 } from '@/types/round';
 
 export class RoundNotFoundError extends Error {
@@ -79,6 +83,7 @@ export interface RoundService {
   finish(id: string): Promise<Round>;
   remove(id: string): Promise<void>;
   updateMilestones(id: string, milestones: Milestone[]): Promise<Round>;
+  saveGrading(id: string, input: UpdateRoundGradingInput): Promise<Round>;
   listParticipants(kind: ParticipantKind): Promise<Participant[]>;
   listCandidates(id: string, kind: ParticipantKind): Promise<Candidate[]>;
   checkParticipants(
@@ -90,13 +95,32 @@ export interface RoundService {
     id: string,
     kind: ParticipantKind,
     codes: string[],
+    roles?: {
+      isSupervisor?: boolean;
+      isReviewer?: boolean;
+      isCommittee?: boolean;
+    },
   ): Promise<AddParticipantsResult>;
   removeParticipant(
     id: string,
     kind: ParticipantKind,
     userId: string,
   ): Promise<Round>;
+  updateLecturerRoles(
+    id: string,
+    userId: string,
+    roles: { isSupervisor: boolean; isReviewer: boolean; isCommittee: boolean },
+  ): Promise<Round>;
+  previewLecturerRoles(
+    id: string,
+    rows: LecturerRoleImportRow[],
+  ): Promise<LecturerRolesPreviewResult>;
+  importLecturerRoles(
+    id: string,
+    rows: LecturerRoleImportRow[],
+  ): Promise<Round>;
   listNotifications(query: NotificationQuery): Promise<NotificationPage>;
+  getOverview(): Promise<OverviewStatistics>;
   // Công bố danh sách đề tài của đợt cho sinh viên (tab Đề tài của chi tiết
   // đợt); không hoàn tác. Ném RoundRuleError khi đợt không Đang diễn ra, chưa
   // có đề tài, đã công bố hoặc đã hết hạn đăng ký (không phụ thuộc hạn GV gửi).

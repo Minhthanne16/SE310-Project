@@ -31,6 +31,8 @@ import {
   type RoundService,
 } from '@/features/rounds/services/roundService';
 import type { EvaluationService } from '@/features/evaluations/services/evaluationService';
+import type { ReviewerService } from '@/features/reviewers/services/reviewerService';
+import type { CouncilService } from '@/features/councils/services/councilService';
 import type { TopicService } from '@/features/topics/services/topicService';
 import { useUrlParam } from '@/lib/useUrlParam';
 import { TOPIC_STATUSES, type Round, type RoundTab } from '@/types/round';
@@ -40,6 +42,8 @@ interface RoundDetailPageProps {
   roundService?: RoundService;
   topicService?: TopicService;
   evaluationService?: EvaluationService;
+  reviewerService?: ReviewerService;
+  councilService?: CouncilService;
 }
 
 const TAB_IDS: RoundTab[] = [
@@ -69,6 +73,8 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
   roundService = defaultRoundService,
   topicService,
   evaluationService,
+  reviewerService,
+  councilService,
 }) => {
   const router = useRouter();
   const [tabParam, setTabParam] = useUrlParam('tab');
@@ -451,8 +457,12 @@ export const RoundDetailPage: React.FC<RoundDetailPageProps> = ({
         {tab === 'danh-gia' && (
           <RoundEvaluationTab
             round={round}
+            roundService={roundService}
             topicService={topicService}
             evaluationService={evaluationService}
+            reviewerService={reviewerService}
+            councilService={councilService}
+            onChanged={setRound}
           />
         )}
       </div>

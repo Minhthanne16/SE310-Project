@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận theo lựa chọn trực tiếp của người dùng ngày 2026-11-03. Thay thế [PDR-006](PDR-006-xac-nhan-diem-chu-tich-hoi-dong.md); giải quyết mục 5 của [REPORT_SPEC.md §10](../REPORT_SPEC.md#10-chỗ-báo-cáo-khác-tài-liệu-hiện-hành) (OQ-020).
+Đã chấp nhận theo lựa chọn trực tiếp của người dùng ngày 2026-11-03. Thay thế [PDR-006](PDR-006-xac-nhan-diem-chu-tich-hoi-dong.md); giải quyết mục 5 của [REPORT_SPEC.md §10](../REPORT_SPEC.md#10-chỗ-báo-cáo-khác-tài-liệu-hiện-hành) (OQ-020). **Bổ sung 2026-11-23 ([PDR-066](PDR-066-lech-diem-so-voi-diem-khoa-luan.md)): khi điểm hội đồng lệch, Chủ tịch cũng được sửa phiếu hội đồng; Chủ tịch vẫn không có bước xác nhận hay trả lại.**
 
 ## Bối cảnh
 

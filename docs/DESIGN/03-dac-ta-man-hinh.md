@@ -321,7 +321,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - `gvRole` (mặc định "Chủ tịch hội đồng"): Hướng dẫn · Phản biện · Thư ký hội đồng · Chủ tịch hội đồng
 - `defenseScheduled` (mặc định False)
 - `resultPublished` (mặc định False)
-- `groupSize` (mặc định "2 sinh viên"): 2 sinh viên · 1 sinh viên
+- `groupSize` (mặc định "2 sinh viên"): 2 sinh viên · 1 sinh viên (canvas chỉ có hai giá trị; số tối đa thật theo cấu hình đợt, [PDR-069](../decisions/PDR-069-so-sinh-vien-toi-da-moi-nhom.md))
 - `progressOpen` (mặc định True)
 - `viewAs` (mặc định "Sinh viên"): Sinh viên · Giảng viên
 
@@ -467,7 +467,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 - Hội đồng hai người: chủ tịch và thư ký. Thư ký nhập điểm cho cả hai; Chủ tịch chỉ xem, không có bước xác nhận/trả lại (xem [PDR-050](../decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md), thay PDR-006).
 - Không có thao tác trả lại điểm CTHĐ và không có việc chờ Chủ tịch xác nhận (PDR-050); thời hạn cho điểm áp dụng theo mốc của đợt.
-- Cảnh báo khi bất kỳ cặp chéo nào giữa điểm CTHĐ/TKHĐ và CBHD/CBPB lệch từ 2 trở lên, theo [PDR-007](../decisions/PDR-007-canh-bao-lech-diem-bon-cap-cheo.md).
+- Cảnh báo khi một điểm lệch từ ngưỡng của đợt trở lên so với điểm khóa luận có hệ số, theo [PDR-066](../decisions/PDR-066-lech-diem-so-voi-diem-khoa-luan.md) (thay PDR-007; canvas hiện còn theo bốn cặp chéo, cần cập nhật).
 - Ghi chú triển khai (2026-11-17, [PDR-063](../decisions/PDR-063-hoi-dong-va-lich-bao-ve.md)): màn dùng `GET /api/councils/mine`, chỉ hiện hội đồng đã công bố hoặc đã hủy (kèm lý do) và đính chính. Cột "Điểm hội đồng" hiện "Chưa nhập điểm" / "Thư ký chưa nhập" cho tới khi có phiếu ở P07. Bộ lọc theo điểm được triển khai cùng P07, chưa hiện trong P06 vì API chưa có trạng thái điểm từng lượt. Nút "Mở" dẫn tới Không gian đề tài, nơi Chủ tịch/Thư ký chỉ xem (`viewerRole = council`).
 
 ## Gửi thông báo (giảng viên)
@@ -783,7 +783,7 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 - `gvRole` (mặc định "Hướng dẫn"): Hướng dẫn · Phản biện · Thư ký hội đồng · Chủ tịch hội đồng
 - `defenseScheduled` (mặc định True)
 - `resultPublished` (mặc định False)
-- `groupSize` (mặc định "2 sinh viên"): 2 sinh viên · 1 sinh viên
+- `groupSize` (mặc định "2 sinh viên"): 2 sinh viên · 1 sinh viên (canvas chỉ có hai giá trị; số tối đa thật theo cấu hình đợt, [PDR-069](../decisions/PDR-069-so-sinh-vien-toi-da-moi-nhom.md))
 - `progressOpen` (mặc định True)
 - `view` (mặc định "Mặc định"): Mặc định · Thiếu điểm hạng mục · Kết quả đã xác nhận
 - `viewAs` (mặc định "Giảng viên"): Sinh viên · Giảng viên
@@ -801,3 +801,16 @@ Quy ước chung: chuỗi trạng thái chính của đề tài gồm Chờ GV d
 
 - KhongGianDeTai-GV và KhongGianDeTai cùng mã trên canvas; dựng thành một màn, quyền lấy từ vai trò của người xem.
 - Sinh viên chỉ thấy điểm sau khi công bố.
+
+## Thay đổi 2026-11-23 chưa có canvas
+
+Các quyết định [PDR-065](../decisions/PDR-065-cau-hinh-diem-theo-dot.md)–[PDR-071](../decisions/PDR-071-trang-chu-giao-vu-va-giang-vien.md) chưa có canvas tương ứng; khi canvas và quyết định khác nhau, theo quyết định (CONTENT.md). Màn cần dựng hoặc sửa:
+
+- **Chi tiết đợt, tab Đánh giá** (Giáo vụ): thêm cấu hình điểm (bốn hệ số kèm công thức xem trước, ngưỡng lệch, bảng xếp loại, hỏi lưu mặc định theo chương trình, khóa khi mở đợt), phân công phản biện, lập hội đồng, nhập vai trò hàng loạt bằng `.xlsx`.
+- **Chi tiết đợt, tab Giảng viên:** ba ô Hướng dẫn, Phản biện, Hội đồng cho từng Giảng viên.
+- **Chi tiết đợt, tab Cấu hình:** nhập ngày bắt đầu để tự điền chín mốc, cảnh báo và gợi ý ngày khi sửa mốc gây xung đột, mốc 4–9 được để trống; số Sinh viên tối đa mỗi nhóm.
+- **Phiếu chấm:** cảnh báo lệch trước khi lưu, chặn lưu khi điểm đang nhập bị lệch.
+- **Gửi đề tài của Giảng viên:** ô mã Sinh viên giữ chỗ kèm họ tên; màn xác nhận giữ chỗ của Sinh viên và email xác nhận.
+- **Menu Giảng viên phản biện, Hội đồng bảo vệ** (Giáo vụ): chuyển thành trang chỉ xem qua nhiều đợt, có nút mở tab Đánh giá của đợt.
+- **Trang chủ Giáo vụ:** khối "Cần xử lý" và thẻ đợt có trạng thái, số liệu nhanh. **Trang chủ Giảng viên:** đợt đang tham gia, việc cần làm có hạn, thay đổi mới nhất, lịch hội đồng, thông báo từ Giáo vụ.
+
