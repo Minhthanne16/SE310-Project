@@ -51,7 +51,7 @@ export const RoundEvaluationTab: React.FC<RoundEvaluationTabProps> = ({
   evaluationService = defaultEvaluationService,
   reviewerService,
   councilService,
-  onChanged = () => {},
+  onChanged = () => { },
 }) => {
   const searchParams = useSearchParams();
   const initialMuc = (searchParams?.get('muc') as EvalSectionKey) || 'cau-hinh-diem';
