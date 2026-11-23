@@ -13,6 +13,8 @@ public sealed class RoundDto
     public string Status { get; set; } = string.Empty;
     public int LecturerLoadMin { get; set; }
     public int LecturerLoadMax { get; set; }
+    public int MaxGroupSize { get; set; } = 2;
+    public RoundGradingDto Grading { get; set; } = new();
     // Thời điểm công bố danh sách đề tài (ISO 8601, UTC); null nếu chưa công bố.
     public string? TopicsPublishedAt { get; set; }
     public List<RoundMilestoneDto> Milestones { get; set; } = [];
@@ -21,6 +23,7 @@ public sealed class RoundDto
     public List<Guid> LockedStudentIds { get; set; } = [];
     public List<Guid> LockedLecturerIds { get; set; } = [];
     public Dictionary<Guid, string> RemovalBlockers { get; set; } = [];
+    public List<RoundLecturerRoleDto> LecturerRoles { get; set; } = [];
     public RoundTopicSummaryDto TopicSummary { get; set; } = new();
 }
 
@@ -68,6 +71,38 @@ public sealed class RoundInfoDto
     // null = giữ nguyên mức hiện có.
     public int? LecturerLoadMin { get; set; }
     public int? LecturerLoadMax { get; set; }
+    // PDR-069: Số SV tối đa mỗi nhóm (1..10, mặc định 2).
+    public int? MaxGroupSize { get; set; }
+}
+
+public sealed class RoundGradingDto
+{
+    public decimal WeightChair { get; set; } = 1;
+    public decimal WeightSecretary { get; set; } = 1;
+    public decimal WeightSupervisor { get; set; } = 2;
+    public decimal WeightReviewer { get; set; } = 2;
+    public decimal DeviationThreshold { get; set; } = 2;
+}
+
+public sealed class UpdateRoundGradingDto
+{
+    public decimal WeightChair { get; set; } = 1;
+    public decimal WeightSecretary { get; set; } = 1;
+    public decimal WeightSupervisor { get; set; } = 2;
+    public decimal WeightReviewer { get; set; } = 2;
+    public decimal DeviationThreshold { get; set; } = 2;
+    public bool SaveAsProgramDefault { get; set; }
+}
+
+public sealed class ProgramRoundDefaultsDto
+{
+    public string Program { get; set; } = string.Empty;
+    public int MaxGroupSize { get; set; } = 2;
+    public decimal WeightChair { get; set; } = 1;
+    public decimal WeightSecretary { get; set; } = 1;
+    public decimal WeightSupervisor { get; set; } = 2;
+    public decimal WeightReviewer { get; set; } = 2;
+    public decimal DeviationThreshold { get; set; } = 2;
 }
 
 public sealed class RoundMilestonesInputDto
@@ -124,6 +159,9 @@ public sealed class ParticipantCheckDto
 public sealed class ParticipantCodesDto
 {
     public List<string> Codes { get; set; } = [];
+    public bool? IsSupervisor { get; set; }
+    public bool? IsReviewer { get; set; }
+    public bool? IsCommittee { get; set; }
 }
 
 public sealed class AddParticipantsResultDto
@@ -131,4 +169,63 @@ public sealed class AddParticipantsResultDto
     public RoundDto Round { get; set; } = new();
     public List<ParticipantCheckDto> Results { get; set; } = [];
     public int Added { get; set; }
+}
+
+public sealed class RoundLecturerRoleDto
+{
+    public Guid UserId { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Unit { get; set; } = string.Empty;
+    public bool IsSupervisor { get; set; }
+    public bool IsReviewer { get; set; }
+    public bool IsCommittee { get; set; }
+}
+
+public sealed class UpdateLecturerRolesDto
+{
+    public bool IsSupervisor { get; set; }
+    public bool IsReviewer { get; set; }
+    public bool IsCommittee { get; set; }
+}
+
+public sealed class LecturerRoleImportRowDto
+{
+    public string Code { get; set; } = string.Empty;
+    public bool IsSupervisor { get; set; }
+    public bool IsReviewer { get; set; }
+    public bool IsCommittee { get; set; }
+}
+
+public sealed class LecturerRolesPreviewResultDto
+{
+    public List<LecturerRolePreviewItemDto> Valid { get; set; } = [];
+    public List<LecturerRolePreviewErrorDto> Errors { get; set; } = [];
+}
+
+public sealed class LecturerRolePreviewItemDto
+{
+    public Guid UserId { get; set; }
+    public string Code { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Unit { get; set; } = string.Empty;
+    public bool IsSupervisor { get; set; }
+    public bool IsReviewer { get; set; }
+    public bool IsCommittee { get; set; }
+    public bool IsNew { get; set; }
+}
+
+public sealed class LecturerRolePreviewErrorDto
+{
+    public string Code { get; set; } = string.Empty;
+    public string Reason { get; set; } = string.Empty;
+}
+
+public sealed class LecturerRolesImportResultDto
+{
+    public int UpdatedCount { get; set; }
+    public int AddedCount { get; set; }
+    public List<RoundLecturerRoleDto> Roles { get; set; } = [];
 }

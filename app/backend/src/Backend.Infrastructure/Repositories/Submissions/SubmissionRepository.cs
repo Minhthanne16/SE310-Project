@@ -198,6 +198,6 @@ public class SubmissionRepository(ApplicationDbContext context) : ISubmissionRep
             context.TopicSubmissions.Any(s => s.TopicId == t.Id && s.Kind == SubmissionKind.Thesis) &&
             context.ThesisRounds.Any(r => r.Id == t.RoundId && r.Milestones.Any(m => m.Key == MilestoneKey.Finalize &&
                 (t.ThesisExtensionEnd != null ? t.ThesisExtensionEnd < today :
-                    m.AllowLate == true && m.LateEndDate != null ? m.LateEndDate < today : m.EndDate < today))))
+                    m.AllowLate == true && m.LateEndDate != null ? m.LateEndDate < today : m.EndDate != null && m.EndDate < today))))
             .Select(t => t.Id).ToListAsync(cancellationToken);
 }

@@ -131,6 +131,109 @@ export interface TopicSummary {
   byStatus: Record<TopicStatus, number>;
 }
 
+export interface RoundGrading {
+  weightChair: number;
+  weightSecretary: number;
+  weightSupervisor: number;
+  weightReviewer: number;
+  deviationThreshold: number;
+}
+
+export interface UpdateRoundGradingInput extends RoundGrading {
+  saveAsProgramDefault?: boolean;
+}
+
+export const GRADE_CLASSIFICATIONS = [
+  { min: 9.0, label: 'Xuất sắc' },
+  { min: 8.0, label: 'Giỏi' },
+  { min: 7.0, label: 'Khá' },
+  { min: 5.0, label: 'Trung bình' },
+  { min: 0.0, label: 'Không đạt' },
+] as const;
+
+export function classifyScore(score: number): string {
+  if (score >= 9.0) return 'Xuất sắc';
+  if (score >= 8.0) return 'Giỏi';
+  if (score >= 7.0) return 'Khá';
+  if (score >= 5.0) return 'Trung bình';
+  return 'Không đạt';
+}
+
+export function calculateWeightedScore(
+  scores: {
+    chair: number;
+    secretary: number;
+    supervisor: number;
+    reviewer: number;
+  },
+  weights: {
+    weightChair: number;
+    weightSecretary: number;
+    weightSupervisor: number;
+    weightReviewer: number;
+  },
+): number {
+  const sumWeights =
+    weights.weightChair +
+    weights.weightSecretary +
+    weights.weightSupervisor +
+    weights.weightReviewer;
+  if (sumWeights <= 0) return 0;
+  const weighted =
+    scores.chair * weights.weightChair +
+    scores.secretary * weights.weightSecretary +
+    scores.supervisor * weights.weightSupervisor +
+    scores.reviewer * weights.weightReviewer;
+  const raw = weighted / sumWeights;
+  return Math.round((raw + Number.EPSILON) * 100) / 100;
+}
+
+export interface RoundLecturerRole {
+  userId: string;
+  code: string;
+  name: string;
+  email: string;
+  unit: string;
+  isSupervisor: boolean;
+  isReviewer: boolean;
+  isCommittee: boolean;
+}
+
+export interface LecturerRoleImportRow {
+  code: string;
+  isSupervisor: boolean;
+  isReviewer: boolean;
+  isCommittee: boolean;
+}
+
+export interface LecturerRolePreviewItem {
+  userId: string;
+  code: string;
+  name: string;
+  email: string;
+  unit: string;
+  isSupervisor: boolean;
+  isReviewer: boolean;
+  isCommittee: boolean;
+  isNew: boolean;
+}
+
+export interface LecturerRolePreviewError {
+  code: string;
+  reason: string;
+}
+
+export interface LecturerRolesPreviewResult {
+  valid: LecturerRolePreviewItem[];
+  errors: LecturerRolePreviewError[];
+}
+
+export interface LecturerRolesImportResult {
+  updatedCount: number;
+  addedCount: number;
+  roles: RoundLecturerRole[];
+}
+
 export interface Round {
   id: string;
   name: string;
@@ -141,6 +244,10 @@ export interface Round {
   // Số đề tài mỗi giảng viên nhận hướng dẫn, chỉ để cảnh báo. 0 = chưa đặt mức.
   lecturerLoadMin: number;
   lecturerLoadMax: number;
+  // PDR-069: Số SV tối đa mỗi nhóm (1..10, mặc định 2).
+  maxGroupSize: number;
+  // PDR-065: Cấu hình điểm đợt (hệ số và ngưỡng lệch).
+  grading: RoundGrading;
   // Thời điểm công bố danh sách đề tài cho sinh viên (ISO 8601); null = chưa
   // công bố. Công bố không hoàn tác được.
   topicsPublishedAt: string | null;
@@ -153,6 +260,8 @@ export interface Round {
   lockedLecturerIds?: string[];
   // Lý do cụ thể từ backend cho người đã có tham chiếu nghiệp vụ trong đợt.
   removalBlockers?: Record<string, string>;
+  // PDR-070: Vai trò cụ thể của giảng viên trong đợt (HD, PB, HĐ).
+  lecturerRoles?: RoundLecturerRole[];
   topicSummary: TopicSummary;
 }
 
@@ -166,6 +275,7 @@ export interface RoundInput {
   // Chỉ dùng khi sửa đợt Nháp; bỏ trống thì giữ mức hiện có.
   lecturerLoadMin?: number;
   lecturerLoadMax?: number;
+  maxGroupSize?: number;
 }
 
 export interface RoundFilters {
@@ -239,4 +349,41 @@ export interface RoundTask {
   text: string;
   // Tab của chi tiết đợt để xử lý việc này.
   tab: RoundTaskTab;
+}
+
+export type AttentionAlertKind =
+  | 'LecturerBelowMin'
+  | 'LecturerAboveMax'
+  | 'StudentsWithoutGroup'
+  | 'TopicsWithoutReviewer'
+  | 'TopicsWithoutCouncil'
+  | 'CouncilConflicts'
+  | 'MilestoneMissing'
+  | 'LateSubmissions';
+
+export interface AttentionAlert {
+  kind: AttentionAlertKind;
+  roundId: string;
+  roundName: string;
+  count: number;
+  target: string;
+  message: string;
+}
+
+export interface RoundOverview {
+  roundId: string;
+  name: string;
+  status: RoundStatus;
+  currentMilestoneKey: MilestoneKey | string | null;
+  topicCount: number;
+  studentsWithGroup: number;
+  studentCount: number;
+  topicsWithReviewer: number;
+  topicsScored: number | null;
+  topicsWithDeviation: number | null;
+}
+
+export interface OverviewStatistics {
+  rounds: RoundOverview[];
+  alerts: AttentionAlert[];
 }

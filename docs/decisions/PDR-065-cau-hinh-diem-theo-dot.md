@@ -35,3 +35,9 @@ Công thức điểm khóa luận đang cố định cho mọi đợt và mọi 
 - Đợt lưu bản sao cấu hình riêng; điểm, kết quả và file xuất của đợt luôn dùng cấu hình của đợt đó. Không có tính lại điểm vì cấu hình bị khóa trước khi có phiếu.
 - Kiểm thử: tổng hệ số bằng 0, hệ số âm hoặc lẻ, cận xếp loại không tăng dần, sửa sau khi mở đợt (409), lưu và không lưu mặc định chương trình, đợt mới của chương trình có và chưa có mặc định, biên 4,99/5,00/6,95/7,00/8,99/9,00.
 - Quy trình "bảo vệ lại hoặc làm lại đề tài" khi Không đạt chưa được đặc tả; xem [OQ-033](../OPEN_QUESTIONS.md).
+
+## Trạng thái triển khai
+
+- **2026-11-23:** Đã triển khai hoàn chỉnh trên nhánh `feat/giao-vu-23-11`:
+  - Backend (A1): entity `RoundGradingConfig`, `ProgramRoundDefaults`, `ThesisScore.Calculate` có hệ số, `ThesisGrade.Classify`, API cấu hình điểm và mặc định chương trình, migration `AddRoundGradingConfigAndGroupSize`, 14 tests đạt.
+  - Frontend (A5): `RoundEvaluationTab` với 4 mục con lưu URL qua param `muc`, `GradingConfigSection` gồm 4 hệ số, ngưỡng lệch, ví dụ tính điểm động, quy định làm tròn và bảng xếp loại chỉ đọc, checkbox lưu làm mặc định theo chương trình, banner khóa khi đợt không Nháp.

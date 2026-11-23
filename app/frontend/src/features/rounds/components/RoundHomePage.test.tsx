@@ -386,3 +386,66 @@ it('hides drafts and unrelated rounds even if a service returns them for a stude
     screen.queryByRole('button', { name: /^Mở đợt/ }),
   ).not.toBeInTheDocument();
 });
+
+it('shows AttentionList with alerts and action links for AcademicAffairs', async () => {
+  const service = createRoundService({ today: '2026-10-26' });
+  service.getOverview = vi.fn().mockResolvedValue({
+    rounds: [
+      {
+        roundId: 'r-vb1-hk1',
+        name: 'Văn bằng 1 · HK1 2026–2027',
+        status: 'Đang diễn ra',
+        currentMilestoneKey: 'midterm',
+        topicCount: 15,
+        studentsWithGroup: 28,
+        studentCount: 30,
+        topicsWithReviewer: 12,
+        topicsScored: null,
+        topicsWithDeviation: null,
+      },
+    ],
+    alerts: [
+      {
+        kind: 'TopicsWithoutReviewer',
+        roundId: 'r-vb1-hk1',
+        roundName: 'HK1 2026–2027',
+        count: 3,
+        target: '/giao-vu/dot/r-vb1-hk1?tab=danh-gia&muc=phan-bien',
+        message: '3 đề tài chưa có phản biện',
+      },
+    ],
+  });
+
+  await renderPage(service);
+  const attention = await screen.findByRole('region', { name: 'Cần xử lý' });
+  expect(within(attention).getByText('CHƯA CÓ PHẢN BIỆN')).toBeInTheDocument();
+  expect(within(attention).getByText('HK1 2026–2027')).toBeInTheDocument();
+  expect(
+    within(attention).getByText('3 đề tài chưa có phản biện'),
+  ).toBeInTheDocument();
+  const link = within(attention).getByRole('link', { name: /Xử lý/ });
+  expect(link).toHaveAttribute(
+    'href',
+    '/giao-vu/dot/r-vb1-hk1?tab=danh-gia&muc=phan-bien',
+  );
+
+  // Thẻ đợt hiển thị số liệu nhanh và '—' khi topicsScored null
+  expect(screen.getByText('15 đề tài')).toBeInTheDocument();
+  expect(screen.getByText('28/30 SV có nhóm')).toBeInTheDocument();
+  expect(screen.getByText('12 đã phân công PB')).toBeInTheDocument();
+  expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+});
+
+it('shows empty message in AttentionList when there are no alerts', async () => {
+  const service = createRoundService({ today: '2026-10-26' });
+  service.getOverview = vi.fn().mockResolvedValue({
+    rounds: [],
+    alerts: [],
+  });
+
+  await renderPage(service);
+  const attention = await screen.findByRole('region', { name: 'Cần xử lý' });
+  expect(
+    within(attention).getByText('Không có việc cần xử lý.'),
+  ).toBeInTheDocument();
+});

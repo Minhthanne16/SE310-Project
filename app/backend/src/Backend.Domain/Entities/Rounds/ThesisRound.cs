@@ -53,6 +53,10 @@ public class ThesisRound : BaseEntity
     // Số đề tài mỗi GV nhận hướng dẫn; chỉ để cảnh báo, không chặn (BUSINESS_RULES). 0 = chưa đặt mức.
     public int LecturerLoadMin { get; set; }
     public int LecturerLoadMax { get; set; }
+    // PDR-069: Số SV tối đa mỗi nhóm (mặc định 2, hợp lệ 1..10; tối thiểu luôn là 1).
+    public int MaxGroupSize { get; set; } = 2;
+    // PDR-065: Cấu hình điểm theo đợt (hệ số và ngưỡng lệch).
+    public RoundGradingConfig GradingConfig { get; set; } = new();
     // Đợt nguồn khi tạo bằng cách sao chép khung cấu hình (PDR-034), chỉ để truy vết.
     public Guid? CopiedFromId { get; set; }
     public DateTime? OpenedAt { get; set; }
@@ -92,4 +96,9 @@ public class RoundParticipant : BaseEntity
     public Guid UserId { get; set; }
     public User? User { get; set; }
     public ParticipantKind Kind { get; set; }
+    // PDR-070: Vai trò của Giảng viên trong đợt (chỉ áp dụng khi Kind = Lecturer).
+    // Mặc định entity là true để tương thích với dữ liệu và test cũ; khi tạo qua API sẽ gán theo nghiệp vụ.
+    public bool IsSupervisor { get; set; } = true;
+    public bool IsReviewer { get; set; } = true;
+    public bool IsCommittee { get; set; } = true;
 }

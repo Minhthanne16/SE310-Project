@@ -144,9 +144,9 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G2.3 — Cấu hình đợt theo PDR-065/067/069/070 (thay đổi 2026-11-23)
 
-- [ ] Tự điền chín mốc từ ngày bắt đầu theo độ dài mặc định (tạm, OQ-033), cảnh báo và gợi ý ngày khi sửa mốc gây xung đột; mốc sau không bao giờ bắt đầu trước mốc trước; đổi điều kiện mở đợt từ chín mốc xuống ba mốc đầu, mốc 4–9 cấu hình sau (PDR-067, thay PDR-032).
-- [ ] Cấu hình điểm theo đợt: bốn hệ số, ngưỡng lệch, bảng xếp loại; khóa khi mở đợt; hỏi lưu mặc định theo chương trình (PDR-065).
-- [ ] Số Sinh viên tối đa mỗi nhóm theo đợt (mặc định 2, tối thiểu 1), áp cho ghi danh, đề xuất và phiếu chấm (PDR-069).
+- [ ] Tự điền chín mốc từ ngày bắt đầu theo độ dài mặc định (tạm, OQ-033), cảnh báo và gợi ý ngày khi sửa mốc gây xung đột; mốc sau không bao giờ bắt đầu trước mốc trước; đổi điều kiện mở đợt từ chín mốc xuống ba mốc đầu, mốc 4–9 cấu hình sau (PDR-067, thay PDR-032; backend xong 2026-11-23).
+- [x] Cấu hình điểm theo đợt: bốn hệ số, ngưỡng lệch, bảng xếp loại; khóa khi mở đợt; hỏi lưu mặc định theo chương trình (PDR-065; backend xong 2026-11-23).
+- [x] Số Sinh viên tối đa mỗi nhóm theo đợt (mặc định 2, tối thiểu 1), áp cho ghi danh, đề xuất và phiếu chấm (PDR-069; backend xong 2026-11-23).
 - [ ] Ba vai trò Hướng dẫn/Phản biện/Hội đồng cho từng Giảng viên trong đợt, chọn phản biện/hội đồng theo vai trò, nhập vai trò hàng loạt bằng `.xlsx` có bước xem trước, và khóa GVHD khỏi phản biện/hội đồng của đề tài mình (PDR-070).
 
 **Nghiệm thu:** Sửa cấu hình điểm/số Sinh viên tối đa sau khi mở đợt bị từ chối; mở đợt chỉ có ba mốc đầu được; nhập xlsx có dòng lỗi chỉ bỏ dòng lỗi và không tạo tài khoản.

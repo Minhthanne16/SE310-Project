@@ -25,3 +25,9 @@ Danh sách giảng viên của đợt đang dùng chung cho hướng dẫn, ph�
 
 - Liên kết Giảng viên–đợt lưu ba cờ vai trò; các kiểm tra quyền GV hiện dựa vào "thuộc danh sách giảng viên của đợt" chuyển sang kiểm tra vai trò tương ứng.
 - Kiểm thử: GV chỉ hội đồng không gửi được đề tài, GVHD bị khóa ở ô phản biện và bị chặn khi xếp vào hội đồng mình ngồi, nhập file có mã sai/trùng/không phải GV, ghi đè vai trò, bỏ vai trò khi đã có dữ liệu.
+
+## Trạng thái triển khai
+
+- **2026-11-23:** Đã triển khai hoàn chỉnh trên nhánh `feat/giao-vu-23-11`:
+  - Backend (A4, A7): entity `RoundParticipant` thêm 3 cờ vai trò `IsSupervisor`, `IsReviewer`, `IsCommittee`; endpoint `PUT /api/rounds/{id}/lecturers/{userId}/roles`, preview và import Excel `POST /preview`, `POST /import`; chặn bỏ vai trò khi đã có dữ liệu tham chiếu (PDR-030); `ReviewerRules` và `CouncilRules` chặn cứng GVHD làm PB/CT/TK của đề tài mình hướng dẫn, migration `AddLecturerRoundRoles`.
+  - Frontend (A4, A5, A6, A7): `RoundParticipantsTab` với bộ lọc vai trò, 3 checkbox HD/PB/HĐ và toggle trực tiếp, nút và dialog nhập Excel; `ReviewerPanel` và `CouncilPanel` dùng chung hỗ trợ chế độ xem và sửa; tab `RoundEvaluationTab` với 4 mục con nhúng trực tiếp; `CouncilEditor` disable chọn GVHD vào CT/TK khi đề tài đã trong hội đồng và chặn thêm đề tài vào hội đồng có GVHD.

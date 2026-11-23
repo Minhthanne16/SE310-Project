@@ -9,6 +9,7 @@ import type { Council } from '@/types/council';
 interface CouncilDetailProps {
   council: Council;
   busy: boolean;
+  readOnly?: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onCancelSchedule: () => void;
@@ -26,6 +27,7 @@ export const statusChipClass = (status: string) =>
 export const CouncilDetail: React.FC<CouncilDetailProps> = ({
   council,
   busy,
+  readOnly = false,
   onEdit,
   onDelete,
   onCancelSchedule,
@@ -34,48 +36,50 @@ export const CouncilDetail: React.FC<CouncilDetailProps> = ({
   const when = span(council.slots);
   return (
     <div className="cnc-detail-body">
-      <div className="cnc-detail-actions">
-        {council.canEdit && (
-          <button
-            type="button"
-            className="app-button"
-            onClick={onEdit}
-            disabled={busy}
-          >
-            Sửa
-          </button>
-        )}
-        {council.status === 'Nháp' && (
-          <button
-            type="button"
-            className="app-button app-button-danger"
-            onClick={onDelete}
-            disabled={busy || !council.canDelete}
-          >
-            Xóa
-          </button>
-        )}
-        {council.canCancel && (
-          <button
-            type="button"
-            className="app-button app-button-danger"
-            onClick={onCancelSchedule}
-            disabled={busy}
-          >
-            Hủy lịch
-          </button>
-        )}
-        {council.canCorrect && (
-          <button
-            type="button"
-            className="app-button"
-            onClick={onCorrect}
-            disabled={busy}
-          >
-            Ghi đính chính
-          </button>
-        )}
-      </div>
+      {!readOnly && (
+        <div className="cnc-detail-actions">
+          {council.canEdit && (
+            <button
+              type="button"
+              className="app-button"
+              onClick={onEdit}
+              disabled={busy}
+            >
+              Sửa
+            </button>
+          )}
+          {council.status === 'Nháp' && (
+            <button
+              type="button"
+              className="app-button app-button-danger"
+              onClick={onDelete}
+              disabled={busy || !council.canDelete}
+            >
+              Xóa
+            </button>
+          )}
+          {council.canCancel && (
+            <button
+              type="button"
+              className="app-button app-button-danger"
+              onClick={onCancelSchedule}
+              disabled={busy}
+            >
+              Hủy lịch
+            </button>
+          )}
+          {council.canCorrect && (
+            <button
+              type="button"
+              className="app-button"
+              onClick={onCorrect}
+              disabled={busy}
+            >
+              Ghi đính chính
+            </button>
+          )}
+        </div>
+      )}
       {council.status !== 'Nháp' &&
         !council.canEdit &&
         council.editBlockedReason && (

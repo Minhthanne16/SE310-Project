@@ -135,7 +135,7 @@ internal static class TopicMapping
     };
 
     public static bool IsLecturerOf(ThesisRound round, Guid userId) =>
-        round.Participants.Any(p => p.UserId == userId && p.Kind == ParticipantKind.Lecturer);
+        round.Participants.Any(p => p.UserId == userId && p.Kind == ParticipantKind.Lecturer && p.IsSupervisor);
 
     public static bool IsStudentOf(ThesisRound round, Guid userId) =>
         round.Participants.Any(p => p.UserId == userId && p.Kind == ParticipantKind.Student);
@@ -316,7 +316,7 @@ public sealed class ListRoundTopicsHandler(IRoundRepository rounds, ITopicReposi
             Round = TopicRules.RoundInfo(round, today, forLecturer: false),
             Items = visible.Select(t => TopicMapping.FillThesis(
                 TopicMapping.ToDto(t, round, today, viewerIsSupervisor: false, members), t, round, today, theses[t.Id])).ToList(),
-            Loads = RoundMapping.IdsOf(round, ParticipantKind.Lecturer).Select(id => TopicRules.Load(id, all, round)).ToList()
+            Loads = RoundMapping.LecturerIdsForSupervisor(round).Select(id => TopicRules.Load(id, all, round)).ToList()
         });
     }
 }

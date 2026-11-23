@@ -275,7 +275,7 @@ public sealed class CouncilWorkflowTests : IDisposable
         var w = await NewWorld();
         var result = await Create(w, Input(w, "Hội đồng 1", w.A, w.C, "B4.12", (w.T[0], "07:30", "08:15")));
         Assert.Equal(TopicResultStatus.Conflict, result.Status);
-        Assert.Contains($"DT-001: {w.A.Name} là GVHD nhưng đang ngồi hội đồng chấm đề tài này.", result.Response.Errors!);
+        Assert.Contains($"DT-001: {w.A.Name} là GVHD, không được làm PB/CT/TK của đề tài này. Xếp đề tài vào hội đồng khác.", result.Response.Errors!);
 
         // Thư ký cũng vậy.
         var secretary = await Create(w, Input(w, "Hội đồng 1", w.C, w.B, "B4.12", (w.T[2], "07:30", "08:15")));

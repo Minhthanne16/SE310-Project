@@ -99,19 +99,21 @@ describe('warnings and tasks', () => {
     expect(setupWarnings(round('r-vb1-hk1'))).toEqual([]);
   });
 
-  it('lists a blocker per milestone without a valid date', () => {
+  it('lists a blocker per first 3 milestones without a valid date', () => {
     const blockers = openBlockers(round('r-vb2-hk2-nhap'));
-    expect(blockers).toHaveLength(7);
+    expect(blockers).toHaveLength(1);
     expect(blockers).toContain('Đề cương: chưa đặt ngày');
     expect(openBlockers(round('r-vb1-hk1'))).toEqual([]);
 
     const bad = round('r-vb1-hk1');
-    bad.milestones[3].endDate = '2026-01-01';
-    bad.milestones[4].startDate = '';
-    bad.milestones[4].endDate = '';
+    bad.milestones[0].startDate = '';
+    bad.milestones[0].endDate = '';
+    bad.milestones[1].endDate = '2026-01-01';
     expect(openBlockers(bad)).toEqual([
-      expect.stringMatching(/^Báo cáo giữa kỳ: Ngày kết thúc phải sau/),
-      'Báo cáo cuối kỳ: chưa đặt ngày',
+      'GV gửi đề tài: chưa đặt ngày',
+      expect.stringMatching(
+        /^Công bố đề tài · SV đăng ký: Ngày kết thúc phải sau/,
+      ),
     ]);
   });
 

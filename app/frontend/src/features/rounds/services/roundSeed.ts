@@ -141,6 +141,14 @@ function topics(
 // có test giữ đồng bộ; pendingResultCount = số đề tài chưa ở trạng thái kết
 // thúc (0 với đợt đã kết thúc).
 // Bốn đợt mẫu của canvas (vb1, vb2, ths, vb1o) cộng một đợt Nháp.
+const DEFAULT_GRADING = {
+  weightChair: 1,
+  weightSecretary: 1,
+  weightSupervisor: 2,
+  weightReviewer: 2,
+  deviationThreshold: 2,
+};
+
 export function seedRounds(): Round[] {
   const withAudience = (ms: Milestone[]): Milestone[] =>
     ms.map((m) => ({
@@ -153,7 +161,7 @@ export function seedRounds(): Round[] {
             : 'Tất cả',
     }));
 
-  return [
+  const list: Omit<Round, 'maxGroupSize' | 'grading'>[] = [
     {
       id: 'r-vb1-hk1',
       name: 'Văn bằng 1 · HK1 2026–2027',
@@ -320,6 +328,26 @@ export function seedRounds(): Round[] {
       ),
     },
   ];
+
+  const participants = seedParticipants();
+  return list.map((r) => ({
+    ...r,
+    maxGroupSize: 2,
+    grading: DEFAULT_GRADING,
+    lecturerRoles: r.lecturerIds.map((id) => {
+      const p = participants.lecturer.find((l: Participant) => l.id === id);
+      return {
+        userId: id,
+        code: p?.code ?? id,
+        name: p?.name ?? id,
+        email: p?.email ?? '',
+        unit: p?.unit ?? '',
+        isSupervisor: true,
+        isReviewer: true,
+        isCommittee: true,
+      };
+    }),
+  }));
 }
 
 export function seedNotifications(): RoundNotification[] {
