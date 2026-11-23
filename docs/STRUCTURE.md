@@ -75,7 +75,15 @@ docs/
 │   ├── PDR-060-nhan-xet-va-yeu-cau-chinh-sua-giua-ky-cuoi-ky.md
 │   ├── PDR-061-khong-gian-de-tai-khung-va-tab.md
 │   ├── PDR-062-phan-cong-phan-bien-mot-gvpb-moi-de-tai.md
-│   └── PDR-063-hoi-dong-va-lich-bao-ve.md
+│   ├── PDR-063-hoi-dong-va-lich-bao-ve.md
+│   ├── PDR-064-dong-dang-ky-va-luu-trang-thai-het-han.md
+│   ├── PDR-065-cau-hinh-diem-theo-dot.md
+│   ├── PDR-066-lech-diem-so-voi-diem-khoa-luan.md
+│   ├── PDR-067-tu-dien-moc-va-mo-dot-khi-du-ba-moc-dau.md
+│   ├── PDR-068-gv-gui-de-tai-kem-sinh-vien-giu-cho.md
+│   ├── PDR-069-so-sinh-vien-toi-da-moi-nhom.md
+│   ├── PDR-070-vai-tro-giang-vien-trong-dot.md
+│   └── PDR-071-trang-chu-giao-vu-va-giang-vien.md
 ├── product/
 │   ├── GLOSSARY.md
 │   ├── ROLES.md

@@ -12,9 +12,10 @@
 
 Một tài khoản Giảng viên có thể đảm nhiệm nhiều vai trò ở các đề tài khác nhau: **hướng dẫn**, **phản biện**, **chủ tịch hội đồng** hoặc **thư ký hội đồng**. Đây không phải các loại tài khoản độc lập.
 
+- Trong mỗi đợt, Giáo vụ đánh dấu cho từng Giảng viên các vai trò Hướng dẫn, Phản biện, Hội đồng (một người có thể giữ nhiều vai trò, hoặc chỉ ngồi hội đồng không hướng dẫn đề tài nào); chỉ vai trò Hướng dẫn được đếm mức đề tài tối thiểu/tối đa ([PDR-070](../decisions/PDR-070-vai-tro-giang-vien-trong-dot.md)).
 - Giảng viên hướng dẫn không được phản biện hoặc chấm hội đồng cho chính đề tài mình hướng dẫn. Giảng viên phản biện được làm Chủ tịch/Thư ký hội đồng chấm cùng đề tài (OQ-032, [PDR-063](../decisions/PDR-063-hoi-dong-va-lich-bao-ve.md)).
 - Một hội đồng có đúng một chủ tịch và một thư ký; một giảng viên chỉ giữ một vai trò trong cùng hội đồng.
-- Thư ký nhập điểm cho cả chủ tịch và thư ký. Chủ tịch xem điểm hội đồng đã lưu; không có bước xác nhận hay trả lại điểm (xem [PDR-050](../decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md), thay PDR-006).
+- Thư ký nhập điểm cho cả chủ tịch và thư ký. Chủ tịch xem điểm hội đồng đã lưu và sửa được phiếu hội đồng khi điểm lệch ([PDR-066](../decisions/PDR-066-lech-diem-so-voi-diem-khoa-luan.md)); không có bước xác nhận hay trả lại điểm (xem [PDR-050](../decisions/PDR-050-bo-buoc-chu-tich-xac-nhan-diem.md), thay PDR-006).
 
 ## Nguyên tắc truy cập
 

@@ -128,7 +128,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 - [x] Tạo entity/migration/API/UI cho Nháp, Đang diễn ra, Đã kết thúc, sao chép và xóa đúng điều kiện.
 - [x] Lưu chín mốc, validation thứ tự ngày/giờ, hạn nộp trễ riêng PDR-041 và Gantt dữ liệu thật.
-- [x] Mở đợt bắt buộc đủ mốc; thiếu người chỉ cảnh báo; kết thúc bị chặn nếu còn đề tài chưa ở trạng thái cuối hợp lệ.
+- [x] Mở đợt bắt buộc đủ mốc; thiếu người chỉ cảnh báo; kết thúc bị chặn nếu còn đề tài chưa ở trạng thái cuối hợp lệ. *(Làm theo PDR-032; PDR-067 ngày 2026-11-23 đổi còn ba mốc đầu, xem G2.3.)*
 
 *(Đối chiếu code 2026-11-16: `RoundHandlers`, `RoundsController`, `RoundRepository`, `RoundRules`, `CreateRoundDialog`, `RoundLifecycleDialog`, `RoundGantt` và `RoundHomePage`; `RoundWorkflowTests` cùng test UI xác nhận sao chép, chín mốc, cảnh báo thiếu người và các điều kiện chuyển trạng thái. Khi chạy frontend cần bật `NEXT_PUBLIC_ROUNDS_API=true` để lấy dữ liệu thật. Mục G2.2 vẫn chưa hoàn tất vì thao tác đồng thời có thể vượt bước kiểm tra trùng SV, chưa ghi đủ history khi gỡ người và cấu hình mặc định còn dùng demo.)*
 
@@ -141,6 +141,15 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 - [ ] Thay dashboard/round demo bằng query theo role/đợt thật.
 
 **Nghiệm thu:** Quyền xuyên đợt bị từ chối tại backend; thao tác đồng thời không phá PDR-029/030.
+
+#### G2.3 — Cấu hình đợt theo PDR-065/067/069/070 (thay đổi 2026-11-23)
+
+- [ ] Tự điền chín mốc từ ngày bắt đầu theo độ dài mặc định (tạm, OQ-033), cảnh báo và gợi ý ngày khi sửa mốc gây xung đột; mốc sau không bao giờ bắt đầu trước mốc trước; đổi điều kiện mở đợt từ chín mốc xuống ba mốc đầu, mốc 4–9 cấu hình sau (PDR-067, thay PDR-032).
+- [ ] Cấu hình điểm theo đợt: bốn hệ số, ngưỡng lệch, bảng xếp loại; khóa khi mở đợt; hỏi lưu mặc định theo chương trình (PDR-065).
+- [ ] Số Sinh viên tối đa mỗi nhóm theo đợt (mặc định 2, tối thiểu 1), áp cho ghi danh, đề xuất và phiếu chấm (PDR-069).
+- [ ] Ba vai trò Hướng dẫn/Phản biện/Hội đồng cho từng Giảng viên trong đợt, chọn phản biện/hội đồng theo vai trò, nhập vai trò hàng loạt bằng `.xlsx` có bước xem trước, và khóa GVHD khỏi phản biện/hội đồng của đề tài mình (PDR-070).
+
+**Nghiệm thu:** Sửa cấu hình điểm/số Sinh viên tối đa sau khi mở đợt bị từ chối; mở đợt chỉ có ba mốc đầu được; nhập xlsx có dòng lỗi chỉ bỏ dòng lỗi và không tạo tài khoản.
 
 **Checkpoint G2:** Giáo vụ tạo–cấu hình–mở một đợt; SV/GV thấy chính xác phần được giao sau reload.
 
@@ -158,7 +167,7 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 
 #### G3.2 — Nhóm và ghi danh đề tài công bố
 
-- [x] Bảo đảm nhóm 1–2 SV, đúng đợt, đúng đại diện và một SV/một nhóm/đợt. *(backend, PDR-054)*
+- [x] Bảo đảm nhóm 1–2 SV, đúng đợt, đúng đại diện và một SV/một nhóm/đợt. *(backend, PDR-054; PDR-069 đổi giới hạn thành số tối đa cấu hình theo đợt, xem G2.3)*
 - [x] Dùng ràng buộc DB + transaction cho tranh chấp hai nhóm nhận một đề tài và idempotency. *(backend, PDR-054)*
 - [ ] Thực hiện hủy theo PDR-047, giữ nhóm/đại diện/lịch sử để ghi danh lại.
 
@@ -174,6 +183,14 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 *(Đối chiếu 2026-11-15: `TopicProposalRequests`, API đề xuất, màn `/sv/don-dang-ky` và `/gv/de-xuat`; `TopicWorkflowTests`, `RegistrationConcurrencyTests` và test giao diện. PostgreSQL concurrency test cần chạy lại trên DB test khi nghiệm thu E2E.)*
 
 **Checkpoint G3:** Nhóm 1 SV và 2 SV hoàn thành đầy đủ ghi danh hoặc đề xuất trên UI/API thật, gồm ca cạnh tranh.
+
+#### G3.4 — Giữ chỗ Sinh viên khi Giảng viên gửi đề tài (PDR-068)
+
+- [ ] GV nhập mã Sinh viên khi gửi đề tài, hiện họ tên, kiểm tra thuộc đợt/chưa có nhóm/không vượt số tối đa.
+- [ ] Sinh viên xác nhận qua email (liên kết dùng một lần) hoặc trong ứng dụng trong thời gian đăng ký; từ chối hoặc hết hạn thì chỗ mở lại, GV nhận thông báo; người đã xác nhận giữ chỗ.
+- [ ] Đóng đăng ký (PDR-064) chuyển lời mời chưa xác nhận sang hết hạn, có lịch sử và không trùng khi chạy lại.
+
+**Nghiệm thu:** Hai thao tác đồng thời trên cùng chỗ chỉ một bên thành công; chỉ một trong hai Sinh viên xác nhận thì chỗ còn lại mở cho người khác.
 
 ### G4 — Đề cương, phiên bản tài liệu và bản cuối
 
@@ -251,12 +268,12 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 #### G7.1 — Bốn phiếu điểm và luồng Chủ tịch/Thư ký
 
 - [ ] Nhập HD, PB, CTHĐ, TKHĐ theo từng SV và quyền bối cảnh; ghi snapshot mẫu, người nhập/chấm, lịch sử sửa và audit.
-- [ ] Thư ký nhập/sửa điểm CTHĐ và TKHĐ; Chủ tịch chỉ xem, không có bước xác nhận hay trả lại (PDR-050, thay PDR-006).
+- [ ] Thư ký nhập/sửa điểm CTHĐ và TKHĐ; Chủ tịch không có bước xác nhận hay trả lại nhưng được sửa phiếu hội đồng khi điểm lệch (PDR-050, PDR-066).
 
 #### G7.2 — Công thức, cảnh báo và trạng thái đề tài
 
-- [ ] Tính `(CTHĐ + TKHĐ + 2×CBHD + 2×CBPB) / 6`, làm tròn số học hai chữ số.
-- [ ] Cảnh báo bốn cặp chéo chênh từ 2,00 trở lên, vẫn cho lưu điểm nhưng chặn Giáo vụ xác nhận đề tài khi còn lệch; chỉ tính tổng khi đủ bốn điểm (PDR-049).
+- [ ] Tính điểm khóa luận theo hệ số của đợt (mặc định 1 : 1 : 2 : 2), làm tròn số học hai chữ số, xếp loại theo bảng của đợt (PDR-065, PDR-008).
+- [ ] Khi đủ bốn điểm, so từng điểm với điểm khóa luận có hệ số; lệch từ ngưỡng của đợt trở lên thì cảnh báo trước khi lưu, chặn lưu nếu điểm đang nhập bị lệch, lưu-gắn cờ-thông báo nếu điểm của người khác bị lệch; chặn Giáo vụ xác nhận đề tài khi còn lệch (PDR-066, PDR-049).
 
 #### G7.3 — Xác nhận/công bố đơn lẻ và theo lô
 
@@ -287,6 +304,11 @@ Mỗi task dưới đây có kích thước S hoặc M. Khi thực hiện phải
 - [ ] Chạy kịch bản E2E đầy đủ cho nhóm 1/2 SV cùng các ngoại lệ PDR chính.
 - [ ] Chạy test/backend/frontend build tương ứng, review migration SQL và verify cấu hình DB, email, MinIO, secret, CORS/cookie.
 - [ ] Loại kho demo/stub khỏi tất cả màn nghiệp vụ được gắn mốc MVP; giữ Products legacy theo PDR-002.
+
+#### G8.4 — Trang chủ Giáo vụ và Giảng viên (PDR-071)
+
+- [ ] Trang chủ Giáo vụ: khối "Cần xử lý" gom bất thường mọi đợt (danh sách tạm, OQ-033), thẻ đợt có trạng thái và số liệu nhanh, mở đúng chỗ đã lọc đợt.
+- [ ] Trang chủ Giảng viên: đợt đang tham gia, việc cần làm có hạn, thay đổi mới nhất, lịch hội đồng, thông báo từ Giáo vụ; gộp một danh sách có nhãn vai trò.
 
 **Checkpoint G8 / Definition of Done:** Mọi tiêu chí tại mục 2 có bằng chứng test hoặc thao tác thực tế trên môi trường test cô lập; không còn lỗi Critical/High chưa có quyết định chấp nhận rủi ro bằng văn bản.
 

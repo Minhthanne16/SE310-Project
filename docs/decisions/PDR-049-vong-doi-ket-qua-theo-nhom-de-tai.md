@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-11-03 (duyệt canvas `GiaoVu-DotKhoaLuan` và `GiaoVu-KetQua`); đóng OQ-019. Thay thế một phần [PDR-007](PDR-007-canh-bao-lech-diem-bon-cap-cheo.md), thay thế [PDR-009](PDR-009-ket-qua-theo-tung-sinh-vien.md) và [PDR-010](PDR-010-xu-ly-ket-qua-theo-lo.md).
+Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-11-03 (duyệt canvas `GiaoVu-DotKhoaLuan` và `GiaoVu-KetQua`); đóng OQ-019. Thay thế một phần [PDR-007](PDR-007-canh-bao-lech-diem-bon-cap-cheo.md), thay thế [PDR-009](PDR-009-ket-qua-theo-tung-sinh-vien.md) và [PDR-010](PDR-010-xu-ly-ket-qua-theo-lo.md). **Ngày 2026-11-23, [PDR-066](PDR-066-lech-diem-so-voi-diem-khoa-luan.md) đổi cách xác định điểm lệch (so với điểm khóa luận có hệ số thay vì bốn cặp chéo của PDR-007); trạng thái `Có lệch điểm` và việc lệch chặn xác nhận giữ nguyên.**
 
 ## Bối cảnh
 

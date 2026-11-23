@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận ngày 2026-11-07. Hai điểm DESIGN chưa nói đã được người dùng chốt trực tiếp cùng ngày (mục "Quyết định của người dùng"). Quy tắc còn lại lấy từ [BUSINESS_RULES](../requirements/BUSINESS_RULES.md), DESIGN 03 · Chi tiết đề tài và ghi danh, [PDR-030](PDR-030-khoa-go-nguoi-tham-gia-da-co-du-lieu.md), [PDR-047](PDR-047-huy-ghi-danh-de-tai-cong-bo.md), [PDR-048](PDR-048-cong-bo-de-tai-o-chi-tiet-dot.md), [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md).
+Đã chấp nhận ngày 2026-11-07. Hai điểm DESIGN chưa nói đã được người dùng chốt trực tiếp cùng ngày (mục "Quyết định của người dùng"). Quy tắc còn lại lấy từ [BUSINESS_RULES](../requirements/BUSINESS_RULES.md), DESIGN 03 · Chi tiết đề tài và ghi danh, [PDR-030](PDR-030-khoa-go-nguoi-tham-gia-da-co-du-lieu.md), [PDR-047](PDR-047-huy-ghi-danh-de-tai-cong-bo.md), [PDR-048](PDR-048-cong-bo-de-tai-o-chi-tiet-dot.md), [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md). **Ngày 2026-11-23, số Sinh viên tối đa mỗi nhóm cấu hình theo đợt ([PDR-069](PDR-069-so-sinh-vien-toi-da-moi-nhom.md)) thay giới hạn cố định hai, và Giảng viên có thể giữ chỗ trước cho Sinh viên ([PDR-068](PDR-068-gv-gui-de-tai-kem-sinh-vien-giu-cho.md)).**
 
 ## Bối cảnh
 

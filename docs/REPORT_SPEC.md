@@ -216,5 +216,9 @@ Cột "Repo" là quy tắc trước 03/11. Mục 1–4 nay theo cột báo cáo 
 | 16 | Kích hoạt tài khoản | Đổi mật khẩu ở lần đầu | Đổi mật khẩu kèm OTP qua email (PDR-003) |
 | 17 | Nộp trễ | Bật hoặc tắt theo mốc; khóa luận nộp trễ được tới trước buổi bảo vệ | Hạn trễ riêng từng mốc (PDR-041) |
 | 18 | Hệ quản trị CSDL | MySQL 8.0, có stored procedure và trigger | PostgreSQL/Neon và EF Core (PDR-002) |
+| 19 | Công thức điểm, xếp loại | Công thức cố định `(CTHĐ + TKHĐ + 2×CBHD + 2×CBPB) / 6` | Hệ số, ngưỡng lệch và bảng xếp loại cấu hình theo đợt, khóa khi mở đợt (PDR-065, 2026-11-23) |
+| 20 | Cách xét lệch điểm | Bốn cặp chéo; còn lệch thì chặn xác nhận | So từng điểm với điểm khóa luận có hệ số; điểm đang nhập lệch thì chặn lưu (PDR-066, 2026-11-23) |
+| 21 | Mốc và mở đợt | Chín mốc nhập tay, mở đợt đủ chín mốc | Tự điền mốc từ ngày bắt đầu, mở đợt khi đủ ba mốc đầu (PDR-067, 2026-11-23) |
+| 22 | Nhóm, giữ chỗ, vai trò GV | Nhóm tối đa 2 SV; danh sách GV chung | Số SV tối đa theo đợt (PDR-069), GV giữ chỗ cho SV (PDR-068), vai trò Hướng dẫn/Phản biện/Hội đồng theo đợt (PDR-070) |
 
-Mục 1–4 đã chốt ngày 03/11/2026 theo báo cáo, ghi tại [PDR-049](decisions/PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md) (đóng OQ-019); bảng giữ lại để truy vết. Mục 5–18 là chỗ báo cáo chưa cập nhật theo PDR ngày 28/10, theo dõi ở OQ-020.
+Mục 1–4 đã chốt ngày 03/11/2026 theo báo cáo, ghi tại [PDR-049](decisions/PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md) (đóng OQ-019); bảng giữ lại để truy vết. Mục 19–22 là các thay đổi sau báo cáo (2026-11-23), đã chốt theo PDR-065–070; báo cáo cần cập nhật. Mục 5–18 là chỗ báo cáo chưa cập nhật theo PDR ngày 28/10, theo dõi ở OQ-020.

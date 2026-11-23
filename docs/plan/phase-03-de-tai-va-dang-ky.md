@@ -2,7 +2,7 @@
 
 ## Mục tiêu
 
-Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xuất; bảo đảm một đề tài không bị hai nhóm nhận và toàn bộ lịch sử được giữ.
+Tạo được đề tài công bố, nhóm từ 1 đến số SV tối đa của đợt (PDR-069), ghi danh, giữ chỗ (PDR-068) hoặc đề xuất; bảo đảm một đề tài không bị hai nhóm nhận và toàn bộ lịch sử được giữ.
 
 ## Step P03-S01 — Đề tài của giảng viên và công bố danh sách
 
@@ -31,7 +31,7 @@ Tạo được đề tài công bố, nhóm 1–2 SV, ghi danh hoặc đề xu�
 **Tham chiếu:** [BUSINESS_RULES](../requirements/BUSINESS_RULES.md), [WORKFLOWS — Mở đợt và đăng ký](../requirements/WORKFLOWS.md), [DESIGN — Chi tiết đề tài](../DESIGN/03-dac-ta-man-hinh.md), [PDR-047](../decisions/PDR-047-huy-ghi-danh-de-tai-cong-bo.md), R15.
 
 **Công việc:**
-- [x] Xác thực thành viên thuộc đợt, chưa có nhóm, đúng 1–2 người, có một đại diện; chỉ người được phép gửi yêu cầu.
+- [x] Xác thực thành viên thuộc đợt, chưa có nhóm, từ 1 đến số tối đa của đợt (PDR-069), có một đại diện; chỉ người được phép gửi yêu cầu.
 - [x] Thiết kế ràng buộc database/transaction cho cạnh tranh ghi danh và thao tác lặp; lưu lịch sử từng thành viên.
 - [x] Dựng tìm kiếm, chi tiết, xác nhận ghi danh và lỗi đề tài vừa được nhóm khác nhận.
 - [ ] Triển khai hủy ghi danh theo PDR-047: bất kỳ thành viên nào thao tác khi đợt còn mở đăng ký và nhóm chưa nộp đề cương; giữ nguyên nhóm và lịch sử, đề tài quay lại `Chưa đăng ký`.

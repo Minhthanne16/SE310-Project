@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận khi triển khai P03-S01 ngày 2026-11-07. Quy tắc nghiệp vụ lấy từ [BUSINESS_RULES](../requirements/BUSINESS_RULES.md), DESIGN 03 (Đề tài của tôi, Quản lý đề tài, Chi tiết đợt) và [PDR-030](PDR-030-khoa-go-nguoi-tham-gia-da-co-du-lieu.md), [PDR-031](PDR-031-chi-ket-thuc-dot-khi-moi-de-tai-ket-thuc.md), [PDR-048](PDR-048-cong-bo-de-tai-o-chi-tiet-dot.md), [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md). Các mục ghi "lựa chọn triển khai" do người làm task đề xuất; nhóm có thể đổi trong PDR sau.
+Đã chấp nhận khi triển khai P03-S01 ngày 2026-11-07. Quy tắc nghiệp vụ lấy từ [BUSINESS_RULES](../requirements/BUSINESS_RULES.md), DESIGN 03 (Đề tài của tôi, Quản lý đề tài, Chi tiết đợt) và [PDR-030](PDR-030-khoa-go-nguoi-tham-gia-da-co-du-lieu.md), [PDR-031](PDR-031-chi-ket-thuc-dot-khi-moi-de-tai-ket-thuc.md), [PDR-048](PDR-048-cong-bo-de-tai-o-chi-tiet-dot.md), [PDR-049](PDR-049-vong-doi-ket-qua-theo-nhom-de-tai.md). Các mục ghi "lựa chọn triển khai" do người làm task đề xuất; nhóm có thể đổi trong PDR sau. **Bổ sung 2026-11-23: chỉ Giảng viên có vai trò Hướng dẫn trong đợt mới gửi đề tài ([PDR-070](PDR-070-vai-tro-giang-vien-trong-dot.md)); đề tài có thể kèm Sinh viên giữ chỗ ([PDR-068](PDR-068-gv-gui-de-tai-kem-sinh-vien-giu-cho.md)).**
 
 ## Bối cảnh
 

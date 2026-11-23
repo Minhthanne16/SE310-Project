@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận ngày 2026-11-17 khi triển khai Phase 06. Bốn điểm tài liệu và canvas chưa thống nhất đã được người dùng chốt trực tiếp cùng ngày (mục "Quyết định của người dùng"). Quy tắc còn lại thực thi [PDR-014](PDR-014-chan-trung-phong-bao-ve.md)–[PDR-020](PDR-020-khoa-thay-thanh-vien-hoi-dong-sau-diem.md), [BUSINESS_RULES](../requirements/BUSINESS_RULES.md) và DESIGN 03 · Hội đồng bảo vệ, không đổi chúng. Các mục ghi "lựa chọn triển khai" do người làm task đề xuất; nhóm có thể đổi trong PDR sau.
+Đã chấp nhận ngày 2026-11-17 khi triển khai Phase 06. Bốn điểm tài liệu và canvas chưa thống nhất đã được người dùng chốt trực tiếp cùng ngày (mục "Quyết định của người dùng"). Quy tắc còn lại thực thi [PDR-014](PDR-014-chan-trung-phong-bao-ve.md)–[PDR-020](PDR-020-khoa-thay-thanh-vien-hoi-dong-sau-diem.md), [BUSINESS_RULES](../requirements/BUSINESS_RULES.md) và DESIGN 03 · Hội đồng bảo vệ, không đổi chúng. Các mục ghi "lựa chọn triển khai" do người làm task đề xuất; nhóm có thể đổi trong PDR sau. **Bổ sung 2026-11-23 ([PDR-070](PDR-070-vai-tro-giang-vien-trong-dot.md)): thành viên hội đồng chỉ chọn từ Giảng viên có vai trò Hội đồng trong đợt, lập hội đồng làm trong tab Đánh giá của đợt, và đề tài không xếp vào hội đồng có Chủ tịch hoặc Thư ký là GVHD của đề tài đó.**
 
 ## Bối cảnh
 

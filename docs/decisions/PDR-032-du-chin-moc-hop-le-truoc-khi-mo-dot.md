@@ -2,7 +2,7 @@
 
 ## Trạng thái
 
-Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28.
+Đã chấp nhận theo xác nhận trực tiếp của người dùng ngày 2026-10-28. **Thay thế bởi [PDR-067](PDR-067-tu-dien-moc-va-mo-dot-khi-du-ba-moc-dau.md) ngày 2026-11-23: mở đợt khi đủ ba mốc đầu; quy tắc thứ tự và kiểm tra lại khi mở đợt vẫn áp dụng cho các mốc đã cấu hình.**
 
 ## Bối cảnh
 

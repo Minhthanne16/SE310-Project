@@ -28,20 +28,20 @@ Mỗi SV nhận bốn thành phần điểm độc lập; kết quả được t
 
 ## Step P07-S02 — Tính điểm và cảnh báo
 
-**Tham chiếu:** [BUSINESS_RULES — Chấm điểm](../requirements/BUSINESS_RULES.md), [PDR-007](../decisions/PDR-007-canh-bao-lech-diem-bon-cap-cheo.md), [PDR-008](../decisions/PDR-008-lam-tron-diem-tong.md), R04/R09.
+**Tham chiếu:** [BUSINESS_RULES — Chấm điểm](../requirements/BUSINESS_RULES.md), [PDR-066](../decisions/PDR-066-lech-diem-so-voi-diem-khoa-luan.md) (thay PDR-007), [PDR-065](../decisions/PDR-065-cau-hinh-diem-theo-dot.md), [PDR-008](../decisions/PDR-008-lam-tron-diem-tong.md), R04/R09.
 
 **Công việc:**
-- [ ] Hiện thực `(CTHĐ + TKHĐ + 2×CBHD + 2×CBPB) / 6`, làm tròn số học lên hai chữ số theo PDR-008.
-- [ ] Hiện thực bốn cặp chéo theo PDR-007 để cảnh báo lệch ≥ 2; cảnh báo không chặn lưu nhưng hiện khi Giáo vụ xác nhận.
+- [ ] Hiện thực điểm khóa luận theo hệ số cấu hình của đợt (mặc định 1 : 1 : 2 : 2), làm tròn số học lên hai chữ số theo PDR-008 và xếp loại theo PDR-065.
+- [ ] Hiện thực xét lệch theo PDR-066: so từng điểm với điểm khóa luận có hệ số, ngưỡng theo đợt; cảnh báo trước khi lưu, chặn lưu khi điểm đang nhập lệch, lưu-gắn cờ-thông báo khi điểm người khác lệch; Giáo vụ không xác nhận được khi còn lệch.
 - [ ] Tổng hợp trạng thái từng SV và đề tài khi một thành viên thiếu phiếu.
 
 **Acceptance criteria:**
 - [ ] Chỉ tính điểm tổng khi đủ bốn giá trị mỗi SV; cùng đầu vào cho cùng kết quả ở API/UI/xuất dữ liệu.
-- [ ] Mốc lệch 1,99 và 2,00, từng cặp chéo, cùng các giá trị làm tròn giữa được test bằng ví dụ đã chốt.
+- [ ] Mốc lệch ngay dưới và đúng bằng ngưỡng, hệ số khác mặc định, điểm đang nhập lệch so với điểm người khác lệch, cùng các giá trị làm tròn giữa và biên xếp loại được test bằng ví dụ đã chốt.
 
 **Verification:** Unit test công thức và test tích hợp 1/2 SV, thiếu một phiếu, điểm 0/10, cảnh báo biên.
 
-**Dependencies:** `P07-S01`; PDR-007/008/049.
+**Dependencies:** `P07-S01`; PDR-008/049/065/066.
 
 ## Step P07-S03 — Xác nhận, công bố và xem kết quả
 
