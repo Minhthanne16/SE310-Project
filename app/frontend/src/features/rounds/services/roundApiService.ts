@@ -11,6 +11,7 @@ import type {
   LecturerRolesImportResult,
   LecturerRolesPreviewResult,
   Milestone,
+  OverviewStatistics,
   Participant,
   ParticipantCheck,
   ParticipantKind,
@@ -131,18 +132,16 @@ export function createApiRoundService(): RoundService {
         json('POST', { codes }),
       ),
 
-    addParticipants: (id, kind, codes) =>
-      addParticipants: (id, kind, codes, roles) =>
-  call<AddParticipantsResult>(
-    `/rounds/${enc(id)}/${KIND_PATH[kind]}`,
-    json('POST', { codes }),
-    json('POST', {
-      codes,
-      isSupervisor: roles?.isSupervisor,
-      isReviewer: roles?.isReviewer,
-      isCommittee: roles?.isCommittee,
-    }),
-  ),
+    addParticipants: (id, kind, codes, roles) =>
+      call<AddParticipantsResult>(
+        `/rounds/${enc(id)}/${KIND_PATH[kind]}`,
+        json('POST', {
+          codes,
+          isSupervisor: roles?.isSupervisor,
+          isReviewer: roles?.isReviewer,
+          isCommittee: roles?.isCommittee,
+        }),
+      ),
 
     removeParticipant: (id, kind, userId) =>
       call<Round>(
@@ -150,31 +149,32 @@ export function createApiRoundService(): RoundService {
         json('DELETE'),
       ),
 
-      updateLecturerRoles: (id, userId, roles) =>
-        call<Round>(
-          `/rounds/${enc(id)}/lecturers/${enc(userId)}/roles`,
-          json('PUT', roles),
-        ),
+    updateLecturerRoles: (id, userId, roles) =>
+      call<Round>(
+        `/rounds/${enc(id)}/lecturers/${enc(userId)}/roles`,
+        json('PUT', roles),
+      ),
 
-        previewLecturerRoles: (id, rows) =>
-          call<LecturerRolesPreviewResult>(
-            `/rounds/${enc(id)}/lecturers/roles/preview`,
-            json('POST', rows),
-          ),
+    previewLecturerRoles: (id, rows) =>
+      call<LecturerRolesPreviewResult>(
+        `/rounds/${enc(id)}/lecturers/roles/preview`,
+        json('POST', rows),
+      ),
 
-          importLecturerRoles: async (id, rows) => {
-            await call<LecturerRolesImportResult>(
-              `/rounds/${enc(id)}/lecturers/roles/import`,
-              json('POST', rows),
-            );
-            return service.get(id);
-          },
+    importLecturerRoles: async (id, rows) => {
+      await call<LecturerRolesImportResult>(
+        `/rounds/${enc(id)}/lecturers/roles/import`,
+        json('POST', rows),
+      );
+      return service.get(id);
+    },
 
-            // Backend chưa có API thông báo của đợt (Phase 08): Bảng thông báo để trống
-            // thay vì hiện dữ liệu mẫu cho người dùng thật.
-            listNotifications: async () => ({ items: [], total: 0 }),
-              markTopicsPublished: (id) =>
-                call<Round>(`/rounds/${enc(id)}/topics/publish`, json('POST')),
+    // Backend chưa có API thông báo của đợt (Phase 08): Bảng thông báo để trống
+    // thay vì hiện dữ liệu mẫu cho người dùng thật.
+    listNotifications: async () => ({ items: [], total: 0 }),
+    getOverview: () => call<OverviewStatistics>('/statistics/overview'),
+    markTopicsPublished: (id) =>
+      call<Round>(`/rounds/${enc(id)}/topics/publish`, json('POST')),
   };
-return service;
+  return service;
 }
