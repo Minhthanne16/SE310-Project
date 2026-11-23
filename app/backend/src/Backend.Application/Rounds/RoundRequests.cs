@@ -35,8 +35,11 @@ public record DeleteRoundCommand(Guid Id) : IRequest<RoundResult<bool>>;
 public record GetPeopleQuery(string Kind) : IRequest<ApiResponse<IReadOnlyList<ParticipantDto>>>;
 public record GetCandidatesQuery(Guid Id, string Kind) : IRequest<RoundResult<IReadOnlyList<CandidateDto>>>;
 public record CheckParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes) : IRequest<RoundResult<IReadOnlyList<ParticipantCheckDto>>>;
-public record AddParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes, Guid? ActorId = null) : IRequest<RoundResult<AddParticipantsResultDto>>;
+public record AddParticipantsCommand(Guid Id, string Kind, IReadOnlyList<string> Codes, Guid? ActorId = null, bool? IsSupervisor = null, bool? IsReviewer = null, bool? IsCommittee = null) : IRequest<RoundResult<AddParticipantsResultDto>>;
 public record RemoveParticipantCommand(Guid Id, string Kind, Guid UserId, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
+public record UpdateLecturerRolesCommand(Guid Id, Guid UserId, bool IsSupervisor, bool IsReviewer, bool IsCommittee, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
+public record PreviewLecturerRolesCommand(Guid Id, IReadOnlyList<LecturerRoleImportRowDto> Rows) : IRequest<RoundResult<LecturerRolesPreviewResultDto>>;
+public record ImportLecturerRolesCommand(Guid Id, IReadOnlyList<LecturerRoleImportRowDto> Rows, Guid? ActorId = null) : IRequest<RoundResult<LecturerRolesImportResultDto>>;
 
 // Nhãn tiếng Việt, khóa JSON và quy tắc đợt (docs/DESIGN/03, PDR-029…PDR-034).
 public static class RoundRules

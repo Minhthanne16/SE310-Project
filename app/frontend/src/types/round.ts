@@ -139,6 +139,52 @@ export interface RoundGrading {
   deviationThreshold: number;
 }
 
+export interface RoundLecturerRole {
+  userId: string;
+  code: string;
+  name: string;
+  email: string;
+  unit: string;
+  isSupervisor: boolean;
+  isReviewer: boolean;
+  isCommittee: boolean;
+}
+
+export interface LecturerRoleImportRow {
+  code: string;
+  isSupervisor: boolean;
+  isReviewer: boolean;
+  isCommittee: boolean;
+}
+
+export interface LecturerRolePreviewItem {
+  userId: string;
+  code: string;
+  name: string;
+  email: string;
+  unit: string;
+  isSupervisor: boolean;
+  isReviewer: boolean;
+  isCommittee: boolean;
+  isNew: boolean;
+}
+
+export interface LecturerRolePreviewError {
+  code: string;
+  reason: string;
+}
+
+export interface LecturerRolesPreviewResult {
+  valid: LecturerRolePreviewItem[];
+  errors: LecturerRolePreviewError[];
+}
+
+export interface LecturerRolesImportResult {
+  updatedCount: number;
+  addedCount: number;
+  roles: RoundLecturerRole[];
+}
+
 export interface Round {
   id: string;
   name: string;
@@ -165,6 +211,8 @@ export interface Round {
   lockedLecturerIds?: string[];
   // Lý do cụ thể từ backend cho người đã có tham chiếu nghiệp vụ trong đợt.
   removalBlockers?: Record<string, string>;
+  // PDR-070: Vai trò cụ thể của giảng viên trong đợt (HD, PB, HĐ).
+  lecturerRoles?: RoundLecturerRole[];
   topicSummary: TopicSummary;
 }
 

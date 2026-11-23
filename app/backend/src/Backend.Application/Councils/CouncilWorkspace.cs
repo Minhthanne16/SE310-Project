@@ -191,7 +191,7 @@ internal sealed class CouncilWorkspace
             Round = RoundInfo(Round),
             Councils = councils,
             Pool = pool,
-            Lecturers = RoundMapping.IdsOf(Round, ParticipantKind.Lecturer)
+            Lecturers = RoundMapping.LecturerIdsForCommittee(Round)
                 .Where(id => Users.TryGetValue(id, out var u) && u.IsActive)
                 .Select(id => Users[id]).OrderBy(u => u.UserCode, StringComparer.Ordinal)
                 .Select(u => new CouncilLecturerDto { Id = u.Id, Code = u.UserCode, Name = u.FullName }).ToList(),

@@ -102,12 +102,33 @@ public sealed class RoundsController(ISender sender) : ControllerBase
     [HttpPost("{id:guid}/{kind}")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<AddParticipantsResultDto>>> AddParticipants(Guid id, string kind, ParticipantCodesDto dto, CancellationToken cancellationToken) =>
-        ToAction(await sender.Send(new AddParticipantsCommand(id, kind, dto.Codes, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
+        ToAction(await sender.Send(new AddParticipantsCommand(id, kind, dto.Codes, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value), dto.IsSupervisor, dto.IsReviewer, dto.IsCommittee), cancellationToken));
 
     [HttpDelete("{id:guid}/{kind}/{userId:guid}")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<RoundDto>>> RemoveParticipant(Guid id, string kind, Guid userId, CancellationToken cancellationToken) =>
         ToAction(await sender.Send(new RemoveParticipantCommand(id, kind, userId, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
+
+    [HttpPut("{id:guid}/lecturers/{userId:guid}/roles")]
+    [Authorize(Roles = AppRoles.AcademicAffairs)]
+    public async Task<ActionResult<ApiResponse<RoundDto>>> UpdateLecturerRoles(
+        Guid id, Guid userId, UpdateLecturerRolesDto dto, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new UpdateLecturerRolesCommand(
+            id, userId, dto.IsSupervisor, dto.IsReviewer, dto.IsCommittee,
+            Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
+
+    [HttpPost("{id:guid}/lecturers/roles/preview")]
+    [Authorize(Roles = AppRoles.AcademicAffairs)]
+    public async Task<ActionResult<ApiResponse<LecturerRolesPreviewResultDto>>> PreviewLecturerRoles(
+        Guid id, List<LecturerRoleImportRowDto> rows, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new PreviewLecturerRolesCommand(id, rows), cancellationToken));
+
+    [HttpPost("{id:guid}/lecturers/roles/import")]
+    [Authorize(Roles = AppRoles.AcademicAffairs)]
+    public async Task<ActionResult<ApiResponse<LecturerRolesImportResultDto>>> ImportLecturerRoles(
+        Guid id, List<LecturerRoleImportRowDto> rows, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new ImportLecturerRolesCommand(
+            id, rows, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
 
     private ActionResult<ApiResponse<T>> ToAction<T>(RoundResult<T> result) => result.Status switch
     {

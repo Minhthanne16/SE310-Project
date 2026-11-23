@@ -24,7 +24,14 @@ import {
   RoundValidationError,
   type RoundService,
 } from '@/features/rounds/services/roundService';
-import type { ParticipantCheck, ParticipantKind, Round } from '@/types/round';
+import type {
+  LecturerRolePreviewError,
+  LecturerRolePreviewItem,
+  ParticipantCheck,
+  ParticipantKind,
+  Round,
+  RoundLecturerRole,
+} from '@/types/round';
 import { TOPIC_STATUSES } from '@/types/round';
 
 const cloneRound = (round: Round): Round => ({
@@ -384,7 +391,7 @@ export function createRoundService(
 
     // Đề xuất: POST /api/rounds/{id}/lecturers|students { codes }
     // → { results, added }. Chỉ thêm mã hợp lệ; mã còn lại trả lý do.
-    async addParticipants(id, kind, codes) {
+    async addParticipants(id, kind, codes, roles) {
       const round = find(id);
       assertEditable(round);
       const results = check(round, kind, codes);
@@ -392,7 +399,22 @@ export function createRoundService(
         (r) => r.status === 'valid' && r.participant,
       );
       const next = cloneRound(round);
-      for (const r of valid) idsOf(next, kind).push(r.participant!.id);
+      for (const r of valid) {
+        idsOf(next, kind).push(r.participant!.id);
+        if (kind === 'lecturer') {
+          if (!next.lecturerRoles) next.lecturerRoles = [];
+          next.lecturerRoles.push({
+            userId: r.participant!.id,
+            code: r.participant!.code,
+            name: r.participant!.name,
+            email: r.participant!.email,
+            unit: r.participant!.unit,
+            isSupervisor: roles?.isSupervisor ?? true,
+            isReviewer: roles?.isReviewer ?? false,
+            isCommittee: roles?.isCommittee ?? false,
+          });
+        }
+      }
       return { round: save(next), results, added: valid.length };
     },
 
@@ -417,7 +439,110 @@ export function createRoundService(
       const next = cloneRound(round);
       if (kind === 'student')
         next.studentIds = next.studentIds.filter((x) => x !== userId);
-      else next.lecturerIds = next.lecturerIds.filter((x) => x !== userId);
+      else {
+        next.lecturerIds = next.lecturerIds.filter((x) => x !== userId);
+        if (next.lecturerRoles) {
+          next.lecturerRoles = next.lecturerRoles.filter((r) => r.userId !== userId);
+        }
+      }
+      return save(next);
+    },
+
+    async updateLecturerRoles(id, userId, roles) {
+      const round = find(id);
+      assertEditable(round);
+      if (!roles.isSupervisor && !roles.isReviewer && !roles.isCommittee) {
+        throw new RoundRuleError('Phải chọn ít nhất một vai trò cho giảng viên.');
+      }
+      const next = cloneRound(round);
+      if (!next.lecturerRoles) next.lecturerRoles = [];
+      const existing = next.lecturerRoles.find((r) => r.userId === userId);
+      if (existing) {
+        existing.isSupervisor = roles.isSupervisor;
+        existing.isReviewer = roles.isReviewer;
+        existing.isCommittee = roles.isCommittee;
+      } else {
+        const u = users.lecturer.find((x) => x.id === userId);
+        if (u) {
+          next.lecturerRoles.push({
+            userId: u.id,
+            code: u.code,
+            name: u.name,
+            email: u.email,
+            unit: u.unit,
+            isSupervisor: roles.isSupervisor,
+            isReviewer: roles.isReviewer,
+            isCommittee: roles.isCommittee,
+          });
+        }
+      }
+      return save(next);
+    },
+
+    async previewLecturerRoles(id, rows) {
+      const round = find(id);
+      assertEditable(round);
+      const valid: LecturerRolePreviewItem[] = [];
+      const errors: LecturerRolePreviewError[] = [];
+      for (const r of rows) {
+        const code = r.code.trim();
+        if (!code) continue;
+        const u = users.lecturer.find(
+          (x) =>
+            x.code.toLowerCase() === code.toLowerCase() ||
+            x.email.toLowerCase() === code.toLowerCase(),
+        );
+        if (!u) {
+          errors.push({
+            code,
+            reason: 'Không tìm thấy giảng viên trong hệ thống.',
+          });
+          continue;
+        }
+        if (!r.isSupervisor && !r.isReviewer && !r.isCommittee) {
+          errors.push({ code, reason: 'Không có vai trò nào được chọn.' });
+          continue;
+        }
+        const isNew = !round.lecturerIds.includes(u.id);
+        valid.push({
+          userId: u.id,
+          code: u.code,
+          name: u.name,
+          email: u.email,
+          unit: u.unit,
+          isSupervisor: r.isSupervisor,
+          isReviewer: r.isReviewer,
+          isCommittee: r.isCommittee,
+          isNew,
+        });
+      }
+      return { valid, errors };
+    },
+
+    async importLecturerRoles(id, rows) {
+      const preview = await this.previewLecturerRoles(id, rows);
+      const round = find(id);
+      assertEditable(round);
+      const next = cloneRound(round);
+      if (!next.lecturerRoles) next.lecturerRoles = [];
+      for (const v of preview.valid) {
+        if (v.isNew) {
+          next.lecturerIds.push(v.userId);
+        }
+        const idx = next.lecturerRoles.findIndex((r) => r.userId === v.userId);
+        const roleObj: RoundLecturerRole = {
+          userId: v.userId,
+          code: v.code,
+          name: v.name,
+          email: v.email,
+          unit: v.unit,
+          isSupervisor: v.isSupervisor,
+          isReviewer: v.isReviewer,
+          isCommittee: v.isCommittee,
+        };
+        if (idx >= 0) next.lecturerRoles[idx] = roleObj;
+        else next.lecturerRoles.push(roleObj);
+      }
       return save(next);
     },
 

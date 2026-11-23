@@ -140,8 +140,8 @@ public sealed class RoundApiTests : IClassFixture<RoundApiTests.Factory>
         var open = await Send(HttpMethod.Post, $"/api/rounds/{id}/open", cookie);
         Assert.Equal(HttpStatusCode.Conflict, open.StatusCode);
         var openJson = await ReadJson(open);
-        Assert.Equal("Chưa mở được đợt: các mốc thời gian chưa đầy đủ hoặc chưa hợp lệ.", openJson.GetProperty("message").GetString());
-        Assert.Equal(9, openJson.GetProperty("errors").GetArrayLength());
+        Assert.Equal("Cần nhập đủ 3 mốc đầu (Gửi đề tài, Đăng ký, Đề cương) trước khi mở đợt.", openJson.GetProperty("message").GetString());
+        Assert.Equal(3, openJson.GetProperty("errors").GetArrayLength());
 
         var badMilestones = await Send(HttpMethod.Put, $"/api/rounds/{id}/milestones", cookie, new { milestones = Milestones(m => m[1].endDate = "2000-01-01") });
         Assert.Equal(HttpStatusCode.BadRequest, badMilestones.StatusCode);

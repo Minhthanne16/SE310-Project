@@ -96,4 +96,9 @@ public class RoundParticipant : BaseEntity
     public Guid UserId { get; set; }
     public User? User { get; set; }
     public ParticipantKind Kind { get; set; }
+    // PDR-070: Vai trò của Giảng viên trong đợt (chỉ áp dụng khi Kind = Lecturer).
+    // Mặc định entity là true để tương thích với dữ liệu và test cũ; khi tạo qua API sẽ gán theo nghiệp vụ.
+    public bool IsSupervisor { get; set; } = true;
+    public bool IsReviewer { get; set; } = true;
+    public bool IsCommittee { get; set; } = true;
 }

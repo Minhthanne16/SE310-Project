@@ -2,6 +2,8 @@ import type { RoundFieldErrors } from '@/features/rounds/roundValidation';
 import { createApiRoundService } from '@/features/rounds/services/roundApiService';
 import type {
   Candidate,
+  LecturerRoleImportRow,
+  LecturerRolesPreviewResult,
   Milestone,
   MilestoneErrors,
   NotificationPage,
@@ -90,11 +92,29 @@ export interface RoundService {
     id: string,
     kind: ParticipantKind,
     codes: string[],
+    roles?: {
+      isSupervisor?: boolean;
+      isReviewer?: boolean;
+      isCommittee?: boolean;
+    },
   ): Promise<AddParticipantsResult>;
   removeParticipant(
     id: string,
     kind: ParticipantKind,
     userId: string,
+  ): Promise<Round>;
+  updateLecturerRoles(
+    id: string,
+    userId: string,
+    roles: { isSupervisor: boolean; isReviewer: boolean; isCommittee: boolean },
+  ): Promise<Round>;
+  previewLecturerRoles(
+    id: string,
+    rows: LecturerRoleImportRow[],
+  ): Promise<LecturerRolesPreviewResult>;
+  importLecturerRoles(
+    id: string,
+    rows: LecturerRoleImportRow[],
   ): Promise<Round>;
   listNotifications(query: NotificationQuery): Promise<NotificationPage>;
   // Công bố danh sách đề tài của đợt cho sinh viên (tab Đề tài của chi tiết

@@ -104,6 +104,20 @@ internal static class RoundMapping
         StudentIds = IdsOf(round, ParticipantKind.Student),
         LockedStudentIds = round.GroupMembers.Select(m => m.StudentId).Distinct().ToList(),
         LockedLecturerIds = round.Topics.Select(t => t.SupervisorId).Distinct().ToList(),
+        LecturerRoles = round.Participants
+            .Where(p => p.Kind == ParticipantKind.Lecturer)
+            .OrderBy(p => p.CreatedAt)
+            .Select(p => new RoundLecturerRoleDto
+            {
+                UserId = p.UserId,
+                Code = p.User?.UserCode ?? string.Empty,
+                Name = p.User?.FullName ?? string.Empty,
+                Email = p.User?.Email ?? string.Empty,
+                Unit = p.User?.Department ?? string.Empty,
+                IsSupervisor = p.IsSupervisor,
+                IsReviewer = p.IsReviewer,
+                IsCommittee = p.IsCommittee,
+            }).ToList(),
         TopicSummary = TopicSummary(round, today)
     };
 
@@ -139,6 +153,15 @@ internal static class RoundMapping
 
     public static List<Guid> IdsOf(ThesisRound round, ParticipantKind kind) =>
         round.Participants.Where(p => p.Kind == kind).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
+
+    public static List<Guid> LecturerIdsForSupervisor(ThesisRound round) =>
+        round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && p.IsSupervisor).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
+
+    public static List<Guid> LecturerIdsForReviewer(ThesisRound round) =>
+        round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && p.IsReviewer).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
+
+    public static List<Guid> LecturerIdsForCommittee(ThesisRound round) =>
+        round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && p.IsCommittee).OrderBy(p => p.CreatedAt).Select(p => p.UserId).ToList();
 
     public static ParticipantDto ToParticipant(User user) => new()
     {
@@ -362,11 +385,14 @@ public sealed class OpenRoundHandler(IRoundRepository repository, TimeProvider c
 
         // PDR-067: đợt Nháp được mở khi ba mốc đầu có đủ ngày hợp lệ; mốc 4-9 có thể để trống.
         var firstThreeKeys = new[] { MilestoneKey.TopicSubmission, MilestoneKey.TopicRegistration, MilestoneKey.Outline };
-        var hasFirstThree = firstThreeKeys.All(k => round.Milestones.Any(m => m.Key == k && m.StartDate.HasValue && m.EndDate.HasValue));
-        if (!hasFirstThree)
+        var missingFirstThree = firstThreeKeys
+            .Where(k => !round.Milestones.Any(m => m.Key == k && m.StartDate.HasValue && m.EndDate.HasValue))
+            .Select(k => $"{RoundRules.Name(k)}: chưa đặt ngày.")
+            .ToList();
+        if (missingFirstThree.Count > 0)
         {
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
-                "Cần nhập đủ 3 mốc đầu (Gửi đề tài, Đăng ký, Đề cương) trước khi mở đợt.");
+                "Cần nhập đủ 3 mốc đầu (Gửi đề tài, Đăng ký, Đề cương) trước khi mở đợt.", missingFirstThree);
         }
 
         var errors = RoundRules.ValidateMilestones(
@@ -610,9 +636,21 @@ public sealed class AddParticipantsHandler(IRoundRepository repository, TimeProv
 
         RoundRules.TryParseKind(request.Kind, out var kind);
         var entries = await RoundParticipantRules.CheckAsync(repository, round, kind, request.Codes, cancellationToken);
+        var isSupervisor = kind == ParticipantKind.Lecturer ? (request.IsSupervisor ?? true) : true;
+        var isReviewer = kind == ParticipantKind.Lecturer ? (request.IsReviewer ?? true) : false;
+        var isCommittee = kind == ParticipantKind.Lecturer ? (request.IsCommittee ?? true) : false;
+
         // Chỉ thêm mã hợp lệ; mã còn lại trả lý do trong results.
         var candidates = entries.Where(e => e.Check.Status == "valid")
-            .Select(e => new RoundParticipant { RoundId = round.Id, UserId = e.User!.Id, Kind = kind }).ToList();
+            .Select(e => new RoundParticipant
+            {
+                RoundId = round.Id,
+                UserId = e.User!.Id,
+                Kind = kind,
+                IsSupervisor = isSupervisor,
+                IsReviewer = isReviewer,
+                IsCommittee = isCommittee,
+            }).ToList();
         var outcome = candidates.Count > 0 ? await repository.AddParticipantsAsync(candidates, request.ActorId, clock.GetUtcNow().UtcDateTime, cancellationToken)
             : new AddParticipantsOutcome([], [], new HashSet<Guid>(), false);
         if (outcome.Finished)
@@ -723,5 +761,157 @@ public sealed class GetProgramDefaultsHandler(IRoundRepository repository)
             DeviationThreshold = d?.DeviationThreshold ?? 2
         };
         return ApiResponse<ProgramRoundDefaultsDto>.Ok(dto);
+    }
+}
+
+public sealed class UpdateLecturerRolesHandler(IRoundRepository repository, TimeProvider clock)
+    : IRequestHandler<UpdateLecturerRolesCommand, RoundResult<RoundDto>>
+{
+    public async Task<RoundResult<RoundDto>> Handle(UpdateLecturerRolesCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status == RoundStatus.Finished)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.FinishedMessage);
+
+        if (!request.IsSupervisor && !request.IsReviewer && !request.IsCommittee)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, "Phải chọn ít nhất một vai trò cho giảng viên.");
+
+        var err = await repository.UpdateLecturerRolesAsync(
+            round.Id, request.UserId, request.IsSupervisor, request.IsReviewer, request.IsCommittee,
+            clock.GetUtcNow().UtcDateTime, request.ActorId, cancellationToken);
+
+        if (err is not null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, err);
+
+        var updated = await repository.GetByIdAsync(round.Id, cancellationToken);
+        var dto = await RoundMapping.ToDtoWithRemovalBlockersAsync(updated ?? round, RoundRules.TodayVietnam(clock), repository, cancellationToken);
+        return RoundResult<RoundDto>.Ok(dto, "Đã cập nhật vai trò giảng viên.");
+    }
+}
+
+public sealed class PreviewLecturerRolesHandler(IRoundRepository repository)
+    : IRequestHandler<PreviewLecturerRolesCommand, RoundResult<LecturerRolesPreviewResultDto>>
+{
+    public async Task<RoundResult<LecturerRolesPreviewResultDto>> Handle(PreviewLecturerRolesCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<LecturerRolesPreviewResultDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status == RoundStatus.Finished)
+            return RoundResult<LecturerRolesPreviewResultDto>.Fail(RoundResultStatus.Conflict, RoundRules.FinishedMessage);
+
+        var codes = request.Rows.Select(r => r.Code.Trim()).Where(c => !string.IsNullOrEmpty(c)).Distinct().ToList();
+        var users = await repository.GetActiveUsersByCodesOrEmailsAsync(UserRole.Lecturer, codes, cancellationToken);
+
+        var userMap = new Dictionary<string, User>(StringComparer.OrdinalIgnoreCase);
+        foreach (var u in users)
+        {
+            userMap[u.UserCode] = u;
+            userMap[u.Email] = u;
+        }
+
+        var blockers = await repository.GetLecturerRoleBlockersAsync(round.Id, cancellationToken);
+        var existingParticipants = round.Participants
+            .Where(p => p.Kind == ParticipantKind.Lecturer)
+            .ToDictionary(p => p.UserId);
+
+        var valid = new List<LecturerRolePreviewItemDto>();
+        var errors = new List<LecturerRolePreviewErrorDto>();
+
+        foreach (var row in request.Rows)
+        {
+            var cleanCode = row.Code.Trim();
+            if (string.IsNullOrEmpty(cleanCode)) continue;
+
+            if (!userMap.TryGetValue(cleanCode, out var user))
+            {
+                errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Không tìm thấy giảng viên trong hệ thống." });
+                continue;
+            }
+
+            if (!row.IsSupervisor && !row.IsReviewer && !row.IsCommittee)
+            {
+                errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Không có vai trò nào được chọn." });
+                continue;
+            }
+
+            var isExisting = existingParticipants.ContainsKey(user.Id);
+
+            if (isExisting)
+            {
+                if (!row.IsSupervisor && blockers.SupervisorIds.Contains(user.Id))
+                {
+                    errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Đang hướng dẫn đề tài, không thể bỏ vai trò Hướng dẫn." });
+                    continue;
+                }
+                if (!row.IsReviewer && blockers.ReviewerIds.Contains(user.Id))
+                {
+                    errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Đang phản biện đề tài, không thể bỏ vai trò Phản biện." });
+                    continue;
+                }
+                if (!row.IsCommittee && blockers.CommitteeIds.Contains(user.Id))
+                {
+                    errors.Add(new LecturerRolePreviewErrorDto { Code = cleanCode, Reason = "Đang trong hội đồng, không thể bỏ vai trò Hội đồng." });
+                    continue;
+                }
+            }
+
+            valid.Add(new LecturerRolePreviewItemDto
+            {
+                UserId = user.Id,
+                Code = user.UserCode,
+                Name = user.FullName,
+                Email = user.Email,
+                Unit = user.Department ?? string.Empty,
+                IsSupervisor = row.IsSupervisor,
+                IsReviewer = row.IsReviewer,
+                IsCommittee = row.IsCommittee,
+                IsNew = !isExisting
+            });
+        }
+
+        return RoundResult<LecturerRolesPreviewResultDto>.Ok(new LecturerRolesPreviewResultDto
+        {
+            Valid = valid,
+            Errors = errors
+        });
+    }
+}
+
+public sealed class ImportLecturerRolesHandler(IRoundRepository repository, TimeProvider clock)
+    : IRequestHandler<ImportLecturerRolesCommand, RoundResult<LecturerRolesImportResultDto>>
+{
+    public async Task<RoundResult<LecturerRolesImportResultDto>> Handle(ImportLecturerRolesCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<LecturerRolesImportResultDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status == RoundStatus.Finished)
+            return RoundResult<LecturerRolesImportResultDto>.Fail(RoundResultStatus.Conflict, RoundRules.FinishedMessage);
+
+        var previewHandler = new PreviewLecturerRolesHandler(repository);
+        var preview = await previewHandler.Handle(new PreviewLecturerRolesCommand(request.Id, request.Rows), cancellationToken);
+        if (!preview.Response.Success || preview.Response.Data is null)
+            return RoundResult<LecturerRolesImportResultDto>.Fail(preview.Status, preview.Response.Message);
+
+        var now = clock.GetUtcNow().UtcDateTime;
+        var updates = preview.Response.Data.Valid.Where(v => !v.IsNew)
+            .Select(v => (v.UserId, v.IsSupervisor, v.IsReviewer, v.IsCommittee)).ToList();
+        var adds = preview.Response.Data.Valid.Where(v => v.IsNew)
+            .Select(v => (v.UserId, v.IsSupervisor, v.IsReviewer, v.IsCommittee)).ToList();
+
+        await repository.SaveLecturerRolesBatchAsync(round.Id, updates, adds, now, request.ActorId, cancellationToken);
+
+        var updated = await repository.GetByIdAsync(round.Id, cancellationToken);
+        var roles = RoundMapping.ToDto(updated ?? round, RoundRules.TodayVietnam(clock)).LecturerRoles;
+
+        return RoundResult<LecturerRolesImportResultDto>.Ok(new LecturerRolesImportResultDto
+        {
+            UpdatedCount = updates.Count,
+            AddedCount = adds.Count,
+            Roles = roles
+        }, $"Đã cập nhật {updates.Count} và thêm mới {adds.Count} giảng viên.");
     }
 }

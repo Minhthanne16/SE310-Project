@@ -145,6 +145,9 @@ public class ApplicationDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(16);
+            entity.Property(e => e.IsSupervisor).HasDefaultValue(true);
+            entity.Property(e => e.IsReviewer).HasDefaultValue(false);
+            entity.Property(e => e.IsCommittee).HasDefaultValue(false);
             entity.HasIndex(e => new { e.RoundId, e.UserId }).IsUnique();
             entity.HasIndex(e => e.UserId);
             // Không xóa được người dùng đang thuộc đợt.

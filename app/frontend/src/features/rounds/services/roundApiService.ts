@@ -8,6 +8,8 @@ import {
 } from '@/features/rounds/services/roundService';
 import type {
   Candidate,
+  LecturerRolesImportResult,
+  LecturerRolesPreviewResult,
   Milestone,
   Participant,
   ParticipantCheck,
@@ -126,10 +128,15 @@ export function createApiRoundService(): RoundService {
         json('POST', { codes }),
       ),
 
-    addParticipants: (id, kind, codes) =>
+    addParticipants: (id, kind, codes, roles) =>
       call<AddParticipantsResult>(
         `/rounds/${enc(id)}/${KIND_PATH[kind]}`,
-        json('POST', { codes }),
+        json('POST', {
+          codes,
+          isSupervisor: roles?.isSupervisor,
+          isReviewer: roles?.isReviewer,
+          isCommittee: roles?.isCommittee,
+        }),
       ),
 
     removeParticipant: (id, kind, userId) =>
@@ -137,6 +144,26 @@ export function createApiRoundService(): RoundService {
         `/rounds/${enc(id)}/${KIND_PATH[kind]}/${enc(userId)}`,
         json('DELETE'),
       ),
+
+    updateLecturerRoles: (id, userId, roles) =>
+      call<Round>(
+        `/rounds/${enc(id)}/lecturers/${enc(userId)}/roles`,
+        json('PUT', roles),
+      ),
+
+    previewLecturerRoles: (id, rows) =>
+      call<LecturerRolesPreviewResult>(
+        `/rounds/${enc(id)}/lecturers/roles/preview`,
+        json('POST', rows),
+      ),
+
+    importLecturerRoles: async (id, rows) => {
+      await call<LecturerRolesImportResult>(
+        `/rounds/${enc(id)}/lecturers/roles/import`,
+        json('POST', rows),
+      );
+      return service.get(id);
+    },
 
     // Backend chưa có API thông báo của đợt (Phase 08): Bảng thông báo để trống
     // thay vì hiện dữ liệu mẫu cho người dùng thật.

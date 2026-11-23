@@ -351,7 +351,7 @@ public sealed class ListProposalSupervisorsHandler(IRoundRepository rounds)
         if (!TopicMapping.IsStudentOf(round, request.StudentId))
             return TopicResult<IReadOnlyList<TopicPersonDto>>.Fail(TopicResultStatus.Forbidden, TopicRules.NotRoundStudentMessage);
 
-        var ids = round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer).Select(p => p.UserId).ToHashSet();
+        var ids = round.Participants.Where(p => p.Kind == ParticipantKind.Lecturer && p.IsSupervisor).Select(p => p.UserId).ToHashSet();
         var people = await rounds.GetActiveUsersAsync(UserRole.Lecturer, cancellationToken);
         var result = people.Where(person => ids.Contains(person.Id)).Select(person => new TopicPersonDto
         {

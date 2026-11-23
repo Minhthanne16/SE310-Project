@@ -329,10 +329,24 @@ export function seedRounds(): Round[] {
     },
   ];
 
+  const participants = seedParticipants();
   return list.map((r) => ({
     ...r,
     maxGroupSize: 2,
     grading: DEFAULT_GRADING,
+    lecturerRoles: r.lecturerIds.map((id) => {
+      const p = participants.lecturer.find((l: Participant) => l.id === id);
+      return {
+        userId: id,
+        code: p?.code ?? id,
+        name: p?.name ?? id,
+        email: p?.email ?? '',
+        unit: p?.unit ?? '',
+        isSupervisor: true,
+        isReviewer: true,
+        isCommittee: true,
+      };
+    }),
   }));
 }
 
