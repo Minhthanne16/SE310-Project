@@ -33,3 +33,7 @@ Giáo vụ đang phải nhập ngày đầu/cuối cho cả chín mốc. Các m�
 
 - Kiểm thử: tự điền từ một ngày bắt đầu, sửa mốc giữa gây xung đột và nhận gợi ý, hai mốc trùng ngày bắt đầu, mốc sau bắt đầu trước mốc trước (chặn), mở đợt khi thiếu mốc 1–3 (chặn) và khi chỉ có mốc 1–3 (được), thêm mốc 4–9 sau khi mở.
 - Các màn và tác vụ đọc mốc (Gantt, nộp bài, nhắc hạn, đóng đăng ký PDR-064) phải chịu được mốc trống.
+
+## Trạng thái triển khai
+
+- **2026-11-23:** Đã triển khai backend trên nhánh `feat/giao-vu-23-11` (bước A2): `RoundRules.ValidateMilestones` cho phép trùng ngày bắt đầu, ngoại lệ mốc 8 và mốc 9, `OpenRoundHandler` cho phép mở đợt khi đủ 3 mốc đầu, 5 test `RoundMilestoneRuleTests` đạt.

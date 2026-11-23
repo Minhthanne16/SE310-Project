@@ -360,11 +360,19 @@ public sealed class OpenRoundHandler(IRoundRepository repository, TimeProvider c
         if (round.Status != RoundStatus.Draft)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.OnlyDraftOpenMessage);
 
-        // PDR-032: đủ 9 mốc, có đủ ngày và đúng thứ tự thời gian mới được mở.
+        // PDR-067: đợt Nháp được mở khi ba mốc đầu có đủ ngày hợp lệ; mốc 4-9 có thể để trống.
+        var firstThreeKeys = new[] { MilestoneKey.TopicSubmission, MilestoneKey.TopicRegistration, MilestoneKey.Outline };
+        var hasFirstThree = firstThreeKeys.All(k => round.Milestones.Any(m => m.Key == k && m.StartDate.HasValue && m.EndDate.HasValue));
+        if (!hasFirstThree)
+        {
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict,
+                "Cần nhập đủ 3 mốc đầu (Gửi đề tài, Đăng ký, Đề cương) trước khi mở đợt.");
+        }
+
         var errors = RoundRules.ValidateMilestones(
             round.Milestones.OrderBy(m => (int)m.Key)
                 .Select(m => (m.Key, (string?)RoundRules.FormatDate(m.StartDate), (string?)RoundRules.FormatDate(m.EndDate))),
-            requireAll: true);
+            requireAll: false);
         // PDR-041: mốc bật "Cho nộp trễ" phải có hạn trễ hợp lệ trước khi mở đợt.
         errors.AddRange(RoundRules.ValidateLateDeadlines(
             round.Milestones.OrderBy(m => (int)m.Key).Select(m =>

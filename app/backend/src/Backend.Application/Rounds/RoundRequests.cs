@@ -157,12 +157,13 @@ public static class RoundRules
     public static string FormatDate(DateOnly? date) => date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture) ?? string.Empty;
 
     // Kiểm tra từng mốc theo thứ tự (cổng của validateMilestones phía frontend): bắt đầu <= kết thúc và
-    // mốc sau không bắt đầu sớm hơn mốc có ngày liền trước. requireAll=true (mở đợt, PDR-032): mốc nào
-    // cũng phải có đủ ngày; false (lưu cấu hình): mốc để trống cả hai ngày được bỏ qua.
+    // mốc sau không bắt đầu sớm hơn mốc trước (PDR-067). requireAll=true (cũ): mọi mốc phải đủ ngày;
+    // false: mốc để trống cả hai ngày được bỏ qua.
     public static List<string> ValidateMilestones(IEnumerable<(MilestoneKey Key, string? Start, string? End)> milestones, bool requireAll)
     {
         var errors = new List<string>();
-        (string Name, DateOnly Start)? previous = null;
+        var parsed = new Dictionary<MilestoneKey, (string Name, DateOnly Start, DateOnly End)>();
+
         foreach (var (key, rawStart, rawEnd) in milestones)
         {
             var name = Name(key);
@@ -183,12 +184,51 @@ public static class RoundRules
                 errors.Add($"{name}: Ngày kết thúc phải sau hoặc cùng ngày bắt đầu.");
                 continue;
             }
-            if (previous is { } p && s < p.Start)
+
+            // PDR-067: Ngoại lệ mốc 8 so với mốc 6 (hoặc mốc gần nhất trước 6), không so với mốc 7.
+            // Mốc 9 so với mốc 7 (hoặc mốc gần nhất trước 7), không so với mốc 8.
+            (string Name, DateOnly Start)? reference = null;
+            if (key == MilestoneKey.Grading)
             {
-                errors.Add($"{name}: Mốc này bắt đầu trước mốc “{p.Name}”. Các mốc phải theo thứ tự thời gian.");
+                for (var k = MilestoneKey.ReviewSchedule; k >= MilestoneKey.TopicSubmission; k--)
+                {
+                    if (parsed.TryGetValue(k, out var p))
+                    {
+                        reference = (p.Name, p.Start);
+                        break;
+                    }
+                }
+            }
+            else if (key == MilestoneKey.Finalize)
+            {
+                for (var k = MilestoneKey.DefenseSchedule; k >= MilestoneKey.TopicSubmission; k--)
+                {
+                    if (parsed.TryGetValue(k, out var p))
+                    {
+                        reference = (p.Name, p.Start);
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                for (var k = key - 1; k >= MilestoneKey.TopicSubmission; k--)
+                {
+                    if (parsed.TryGetValue(k, out var p))
+                    {
+                        reference = (p.Name, p.Start);
+                        break;
+                    }
+                }
+            }
+
+            if (reference is { } r && s < r.Start)
+            {
+                errors.Add($"{name}: Mốc này bắt đầu trước mốc “{r.Name}”. Các mốc phải theo thứ tự thời gian.");
                 continue;
             }
-            previous = (name, s);
+
+            parsed[key] = (name, s, e);
         }
         return errors;
     }
