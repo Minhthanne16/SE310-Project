@@ -1,6 +1,6 @@
 # Kế hoạch hoàn thiện QLKLTN
 
-Kế hoạch triển khai tổng hợp có thứ tự phụ thuộc, baseline hiện tại và cổng nghiệm thu MVP: [MVP-COMPLETION-PLAN.md](MVP-COMPLETION-PLAN.md). Các file phase bên dưới vẫn là checklist chi tiết theo từng luồng nghiệp vụ.
+Kế hoạch triển khai tổng hợp có thứ tự phụ thuộc, baseline hiện tại và cổng nghiệm thu MVP: [MVP-COMPLETION-PLAN.md](MVP-COMPLETION-PLAN.md). Các file phase bên dưới vẫn là checklist chi tiết theo từng luồng nghiệp vụ. Plan code cho agent theo từng đợt thay đổi: [khong-gian-de-tai.md](khong-gian-de-tai.md) (16/11), [giao-vu-23-11.md](giao-vu-23-11.md) (23/11, PDR-065–071, ưu tiên trang Giáo vụ).
 
 ## Cách dùng
 
