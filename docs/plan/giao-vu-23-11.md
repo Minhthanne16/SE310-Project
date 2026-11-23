@@ -262,3 +262,15 @@ Từ OQ-033 (không chặn Phần A, dùng giá trị tạm và đánh dấu tro
 
 Câu hỏi agent ghi thêm khi code (ghi bên dưới, kèm bước và file liên quan):
 
+- **Đã hoàn thành toàn bộ Phần A (A1..A8) ngày 2026-11-23 trên nhánh `feat/giao-vu-23-11`:**
+  - `3018163`: `feat(backend): cau hinh dot va diem theo PDR-065, PDR-069 (A1)`
+  - `2467c4c`: `feat(backend): quy tac 9 moc va mo dot khi du 3 moc dau (A2)`
+  - `18bb449`: `feat(frontend): tab cau hinh so sv toi da, tu dien 9 moc va goi y ngay (A3)`
+  - `129dffe`: `feat: vai tro giang vien trong dot theo PDR-070 (A4)`
+  - `8ed010d`: `feat(frontend): tab danh gia voi 4 muc con theo PDR-065, PDR-070 (A5)`
+  - `8b8ca84`: `feat(frontend): component dung chung phan bien va hoi dong theo PDR-070 (A6)`
+  - `aebc29f`: `feat: chan GVHD cham de tai minh huong dan theo PDR-070 (A7)`
+  - `0ee4fe6`: `feat: trang chu giao vu va khoi can chu y theo PDR-071 (A8)`
+  - Toàn bộ test Backend: 444 tests passed (0 fail, 18 skipped môi trường DB).
+  - Toàn bộ test Frontend: 232 tests passed (0 fail), typecheck và lint 0 errors, 0 warnings.
+

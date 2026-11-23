@@ -38,4 +38,6 @@ Công thức điểm khóa luận đang cố định cho mọi đợt và mọi 
 
 ## Trạng thái triển khai
 
-- **2026-11-23:** Đã triển khai backend trên nhánh `feat/giao-vu-23-11` (bước A1): entity `RoundGradingConfig`, `ProgramRoundDefaults`, `ThesisScore.Calculate` có hệ số, `ThesisGrade.Classify`, API cấu hình điểm và mặc định chương trình, migration `AddRoundGradingConfigAndGroupSize`, 14 tests đạt.
+- **2026-11-23:** Đã triển khai hoàn chỉnh trên nhánh `feat/giao-vu-23-11`:
+  - Backend (A1): entity `RoundGradingConfig`, `ProgramRoundDefaults`, `ThesisScore.Calculate` có hệ số, `ThesisGrade.Classify`, API cấu hình điểm và mặc định chương trình, migration `AddRoundGradingConfigAndGroupSize`, 14 tests đạt.
+  - Frontend (A5): `RoundEvaluationTab` với 4 mục con lưu URL qua param `muc`, `GradingConfigSection` gồm 4 hệ số, ngưỡng lệch, ví dụ tính điểm động, quy định làm tròn và bảng xếp loại chỉ đọc, checkbox lưu làm mặc định theo chương trình, banner khóa khi đợt không Nháp.

@@ -18,4 +18,6 @@
 
 ## Trạng thái triển khai
 
-- **2026-11-23:** Đã triển khai backend trên nhánh `feat/giao-vu-23-11` (bước A1): `ThesisRound.MaxGroupSize`, kiểm tra giới hạn trong ghi danh/đề xuất theo `round.MaxGroupSize`, khóa sửa số sinh viên tối đa khi đợt mở (409), migration `AddRoundGradingConfigAndGroupSize`.
+- **2026-11-23:** Đã triển khai hoàn chỉnh trên nhánh `feat/giao-vu-23-11`:
+  - Backend (A1): `ThesisRound.MaxGroupSize`, kiểm tra giới hạn trong ghi danh/đề xuất theo `round.MaxGroupSize`, khóa sửa số sinh viên tối đa khi đợt mở (409), migration `AddRoundGradingConfigAndGroupSize`.
+  - Frontend (A3): ô nhập số sinh viên tối đa mỗi nhóm (1..10, mặc định 2) trong `RoundConfigTab`, hộp thoại xác nhận khi tick "Lưu làm mặc định cho chương trình", banner khóa khi đợt không Nháp.

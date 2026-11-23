@@ -22,7 +22,9 @@ Một danh sách gộp, không tách theo vai trò; mỗi dòng gắn nhãn vai 
 4. **Lịch hội đồng sắp tới:** ngày, giờ, phòng, số đề tài, nút mở phiếu chấm.
 5. **Thông báo từ Giáo vụ.**
 
-## Hệ quả
+## Trạng thái triển khai
 
-- Cần API tổng hợp theo người dùng (đợt, đếm theo loại bất thường/việc, mục mới nhất) để Trang chủ không gọi từng màn.
-- Trang Thống kê đầy đủ ngoài phạm vi PDR này.
+- **2026-11-23:** Đã triển khai Trang chủ Giáo vụ trên nhánh `feat/giao-vu-23-11` (bước A8):
+  - Backend: endpoint `GET /api/statistics/overview` trả về danh sách đợt `rounds[]` và các trường hợp bất thường cần xử lý `alerts[]` (`LecturerBelowMin`, `LecturerAboveMax`, `StudentsWithoutGroup`, `TopicsWithoutReviewer`, `TopicsWithoutCouncil`, `CouncilConflicts`, `MilestoneMissing`).
+  - Frontend: `RoundHomePage` hiển thị khối `AttentionList` trên cùng gom các việc cần xử lý kèm nhãn loại, tên đợt, số lượng và nút "Xử lý" dẫn đúng link đã lọc đợt; thẻ đợt hiển thị số liệu nhanh (đề tài, SV có nhóm, đã phân công PB, đã có điểm, có lệch; hiện "—" khi chưa có điểm).
+  - Phần Trang chủ Giảng viên thuộc Phần B (B2) làm sau.

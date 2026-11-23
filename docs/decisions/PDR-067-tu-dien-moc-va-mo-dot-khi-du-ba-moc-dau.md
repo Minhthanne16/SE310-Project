@@ -36,4 +36,6 @@ Giáo vụ đang phải nhập ngày đầu/cuối cho cả chín mốc. Các m�
 
 ## Trạng thái triển khai
 
-- **2026-11-23:** Đã triển khai backend trên nhánh `feat/giao-vu-23-11` (bước A2): `RoundRules.ValidateMilestones` cho phép trùng ngày bắt đầu, ngoại lệ mốc 8 và mốc 9, `OpenRoundHandler` cho phép mở đợt khi đủ 3 mốc đầu, 5 test `RoundMilestoneRuleTests` đạt.
+- **2026-11-23:** Đã triển khai hoàn chỉnh trên nhánh `feat/giao-vu-23-11`:
+  - Backend (A2): `RoundRules.ValidateMilestones` cho phép trùng ngày bắt đầu, ngoại lệ mốc 8 và mốc 9, `OpenRoundHandler` cho phép mở đợt khi đủ 3 mốc đầu, 5 test `RoundMilestoneRuleTests` đạt.
+  - Frontend (A3): `RoundConfigTab` tự động điền 9 mốc theo ngày bắt đầu mốc 1 và độ dài từ điển, cảnh báo và tự gợi ý dời mốc kế tiếp khi có xung đột ngày, nhãn mốc và ngày gợi ý cho phép người dùng xem trước và áp dụng.
