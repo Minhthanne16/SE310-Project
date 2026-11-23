@@ -8,6 +8,7 @@ import type {
   MilestoneErrors,
   NotificationPage,
   NotificationQuery,
+  OverviewStatistics,
   Participant,
   ParticipantCheck,
   ParticipantKind,
@@ -119,6 +120,7 @@ export interface RoundService {
     rows: LecturerRoleImportRow[],
   ): Promise<Round>;
   listNotifications(query: NotificationQuery): Promise<NotificationPage>;
+  getOverview(): Promise<OverviewStatistics>;
   // Công bố danh sách đề tài của đợt cho sinh viên (tab Đề tài của chi tiết
   // đợt); không hoàn tác. Ném RoundRuleError khi đợt không Đang diễn ra, chưa
   // có đề tài, đã công bố hoặc đã hết hạn đăng ký (không phụ thuộc hạn GV gửi).

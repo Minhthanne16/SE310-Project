@@ -27,6 +27,8 @@ import {
 import type {
   LecturerRolePreviewError,
   LecturerRolePreviewItem,
+  OverviewStatistics,
+  AttentionAlert,
   ParticipantCheck,
   ParticipantKind,
   Round,
@@ -598,6 +600,57 @@ export function createRoundService(
           .map((n) => ({ ...n })),
         total: items.length,
       };
+    },
+
+    async getOverview(): Promise<OverviewStatistics> {
+      const list = rounds.map((r) => {
+        const summary = r.topicSummary;
+        const byStatus = summary?.byStatus;
+        const registered = byStatus?.['Đã đăng ký'] ?? 0;
+        const inProgress = byStatus?.['Đang thực hiện'] ?? 0;
+        const scoring =
+          (byStatus?.['Đang cho điểm'] ?? 0) +
+          (byStatus?.['Đã cho điểm'] ?? 0) +
+          (byStatus?.['Có lệch điểm'] ?? 0);
+        const settled =
+          (byStatus?.['Đã xác nhận'] ?? 0) + (byStatus?.['Đã hoàn tất'] ?? 0);
+        const withGroup = registered + inProgress + scoring + settled;
+        const currentM = r.milestones.find(
+          (m) => m.startDate <= today && m.endDate >= today,
+        );
+        return {
+          roundId: r.id,
+          name: r.name,
+          status: r.status,
+          currentMilestoneKey: currentM?.key ?? null,
+          topicCount: summary?.total ?? 0,
+          studentsWithGroup: withGroup,
+          studentCount: r.studentIds.length,
+          topicsWithReviewer: inProgress + scoring + settled,
+          topicsScored: null,
+          topicsWithDeviation: null,
+        };
+      });
+
+      const alerts: AttentionAlert[] = [];
+      for (const r of rounds) {
+        if (r.status === 'Đang diễn ra') {
+          const registered = r.topicSummary?.byStatus?.['Đã đăng ký'] ?? 0;
+          const missingReg = r.studentIds.length - registered;
+          if (missingReg > 0) {
+            alerts.push({
+              kind: 'StudentsWithoutGroup',
+              roundId: r.id,
+              roundName: r.name,
+              count: missingReg,
+              target: `/giao-vu/dot/${r.id}?tab=sinh-vien`,
+              message: `${missingReg} sinh viên chưa có nhóm`,
+            });
+          }
+        }
+      }
+
+      return { rounds: list, alerts };
     },
   };
 }

@@ -11,6 +11,7 @@ import type {
   LecturerRolesImportResult,
   LecturerRolesPreviewResult,
   Milestone,
+  OverviewStatistics,
   Participant,
   ParticipantCheck,
   ParticipantKind,
@@ -171,6 +172,7 @@ export function createApiRoundService(): RoundService {
     // Backend chưa có API thông báo của đợt (Phase 08): Bảng thông báo để trống
     // thay vì hiện dữ liệu mẫu cho người dùng thật.
     listNotifications: async () => ({ items: [], total: 0 }),
+    getOverview: () => call<OverviewStatistics>('/statistics/overview'),
     markTopicsPublished: (id) =>
       call<Round>(`/rounds/${enc(id)}/topics/publish`, json('POST')),
   };

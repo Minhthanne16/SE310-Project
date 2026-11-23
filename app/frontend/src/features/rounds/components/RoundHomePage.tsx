@@ -29,6 +29,10 @@ import type {
   Round,
   RoundStatus,
   RoundTaskTab,
+  AttentionAlert,
+  AttentionAlertKind,
+  OverviewStatistics,
+  RoundOverview,
 } from '@/types/round';
 import type { UserRole } from '@/types/auth';
 
@@ -133,8 +137,69 @@ function participantReminders(round: Round, today: string) {
     }));
 }
 
+const KIND_LABELS: Record<AttentionAlertKind, string> = {
+  LecturerBelowMin: 'THIẾU ĐỀ TÀI',
+  LecturerAboveMax: 'VƯỢT ĐỀ TÀI',
+  StudentsWithoutGroup: 'CHƯA CÓ NHÓM',
+  TopicsWithoutReviewer: 'CHƯA CÓ PHẢN BIỆN',
+  TopicsWithoutCouncil: 'CHƯA XẾP HỘI ĐỒNG',
+  CouncilConflicts: 'XUNG ĐỘT HỘI ĐỒNG',
+  MilestoneMissing: 'CHƯA ĐẶT NGÀY',
+  LateSubmissions: 'NỘP TRỄ',
+};
+
+interface AttentionListProps {
+  alerts: AttentionAlert[];
+}
+
+export const AttentionList: React.FC<AttentionListProps> = ({ alerts }) => {
+  return (
+    <section
+      className="app-card home-attention"
+      aria-labelledby="home-attention-title"
+    >
+      <div className="app-card-header">
+        <h2 id="home-attention-title">Cần xử lý</h2>
+      </div>
+      {alerts.length === 0 ? (
+        <p className="app-muted home-attention-empty">
+          Không có việc cần xử lý.
+        </p>
+      ) : (
+        <ul
+          className="home-attention-list"
+          aria-label="Danh sách việc cần xử lý"
+        >
+          {alerts.map((alert, idx) => (
+            <li
+              key={`${alert.roundId}-${alert.kind}-${idx}`}
+              className="home-attention-item"
+            >
+              <div className="home-attention-main">
+                <span className="app-chip app-chip-pending home-attention-chip">
+                  {KIND_LABELS[alert.kind] ?? alert.kind}
+                </span>
+                <span className="home-attention-round">{alert.roundName}</span>
+                <span className="home-attention-msg">{alert.message}</span>
+              </div>
+              <Link
+                href={alert.target}
+                className="app-button app-button-small"
+                aria-label={`Xử lý ${alert.message} ở đợt ${alert.roundName}`}
+              >
+                Xử lý
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+};
+
 interface RoundCardProps {
   round: Round;
+  overview?: RoundOverview;
   today: string;
   role: UserRole;
   onOpen: () => void;
@@ -142,6 +207,7 @@ interface RoundCardProps {
 
 const RoundCard: React.FC<RoundCardProps> = ({
   round,
+  overview,
   today,
   role,
   onOpen,
@@ -172,6 +238,27 @@ const RoundCard: React.FC<RoundCardProps> = ({
         <span className="round-card-name">{shortName(round)}</span>
         <span className="round-card-week">{weekLine(round, today)}</span>
       </span>
+      {overview && (
+        <span className="round-card-metrics" aria-label="Số liệu nhanh">
+          <span className="round-card-metric-item">{`${overview.topicCount} đề tài`}</span>
+          <span aria-hidden="true">·</span>
+          <span className="round-card-metric-item">{`${overview.studentsWithGroup}/${overview.studentCount} SV có nhóm`}</span>
+          <span aria-hidden="true">·</span>
+          <span className="round-card-metric-item">{`${overview.topicsWithReviewer} đã phân công PB`}</span>
+          <span aria-hidden="true">·</span>
+          <span className="round-card-metric-item">
+            {overview.topicsScored !== null
+              ? `${overview.topicsScored} đã có điểm`
+              : '—'}
+          </span>
+          <span aria-hidden="true">·</span>
+          <span className="round-card-metric-item">
+            {overview.topicsWithDeviation !== null
+              ? `${overview.topicsWithDeviation} có lệch`
+              : '—'}
+          </span>
+        </span>
+      )}
       {round.status === 'Đang diễn ra' && (
         <span className="round-card-progress">
           <span className="round-card-now">
@@ -221,6 +308,7 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
   const { session } = useSession();
   const [dotId, setDotId] = useUrlParam('dot');
   const [rounds, setRounds] = useState<Round[]>([]);
+  const [overview, setOverview] = useState<OverviewStatistics | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   // Đổi giữa danh sách thẻ và chi tiết: chuyển tiêu điểm tới h1 của màn mới.
@@ -259,6 +347,23 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
   const user = session.status === 'authenticated' ? session.user : null;
   const role = user?.role;
   const staff = role === 'AcademicAffairs';
+
+  useEffect(() => {
+    if (!staff) return;
+    let active = true;
+    roundService
+      .getOverview()
+      .then((data) => {
+        if (active) setOverview(data);
+      })
+      .catch(() => {
+        // fallback an toàn nếu overview lỗi
+      });
+    return () => {
+      active = false;
+    };
+  }, [roundService, staff]);
+
   const visibleRounds = rounds.filter(
     (r) =>
       staff ||
@@ -481,6 +586,7 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
           thông báo và tiến độ của đợt đó.
         </p>
       </div>
+      {staff && <AttentionList alerts={overview?.alerts ?? []} />}
       {visibleRounds.length === 0 ? (
         <section className="status-state app-empty">
           <h2>Chưa có đợt nào</h2>
@@ -501,6 +607,7 @@ export const RoundHomePage: React.FC<RoundHomePageProps> = ({
             <RoundCard
               key={r.id}
               round={r}
+              overview={overview?.rounds.find((o) => o.roundId === r.id)}
               today={today}
               role={role ?? 'AcademicAffairs'}
               onOpen={() => setDotId(r.id)}

@@ -13,6 +13,13 @@ namespace Backend.API.Controllers.Statistics;
 [Authorize(Roles = AppRoles.AcademicAffairs)]
 public sealed class StatisticsController(ISender sender) : ControllerBase
 {
+    [HttpGet("overview")]
+    public async Task<IActionResult> Overview(CancellationToken cancellationToken)
+    {
+        var result = await sender.Send(new GetOverviewStatisticsQuery(), cancellationToken);
+        return result.Status == TopicResultStatus.Ok ? Ok(result.Response) : BadRequest(result.Response);
+    }
+
     [HttpGet("{roundId:guid}")]
     public async Task<IActionResult> Get(Guid roundId, CancellationToken cancellationToken)
     {

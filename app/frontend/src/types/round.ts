@@ -350,3 +350,40 @@ export interface RoundTask {
   // Tab của chi tiết đợt để xử lý việc này.
   tab: RoundTaskTab;
 }
+
+export type AttentionAlertKind =
+  | 'LecturerBelowMin'
+  | 'LecturerAboveMax'
+  | 'StudentsWithoutGroup'
+  | 'TopicsWithoutReviewer'
+  | 'TopicsWithoutCouncil'
+  | 'CouncilConflicts'
+  | 'MilestoneMissing'
+  | 'LateSubmissions';
+
+export interface AttentionAlert {
+  kind: AttentionAlertKind;
+  roundId: string;
+  roundName: string;
+  count: number;
+  target: string;
+  message: string;
+}
+
+export interface RoundOverview {
+  roundId: string;
+  name: string;
+  status: RoundStatus;
+  currentMilestoneKey: MilestoneKey | string | null;
+  topicCount: number;
+  studentsWithGroup: number;
+  studentCount: number;
+  topicsWithReviewer: number;
+  topicsScored: number | null;
+  topicsWithDeviation: number | null;
+}
+
+export interface OverviewStatistics {
+  rounds: RoundOverview[];
+  alerts: AttentionAlert[];
+}
