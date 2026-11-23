@@ -113,9 +113,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
           setSelectedId(select);
         } else {
           setSelectedId((prev) =>
-            prev && next.councils.some((c) => c.id === prev)
-              ? prev
-              : null,
+            prev && next.councils.some((c) => c.id === prev) ? prev : null,
           );
         }
       } catch (err: unknown) {
@@ -380,9 +378,7 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                   type="button"
                   className="app-button"
                   disabled={
-                    !current ||
-                    busy ||
-                    current.round.status !== 'Đang diễn ra'
+                    !current || busy || current.round.status !== 'Đang diễn ra'
                   }
                   onClick={openDrawerForCreate}
                 >
@@ -444,7 +440,11 @@ export const CouncilPanel: React.FC<CouncilPanelProps> = ({
                   </p>
                 </section>
               ) : (
-                <div className="app-card app-table-scroll" role="region" aria-label="Danh sách hội đồng">
+                <div
+                  className="app-card app-table-scroll"
+                  role="region"
+                  aria-label="Danh sách hội đồng"
+                >
                   <table className="app-table" aria-label="Danh sách hội đồng">
                     <thead>
                       <tr>

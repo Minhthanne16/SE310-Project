@@ -55,7 +55,12 @@ export const GradingConfigSection: React.FC<GradingConfigSectionProps> = ({
     isValidThreshold(deviationThreshold);
 
   // Example calculation
-  const sampleScores = { chair: 8.0, secretary: 7.0, supervisor: 9.0, reviewer: 6.0 };
+  const sampleScores = {
+    chair: 8.0,
+    secretary: 7.0,
+    supervisor: 9.0,
+    reviewer: 6.0,
+  };
   const exampleScore = calculateWeightedScore(sampleScores, {
     weightChair: isValidWeight(weightChair) ? weightChair : 1,
     weightSecretary: isValidWeight(weightSecretary) ? weightSecretary : 1,
@@ -111,7 +116,10 @@ export const GradingConfigSection: React.FC<GradingConfigSectionProps> = ({
       )}
 
       <div className="rnd-grading-grid">
-        <section className="app-card rnd-grading-card" aria-labelledby="weights-heading">
+        <section
+          className="app-card rnd-grading-card"
+          aria-labelledby="weights-heading"
+        >
           <h3 id="weights-heading" className="rnd-section-title">
             Hệ số tính điểm khóa luận
           </h3>
@@ -157,7 +165,9 @@ export const GradingConfigSection: React.FC<GradingConfigSectionProps> = ({
                 step="0.5"
                 disabled={!isDraft || saving}
                 value={weightSupervisor}
-                onChange={(e) => setWeightSupervisor(parseFloat(e.target.value))}
+                onChange={(e) =>
+                  setWeightSupervisor(parseFloat(e.target.value))
+                }
               />
             </div>
             <div className="rnd-field">
@@ -186,10 +196,13 @@ export const GradingConfigSection: React.FC<GradingConfigSectionProps> = ({
                 step="0.5"
                 disabled={!isDraft || saving}
                 value={deviationThreshold}
-                onChange={(e) => setDeviationThreshold(parseFloat(e.target.value))}
+                onChange={(e) =>
+                  setDeviationThreshold(parseFloat(e.target.value))
+                }
               />
               <span className="app-muted">
-                (Đề tài có điểm thành phần lệch so với điểm KL từ {deviationThreshold} điểm trở lên sẽ được gắn cờ)
+                (Đề tài có điểm thành phần lệch so với điểm KL từ{' '}
+                {deviationThreshold} điểm trở lên sẽ được gắn cờ)
               </span>
             </div>
           </div>
@@ -197,14 +210,18 @@ export const GradingConfigSection: React.FC<GradingConfigSectionProps> = ({
           <div className="rnd-example-box">
             <h4>Ví dụ tính điểm</h4>
             <p>
-              Giả sử điểm các thành viên: CT = <b>8.0</b>, TK = <b>7.0</b>, HD = <b>9.0</b>, PB = <b>6.0</b>
+              Giả sử điểm các thành viên: CT = <b>8.0</b>, TK = <b>7.0</b>, HD ={' '}
+              <b>9.0</b>, PB = <b>6.0</b>
             </p>
             <p className="rnd-example-result">
               Điểm khóa luận ={' '}
               <code>
-                (8×{weightChair} + 7×{weightSecretary} + 9×{weightSupervisor} + 6×{weightReviewer}) / ({weightChair}+{weightSecretary}+{weightSupervisor}+{weightReviewer})
+                (8×{weightChair} + 7×{weightSecretary} + 9×{weightSupervisor} +
+                6×{weightReviewer}) / ({weightChair}+{weightSecretary}+
+                {weightSupervisor}+{weightReviewer})
               </code>{' '}
-              = <b>{exampleScore.toFixed(2)}</b> &rarr; Xếp loại: <b>{exampleGrade}</b>
+              = <b>{exampleScore.toFixed(2)}</b> &rarr; Xếp loại:{' '}
+              <b>{exampleGrade}</b>
             </p>
           </div>
 
@@ -217,7 +234,10 @@ export const GradingConfigSection: React.FC<GradingConfigSectionProps> = ({
                   disabled={saving}
                   onChange={(e) => setSaveAsDefault(e.target.checked)}
                 />
-                <span>Lưu làm mặc định cho các đợt mới của chương trình {round.program}</span>
+                <span>
+                  Lưu làm mặc định cho các đợt mới của chương trình{' '}
+                  {round.program}
+                </span>
               </label>
 
               <button
@@ -232,13 +252,19 @@ export const GradingConfigSection: React.FC<GradingConfigSectionProps> = ({
           )}
         </section>
 
-        <section className="app-card rnd-grading-info" aria-labelledby="rules-heading">
+        <section
+          className="app-card rnd-grading-info"
+          aria-labelledby="rules-heading"
+        >
           <h3 id="rules-heading" className="rnd-section-title">
             Quy định chấm & Xếp loại
           </h3>
           <div className="rnd-rule-item">
             <b>Quy tắc làm tròn:</b>
-            <p>Điểm khóa luận được làm tròn đến 2 chữ số thập phân theo quy tắc làm tròn nửa lên (Round half up).</p>
+            <p>
+              Điểm khóa luận được làm tròn đến 2 chữ số thập phân theo quy tắc
+              làm tròn nửa lên (Round half up).
+            </p>
           </div>
 
           <div className="rnd-rule-item">

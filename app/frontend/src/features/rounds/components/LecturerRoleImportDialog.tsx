@@ -40,12 +40,7 @@ export const LecturerRoleImportDialog: React.FC<
     try {
       await downloadXlsx('Mau_nhap_vai_tro_giang_vien.xlsx', {
         sheetName: 'Vai trò giảng viên',
-        header: [
-          'Mã giảng viên / Email',
-          'Hướng dẫn',
-          'Phản biện',
-          'Hội đồng',
-        ],
+        header: ['Mã giảng viên / Email', 'Hướng dẫn', 'Phản biện', 'Hội đồng'],
         rows: [
           ['CB101', 'x', '', 'x'],
           ['CB102', '1', '1', ''],
@@ -113,9 +108,7 @@ export const LecturerRoleImportDialog: React.FC<
     setError(null);
     try {
       const updated = await roundService.importLecturerRoles(round.id, rows);
-      toast.success(
-        `Đã nhập thành công ${preview.valid.length} giảng viên.`,
-      );
+      toast.success(`Đã nhập thành công ${preview.valid.length} giảng viên.`);
       onImported(updated);
       onClose();
     } catch (err: unknown) {
@@ -235,7 +228,9 @@ export const LecturerRoleImportDialog: React.FC<
                         <td>
                           <span
                             className={`rnd-pill ${
-                              item.isNew ? 'rnd-pill-purple' : 'rnd-pill-neutral'
+                              item.isNew
+                                ? 'rnd-pill-purple'
+                                : 'rnd-pill-neutral'
                             }`}
                           >
                             {item.isNew ? 'Thêm mới vào đợt' : 'Cập nhật'}

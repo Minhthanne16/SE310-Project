@@ -131,9 +131,9 @@ function topics(
   const pendingResultCount = finished
     ? 0
     : TOPIC_STATUSES.filter((s) => !isSettledTopicStatus(s)).reduce(
-      (sum, s) => sum + byStatus[s],
-      0,
-    );
+        (sum, s) => sum + byStatus[s],
+        0,
+      );
   return { total, pendingResultCount, byStatus };
 }
 

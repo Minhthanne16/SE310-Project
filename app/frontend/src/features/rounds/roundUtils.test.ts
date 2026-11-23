@@ -111,7 +111,9 @@ describe('warnings and tasks', () => {
     bad.milestones[1].endDate = '2026-01-01';
     expect(openBlockers(bad)).toEqual([
       'GV gửi đề tài: chưa đặt ngày',
-      expect.stringMatching(/^Công bố đề tài · SV đăng ký: Ngày kết thúc phải sau/),
+      expect.stringMatching(
+        /^Công bố đề tài · SV đăng ký: Ngày kết thúc phải sau/,
+      ),
     ]);
   });
 

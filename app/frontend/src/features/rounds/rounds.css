@@ -2268,7 +2268,6 @@ button.rnd-link {
   border-radius: var(--radius-sm, 6px);
 }
 
-
 /* PDR-065 & PDR-070: Tab Đánh giá 4 mục con */
 .rnd-col-min-180 {
   min-width: 180px;
@@ -2510,7 +2509,7 @@ button.rnd-link {
   color: var(--ink);
 }
 
-.rnd-eval-subtab[aria-selected="true"],
+.rnd-eval-subtab[aria-selected='true'],
 .rnd-eval-subtab-active {
   background: var(--surface);
   border-color: var(--line);

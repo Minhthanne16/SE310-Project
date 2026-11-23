@@ -434,7 +434,9 @@ export const ReviewerPanel: React.FC<ReviewerPanelProps> = ({
                           <th scope="col">GV phản biện</th>
                           {isViewOnly && (
                             <th scope="col">
-                              <span className="app-visually-hidden">Thao tác</span>
+                              <span className="app-visually-hidden">
+                                Thao tác
+                              </span>
                             </th>
                           )}
                         </tr>
@@ -646,7 +648,9 @@ const ReviewerRow: React.FC<RowProps> = ({
       </td>
       <td>
         {isViewOnly ? (
-          <span>{row.reviewer ? `${row.reviewer.name} (${row.reviewer.code})` : '—'}</span>
+          <span>
+            {row.reviewer ? `${row.reviewer.name} (${row.reviewer.code})` : '—'}
+          </span>
         ) : (
           <>
             <select

@@ -1,8 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  autofillMilestones,
-  suggestStart,
-} from './milestoneAutofill';
+import { autofillMilestones, suggestStart } from './milestoneAutofill';
 import { buildMilestones } from './services/roundSeed';
 
 describe('milestoneAutofill', () => {

@@ -715,7 +715,9 @@ it('shows the round topics with a status filter, search and a link to the topics
 it('summarises forms, reviewers and councils in the evaluation tab', async () => {
   await renderWithServices('r-vb1-hk1', ['Supervisor']);
   tab('Đánh giá');
-  expect(await screen.findByRole('tab', { name: 'Cấu hình điểm' })).toBeInTheDocument();
+  expect(
+    await screen.findByRole('tab', { name: 'Cấu hình điểm' }),
+  ).toBeInTheDocument();
   expect(screen.getByRole('tab', { name: 'Mẫu phiếu' })).toBeInTheDocument();
   expect(screen.getByRole('tab', { name: 'Phản biện' })).toBeInTheDocument();
   expect(screen.getByRole('tab', { name: 'Hội đồng' })).toBeInTheDocument();
@@ -732,11 +734,15 @@ it('summarises forms, reviewers and councils in the evaluation tab', async () =>
 
   // Chuyển sang Phản biện
   fireEvent.click(screen.getByRole('tab', { name: 'Phản biện' }));
-  expect(await screen.findByRole('button', { name: 'Tự gợi ý' })).toBeInTheDocument();
+  expect(
+    await screen.findByRole('button', { name: 'Tự gợi ý' }),
+  ).toBeInTheDocument();
 
   // Chuyển sang Hội đồng
   fireEvent.click(screen.getByRole('tab', { name: 'Hội đồng' }));
-  expect(await screen.findByRole('button', { name: 'Tạo hội đồng' })).toBeInTheDocument();
+  expect(
+    await screen.findByRole('button', { name: 'Tạo hội đồng' }),
+  ).toBeInTheDocument();
 });
 
 it('locks the round info and lecturer topic limits once the round is open', async () => {

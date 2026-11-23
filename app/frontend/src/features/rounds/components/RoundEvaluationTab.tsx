@@ -11,9 +11,7 @@ import {
   roundService as defaultRoundService,
   type RoundService,
 } from '@/features/rounds/services/roundService';
-import {
-  type TopicService,
-} from '@/features/topics/services/topicService';
+import { type TopicService } from '@/features/topics/services/topicService';
 import { GradingConfigSection } from '@/features/rounds/components/GradingConfigSection';
 import { TemplateAssignmentSection } from '@/features/rounds/components/TemplateAssignmentSection';
 import { ReviewerPanel } from '@/features/reviewers/components/ReviewerPanel';
@@ -23,10 +21,7 @@ import type { CouncilService } from '@/features/councils/services/councilService
 import type { Round } from '@/types/round';
 
 export type EvalSectionKey =
-  | 'cau-hinh-diem'
-  | 'mau-phieu'
-  | 'phan-bien'
-  | 'hoi-dong';
+  'cau-hinh-diem' | 'mau-phieu' | 'phan-bien' | 'hoi-dong';
 
 interface RoundEvaluationTabProps {
   round: Round;
@@ -51,10 +46,11 @@ export const RoundEvaluationTab: React.FC<RoundEvaluationTabProps> = ({
   evaluationService = defaultEvaluationService,
   reviewerService,
   councilService,
-  onChanged = () => { },
+  onChanged = () => {},
 }) => {
   const searchParams = useSearchParams();
-  const initialMuc = (searchParams?.get('muc') as EvalSectionKey) || 'cau-hinh-diem';
+  const initialMuc =
+    (searchParams?.get('muc') as EvalSectionKey) || 'cau-hinh-diem';
   const [activeSection, setActiveSection] = useState<EvalSectionKey>(
     SUB_TABS.some((t) => t.key === initialMuc) ? initialMuc : 'cau-hinh-diem',
   );

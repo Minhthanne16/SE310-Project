@@ -461,7 +461,9 @@ export function createRoundService(
       else {
         next.lecturerIds = next.lecturerIds.filter((x) => x !== userId);
         if (next.lecturerRoles) {
-          next.lecturerRoles = next.lecturerRoles.filter((r) => r.userId !== userId);
+          next.lecturerRoles = next.lecturerRoles.filter(
+            (r) => r.userId !== userId,
+          );
         }
       }
       return save(next);
@@ -471,7 +473,9 @@ export function createRoundService(
       const round = find(id);
       assertEditable(round);
       if (!roles.isSupervisor && !roles.isReviewer && !roles.isCommittee) {
-        throw new RoundRuleError('Phải chọn ít nhất một vai trò cho giảng viên.');
+        throw new RoundRuleError(
+          'Phải chọn ít nhất một vai trò cho giảng viên.',
+        );
       }
       const next = cloneRound(round);
       if (!next.lecturerRoles) next.lecturerRoles = [];

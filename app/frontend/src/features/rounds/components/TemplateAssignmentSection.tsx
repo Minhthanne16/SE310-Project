@@ -25,10 +25,9 @@ interface TemplateAssignmentSectionProps {
   evaluationService: EvaluationService;
 }
 
-export const TemplateAssignmentSection: React.FC<TemplateAssignmentSectionProps> = ({
-  round,
-  evaluationService,
-}) => {
+export const TemplateAssignmentSection: React.FC<
+  TemplateAssignmentSectionProps
+> = ({ round, evaluationService }) => {
   const isDraft = round.status === 'Nháp';
   const [templates, setTemplates] = useState<EvaluationTemplate[]>([]);
   const [assignments, setAssignments] = useState<TemplateAssignment[]>([]);
@@ -47,7 +46,9 @@ export const TemplateAssignmentSection: React.FC<TemplateAssignmentSectionProps>
         if (!cancelled) {
           setTemplates(tplList);
           setAssignments(
-            assignList.filter((a: TemplateAssignment) => a.roundId === round.id),
+            assignList.filter(
+              (a: TemplateAssignment) => a.roundId === round.id,
+            ),
           );
         }
       } catch {
@@ -82,8 +83,12 @@ export const TemplateAssignmentSection: React.FC<TemplateAssignmentSectionProps>
           <table className="app-table rnd-assign-table">
             <thead>
               <tr>
-                <th scope="col" className="rnd-col-min-180">Vai trò</th>
-                <th scope="col" className="rnd-col-min-220">Mẫu phiếu đánh giá</th>
+                <th scope="col" className="rnd-col-min-180">
+                  Vai trò
+                </th>
+                <th scope="col" className="rnd-col-min-220">
+                  Mẫu phiếu đánh giá
+                </th>
                 <th scope="col">Thang điểm</th>
                 <th scope="col">Trạng thái</th>
                 <th scope="col">
@@ -111,10 +116,14 @@ export const TemplateAssignmentSection: React.FC<TemplateAssignmentSectionProps>
                     <td>
                       {a ? (
                         <span className="rnd-assigned-title">
-                          {a.templateName || assignedTemplate?.name || 'Mẫu phiếu'}
+                          {a.templateName ||
+                            assignedTemplate?.name ||
+                            'Mẫu phiếu'}
                         </span>
                       ) : (
-                        <span className="app-chip app-chip-pending">Chưa gán</span>
+                        <span className="app-chip app-chip-pending">
+                          Chưa gán
+                        </span>
                       )}
                     </td>
                     <td>Thang 10</td>
@@ -315,7 +324,8 @@ const RoleAssignmentDrawer: React.FC<RoleAssignmentDrawerProps> = ({
 
           {templates.length === 0 && (
             <p className="app-muted eval-small">
-              Chưa có mẫu phiếu nào ở trạng thái Đủ điều kiện sử dụng (Active). Vui lòng ban hành mẫu phiếu ở trang Phiếu đánh giá trước.
+              Chưa có mẫu phiếu nào ở trạng thái Đủ điều kiện sử dụng (Active).
+              Vui lòng ban hành mẫu phiếu ở trang Phiếu đánh giá trước.
             </p>
           )}
         </div>

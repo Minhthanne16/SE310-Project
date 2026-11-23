@@ -1,5 +1,9 @@
 import { addDays } from '@/features/rounds/roundUtils';
-import { MILESTONE_DEFS, type Milestone, type MilestoneKey } from '@/types/round';
+import {
+  MILESTONE_DEFS,
+  type Milestone,
+  type MilestoneKey,
+} from '@/types/round';
 
 // OQ-033(a): giá trị tạm
 export const MILESTONE_WEEKS: readonly number[] = [2, 2, 2, 4, 4, 2, 2, 4, 2];
@@ -66,7 +70,10 @@ export function autofillMilestones(
   });
 }
 
-export function suggestStart(milestones: Milestone[], index: number): string | null {
+export function suggestStart(
+  milestones: Milestone[],
+  index: number,
+): string | null {
   const current = milestones[index];
   if (!current) return null;
 

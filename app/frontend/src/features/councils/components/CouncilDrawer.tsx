@@ -67,7 +67,7 @@ export const CouncilDrawer: React.FC<CouncilDrawerProps> = ({
     ? draft.id
       ? `Sửa ${council?.name ?? draft.name}`
       : 'Tạo hội đồng'
-    : council?.name ?? 'Chi tiết hội đồng';
+    : (council?.name ?? 'Chi tiết hội đồng');
 
   return (
     <div

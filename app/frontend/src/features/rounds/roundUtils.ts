@@ -115,7 +115,10 @@ export function currentWeek(round: Round, today: string): number | null {
 // mốc 9 so với mốc 7.
 export function validateMilestones(milestones: Milestone[]): MilestoneErrors {
   const errors: MilestoneErrors = {};
-  const parsed = new Map<MilestoneKey, { name: string; start: string; end: string }>();
+  const parsed = new Map<
+    MilestoneKey,
+    { name: string; start: string; end: string }
+  >();
 
   for (let i = 0; i < milestones.length; i++) {
     const m = milestones[i];

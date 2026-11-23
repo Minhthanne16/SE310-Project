@@ -4,8 +4,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import '@/features/rounds/rounds.css';
-import { roundSpan, validateMilestones, formatDate } from '@/features/rounds/roundUtils';
-import { autofillMilestones, suggestStart } from '@/features/rounds/milestoneAutofill';
+import {
+  roundSpan,
+  validateMilestones,
+  formatDate,
+} from '@/features/rounds/roundUtils';
+import {
+  autofillMilestones,
+  suggestStart,
+} from '@/features/rounds/milestoneAutofill';
 import {
   validateRoundInput,
   type RoundFieldErrors,
@@ -344,7 +351,8 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
         </div>
         <p className="rnd-hint">
           Ngày bắt đầu tuần 1 là thứ Hai của tuần chứa mốc sớm nhất; đổi bằng
-          cách sửa ngày các mốc bên dưới. Tối thiểu luôn là 1 sinh viên (sinh viên có thể làm việc một mình hoặc theo nhóm đến tối đa quy định).
+          cách sửa ngày các mốc bên dưới. Tối thiểu luôn là 1 sinh viên (sinh
+          viên có thể làm việc một mình hoặc theo nhóm đến tối đa quy định).
         </p>
         {!infoLocked && (
           <div className="rnd-info-actions">
@@ -467,11 +475,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
                 onChange={(e) => setAutofillStart(e.target.value)}
               />
             </label>
-            <button
-              type="button"
-              className="rnd-btn"
-              onClick={handleAutofill}
-            >
+            <button type="button" className="rnd-btn" onClick={handleAutofill}>
               Tự điền 9 mốc
             </button>
           </div>
@@ -518,22 +522,23 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
                             <span id={errorId} className="rnd-ms-err">
                               {error}
                             </span>
-                            {!readOnly && (() => {
-                              const suggested = suggestStart(draft, index);
-                              if (!suggested || suggested === m.startDate)
-                                return null;
-                              return (
-                                <button
-                                  type="button"
-                                  className="rnd-btn-suggest"
-                                  onClick={() =>
-                                    patch(m.key, { startDate: suggested })
-                                  }
-                                >
-                                  Dùng ngày gợi ý ({formatDate(suggested)})
-                                </button>
-                              );
-                            })()}
+                            {!readOnly &&
+                              (() => {
+                                const suggested = suggestStart(draft, index);
+                                if (!suggested || suggested === m.startDate)
+                                  return null;
+                                return (
+                                  <button
+                                    type="button"
+                                    className="rnd-btn-suggest"
+                                    onClick={() =>
+                                      patch(m.key, { startDate: suggested })
+                                    }
+                                  >
+                                    Dùng ngày gợi ý ({formatDate(suggested)})
+                                  </button>
+                                );
+                              })()}
                           </>
                         )}
                       </span>
