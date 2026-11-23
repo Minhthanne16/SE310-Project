@@ -610,12 +610,64 @@ const renderWithServices = async (
   ],
 ) => {
   const roundService = createRoundService();
+  const mockReviewerService = {
+    list: vi.fn().mockResolvedValue({
+      round: { id, name: 'Đợt 1', status: 'Đang diễn ra', loadMax: 2 },
+      topics: [
+        {
+          topicId: 't1',
+          code: 'DT-001',
+          title: 'Đề tài 1',
+          field: 'CNPM',
+          supervisor: { id: 'gv1', code: 'GV1', name: 'GV 1' },
+          group: [],
+          eligible: true,
+          blockedReason: null,
+          reviewer: null,
+          locked: false,
+          lockReason: null,
+          assignedAt: null,
+          hasMidterm: false,
+          hasFinal: false,
+        },
+      ],
+      lecturers: [
+        {
+          id: 'gv2',
+          code: 'GV2',
+          name: 'GV 2',
+          reviewCount: 0,
+          superviseCount: 0,
+          max: 2,
+          level: 'ok',
+        },
+      ],
+    }),
+    suggest: vi.fn().mockResolvedValue([]),
+    batch: vi.fn(),
+  };
+  const mockCouncilService = {
+    board: vi.fn().mockResolvedValue({
+      round: { id, name: 'Đợt 1', status: 'Đang diễn ra' },
+      councils: [],
+      pool: [],
+      stats: {
+        councils: 0,
+        scheduled: 0,
+        total: 1,
+        unscheduled: 1,
+        conflicts: 0,
+      },
+    }),
+  };
   render(
     <RoundDetailPage
       roundId={id}
       roundService={roundService}
       topicService={createTopicService({ roundService })}
       evaluationService={fakeEvaluation(roles)}
+      reviewerService={mockReviewerService as any}
+      councilService={mockCouncilService as any}
     />,
   );
   await screen.findByRole('heading', { level: 1 });
@@ -663,16 +715,28 @@ it('shows the round topics with a status filter, search and a link to the topics
 it('summarises forms, reviewers and councils in the evaluation tab', async () => {
   await renderWithServices('r-vb1-hk1', ['Supervisor']);
   tab('Đánh giá');
-  expect(await screen.findByText('Đã gán 1/3 vai trò')).toBeInTheDocument();
+  expect(await screen.findByRole('tab', { name: 'Cấu hình điểm' })).toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: 'Mẫu phiếu' })).toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: 'Phản biện' })).toBeInTheDocument();
+  expect(screen.getByRole('tab', { name: 'Hội đồng' })).toBeInTheDocument();
+
+  // Mặc định là Cấu hình điểm
   expect(
-    screen.getByRole('link', { name: /Mở Phiếu đánh giá/ }),
-  ).toHaveAttribute('href', '/giao-vu/phieu-danh-gia?dot=r-vb1-hk1');
-  expect(
-    screen.getByRole('link', { name: /Mở Giảng viên phản biện/ }),
-  ).toHaveAttribute('href', '/giao-vu/phan-bien?dot=r-vb1-hk1');
-  expect(
-    screen.getByRole('link', { name: /Mở Hội đồng bảo vệ/ }),
-  ).toHaveAttribute('href', '/giao-vu/hoi-dong?dot=r-vb1-hk1');
+    screen.getByRole('heading', { name: 'Hệ số tính điểm khóa luận' }),
+  ).toBeInTheDocument();
+
+  // Chuyển sang Mẫu phiếu
+  fireEvent.click(screen.getByRole('tab', { name: 'Mẫu phiếu' }));
+  expect(await screen.findByText('Vai trò')).toBeInTheDocument();
+  expect(screen.getByText('Giảng viên hướng dẫn')).toBeInTheDocument();
+
+  // Chuyển sang Phản biện
+  fireEvent.click(screen.getByRole('tab', { name: 'Phản biện' }));
+  expect(await screen.findByRole('button', { name: 'Tự gợi ý' })).toBeInTheDocument();
+
+  // Chuyển sang Hội đồng
+  fireEvent.click(screen.getByRole('tab', { name: 'Hội đồng' }));
+  expect(await screen.findByRole('button', { name: 'Tạo hội đồng' })).toBeInTheDocument();
 });
 
 it('locks the round info and lecturer topic limits once the round is open', async () => {

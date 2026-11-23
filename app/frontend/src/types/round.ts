@@ -139,6 +139,55 @@ export interface RoundGrading {
   deviationThreshold: number;
 }
 
+export interface UpdateRoundGradingInput extends RoundGrading {
+  saveAsProgramDefault?: boolean;
+}
+
+export const GRADE_CLASSIFICATIONS = [
+  { min: 9.0, label: 'Xuất sắc' },
+  { min: 8.0, label: 'Giỏi' },
+  { min: 7.0, label: 'Khá' },
+  { min: 5.0, label: 'Trung bình' },
+  { min: 0.0, label: 'Không đạt' },
+] as const;
+
+export function classifyScore(score: number): string {
+  if (score >= 9.0) return 'Xuất sắc';
+  if (score >= 8.0) return 'Giỏi';
+  if (score >= 7.0) return 'Khá';
+  if (score >= 5.0) return 'Trung bình';
+  return 'Không đạt';
+}
+
+export function calculateWeightedScore(
+  scores: {
+    chair: number;
+    secretary: number;
+    supervisor: number;
+    reviewer: number;
+  },
+  weights: {
+    weightChair: number;
+    weightSecretary: number;
+    weightSupervisor: number;
+    weightReviewer: number;
+  },
+): number {
+  const sumWeights =
+    weights.weightChair +
+    weights.weightSecretary +
+    weights.weightSupervisor +
+    weights.weightReviewer;
+  if (sumWeights <= 0) return 0;
+  const weighted =
+    scores.chair * weights.weightChair +
+    scores.secretary * weights.weightSecretary +
+    scores.supervisor * weights.weightSupervisor +
+    scores.reviewer * weights.weightReviewer;
+  const raw = weighted / sumWeights;
+  return Math.round((raw + Number.EPSILON) * 100) / 100;
+}
+
 export interface RoundLecturerRole {
   userId: string;
   code: string;

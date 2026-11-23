@@ -14,6 +14,7 @@ import type {
   Round,
   RoundFilters,
   RoundInput,
+  UpdateRoundGradingInput,
 } from '@/types/round';
 
 export class RoundNotFoundError extends Error {
@@ -81,6 +82,7 @@ export interface RoundService {
   finish(id: string): Promise<Round>;
   remove(id: string): Promise<void>;
   updateMilestones(id: string, milestones: Milestone[]): Promise<Round>;
+  saveGrading(id: string, input: UpdateRoundGradingInput): Promise<Round>;
   listParticipants(kind: ParticipantKind): Promise<Participant[]>;
   listCandidates(id: string, kind: ParticipantKind): Promise<Candidate[]>;
   checkParticipants(

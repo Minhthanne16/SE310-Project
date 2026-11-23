@@ -116,6 +116,9 @@ export function createApiRoundService(): RoundService {
     updateMilestones: (id, milestones: Milestone[]) =>
       call<Round>(`/rounds/${enc(id)}/milestones`, json('PUT', { milestones })),
 
+    saveGrading: (id, input) =>
+      call<Round>(`/rounds/${enc(id)}/grading`, json('PUT', input)),
+
     listParticipants: (kind) =>
       call<Participant[]>(`/rounds/people/${KIND_PATH[kind]}`),
 

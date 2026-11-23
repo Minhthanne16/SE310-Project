@@ -360,6 +360,23 @@ export function createRoundService(
       });
     },
 
+    async saveGrading(id, input) {
+      const round = find(id);
+      if (round.status !== 'Nháp') {
+        throw new RoundRuleError('Đợt đã mở, không sửa cấu hình điểm.');
+      }
+      return save({
+        ...round,
+        grading: {
+          weightChair: input.weightChair,
+          weightSecretary: input.weightSecretary,
+          weightSupervisor: input.weightSupervisor,
+          weightReviewer: input.weightReviewer,
+          deviationThreshold: input.deviationThreshold,
+        },
+      });
+    },
+
     // Đề xuất: GET /api/users?role=Lecturer|Student (đã có thể dùng chung với
     // màn Người dùng khi backend có endpoint danh sách).
     async listParticipants(kind) {
