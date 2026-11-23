@@ -121,15 +121,23 @@ export const CouncilEditor: React.FC<CouncilEditorProps> = ({
             onChange={(e) => set({ chairId: e.target.value })}
           >
             <option value="">Chọn giảng viên</option>
-            {board.lecturers.map((l) => (
-              <option
-                key={l.id}
-                value={l.id}
-                disabled={l.id === draft.secretaryId}
-              >
-                {`${l.name} (${l.code})`}
-              </option>
-            ))}
+            {board.lecturers.map((l) => {
+              const chairBlockedSlots = draft.slots.filter(
+                (s) => s.supervisorId === l.id,
+              );
+              const isChairBlocked = chairBlockedSlots.length > 0;
+              return (
+                <option
+                  key={l.id}
+                  value={l.id}
+                  disabled={l.id === draft.secretaryId || isChairBlocked}
+                >
+                  {isChairBlocked
+                    ? `${l.name} (${l.code}) (GVHD ${chairBlockedSlots.map((s) => s.code).join(', ')})`
+                    : `${l.name} (${l.code})`}
+                </option>
+              );
+            })}
           </select>
           {error('chair')}
         </div>
@@ -144,11 +152,23 @@ export const CouncilEditor: React.FC<CouncilEditorProps> = ({
             onChange={(e) => set({ secretaryId: e.target.value })}
           >
             <option value="">Chọn giảng viên</option>
-            {board.lecturers.map((l) => (
-              <option key={l.id} value={l.id} disabled={l.id === draft.chairId}>
-                {`${l.name} (${l.code})`}
-              </option>
-            ))}
+            {board.lecturers.map((l) => {
+              const secBlockedSlots = draft.slots.filter(
+                (s) => s.supervisorId === l.id,
+              );
+              const isSecBlocked = secBlockedSlots.length > 0;
+              return (
+                <option
+                  key={l.id}
+                  value={l.id}
+                  disabled={l.id === draft.chairId || isSecBlocked}
+                >
+                  {isSecBlocked
+                    ? `${l.name} (${l.code}) (GVHD ${secBlockedSlots.map((s) => s.code).join(', ')})`
+                    : `${l.name} (${l.code})`}
+                </option>
+              );
+            })}
           </select>
           {error('secretary')}
         </div>

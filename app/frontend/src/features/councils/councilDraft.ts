@@ -227,6 +227,8 @@ export function slotErrors(draft: CouncilDraft): Record<string, string> {
       errors[slot.topicId] = 'Giờ kết thúc phải sau giờ bắt đầu.';
     else if (previous && toMinutes(slot.start) < toMinutes(previous.end))
       errors[slot.topicId] = `Bắt đầu trước khi ${previous.code} kết thúc.`;
+    else if (supervisorInCouncil(draft, slot.supervisorId))
+      errors[slot.topicId] = `${slot.code}: ${slot.supervisorName} là GVHD, không được làm PB/CT/TK của đề tài này. Xếp đề tài vào hội đồng khác.`;
     if (
       isTime(slot.start) &&
       isTime(slot.end) &&

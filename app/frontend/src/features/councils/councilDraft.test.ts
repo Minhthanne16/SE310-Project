@@ -125,6 +125,27 @@ describe('councilDraft', () => {
     expect(slotErrors(draft)).toEqual({
       '2': 'Bắt đầu trước khi DT-1 kết thúc.',
     });
+
+    // GVHD ngồi hội đồng này bị chặn lỗi
+    const draftWithSupervisor = {
+      ...empty,
+      chairId: 'A',
+      slots: [pool('1', 'A')].map((p) => ({
+        topicId: p.topicId,
+        code: p.code,
+        title: p.title,
+        supervisorId: p.supervisor.id,
+        supervisorName: p.supervisor.name,
+        reviewerName: null,
+        groupText: '—',
+        thesisVersionCount: 0,
+        start: '07:30',
+        end: '08:15',
+      })),
+    };
+    expect(slotErrors(draftWithSupervisor)['1']).toBe(
+      'DT-1: GV A là GVHD, không được làm PB/CT/TK của đề tài này. Xếp đề tài vào hội đồng khác.',
+    );
   });
 
   it('kiểm tra trường chung và lý do khi lịch đã công bố', () => {

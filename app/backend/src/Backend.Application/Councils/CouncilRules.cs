@@ -138,9 +138,9 @@ public static class CouncilRules
                 continue;
             }
             if (TopicBlocker(topic, ctx.Round, ctx.Today) is { } blocker) Add($"{topic.Code}: {blocker}.");
-            // GVHD không ngồi hội đồng chấm đề tài mình hướng dẫn (BUSINESS_RULES). GVPB được phép (OQ-032, PDR-063).
+            // GVHD không ngồi hội đồng chấm đề tài mình hướng dẫn (BUSINESS_RULES, PDR-070). GVPB được phép (OQ-032, PDR-063).
             if (members.Contains(topic.SupervisorId))
-                Add($"{topic.Code}: {PersonName(topic.SupervisorId, ctx)} là GVHD nhưng đang ngồi hội đồng chấm đề tài này.");
+                Add($"{topic.Code}: {PersonName(topic.SupervisorId, ctx)} là GVHD, không được làm PB/CT/TK của đề tài này. Xếp đề tài vào hội đồng khác.");
             // PDR-016: một lượt có hiệu lực mỗi đề tài.
             var owner = ctx.RoundCouncils.FirstOrDefault(c => c.Id != plan.CouncilId && c.Status != CouncilStatus.Cancelled
                 && c.Slots.Any(s => s.TopicId == slot.TopicId && s.Status == DefenseSlotStatus.Active));
