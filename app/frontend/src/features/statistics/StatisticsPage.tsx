@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { apiRequest } from '@/api/request';
+import { formatDateTime } from '@/features/rounds/roundUtils';
 import { roundService } from '@/features/rounds/services/roundService';
 import { exportFileName } from '@/features/topics/topicExport';
 import { downloadXlsx } from '@/lib/xlsx';
@@ -225,11 +226,7 @@ export function StatisticsPage() {
                 <span className="app-chip app-chip-info">
                   {round?.status ?? data.roundStatus}
                 </span>
-                <span>
-                  {' '}
-                  Dữ liệu tại{' '}
-                  {new Date(data.snapshotAt).toLocaleString('vi-VN')}
-                </span>
+                <span> Dữ liệu tại {formatDateTime(data.snapshotAt)}</span>
               </p>
             </div>
             <div className="statistics-kpis">

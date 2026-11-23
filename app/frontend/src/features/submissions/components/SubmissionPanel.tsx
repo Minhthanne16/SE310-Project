@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useId, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { DateInput } from '@/components/ui/DateInput';
 import { ApiError } from '@/api/request';
 import {
   submissionService as defaultService,
@@ -341,9 +342,8 @@ const KindSection: React.FC<KindSectionProps> = ({
           {kind.canGrantExtension ? (
             <div className="sub-field">
               <label htmlFor={`${id}-end`}>Hạn bổ sung</label>
-              <input
+              <DateInput
                 id={`${id}-end`}
-                type="date"
                 value={extensionEnd}
                 aria-invalid={
                   failure?.startsWith('Nhập hạn bổ sung') && !extensionEnd
@@ -355,7 +355,7 @@ const KindSection: React.FC<KindSectionProps> = ({
                     ? `${id}-decision-error`
                     : undefined
                 }
-                onChange={(e) => setExtensionEnd(e.target.value)}
+                onChange={setExtensionEnd}
               />
             </div>
           ) : null}

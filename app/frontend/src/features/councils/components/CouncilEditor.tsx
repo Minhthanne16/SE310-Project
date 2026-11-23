@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ArrowDown, ArrowUp, X } from 'lucide-react';
+import { DateInput } from '@/components/ui/DateInput';
 import {
   addSlot,
   autoFill,
@@ -174,9 +175,8 @@ export const CouncilEditor: React.FC<CouncilEditorProps> = ({
         </div>
         <div className="tpc-form-field">
           <label htmlFor="cnc-date">Ngày bảo vệ</label>
-          <input
+          <DateInput
             id="cnc-date"
-            type="date"
             value={draft.date}
             disabled={busy}
             {...aria('date')}
@@ -188,7 +188,7 @@ export const CouncilEditor: React.FC<CouncilEditorProps> = ({
                 .filter(Boolean)
                 .join(' ') || undefined
             }
-            onChange={(e) => set({ date: e.target.value })}
+            onChange={(date) => set({ date })}
           />
           {defenseWindow && (
             <p id="cnc-date-hint" className="cnc-hint">

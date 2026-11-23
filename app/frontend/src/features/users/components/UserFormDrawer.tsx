@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { Ban, KeyRound, Lock, RotateCcw, Trash2, X } from 'lucide-react';
+import { DateInput } from '@/components/ui/DateInput';
 import { ROLE_LABEL } from '@/features/auth/roles';
 import { UserAuditHistory } from '@/features/users/components/UserAuditHistory';
 import {
@@ -115,20 +116,33 @@ const TextField: React.FC<TextFieldProps> = ({
         {label}
         {required && <span className="usr-req"> *</span>}
       </label>
-      <input
-        id={id}
-        className="usr-input"
-        type={type}
-        value={value}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        autoFocus={autoFocus}
-        // Không để trình duyệt điền sẵn mật khẩu của chính Giáo vụ.
-        autoComplete={type === 'password' ? 'new-password' : undefined}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        onChange={(e) => onChange(field, e.target.value)}
-      />
+      {type === 'date' ? (
+        <DateInput
+          id={id}
+          className="usr-input"
+          value={value}
+          readOnly={readOnly}
+          autoFocus={autoFocus}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          onChange={(iso) => onChange(field, iso)}
+        />
+      ) : (
+        <input
+          id={id}
+          className="usr-input"
+          type={type}
+          value={value}
+          placeholder={placeholder}
+          readOnly={readOnly}
+          autoFocus={autoFocus}
+          // Không để trình duyệt điền sẵn mật khẩu của chính Giáo vụ.
+          autoComplete={type === 'password' ? 'new-password' : undefined}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          onChange={(e) => onChange(field, e.target.value)}
+        />
+      )}
       {error ? (
         <p id={`${id}-error`} className="usr-field-error">
           {error}

@@ -146,7 +146,7 @@ it('validates milestone order live and saves a valid configuration', async () =>
   fireEvent.click(screen.getByRole('button', { name: 'Hủy thay đổi' }));
   expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   expect(screen.getByLabelText('Bắt đầu Báo cáo giữa kỳ')).toHaveValue(
-    '2026-10-19',
+    '19/10/2026',
   );
 
   fireEvent.change(screen.getByLabelText('Kết thúc Báo cáo giữa kỳ'), {
@@ -411,7 +411,7 @@ it('asks before leaving the config tab with unsaved changes', async () => {
     screen.getByRole('heading', { name: 'Mốc thời gian' }),
   ).toBeInTheDocument();
   expect(screen.getByLabelText('Kết thúc Báo cáo giữa kỳ')).toHaveValue(
-    '2026-11-02',
+    '02/11/2026',
   );
 
   tab('Giảng viên');
