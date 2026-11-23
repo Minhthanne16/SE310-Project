@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import { KeyRound, LogOut, Pencil, X } from 'lucide-react';
 import { ChangePasswordDialog } from '@/features/auth/components/ChangePasswordDialog';
+import { DateInput } from '@/components/ui/DateInput';
 import { ROLE_LABEL } from '@/features/auth/roles';
 import { useSession } from '@/features/auth/session/SessionProvider';
 import { initials } from '@/features/navigation/initials';
@@ -18,6 +19,7 @@ import {
   profileService as defaultProfileService,
   type ProfileService,
 } from '@/features/profile/services/profileService';
+import { formatDateTime } from '@/features/rounds/roundUtils';
 import { formatDateOrDash } from '@/lib/date';
 import type { CurrentUser } from '@/types/auth';
 import type { ProfileInput, UserProfile } from '@/types/profile';
@@ -26,9 +28,6 @@ import '@/features/profile/profile.css';
 interface ProfilePageProps {
   profileService?: ProfileService;
 }
-
-const formatDateTime = (iso: string): string =>
-  new Date(iso).toLocaleString('vi-VN');
 
 const inputFromProfile = (profile: UserProfile): ProfileInput => ({
   fullName: profile.fullName,
@@ -106,19 +105,32 @@ const EditRow: React.FC<EditRowProps> = ({
   const id = `profile-${field}`;
   return (
     <Row label={<label htmlFor={id}>{label}</label>}>
-      <input
-        ref={inputRef}
-        id={id}
-        className="prf-input"
-        type={type}
-        max={max}
-        inputMode={inputMode}
-        placeholder={placeholder}
-        value={value}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? `${id}-error` : undefined}
-        onChange={(e) => onChange(field, e.target.value)}
-      />
+      {type === 'date' ? (
+        <DateInput
+          inputRef={inputRef}
+          id={id}
+          className="prf-input"
+          max={max}
+          value={value}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onChange={(iso) => onChange(field, iso)}
+        />
+      ) : (
+        <input
+          ref={inputRef}
+          id={id}
+          className="prf-input"
+          type={type}
+          max={max}
+          inputMode={inputMode}
+          placeholder={placeholder}
+          value={value}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          onChange={(e) => onChange(field, e.target.value)}
+        />
+      )}
       {error && (
         <span id={`${id}-error`} role="alert" className="prf-field-error">
           {error}

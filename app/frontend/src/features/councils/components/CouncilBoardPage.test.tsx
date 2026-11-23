@@ -289,7 +289,7 @@ it('tạo hội đồng: báo lỗi thiếu trường tại chỗ, thêm đề t
     screen.getByRole('heading', { name: 'Tạo hội đồng' }),
   ).toBeInTheDocument();
   expect(screen.getByLabelText('Tên hội đồng')).toHaveValue('Hội đồng 2');
-  expect(screen.getByLabelText('Ngày bảo vệ')).toHaveValue('2026-10-13');
+  expect(screen.getByLabelText('Ngày bảo vệ')).toHaveValue('13/10/2026');
 
   fireEvent.click(screen.getByRole('button', { name: 'Lưu hội đồng' }));
   expect(screen.getByText('Chọn Chủ tịch.')).toHaveAttribute('role', 'alert');

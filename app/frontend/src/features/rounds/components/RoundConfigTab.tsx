@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { DateInput } from '@/components/ui/DateInput';
 import '@/features/rounds/rounds.css';
 import { roundSpan, validateMilestones } from '@/features/rounds/roundUtils';
 import {
@@ -272,7 +273,12 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
           </div>
           <label className="rnd-label">
             Ngày bắt đầu tuần 1
-            <input type="date" className="rnd-input" readOnly value={weekOne} />
+            <DateInput
+              className="rnd-input"
+              readOnly
+              value={weekOne}
+              onChange={() => {}}
+            />
           </label>
         </div>
         <p className="rnd-hint">
@@ -434,28 +440,22 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
                       </span>
                     </th>
                     <td>
-                      <input
-                        type="date"
+                      <DateInput
                         className="rnd-date"
                         aria-label={`Bắt đầu ${m.name}`}
                         value={m.startDate}
                         disabled={readOnly}
-                        onChange={(e) =>
-                          patch(m.key, { startDate: e.target.value })
-                        }
+                        onChange={(startDate) => patch(m.key, { startDate })}
                         {...invalidProps}
                       />
                     </td>
                     <td>
-                      <input
-                        type="date"
+                      <DateInput
                         className="rnd-date"
                         aria-label={`Kết thúc ${m.name}`}
                         value={m.endDate}
                         disabled={readOnly}
-                        onChange={(e) =>
-                          patch(m.key, { endDate: e.target.value })
-                        }
+                        onChange={(endDate) => patch(m.key, { endDate })}
                         {...invalidProps}
                       />
                     </td>
@@ -487,15 +487,14 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
                       {m.allowLate ? (
                         <label className="rnd-late-end">
                           <span>Hạn nộp trễ</span>
-                          <input
-                            type="date"
+                          <DateInput
                             className="rnd-date"
                             aria-label={`Hạn nộp trễ ${m.name}`}
                             value={m.lateEndDate ?? ''}
                             min={m.endDate || undefined}
                             disabled={readOnly}
-                            onChange={(e) =>
-                              patch(m.key, { lateEndDate: e.target.value })
+                            onChange={(lateEndDate) =>
+                              patch(m.key, { lateEndDate })
                             }
                             {...invalidProps}
                           />
