@@ -4,7 +4,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import '@/features/rounds/rounds.css';
-import { roundSpan, validateMilestones } from '@/features/rounds/roundUtils';
+import { roundSpan, validateMilestones, formatDate } from '@/features/rounds/roundUtils';
+import { autofillMilestones, suggestStart } from '@/features/rounds/milestoneAutofill';
 import {
   validateRoundInput,
   type RoundFieldErrors,
@@ -73,18 +74,34 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Thông tin đợt (chỉ sửa được khi Nháp): chương trình và tên đợt. Tên lưu
+  // Thông tin đợt (chỉ sửa được khi Nháp): chương trình, tên đợt và số SV tối đa mỗi nhóm. Tên lưu
   // của đợt là "{chương trình} · {tên đợt}" như hộp Tạo đợt.
   const [program, setProgram] = useState<RoundProgram>(round.program);
   const [label, setLabel] = useState(round.periodLabel);
+  const [maxGroupSize, setMaxGroupSize] = useState<string>(
+    String(round.maxGroupSize ?? 2),
+  );
+  const [autofillStart, setAutofillStart] = useState<string>(
+    round.milestones[0]?.startDate || '',
+  );
   const [infoSaving, setInfoSaving] = useState(false);
   const [infoError, setInfoError] = useState<string | null>(null);
   const [serverFields, setServerFields] = useState<RoundFieldErrors>({});
 
   const cleanLabel = label.trim().replace(/\s+/g, ' ');
+  const parsedGroupSize = Number(maxGroupSize);
+  const groupSizeError =
+    !/^\d+$/.test(maxGroupSize.trim()) ||
+    parsedGroupSize < 1 ||
+    parsedGroupSize > 10
+      ? 'Số SV tối đa mỗi nhóm từ 1 đến 10.'
+      : null;
+
   const infoDirty =
     !infoLocked &&
-    (program !== round.program || cleanLabel !== round.periodLabel);
+    (program !== round.program ||
+      cleanLabel !== round.periodLabel ||
+      maxGroupSize !== String(round.maxGroupSize ?? 2));
   const infoFields = validateRoundInput({
     name: `${program} · ${cleanLabel}`,
     program,
@@ -94,7 +111,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
   const labelError = infoDirty
     ? (infoFields.periodLabel ?? serverFields.name ?? serverFields.periodLabel)
     : undefined;
-  const infoInvalid = Object.keys(infoFields).length > 0;
+  const infoInvalid = Object.keys(infoFields).length > 0 || !!groupSizeError;
 
   // Số đề tài mỗi GV (chỉ sửa khi Nháp). Giữ chuỗi để ô trống khi đang gõ.
   const [loadMin, setLoadMin] = useState(String(round.lecturerLoadMin));
@@ -134,10 +151,12 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
         name: `${program} · ${cleanLabel}`,
         program,
         periodLabel: cleanLabel,
+        maxGroupSize: parsedGroupSize,
       });
       toast.success('Đã lưu thông tin đợt.');
       setProgram(updated.program);
       setLabel(updated.periodLabel);
+      setMaxGroupSize(String(updated.maxGroupSize ?? 2));
       onSaved(updated);
     } catch (err: unknown) {
       if (err instanceof DuplicateRoundNameError)
@@ -216,6 +235,26 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
     }
   };
 
+  const handleAutofill = () => {
+    if (!autofillStart) {
+      toast.error('Vui lòng chọn ngày bắt đầu đợt trước khi tự điền.');
+      return;
+    }
+    const hasExisting = draft.some((m) => m.startDate || m.endDate);
+    if (
+      hasExisting &&
+      typeof window !== 'undefined' &&
+      !window.confirm(
+        'Tự điền 9 mốc sẽ ghi đè các ngày đã nhập. Bạn có chắc chắn muốn tiếp tục?',
+      )
+    ) {
+      return;
+    }
+    setDraft(autofillMilestones(draft, autofillStart));
+    setSaveError(null);
+    toast.success('Đã tự điền 9 mốc theo số tuần chuẩn.');
+  };
+
   return (
     <div className="rnd-panel">
       <section className="rnd-section" aria-labelledby="round-info-title">
@@ -274,10 +313,38 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
             Ngày bắt đầu tuần 1
             <input type="date" className="rnd-input" readOnly value={weekOne} />
           </label>
+          <div className="rnd-label">
+            <label htmlFor="round-max-group-size">Số SV tối đa mỗi nhóm</label>
+            <input
+              id="round-max-group-size"
+              type="number"
+              className="rnd-input"
+              min={1}
+              max={10}
+              step={1}
+              inputMode="numeric"
+              disabled={infoLocked || infoSaving}
+              value={infoLocked ? (round.maxGroupSize ?? 2) : maxGroupSize}
+              aria-invalid={groupSizeError ? true : undefined}
+              aria-describedby={
+                groupSizeError ? 'round-group-size-error' : undefined
+              }
+              onChange={(e) => {
+                setMaxGroupSize(e.target.value);
+                setServerFields({});
+                setInfoError(null);
+              }}
+            />
+            {groupSizeError && (
+              <span id="round-group-size-error" className="rnd-field-err">
+                {groupSizeError}
+              </span>
+            )}
+          </div>
         </div>
         <p className="rnd-hint">
           Ngày bắt đầu tuần 1 là thứ Hai của tuần chứa mốc sớm nhất; đổi bằng
-          cách sửa ngày các mốc bên dưới.
+          cách sửa ngày các mốc bên dưới. Tối thiểu luôn là 1 sinh viên (sinh viên có thể làm việc một mình hoặc theo nhóm đến tối đa quy định).
         </p>
         {!infoLocked && (
           <div className="rnd-info-actions">
@@ -389,6 +456,26 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
             định.
           </p>
         </div>
+        {!readOnly && (
+          <div className="rnd-autofill-bar">
+            <label className="rnd-label">
+              Ngày bắt đầu đợt
+              <input
+                type="date"
+                className="rnd-date"
+                value={autofillStart}
+                onChange={(e) => setAutofillStart(e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="rnd-btn"
+              onClick={handleAutofill}
+            >
+              Tự điền 9 mốc
+            </button>
+          </div>
+        )}
         <div className="rnd-table-scroll">
           <table className="rnd-table rnd-table-ms">
             <thead>
@@ -401,7 +488,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
               </tr>
             </thead>
             <tbody>
-              {draft.map((m) => {
+              {draft.map((m, index) => {
                 const error = errors[m.key];
                 const errorId = `milestone-${m.key}-error`;
                 const invalidProps = error
@@ -427,9 +514,27 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
                           </span>
                         )}
                         {error && (
-                          <span id={errorId} className="rnd-ms-err">
-                            {error}
-                          </span>
+                          <>
+                            <span id={errorId} className="rnd-ms-err">
+                              {error}
+                            </span>
+                            {!readOnly && (() => {
+                              const suggested = suggestStart(draft, index);
+                              if (!suggested || suggested === m.startDate)
+                                return null;
+                              return (
+                                <button
+                                  type="button"
+                                  className="rnd-btn-suggest"
+                                  onClick={() =>
+                                    patch(m.key, { startDate: suggested })
+                                  }
+                                >
+                                  Dùng ngày gợi ý ({formatDate(suggested)})
+                                </button>
+                              );
+                            })()}
+                          </>
                         )}
                       </span>
                     </th>
@@ -533,8 +638,7 @@ export const RoundConfigTab: React.FC<RoundConfigTabProps> = ({
         </div>
         <div
           role={hardInvalid ? 'alert' : 'status'}
-          className={`rnd-check-box ${invalid ? 'rnd-check-bad' : 'rnd-check-ok'}`}
-          style={{ marginTop: 16 }}
+          className={`rnd-check-box rnd-check-box-spaced ${invalid ? 'rnd-check-bad' : 'rnd-check-ok'}`}
         >
           <b>
             {invalid

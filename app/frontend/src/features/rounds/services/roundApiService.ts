@@ -98,6 +98,7 @@ export function createApiRoundService(): RoundService {
           periodLabel: input.periodLabel,
           lecturerLoadMin: input.lecturerLoadMin,
           lecturerLoadMax: input.lecturerLoadMax,
+          maxGroupSize: input.maxGroupSize,
         }),
         true,
       ),

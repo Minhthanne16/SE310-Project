@@ -131,6 +131,14 @@ export interface TopicSummary {
   byStatus: Record<TopicStatus, number>;
 }
 
+export interface RoundGrading {
+  weightChair: number;
+  weightSecretary: number;
+  weightSupervisor: number;
+  weightReviewer: number;
+  deviationThreshold: number;
+}
+
 export interface Round {
   id: string;
   name: string;
@@ -141,6 +149,10 @@ export interface Round {
   // Số đề tài mỗi giảng viên nhận hướng dẫn, chỉ để cảnh báo. 0 = chưa đặt mức.
   lecturerLoadMin: number;
   lecturerLoadMax: number;
+  // PDR-069: Số SV tối đa mỗi nhóm (1..10, mặc định 2).
+  maxGroupSize: number;
+  // PDR-065: Cấu hình điểm đợt (hệ số và ngưỡng lệch).
+  grading: RoundGrading;
   // Thời điểm công bố danh sách đề tài cho sinh viên (ISO 8601); null = chưa
   // công bố. Công bố không hoàn tác được.
   topicsPublishedAt: string | null;
@@ -166,6 +178,7 @@ export interface RoundInput {
   // Chỉ dùng khi sửa đợt Nháp; bỏ trống thì giữ mức hiện có.
   lecturerLoadMin?: number;
   lecturerLoadMax?: number;
+  maxGroupSize?: number;
 }
 
 export interface RoundFilters {

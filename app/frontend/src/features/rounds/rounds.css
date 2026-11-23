@@ -1303,6 +1303,35 @@
   line-height: 1.5;
 }
 
+.rnd-check-box-spaced {
+  margin-top: 16px;
+}
+
+.rnd-autofill-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 0 22px 16px;
+  flex-wrap: wrap;
+}
+
+.rnd-btn-suggest {
+  margin-top: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--accent);
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm, 6px);
+  cursor: pointer;
+  min-height: 32px;
+}
+
+.rnd-btn-suggest:hover {
+  background: var(--accent-subtle, rgba(37, 99, 235, 0.08));
+}
+
 .rnd-check-bad {
   background: var(--danger-bg);
   color: var(--danger-ink);

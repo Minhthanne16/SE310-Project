@@ -110,15 +110,19 @@ export function currentWeek(round: Round, today: string): number | null {
 }
 
 // Kiểm tra từng mốc: bắt đầu ≤ kết thúc, và mốc sau không bắt đầu sớm hơn mốc
-// trước (thứ tự không giảm theo ngày bắt đầu). Mốc chưa đặt ngày được bỏ qua
-// ở bước kiểm tra thứ tự.
+// trước (thứ tự không giảm theo ngày bắt đầu, trùng ngày hợp lệ theo PDR-067).
+// Mốc chưa đặt ngày được bỏ qua ở bước kiểm tra thứ tự. Ngoại lệ: mốc 8 so với mốc 6,
+// mốc 9 so với mốc 7.
 export function validateMilestones(milestones: Milestone[]): MilestoneErrors {
   const errors: MilestoneErrors = {};
-  let previous: Milestone | undefined;
-  for (const m of milestones) {
+  const parsed = new Map<MilestoneKey, { name: string; start: string; end: string }>();
+
+  for (let i = 0; i < milestones.length; i++) {
+    const m = milestones[i];
     const start = m.startDate.trim();
     const end = m.endDate.trim();
     const late = m.allowLate === null ? '' : (m.lateEndDate ?? '').trim();
+
     if (!start && !end) {
       if (late) errors[m.key] = 'Đặt ngày kết thúc trước khi đặt hạn nộp trễ.';
       continue;
@@ -131,31 +135,72 @@ export function validateMilestones(milestones: Milestone[]): MilestoneErrors {
       errors[m.key] = 'Ngày kết thúc phải sau hoặc cùng ngày bắt đầu.';
       continue;
     }
-    if (previous && start < previous.startDate) {
+
+    // PDR-067: Ngoại lệ mốc grading (8) so với reviewSchedule (6).
+    // Mốc finalize (9) so với defenseSchedule (7).
+    let reference: { name: string; start: string } | undefined;
+    if (m.key === 'grading') {
+      for (let j = 5; j >= 0; j--) {
+        const p = parsed.get(milestones[j].key);
+        if (p) {
+          reference = p;
+          break;
+        }
+      }
+    } else if (m.key === 'finalize') {
+      for (let j = 6; j >= 0; j--) {
+        const p = parsed.get(milestones[j].key);
+        if (p) {
+          reference = p;
+          break;
+        }
+      }
+    } else {
+      for (let j = i - 1; j >= 0; j--) {
+        const p = parsed.get(milestones[j].key);
+        if (p) {
+          reference = p;
+          break;
+        }
+      }
+    }
+
+    if (reference && start < reference.start) {
       errors[m.key] =
-        `Mốc này bắt đầu trước mốc “${previous.name}”. Các mốc phải theo thứ tự thời gian.`;
+        `Mốc này bắt đầu trước mốc “${reference.name}”. Các mốc phải theo thứ tự thời gian.`;
       continue;
     }
+
     // PDR-041: hạn trễ riêng của mốc phải sau hạn thường.
-    if (late && (!isIsoDate(late) || late <= end))
+    if (late && (!isIsoDate(late) || late <= end)) {
       errors[m.key] = 'Hạn nộp trễ phải sau ngày kết thúc của mốc.';
-    previous = m;
+    }
+
+    parsed.set(m.key, { name: m.name, start, end });
   }
   return errors;
 }
 
-// Lý do chặn mở đợt (PDR-032): đủ chín mốc, mỗi mốc có ngày và đúng thứ tự.
-// Mỗi phần tử là một dòng "Tên mốc: vấn đề"; rỗng nghĩa là mở được.
+export const FIRST_THREE_MILESTONE_KEYS: readonly MilestoneKey[] = [
+  'topicSubmission',
+  'topicRegistration',
+  'outline',
+];
+
+// Lý do chặn mở đợt (PDR-067 thay PDR-032): đủ 3 mốc đầu, mỗi mốc có ngày và đúng thứ tự.
+// Các mốc 4-9 có thể để trống.
 export function openBlockers(round: Round): string[] {
   const errors = validateMilestones(round.milestones);
   const blockers: string[] = [];
   for (const m of round.milestones) {
-    if (!m.startDate.trim() && !m.endDate.trim())
-      blockers.push(`${m.name}: chưa đặt ngày`);
-    else if (errors[m.key]) blockers.push(`${m.name}: ${errors[m.key]}`);
-    // PDR-041: bật nộp trễ thì phải có hạn trễ trước khi mở đợt.
-    else if (m.allowLate === true && !(m.lateEndDate ?? '').trim())
+    const isFirstThree = FIRST_THREE_MILESTONE_KEYS.includes(m.key);
+    if (!m.startDate.trim() && !m.endDate.trim()) {
+      if (isFirstThree) blockers.push(`${m.name}: chưa đặt ngày`);
+    } else if (errors[m.key]) {
+      blockers.push(`${m.name}: ${errors[m.key]}`);
+    } else if (m.allowLate === true && !(m.lateEndDate ?? '').trim()) {
       blockers.push(`${m.name}: bật “Cho nộp trễ” nhưng chưa đặt hạn nộp trễ`);
+    }
   }
   return blockers;
 }

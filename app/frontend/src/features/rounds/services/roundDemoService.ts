@@ -217,6 +217,14 @@ export function createRoundService(
         status: 'Nháp',
         lecturerLoadMin: source?.lecturerLoadMin ?? 0,
         lecturerLoadMax: source?.lecturerLoadMax ?? 0,
+        maxGroupSize: source?.maxGroupSize ?? 2,
+        grading: source?.grading ?? {
+          weightChair: 1,
+          weightSecretary: 1,
+          weightSupervisor: 2,
+          weightReviewer: 2,
+          deviationThreshold: 2,
+        },
         topicsPublishedAt: null,
         milestones: source
           ? blank.map((m) => {
@@ -266,6 +274,7 @@ export function createRoundService(
         periodLabel: input.periodLabel,
         lecturerLoadMin: raw.lecturerLoadMin ?? round.lecturerLoadMin,
         lecturerLoadMax: raw.lecturerLoadMax ?? round.lecturerLoadMax,
+        maxGroupSize: raw.maxGroupSize ?? round.maxGroupSize,
       });
     },
 
