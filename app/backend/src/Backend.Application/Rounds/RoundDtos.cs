@@ -13,6 +13,8 @@ public sealed class RoundDto
     public string Status { get; set; } = string.Empty;
     public int LecturerLoadMin { get; set; }
     public int LecturerLoadMax { get; set; }
+    public int MaxGroupSize { get; set; } = 2;
+    public RoundGradingDto Grading { get; set; } = new();
     // Thời điểm công bố danh sách đề tài (ISO 8601, UTC); null nếu chưa công bố.
     public string? TopicsPublishedAt { get; set; }
     public List<RoundMilestoneDto> Milestones { get; set; } = [];
@@ -68,6 +70,38 @@ public sealed class RoundInfoDto
     // null = giữ nguyên mức hiện có.
     public int? LecturerLoadMin { get; set; }
     public int? LecturerLoadMax { get; set; }
+    // PDR-069: Số SV tối đa mỗi nhóm (1..10, mặc định 2).
+    public int? MaxGroupSize { get; set; }
+}
+
+public sealed class RoundGradingDto
+{
+    public decimal WeightChair { get; set; } = 1;
+    public decimal WeightSecretary { get; set; } = 1;
+    public decimal WeightSupervisor { get; set; } = 2;
+    public decimal WeightReviewer { get; set; } = 2;
+    public decimal DeviationThreshold { get; set; } = 2;
+}
+
+public sealed class UpdateRoundGradingDto
+{
+    public decimal WeightChair { get; set; } = 1;
+    public decimal WeightSecretary { get; set; } = 1;
+    public decimal WeightSupervisor { get; set; } = 2;
+    public decimal WeightReviewer { get; set; } = 2;
+    public decimal DeviationThreshold { get; set; } = 2;
+    public bool SaveAsProgramDefault { get; set; }
+}
+
+public sealed class ProgramRoundDefaultsDto
+{
+    public string Program { get; set; } = string.Empty;
+    public int MaxGroupSize { get; set; } = 2;
+    public decimal WeightChair { get; set; } = 1;
+    public decimal WeightSecretary { get; set; } = 1;
+    public decimal WeightSupervisor { get; set; } = 2;
+    public decimal WeightReviewer { get; set; } = 2;
+    public decimal DeviationThreshold { get; set; } = 2;
 }
 
 public sealed class RoundMilestonesInputDto

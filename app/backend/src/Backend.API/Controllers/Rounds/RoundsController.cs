@@ -47,6 +47,16 @@ public sealed class RoundsController(ISender sender) : ControllerBase
     public async Task<ActionResult<ApiResponse<RoundDto>>> Update(Guid id, RoundInfoDto dto, CancellationToken cancellationToken) =>
         ToAction(await sender.Send(new UpdateRoundCommand(id, dto), cancellationToken));
 
+    [HttpGet("defaults/{program}")]
+    [Authorize(Roles = AppRoles.AcademicAffairs)]
+    public async Task<ActionResult<ApiResponse<ProgramRoundDefaultsDto>>> GetDefaults(string program, CancellationToken cancellationToken) =>
+        Ok(await sender.Send(new GetProgramDefaultsQuery(program), cancellationToken));
+
+    [HttpPut("{id:guid}/grading")]
+    [Authorize(Roles = AppRoles.AcademicAffairs)]
+    public async Task<ActionResult<ApiResponse<RoundDto>>> UpdateGrading(Guid id, UpdateRoundGradingDto dto, CancellationToken cancellationToken) =>
+        ToAction(await sender.Send(new UpdateRoundGradingCommand(id, dto, Guid.Parse(User.FindFirst(AppClaims.UserId)!.Value)), cancellationToken));
+
     [HttpPut("{id:guid}/milestones")]
     [Authorize(Roles = AppRoles.AcademicAffairs)]
     public async Task<ActionResult<ApiResponse<RoundDto>>> UpdateMilestones(Guid id, RoundMilestonesInputDto dto, CancellationToken cancellationToken) =>

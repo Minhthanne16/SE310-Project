@@ -88,8 +88,9 @@ public sealed class RegisterTopicHandler(
         }
         else
         {
-            if (codes.Count > ThesisGroup.MaxMembers - 1)
-                return Fail(TopicResultStatus.Invalid, $"Nhóm có tối đa {ThesisGroup.MaxMembers} sinh viên; chỉ nhập mã của một thành viên.");
+            // PDR-069: số thành viên tối đa theo round.MaxGroupSize
+            if (codes.Count > round.MaxGroupSize - 1)
+                return Fail(TopicResultStatus.Invalid, $"Nhóm có tối đa {round.MaxGroupSize} sinh viên; chỉ nhập mã của {round.MaxGroupSize - 1} thành viên.");
             var found = await rounds.GetActiveUsersByCodesOrEmailsAsync(UserRole.Student, codes, cancellationToken);
             var partners = new List<User>();
             foreach (var code in codes)

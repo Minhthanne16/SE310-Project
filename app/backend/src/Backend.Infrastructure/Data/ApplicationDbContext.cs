@@ -35,6 +35,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<DefenseCouncil> DefenseCouncils => Set<DefenseCouncil>();
     public DbSet<DefenseSlot> DefenseSlots => Set<DefenseSlot>();
     public DbSet<DefenseCouncilLog> DefenseCouncilLogs => Set<DefenseCouncilLog>();
+    public DbSet<ProgramRoundDefaults> ProgramRoundDefaults => Set<ProgramRoundDefaults>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -115,6 +116,15 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Program).IsRequired().HasMaxLength(32);
             entity.Property(e => e.PeriodLabel).IsRequired().HasMaxLength(200);
             entity.Property(e => e.Status).HasConversion<string>().HasMaxLength(16);
+            entity.Property(e => e.MaxGroupSize).HasDefaultValue(2);
+            entity.OwnsOne(e => e.GradingConfig, cfg =>
+            {
+                cfg.Property(p => p.WeightChair).HasPrecision(5, 2).HasDefaultValue(1m);
+                cfg.Property(p => p.WeightSecretary).HasPrecision(5, 2).HasDefaultValue(1m);
+                cfg.Property(p => p.WeightSupervisor).HasPrecision(5, 2).HasDefaultValue(2m);
+                cfg.Property(p => p.WeightReviewer).HasPrecision(5, 2).HasDefaultValue(2m);
+                cfg.Property(p => p.DeviationThreshold).HasPrecision(5, 2).HasDefaultValue(2m);
+            });
             entity.HasIndex(e => e.NormalizedName).IsUnique();
             entity.HasIndex(e => e.Status);
             // Đợt nguồn bị xóa thì chỉ mất dấu truy vết, không xóa đợt sao chép.
@@ -139,6 +149,20 @@ public class ApplicationDbContext : DbContext
             entity.HasIndex(e => e.UserId);
             // Không xóa được người dùng đang thuộc đợt.
             entity.HasOne(e => e.User).WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<ProgramRoundDefaults>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Program).IsRequired().HasMaxLength(32);
+            entity.HasIndex(e => e.Program).IsUnique();
+            entity.Property(e => e.MaxGroupSize).HasDefaultValue(2);
+            entity.Property(e => e.WeightChair).HasPrecision(5, 2).HasDefaultValue(1m);
+            entity.Property(e => e.WeightSecretary).HasPrecision(5, 2).HasDefaultValue(1m);
+            entity.Property(e => e.WeightSupervisor).HasPrecision(5, 2).HasDefaultValue(2m);
+            entity.Property(e => e.WeightReviewer).HasPrecision(5, 2).HasDefaultValue(2m);
+            entity.Property(e => e.DeviationThreshold).HasPrecision(5, 2).HasDefaultValue(2m);
+            entity.HasOne(e => e.UpdatedBy).WithMany().HasForeignKey(e => e.UpdatedById).OnDelete(DeleteBehavior.SetNull);
         });
 
         modelBuilder.Entity<RoundAuditEntry>(entity =>

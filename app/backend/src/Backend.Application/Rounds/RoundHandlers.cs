@@ -78,6 +78,15 @@ internal static class RoundMapping
         Status = RoundRules.Label(round.Status),
         LecturerLoadMin = round.LecturerLoadMin,
         LecturerLoadMax = round.LecturerLoadMax,
+        MaxGroupSize = round.MaxGroupSize,
+        Grading = new RoundGradingDto
+        {
+            WeightChair = round.GradingConfig.WeightChair,
+            WeightSecretary = round.GradingConfig.WeightSecretary,
+            WeightSupervisor = round.GradingConfig.WeightSupervisor,
+            WeightReviewer = round.GradingConfig.WeightReviewer,
+            DeviationThreshold = round.GradingConfig.DeviationThreshold
+        },
         TopicsPublishedAt = round.TopicsPublishedAt is { } published
             ? DateTime.SpecifyKind(published, DateTimeKind.Utc).ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", System.Globalization.CultureInfo.InvariantCulture)
             : null,
@@ -145,7 +154,7 @@ internal static class RoundMapping
     public static string AccountStatus(User user) =>
         !user.IsActive ? "Vô hiệu hóa" : user.MustChangePassword ? "Chưa đăng nhập" : "Đang hoạt động";
 
-    public static ThesisRound NewRound(string name, string program, string periodLabel, ThesisRound? source)
+    public static ThesisRound NewRound(string name, string program, string periodLabel, ThesisRound? source, ProgramRoundDefaults? defaults = null)
     {
         var round = new ThesisRound
         {
@@ -155,6 +164,15 @@ internal static class RoundMapping
             PeriodLabel = periodLabel,
             LecturerLoadMin = source?.LecturerLoadMin ?? 0,
             LecturerLoadMax = source?.LecturerLoadMax ?? 0,
+            MaxGroupSize = source?.MaxGroupSize ?? defaults?.MaxGroupSize ?? 2,
+            GradingConfig = source?.GradingConfig.Clone() ?? (defaults is not null ? new RoundGradingConfig
+            {
+                WeightChair = defaults.WeightChair,
+                WeightSecretary = defaults.WeightSecretary,
+                WeightSupervisor = defaults.WeightSupervisor,
+                WeightReviewer = defaults.WeightReviewer,
+                DeviationThreshold = defaults.DeviationThreshold
+            } : new RoundGradingConfig()),
             CopiedFromId = source?.Id
         };
         // Đủ 9 mốc theo thứ tự cố định. Sao chép (PDR-034) chỉ lấy đối tượng thông báo và công tắc nộp trễ.
@@ -220,7 +238,8 @@ public sealed class CreateRoundHandler(IRoundRepository repository, TimeProvider
                 return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, "Không tìm thấy đợt nguồn để sao chép.");
         }
 
-        var round = RoundMapping.NewRound(name, input.Program.Trim(), RoundRules.NormalizeText(input.PeriodLabel), source);
+        var defaults = await repository.GetProgramDefaultsAsync(input.Program.Trim(), cancellationToken);
+        var round = RoundMapping.NewRound(name, input.Program.Trim(), RoundRules.NormalizeText(input.PeriodLabel), source, defaults);
         try
         {
             await repository.AddAsync(round, cancellationToken);
@@ -242,7 +261,11 @@ public sealed class UpdateRoundHandler(IRoundRepository repository, TimeProvider
         if (round is null)
             return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
         if (round.Status != RoundStatus.Draft)
+        {
+            if (request.Round.MaxGroupSize is { } newMax && newMax != round.MaxGroupSize)
+                return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, "Đợt đã mở, không sửa số sinh viên tối đa.");
             return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, RoundRules.NotDraftInfoMessage);
+        }
 
         var name = RoundRules.NormalizeText(request.Round.Name);
         var normalized = ThesisRound.NormalizeName(name);
@@ -255,6 +278,7 @@ public sealed class UpdateRoundHandler(IRoundRepository repository, TimeProvider
         round.PeriodLabel = RoundRules.NormalizeText(request.Round.PeriodLabel);
         round.LecturerLoadMin = request.Round.LecturerLoadMin ?? round.LecturerLoadMin;
         round.LecturerLoadMax = request.Round.LecturerLoadMax ?? round.LecturerLoadMax;
+        round.MaxGroupSize = request.Round.MaxGroupSize ?? round.MaxGroupSize;
         round.UpdatedAt = clock.GetUtcNow().UtcDateTime;
         try
         {
@@ -630,5 +654,66 @@ public sealed class RemoveParticipantHandler(IRoundRepository repository, TimePr
         round.Participants.Remove(participant);
         return RoundResult<RoundDto>.Ok(await RoundMapping.ToDtoWithRemovalBlockersAsync(round, RoundRules.TodayVietnam(clock), repository, cancellationToken),
             $"Đã gỡ {RoundRules.KindLabel(kind)} khỏi đợt");
+    }
+}
+
+public sealed class UpdateRoundGradingHandler(IRoundRepository repository, TimeProvider clock)
+    : IRequestHandler<UpdateRoundGradingCommand, RoundResult<RoundDto>>
+{
+    public async Task<RoundResult<RoundDto>> Handle(UpdateRoundGradingCommand request, CancellationToken cancellationToken)
+    {
+        var round = await repository.GetByIdAsync(request.Id, cancellationToken);
+        if (round is null)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.NotFound, RoundRules.NotFoundMessage);
+        if (round.Status != RoundStatus.Draft)
+            return RoundResult<RoundDto>.Fail(RoundResultStatus.Conflict, "Đợt đã mở nên không sửa cấu hình điểm được nữa.");
+
+        var input = request.Input;
+        round.GradingConfig.WeightChair = input.WeightChair;
+        round.GradingConfig.WeightSecretary = input.WeightSecretary;
+        round.GradingConfig.WeightSupervisor = input.WeightSupervisor;
+        round.GradingConfig.WeightReviewer = input.WeightReviewer;
+        round.GradingConfig.DeviationThreshold = input.DeviationThreshold;
+        round.UpdatedAt = clock.GetUtcNow().UtcDateTime;
+
+        if (input.SaveAsProgramDefault)
+        {
+            // OQ-033(e): Giáo vụ lưu làm mặc định chương trình
+            await repository.SaveProgramDefaultsAsync(new ProgramRoundDefaults
+            {
+                Program = round.Program,
+                MaxGroupSize = round.MaxGroupSize,
+                WeightChair = input.WeightChair,
+                WeightSecretary = input.WeightSecretary,
+                WeightSupervisor = input.WeightSupervisor,
+                WeightReviewer = input.WeightReviewer,
+                DeviationThreshold = input.DeviationThreshold,
+                UpdatedAt = clock.GetUtcNow().UtcDateTime,
+                UpdatedById = request.ActorId
+            }, cancellationToken);
+        }
+
+        await repository.SaveAsync(cancellationToken);
+        return RoundResult<RoundDto>.Ok(RoundMapping.ToDto(round, RoundRules.TodayVietnam(clock)), "Đã lưu cấu hình điểm");
+    }
+}
+
+public sealed class GetProgramDefaultsHandler(IRoundRepository repository)
+    : IRequestHandler<GetProgramDefaultsQuery, ApiResponse<ProgramRoundDefaultsDto>>
+{
+    public async Task<ApiResponse<ProgramRoundDefaultsDto>> Handle(GetProgramDefaultsQuery request, CancellationToken cancellationToken)
+    {
+        var d = await repository.GetProgramDefaultsAsync(request.Program.Trim(), cancellationToken);
+        var dto = new ProgramRoundDefaultsDto
+        {
+            Program = request.Program.Trim(),
+            MaxGroupSize = d?.MaxGroupSize ?? 2,
+            WeightChair = d?.WeightChair ?? 1,
+            WeightSecretary = d?.WeightSecretary ?? 1,
+            WeightSupervisor = d?.WeightSupervisor ?? 2,
+            WeightReviewer = d?.WeightReviewer ?? 2,
+            DeviationThreshold = d?.DeviationThreshold ?? 2
+        };
+        return ApiResponse<ProgramRoundDefaultsDto>.Ok(dto);
     }
 }

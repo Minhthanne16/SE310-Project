@@ -105,7 +105,7 @@ public sealed class RoundWorkflowTests : IDisposable
         return result.Response.Data!;
     }
 
-    private static RoundMilestonesInputDto Dated(Action<List<RoundMilestoneInputDto>>? tweak = null)
+    internal static RoundMilestonesInputDto Dated(Action<List<RoundMilestoneInputDto>>? tweak = null)
     {
         // Chín mốc nối tiếp nhau, mỗi mốc 5 ngày từ 2026-09-01.
         var start = new DateOnly(2026, 9, 1);

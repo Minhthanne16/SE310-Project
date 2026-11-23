@@ -528,6 +528,71 @@ namespace Backend.Infrastructure.Data.Migrations
                     b.ToTable("Products");
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.ProgramRoundDefaults", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("DeviationThreshold")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(2m);
+
+                    b.Property<int>("MaxGroupSize")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(2);
+
+                    b.Property<string>("Program")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("WeightChair")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(1m);
+
+                    b.Property<decimal>("WeightReviewer")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(2m);
+
+                    b.Property<decimal>("WeightSecretary")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(1m);
+
+                    b.Property<decimal>("WeightSupervisor")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasDefaultValue(2m);
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Program")
+                        .IsUnique();
+
+                    b.HasIndex("UpdatedById");
+
+                    b.ToTable("ProgramRoundDefaults");
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.RevisionRequest", b =>
                 {
                     b.Property<Guid>("Id")
@@ -596,17 +661,37 @@ namespace Backend.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Backend.Domain.Entities.RoundAuditEntry", b =>
                 {
-                    b.Property<Guid>("Id").ValueGeneratedOnAdd().HasColumnType("uuid");
-                    b.Property<string>("Action").IsRequired().HasMaxLength(32).HasColumnType("character varying(32)");
-                    b.Property<Guid?>("ActorUserId").HasColumnType("uuid");
-                    b.Property<DateTime>("CreatedAt").HasColumnType("timestamp with time zone");
-                    b.Property<string>("Details").HasColumnType("text");
-                    b.Property<Guid>("RoundId").HasColumnType("uuid");
-                    b.Property<Guid?>("TargetUserId").HasColumnType("uuid");
-                    b.Property<DateTime?>("UpdatedAt").HasColumnType("timestamp with time zone");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<Guid?>("ActorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Details")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RoundId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("TargetUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
+
                     b.HasIndex("RoundId", "CreatedAt");
+
                     b.ToTable("RoundAuditEntries");
                 });
 
@@ -734,6 +819,11 @@ namespace Backend.Infrastructure.Data.Migrations
 
                     b.Property<int>("LecturerLoadMin")
                         .HasColumnType("integer");
+
+                    b.Property<int>("MaxGroupSize")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(2);
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1318,6 +1408,16 @@ namespace Backend.Infrastructure.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Backend.Domain.Entities.ProgramRoundDefaults", b =>
+                {
+                    b.HasOne("Backend.Domain.Entities.User", "UpdatedBy")
+                        .WithMany()
+                        .HasForeignKey("UpdatedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("UpdatedBy");
+                });
+
             modelBuilder.Entity("Backend.Domain.Entities.RevisionRequest", b =>
                 {
                     b.HasOne("Backend.Domain.Entities.User", null)
@@ -1412,6 +1512,52 @@ namespace Backend.Infrastructure.Data.Migrations
                         .WithMany()
                         .HasForeignKey("CopiedFromId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.OwnsOne("Backend.Domain.Entities.RoundGradingConfig", "GradingConfig", b1 =>
+                        {
+                            b1.Property<Guid>("ThesisRoundId")
+                                .HasColumnType("uuid");
+
+                            b1.Property<decimal>("DeviationThreshold")
+                                .ValueGeneratedOnAdd()
+                                .HasPrecision(5, 2)
+                                .HasColumnType("numeric(5,2)")
+                                .HasDefaultValue(2m);
+
+                            b1.Property<decimal>("WeightChair")
+                                .ValueGeneratedOnAdd()
+                                .HasPrecision(5, 2)
+                                .HasColumnType("numeric(5,2)")
+                                .HasDefaultValue(1m);
+
+                            b1.Property<decimal>("WeightReviewer")
+                                .ValueGeneratedOnAdd()
+                                .HasPrecision(5, 2)
+                                .HasColumnType("numeric(5,2)")
+                                .HasDefaultValue(2m);
+
+                            b1.Property<decimal>("WeightSecretary")
+                                .ValueGeneratedOnAdd()
+                                .HasPrecision(5, 2)
+                                .HasColumnType("numeric(5,2)")
+                                .HasDefaultValue(1m);
+
+                            b1.Property<decimal>("WeightSupervisor")
+                                .ValueGeneratedOnAdd()
+                                .HasPrecision(5, 2)
+                                .HasColumnType("numeric(5,2)")
+                                .HasDefaultValue(2m);
+
+                            b1.HasKey("ThesisRoundId");
+
+                            b1.ToTable("ThesisRounds");
+
+                            b1.WithOwner()
+                                .HasForeignKey("ThesisRoundId");
+                        });
+
+                    b.Navigation("GradingConfig")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Backend.Domain.Entities.ThesisTopic", b =>

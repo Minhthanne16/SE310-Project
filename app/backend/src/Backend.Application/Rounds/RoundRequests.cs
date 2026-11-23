@@ -23,6 +23,8 @@ public record GetRoundsQuery(string? Status, string? Program, string? Search, Gu
 public record GetRoundQuery(Guid Id, Guid? ViewerId = null) : IRequest<RoundResult<RoundDto>>;
 public record CreateRoundCommand(RoundInputDto Round) : IRequest<RoundResult<RoundDto>>;
 public record UpdateRoundCommand(Guid Id, RoundInfoDto Round) : IRequest<RoundResult<RoundDto>>;
+public record UpdateRoundGradingCommand(Guid Id, UpdateRoundGradingDto Input, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
+public record GetProgramDefaultsQuery(string Program) : IRequest<ApiResponse<ProgramRoundDefaultsDto>>;
 public record UpdateRoundMilestonesCommand(Guid Id, RoundMilestonesInputDto Input, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
 public record OpenRoundCommand(Guid Id, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
 public record FinishRoundCommand(Guid Id, Guid? ActorId = null) : IRequest<RoundResult<RoundDto>>;
@@ -263,6 +265,29 @@ public sealed class UpdateRoundValidator : RoundTextValidator<UpdateRoundCommand
             // 0 = chưa đặt mức nên chỉ so khi cả hai đều đã đặt.
             RuleFor(x => x.Round).Must(r => r.LecturerLoadMin is not > 0 || r.LecturerLoadMax is not > 0 || r.LecturerLoadMin <= r.LecturerLoadMax)
                 .WithMessage("Số đề tài tối thiểu không được lớn hơn tối đa.").OverridePropertyName("lecturerLoad");
+            RuleFor(x => x.Round.MaxGroupSize).Must(size => !size.HasValue || (size.Value >= 1 && size.Value <= 10))
+                .WithMessage("Số sinh viên tối đa mỗi nhóm từ 1 đến 10.");
+        });
+    }
+}
+
+public sealed class UpdateRoundGradingValidator : AbstractValidator<UpdateRoundGradingCommand>
+{
+    public UpdateRoundGradingValidator()
+    {
+        RuleFor(x => x.Input).NotNull();
+        When(x => x.Input is not null, () =>
+        {
+            RuleFor(x => x.Input.WeightChair).GreaterThan(0).WithMessage("Hệ số Chủ tịch phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Hệ số Chủ tịch tối đa là 10.");
+            RuleFor(x => x.Input.WeightSecretary).GreaterThan(0).WithMessage("Hệ số Thư ký phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Hệ số Thư ký tối đa là 10.");
+            RuleFor(x => x.Input.WeightSupervisor).GreaterThan(0).WithMessage("Hệ số Hướng dẫn phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Hệ số Hướng dẫn tối đa là 10.");
+            RuleFor(x => x.Input.WeightReviewer).GreaterThan(0).WithMessage("Hệ số Phản biện phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Hệ số Phản biện tối đa là 10.");
+            RuleFor(x => x.Input.DeviationThreshold).GreaterThan(0).WithMessage("Ngưỡng lệch điểm phải lớn hơn 0.")
+                .LessThanOrEqualTo(10).WithMessage("Ngưỡng lệch điểm tối đa là 10.");
         });
     }
 }

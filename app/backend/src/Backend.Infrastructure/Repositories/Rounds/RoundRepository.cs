@@ -264,6 +264,30 @@ public class RoundRepository(ApplicationDbContext context) : IRoundRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<ProgramRoundDefaults?> GetProgramDefaultsAsync(string program, CancellationToken cancellationToken = default) =>
+        context.ProgramRoundDefaults.FirstOrDefaultAsync(d => d.Program == program, cancellationToken);
+
+    public async Task SaveProgramDefaultsAsync(ProgramRoundDefaults defaults, CancellationToken cancellationToken = default)
+    {
+        var existing = await context.ProgramRoundDefaults.FirstOrDefaultAsync(d => d.Program == defaults.Program, cancellationToken);
+        if (existing is null)
+        {
+            context.ProgramRoundDefaults.Add(defaults);
+        }
+        else
+        {
+            existing.MaxGroupSize = defaults.MaxGroupSize;
+            existing.WeightChair = defaults.WeightChair;
+            existing.WeightSecretary = defaults.WeightSecretary;
+            existing.WeightSupervisor = defaults.WeightSupervisor;
+            existing.WeightReviewer = defaults.WeightReviewer;
+            existing.DeviationThreshold = defaults.DeviationThreshold;
+            existing.UpdatedAt = defaults.UpdatedAt;
+            existing.UpdatedById = defaults.UpdatedById;
+        }
+        await SaveAsync(cancellationToken);
+    }
+
     private static bool IsDuplicateName(DbUpdateException ex) =>
         ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation, ConstraintName: { } name }
         && name.Contains("NormalizedName", StringComparison.Ordinal);

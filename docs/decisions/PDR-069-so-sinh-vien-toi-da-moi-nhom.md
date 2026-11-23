@@ -15,3 +15,7 @@
 
 - Form ghi danh/đề xuất hiện số ô thành viên theo số tối đa của đợt thay vì cố định hai.
 - Kiểm thử: tối đa 1, 2, 3; vượt tối đa (chặn); sửa sau khi mở đợt (409); phiếu chấm nhóm 1 và 3 Sinh viên.
+
+## Trạng thái triển khai
+
+- **2026-11-23:** Đã triển khai backend trên nhánh `feat/giao-vu-23-11` (bước A1): `ThesisRound.MaxGroupSize`, kiểm tra giới hạn trong ghi danh/đề xuất theo `round.MaxGroupSize`, khóa sửa số sinh viên tối đa khi đợt mở (409), migration `AddRoundGradingConfigAndGroupSize`.
