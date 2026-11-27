@@ -11,8 +11,21 @@ import {
   type GradingRole,
   type TemplateAssignment,
 } from '@/types/evaluation';
+import { TemplateDrawer } from '@/features/evaluations/components/TemplateDrawer';
 import type { EvaluationService } from '@/features/evaluations/services/evaluationService';
+import {
+  formatScore,
+  newDraft,
+  toHundredths,
+  uniqueName,
+} from '@/features/evaluations/templateValidation';
 import type { Round } from '@/types/round';
+
+const templateTotal = (t: EvaluationTemplate) =>
+  (t.criteria ?? []).reduce(
+    (sum, c) => sum + (toHundredths(String(c.maxScore)) ?? 0),
+    0,
+  );
 
 const ROLE_DESC: Record<GradingRole, string> = {
   Supervisor: 'Phiếu chấm dành cho Giảng viên hướng dẫn',
@@ -161,6 +174,8 @@ export const TemplateAssignmentSection: React.FC<
           round={round}
           isDraft={isDraft}
           templates={templates.filter((t) => t.status === 'Active')}
+          allTemplates={templates}
+          onTemplateCreated={(t) => setTemplates((prev) => [...prev, t])}
           currentAssignment={getAssignment(selectedRole)}
           evaluationService={evaluationService}
           onClose={() => setSelectedRole(null)}
@@ -187,7 +202,11 @@ interface RoleAssignmentDrawerProps {
   role: GradingRole;
   round: Round;
   isDraft: boolean;
+  // Mẫu đủ điều kiện sử dụng (chọn được).
   templates: EvaluationTemplate[];
+  // Mọi mẫu trong thư viện, để xem chi tiết mẫu đang gán và kiểm tra trùng tên.
+  allTemplates: EvaluationTemplate[];
+  onTemplateCreated: (template: EvaluationTemplate) => void;
   currentAssignment?: TemplateAssignment;
   evaluationService: EvaluationService;
   onClose: () => void;
@@ -199,6 +218,8 @@ const RoleAssignmentDrawer: React.FC<RoleAssignmentDrawerProps> = ({
   round,
   isDraft,
   templates,
+  allTemplates,
+  onTemplateCreated,
   currentAssignment,
   evaluationService,
   onClose,
@@ -209,15 +230,38 @@ const RoleAssignmentDrawer: React.FC<RoleAssignmentDrawerProps> = ({
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Đang tạo mẫu mới ngay trong panel (trình sửa mẫu nhúng bên dưới).
+  const [creating, setCreating] = useState(false);
   const drawerRef = useDialogFocus<HTMLElement>();
+  const selected = allTemplates.find((t) => t.id === selectedId);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && !busy) onClose();
+      // Khi tạo mẫu, trình sửa tự xử lý Escape (hỏi bỏ thay đổi chưa lưu).
+      if (e.key === 'Escape' && !busy && !creating) onClose();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [onClose, busy]);
+  }, [onClose, busy, creating]);
+
+  const handleCreated = (saved: EvaluationTemplate) => {
+    onTemplateCreated(saved);
+    setCreating(false);
+    if (saved.status === 'Active' && isDraft) {
+      setSelectedId(saved.id);
+      toast.success(
+        `Đã lưu mẫu «${saved.name}» vào thư viện và chọn cho ${GRADING_ROLE_LABEL[role]}. Bấm Lưu để gán cho đợt.`,
+      );
+    } else if (saved.status === 'Active') {
+      toast.success(
+        `Đã lưu mẫu «${saved.name}» vào thư viện. Đợt đã mở nên mẫu chưa đổi; dùng cho đợt khác.`,
+      );
+    } else {
+      toast.success(
+        `Đã lưu mẫu «${saved.name}» (Nháp) vào thư viện. Hoàn thiện ở trang Phiếu đánh giá để gán được.`,
+      );
+    }
+  };
 
   const handleSave = async () => {
     if (busy || !isDraft) return;
@@ -277,90 +321,188 @@ const RoleAssignmentDrawer: React.FC<RoleAssignmentDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="role-drawer-title"
-        className="app-drawer"
+        className="app-drawer eval-drawer"
       >
-        <header className="app-drawer-header">
-          <div className="eval-drawer-title">
-            <h2 id="role-drawer-title">Gán mẫu: {GRADING_ROLE_LABEL[role]}</h2>
-            <span className="app-muted eval-small">{round.name}</span>
-          </div>
-          <button
-            type="button"
-            className="app-icon-button"
-            aria-label="Đóng"
-            onClick={onClose}
-            disabled={busy}
-          >
-            <X size={18} aria-hidden="true" />
-          </button>
-        </header>
+        {creating ? (
+          <TemplateDrawer
+            embedded
+            mode="create"
+            initialDraft={newDraft(
+              uniqueName(
+                'Mẫu phiếu mới',
+                allTemplates.map((t) => t.name),
+              ),
+            )}
+            otherNames={allTemplates.map((t) => t.name)}
+            usage={[]}
+            evaluationService={evaluationService}
+            onClose={() => setCreating(false)}
+            onSaved={handleCreated}
+            onRemove={() => {}}
+          />
+        ) : (
+          <>
+            <header className="app-drawer-header">
+              <div className="eval-drawer-title">
+                <h2 id="role-drawer-title">
+                  Gán mẫu: {GRADING_ROLE_LABEL[role]}
+                </h2>
+                <span className="app-muted eval-small">{round.name}</span>
+              </div>
+              <button
+                type="button"
+                className="app-icon-button"
+                aria-label="Đóng"
+                onClick={onClose}
+                disabled={busy}
+              >
+                <X size={18} aria-hidden="true" />
+              </button>
+            </header>
 
-        <div className="app-drawer-body">
-          <p className="app-muted eval-small">{ROLE_DESC[role]}</p>
+            <div className="app-drawer-body">
+              <p className="app-muted eval-small">{ROLE_DESC[role]}</p>
 
-          <div className="eval-field rnd-mt-4">
-            <label htmlFor="select-template">Chọn mẫu phiếu đã ban hành</label>
-            <select
-              id="select-template"
-              className="app-select"
-              value={selectedId}
-              disabled={busy || !isDraft}
-              onChange={(e) => setSelectedId(e.target.value)}
-            >
-              <option value="">— Chưa gán mẫu —</option>
-              {templates.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <div className="eval-field rnd-mt-4">
+                <label htmlFor="select-template">
+                  Chọn mẫu phiếu đã ban hành
+                </label>
+                <select
+                  id="select-template"
+                  className="app-select"
+                  value={selectedId}
+                  disabled={busy || !isDraft}
+                  onChange={(e) => setSelectedId(e.target.value)}
+                >
+                  <option value="">— Chưa gán mẫu —</option>
+                  {templates.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {error && (
-            <p role="alert" className="eval-field-error">
-              {error}
-            </p>
-          )}
+              {!isDraft && (
+                <p role="note" className="rnd-note rnd-note-info">
+                  Đợt đã mở nên mẫu áp dụng đã khóa, chỉ xem. Bạn vẫn tạo được
+                  mẫu mới để dùng cho đợt khác.
+                </p>
+              )}
 
-          {templates.length === 0 && (
-            <p className="app-muted eval-small">
-              Chưa có mẫu phiếu nào ở trạng thái Đủ điều kiện sử dụng (Active).
-              Vui lòng ban hành mẫu phiếu ở trang Phiếu đánh giá trước.
-            </p>
-          )}
-        </div>
+              <section className="rnd-tpl-detail" aria-label="Chi tiết mẫu">
+                <div className="rnd-tpl-detail-head">
+                  <h3>Chi tiết mẫu</h3>
+                  {selected && (
+                    <span className="app-chip">
+                      Tổng {formatScore(templateTotal(selected))} / 10
+                    </span>
+                  )}
+                </div>
+                {selected ? (
+                  <>
+                    <p className="app-muted eval-small">
+                      {selected.description || 'Không có mô tả.'}
+                    </p>
+                    <ol className="rnd-tpl-criteria">
+                      {(selected.criteria ?? []).map((c) => (
+                        <li key={c.id}>
+                          <span className="rnd-tpl-criterion">
+                            <span>{c.name}</span>
+                            <span>
+                              {formatScore(
+                                toHundredths(String(c.maxScore)) ?? 0,
+                              )}{' '}
+                              điểm
+                            </span>
+                          </span>
+                          {c.subCriteria.length > 0 && (
+                            <ul className="rnd-tpl-subs">
+                              {c.subCriteria.map((sc) => (
+                                <li key={sc.id}>
+                                  <span>{sc.name}</span>
+                                  <span>
+                                    {formatScore(
+                                      toHundredths(String(sc.maxScore)) ?? 0,
+                                    )}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                        </li>
+                      ))}
+                    </ol>
+                  </>
+                ) : (
+                  <p className="rnd-tpl-empty">
+                    Chưa gán mẫu phiếu cho vai trò này. Chọn một mẫu ở trên hoặc
+                    tạo mẫu mới.
+                  </p>
+                )}
+              </section>
 
-        <footer className="app-drawer-footer">
-          {currentAssignment && isDraft && (
-            <button
-              type="button"
-              className="app-button eval-delete"
-              disabled={busy}
-              onClick={() => void handleUnassign()}
-            >
-              Gỡ mẫu
-            </button>
-          )}
-          <span className="rnd-spacer-flex" />
-          <button
-            type="button"
-            className="app-button"
-            disabled={busy}
-            onClick={onClose}
-          >
-            Hủy
-          </button>
-          {isDraft && (
-            <button
-              type="button"
-              className="app-button app-button-primary"
-              disabled={busy || (!selectedId && !currentAssignment)}
-              onClick={() => void handleSave()}
-            >
-              {busy ? 'Đang lưu...' : 'Lưu'}
-            </button>
-          )}
-        </footer>
+              <div>
+                <button
+                  type="button"
+                  className="app-button"
+                  disabled={busy}
+                  onClick={() => setCreating(true)}
+                >
+                  + Tạo mẫu phiếu mới
+                </button>
+                <p className="app-muted eval-small rnd-mt-2">
+                  Mẫu mới lưu vào thư viện mẫu phiếu và chọn lại được cho mọi
+                  đợt khác.
+                </p>
+              </div>
+
+              {error && (
+                <p role="alert" className="eval-field-error">
+                  {error}
+                </p>
+              )}
+
+              {allTemplates.length === 0 && (
+                <p className="app-muted eval-small">
+                  Chưa có mẫu phiếu nào trong thư viện. Tạo mẫu mới ở trên.
+                </p>
+              )}
+            </div>
+
+            <footer className="app-drawer-footer">
+              {currentAssignment && isDraft && (
+                <button
+                  type="button"
+                  className="app-button eval-delete"
+                  disabled={busy}
+                  onClick={() => void handleUnassign()}
+                >
+                  Gỡ mẫu
+                </button>
+              )}
+              <span className="rnd-spacer-flex" />
+              <button
+                type="button"
+                className="app-button"
+                disabled={busy}
+                onClick={onClose}
+              >
+                Hủy
+              </button>
+              {isDraft && (
+                <button
+                  type="button"
+                  className="app-button app-button-primary"
+                  disabled={busy || (!selectedId && !currentAssignment)}
+                  onClick={() => void handleSave()}
+                >
+                  {busy ? 'Đang lưu...' : 'Lưu'}
+                </button>
+              )}
+            </footer>
+          </>
+        )}
       </aside>
     </div>
   );
